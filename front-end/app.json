@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "front-end",
-    "slug": "front-end",
+    "name": "misred-iot",
+    "slug": "misred-iot",
     "version": "1.0.0",
     "scheme": "misred-iot",
     "orientation": "portrait",
