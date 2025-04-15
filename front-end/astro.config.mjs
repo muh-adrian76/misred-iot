@@ -12,7 +12,7 @@ export default defineConfig({
 		: `http://localhost:${DEV_PORT}`,
 	base: process.env.CI ? '/front-end' : undefined,
 
-	// output: 'server',
+	output: 'server',
 
 	/* Like Vercel, Netlify,… Mimicking for dev. server */
 	// trailingSlash: 'always',
