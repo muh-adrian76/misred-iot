@@ -1,22 +1,25 @@
 {
-  "name": "misred-iot",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "back-end",
+  "version": "1.0.50",
   "scripts": {
-    "start": "nodemon ./src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"bun run --watch src/index.ts\" \"bun run --watch src/tokenizer.ts\"",
+    "reset-db": "bun run src/truncate.ts",
+    "publisher": "bun run src/publisher.ts"
   },
-  "author": "Muhammad Adriano Khairur Rizky Setyawan",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@hapi/hapi": "^21.3.12",
-    "@hapi/inert": "^7.1.0",
-    "@hapi/jwt": "^3.2.0",
-    "dotenv": "^16.4.5",
-    "mysql2": "^3.11.4"
+    "@elysiajs/cors": "^1.2.0",
+    "@elysiajs/jwt": "^1.2.0",
+    "@elysiajs/swagger": "^1.2.2",
+    "amqplib": "^0.10.5",
+    "concurrently": "^9.1.2",
+    "elysia": "^1.2.25",
+    "mqtt": "^5.10.4",
+    "mysql2": "^3.13.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
-  }
+    "@types/node-fetch": "^2.6.12",
+    "bun-types": "latest"
+  },
+  "module": "src/index.js"
 }

@@ -1,30 +1,46 @@
 {
-  "name": "misred-iot",
-  "version": "1.0.0",
-  "main": "expo-router/entry",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "dependencies": {
-    "expo": "~52.0.7",
-    "expo-status-bar": "~2.0.0",
-    "react": "18.3.1",
-    "react-native": "0.76.2",
-    "expo-router": "~4.0.6",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.1.0",
-    "expo-linking": "~7.0.2",
-    "expo-constants": "~17.0.3",
-    "react-native-web": "~0.19.13",
-    "react-dom": "18.3.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@types/react": "~18.3.12",
-    "typescript": "^5.3.3"
-  },
-  "private": true
+	"name": "misred-iot-admin-dashboard",
+	"version": "1.0.2",
+	"private": "true",
+	"description": "",
+	"keywords": [
+		"admin dashboard",
+		"astro"
+	],
+	"author": "Muhammad Adriano Khairur Rizky Setyawan",
+	"type": "module",
+	"scripts": {
+		"astro": "bunx --bun astro",
+		"build": "bunx --bun astro build",
+		"dev": "bunx --bun astro dev",
+		"preview": "bunx --bun astro preview",
+		"start": "bunx --bun astro dev"
+	},
+	"dependencies": {
+		"@astrojs/sitemap": "^1.1.0",
+		"@astrojs/tailwind": "^3.0.1",
+		"@faker-js/faker": "^7.6.0",
+		"apexcharts": "^3.37.2",
+		"astro": "^2.0.4",
+		"flowbite": "^2.1.1",
+		"flowbite-typography": "^1.0.3",
+		"shiki": "^0.14.1",
+		"tailwind-scrollbar": "^3.0.0",
+		"tailwindcss": "^3.0.24"
+	},
+	"devDependencies": {
+		"@types/eslint": "^8.21.1",
+		"@typescript-eslint/eslint-plugin": "^5.54.1",
+		"@typescript-eslint/parser": "^5.54.1",
+		"astro-eslint-parser": "^0.11.0",
+		"eslint": "^8.35.0",
+		"eslint-config-airbnb-base": "^15.0.0",
+		"eslint-config-airbnb-typescript": "^17.0.0",
+		"eslint-config-prettier": "^8.7.0",
+		"eslint-import-resolver-typescript": "^3.5.3",
+		"eslint-plugin-astro": "^0.23.0",
+		"eslint-plugin-import": "^2.27.5",
+		"eslint-plugin-prettier": "^4.2.1",
+		"eslint-plugin-tsdoc": "^0.2.17"
+	}
 }
