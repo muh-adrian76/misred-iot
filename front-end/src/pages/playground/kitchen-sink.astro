@@ -109,7 +109,7 @@ import { actions } from './_actions.js';
 
 <script>
 	import type { CrudEntities } from '../../modules/CrudEntities.client.js';
-	import type { PlaygroundAction } from '../../types.js';
+import type { PlaygroundAction } from '../../types/entities';
 
 	const playgroundActions: Record<PlaygroundAction, (...args: any) => void> = {
 		refetchCrudData: (crud: CrudEntities) => crud.update(),
