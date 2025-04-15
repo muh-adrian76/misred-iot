@@ -2,7 +2,7 @@ import { defineConfig } from 'astro/config';
 
 import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel';
+import vercel from '@astrojs/vercel/serverless';
 
 const DEV_PORT = 2121;
 
@@ -27,4 +27,14 @@ export default defineConfig({
 		sitemap(),
 		tailwind(),
 	],
+	vite: {
+		optimizeDeps: {
+			include: ['shiki'],
+		},
+		build: {
+			rollupOptions: {
+				external: ['shiki/themes/hc_light.json'],
+			},
+		},
+	},
 });

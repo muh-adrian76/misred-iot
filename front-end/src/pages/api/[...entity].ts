@@ -20,7 +20,12 @@ export const get: APIRoute = ({ params /* , request */ }) => {
 
 	const operationName = parseTypeParam(params.entity);
 
-	if (!operationName) return new Response('404', { status: 404 });
+	if (!operationName) {
+		return new Response(
+			JSON.stringify({ error: 'Not Found' }),
+			{ status: 404, headers: { 'Content-Type': 'application/json' } }
+		);
+	};
 
 	const body = endpointsToOperations[operationName]();
 
@@ -35,8 +40,8 @@ export const get: APIRoute = ({ params /* , request */ }) => {
 /* ... */
 
 /* Astro's static build helper, can be removed for SSR mode */
-export function getStaticPaths() {
-	return Object.keys(endpointsToOperations).map((endpoint) => ({
-		params: { entity: endpoint },
-	}));
-}
+// export function getStaticPaths() {
+// 	return Object.keys(endpointsToOperations).map((endpoint) => ({
+// 		params: { entity: endpoint },
+// 	}));
+// }
