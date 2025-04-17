@@ -4,12 +4,12 @@ const client = connect(Bun.env.RABBITMQ_URL_MQTT!);
 
 client.on("connect", () => {
     client.publish("device/data", JSON.stringify({
-        device_id: 1,
-        ph: 6.8,
-        cod: 120,
+        device_id: 2,
+        ph: 7.0,
+        cod: 12.5,
         tss: 45,
-        nh3_n: 0.5,
-        flow: 100
+        nh3n: 0.8,
+        flow: 120
     }));
     console.log("✅ Message published to MQTTBox via RabbitMQ.");
     client.end();

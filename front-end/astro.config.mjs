@@ -2,9 +2,8 @@ import { defineConfig } from 'astro/config';
 
 import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel/serverless';
 
-const DEV_PORT = 2121;
+const DEV_PORT = 7676;
 
 // https://astro.build/config
 export default defineConfig({
@@ -12,7 +11,6 @@ export default defineConfig({
 	base: process.env.CI ? '/front-end' : undefined,
 
 	output: 'server',
-	adapter: vercel(),
 
 	/* Like Vercel, Netlify,… Mimicking for dev. server */
 	// trailingSlash: 'always',
@@ -27,14 +25,4 @@ export default defineConfig({
 		sitemap(),
 		tailwind(),
 	],
-	vite: {
-		optimizeDeps: {
-			include: ['shiki'],
-		},
-		build: {
-			rollupOptions: {
-				external: ['shiki/themes/hc_light.json'],
-			},
-		},
-	},
 });
