@@ -3,7 +3,8 @@
 
 const char* ssid = "yoo_rio";
 const char* password = "yooooooo";
-const char* serverURL = "http://192.168.192.168:7600/sensor";
+const char* serverURL = "http://192.168.16.3:7600/payload";
+const char* bearerToken = "your_jwt_token_here";
 
 void setup() {
   Serial.begin(115200);
@@ -22,7 +23,10 @@ void loop() {
     http.begin(serverURL);
     http.addHeader("Content-Type", "application/json");
 
-    String jsonData = "{\"device_id\":\"ESP32\", \"ph\":7.0, \"cod\":12.5, \"tss\":45, \"nh3_n\":0.8, \"flow\":120}";
+    String bearerHeader = "Bearer " + String(bearerToken);
+    http.addHeader("Authorization", bearerHeader);
+
+    String jsonData = "{\"device_id\":1, \"ph\":7.0, \"cod\":12.5, \"tss\":45, \"nh3n\":0.8, \"flow\":120}";
     int httpResponseCode = http.POST(jsonData);
 
     if (httpResponseCode > 0) {

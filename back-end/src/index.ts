@@ -1,14 +1,12 @@
 import { cors } from "@elysiajs/cors";
 import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
+import { randomBytes } from "crypto";
 import { Elysia } from "elysia";
-import { db, mqttClient } from "./utils/middleware";
-
-import { alarmRoutes } from "./routes/alarms";
-import { deviceRoutes } from "./routes/devices";
-import { sensorRoutes } from "./routes/payloads";
-import { userRoutes } from "./routes/users";
-import { widgetRoutes } from "./routes/widgets";
+import { ResultSetHeader } from 'mysql2';
+import { authorizeRequest } from "./utils/authorize";
+import { Auth, JWT } from './utils/interface';
+import { Chirpstack, db, mqttClient } from "./utils/middleware";
 
 const app = new Elysia()
   .use(
@@ -27,20 +25,347 @@ const app = new Elysia()
       exp: Bun.env.ACCESS_TOKEN_AGE
     })
   )
-  .use(userRoutes)
-  .use(deviceRoutes)
-  .use(sensorRoutes)
-  .use(widgetRoutes)
-  .use(alarmRoutes)
   .onError(({ code }) => {
     if (code === "NOT_FOUND") {
       return "Route not found :(";
     }
   });
 
+// Register User
+app.post("/register", async (req: Auth) => {
+  const { username, password, email } = req.body;
+  if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
+    return new Response(
+      JSON.stringify({ message: "Email tidak valid. Gagal menambahkan user." }),
+      { status: 400 }
+    );
+  }
+
+  const hashedPassword = await Bun.password.hash(password, {
+    algorithm: "bcrypt",
+  });
+
+  const [result] = email
+    ? await db.query<ResultSetHeader>(
+        "INSERT INTO users (email, password, last_login) VALUES (?, ?, NOW())",
+        [email, hashedPassword]
+      )
+    : await db.query<ResultSetHeader>(
+        "INSERT INTO users (username, password, last_login) VALUES (?, ?, NOW())",
+        [username, hashedPassword]
+      );
+
+  return new Response(
+    JSON.stringify({ message: "User berhasil terdaftar", id: result.insertId }),
+    { status: 201 }
+  );
+});
+
+// Login User
+app.post("/login", async (req: Auth) => {
+  const { username, password, email } = req.body;
+  if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
+    return new Response(
+      JSON.stringify({ message: "Email tidak valid. Gagal menambahkan user." }),
+      { status: 400 }
+    );
+  }
+  const [rows] = await db.query<any[]>(
+    "SELECT * FROM users WHERE username = ? OR email = ?",
+    [username, email]
+  );
+  if (!rows || rows.length === 0) {
+    return new Response(JSON.stringify({ message: "Invalid credentials" }), {
+      status: 401,
+    });
+  }
+
+  const user = rows[0];
+  const isMatch = await Bun.password.verify(password, user.password);
+
+  if (!user || !isMatch) {
+    return new Response(JSON.stringify({ message: "Invalid credentials" }), {
+      status: 401,
+    });
+  }
+
+  const accessToken = await req.jwt.sign({
+    sub: user.id,
+    iat: Math.floor(Date.now() / 1000),
+    type: "access",
+  });
+
+  const response = await fetch(`http://localhost:7601/sign/${user.id}`);
+  const refreshToken = await response.text(); 
+
+  
+  await db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+    refreshToken,
+    user.id,
+  ]);
+
+  return new Response(JSON.stringify({ accessToken, refreshToken }), {
+    status: 200,
+  });
+});
+
+// Refresh Token JWT
+app.get("/renew/:id", async (req: JWT) => {
+  const { id } = req.params;
+  
+  const [rows] = await db.query<any[]>('SELECT refresh_token FROM users WHERE id = ?', [id]);
+  const refreshToken = rows?.[0]?.refresh_token;
+
+  try {
+    const decoded = await req.jwt.verify(refreshToken);
+
+    const newAccessToken = await req.jwt.sign({
+      sub: decoded.sub,
+      iat: Math.floor(Date.now() / 1000),
+      type: "access",
+    });
+
+    return new Response(JSON.stringify({ accessToken: newAccessToken }), {
+      status: 200,
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ message: "Invalid or expired refresh token" }),
+      { status: 401 }
+    );
+  }
+});
+
+
+export const userRoutes = new Elysia({ prefix: "/users" })
+// 🔍 Get all users
+.get("/", async (req: JWT) => {
+  await authorizeRequest(req)
+  const [rows] = await db.query<any[]>("SELECT * FROM users");
+  return rows;
+})
+
+// 🔍 Get user by ID
+.get("/:id", async (req: JWT) => {
+  await authorizeRequest(req);
+  const [rows] = await db.query<any[]>("SELECT * FROM users WHERE id = ?", [req.params.id]);
+  return rows[0] || new Response("User not found", { status: 404 });
+})
+
+// ✏️ Update user by ID
+.put("/:id", async (req: JWT) => {
+  await authorizeRequest(req);
+  const { username, password, name, email } = req.body;
+
+  const [result] = await db.query<ResultSetHeader>(
+    `UPDATE users SET username=?, password=?, name=?, email=? WHERE id=?`,
+    [username, password, name, email, req.params.id]
+  );
+
+  return {
+    message: "User berhasil diperbarui",
+    affectedRows: result.affectedRows,
+  };
+})
+
+// ❌ Delete user
+.delete("/:id", async (req: JWT) => {
+  await authorizeRequest(req);
+  const [result] = await db.query<ResultSetHeader>("DELETE FROM users WHERE id = ?", [req.params.id]);
+
+  return {
+    message: "User berhasil dihapus",
+    affectedRows: result.affectedRows,
+  };
+});
+
+// CREATE Device
+app.post("/device", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+  const authHeader = req.headers["authorization"];
+  const token = authHeader?.split(" ")[1];
+
+  // Data
+  const { name, board, protocol } = req.body;
+  let topic: string | undefined, qos: string | undefined, loraProfile: string | undefined;
+  const jwtSecret = randomBytes(32).toString("hex");
+  
+  // MQTT
+  if (protocol === "mqtt" && token) {
+    topic = "device/data", qos = "0";
+  }
+
+  // LoRa
+  if (protocol === "lora" && token) {
+    loraProfile = await Chirpstack(token);
+  }
+  
+  // Database
+  const [result] = await db.query<ResultSetHeader>(
+    "INSERT INTO devices (description, board_type, protocol, mqtt_topic, mqtt_qos, lora_profile, jwt_signature) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    [name, board, protocol, topic ?? null, qos ?? null, loraProfile ?? null, jwtSecret]
+  );
+  return new Response(
+    JSON.stringify({
+      message: "Perangkat berhasil terdaftar",
+      id: result.insertId,
+    }),
+    { status: 201 }
+  );
+});
+
+// READ Device
+app.get("/devices", async (req: JWT) => {
+  console.log("Headers received: ", req.headers)
+  await authorizeRequest(req);
+
+  const [data] = await db.query<any[]>("SELECT * FROM devices");
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+app.get("/device/:id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { id } = req.params;
+  const [data] = await db.query<any[]>("SELECT * FROM devices WHERE id = ?", [
+    id,
+  ]);
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+
+// UPDATE Device
+app.put("/device/:id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { id } = req.params;
+  const { name, board, protocol } = req.body;
+  await db.query(
+    "UPDATE devices SET description = ?, board_type = ?, protocol = ? WHERE id = ?",
+    [name, board, protocol, id]
+  );
+  return new Response(
+    JSON.stringify({ message: "Perangkat berhasil diupdate" }),
+    { status: 200 }
+  );
+});
+
+// DELETE Device
+app.delete("/device/:id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { id } = req.params;
+  await db.query("DELETE FROM devices WHERE id = ?", [id]);
+  await db.query("DELETE FROM payloads WHERE devices_id = ?", [id]);
+  await db.query("DELETE FROM widgets WHERE devices_id = ?", [id]);
+  await db.query("DELETE FROM alarms WHERE devices_id = ?", [id]);
+  return new Response(
+    JSON.stringify({ message: "Perangkat berhasil dihapus" }),
+    { status: 200 }
+  );
+});
+
+// CREATE Data Sensor
+app.post("/payload", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { device_id, ph, cod, tss, nh3n, flow } = req.body;
+  const [result] = await db.query<ResultSetHeader>(
+    "INSERT INTO payloads (device_id, ph, cod, tss, nh3n, flow, server_time) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+    [device_id, ph, cod, tss, nh3n, flow]
+  );
+  return new Response(
+    JSON.stringify({
+      message: "Berhasil menambah data sensor",
+      id: result.insertId,
+    }),
+    { status: 201 }
+  );
+});
+
+// READ Data Sensor
+app.get("/payloads", async (req: JWT) => {
+  await authorizeRequest(req);
+
+  const [data] = await db.query("SELECT * FROM payloads");
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+app.get("/payload/:device_id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { device_id } = req.params;
+  const [data] = await db.query("SELECT * FROM payloads WHERE device_id = ?", [
+    device_id,
+  ]);
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+
+// POST Alarm
+app.post("/alarm", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { name, device_id, operator, threshold, sensor } = req.body;
+  const [result] = await db.query<ResultSetHeader>(
+    "INSERT INTO alarms (description, device_id, operator, threshold, last_sended, sensor_type) VALUES (?, ?, ?, ?, NOW(), ?)",
+    [name, device_id, operator, threshold, sensor]
+  );
+  return new Response(
+    JSON.stringify({
+      message: "Berhasil menambah data alarm",
+      id: result.insertId,
+    }),
+    { status: 201 }
+  );
+});
+
+// READ Alarm
+app.get("/alarms", async (req: JWT) => {
+  await authorizeRequest(req);
+
+  const [data] = await db.query<any[]>("SELECT * FROM alarms");
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+app.get("/alarm/:device_id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { device_id } = req.params;
+  const [data] = await db.query<any[]>(
+    "SELECT * FROM alarms WHERE device_id = ?",
+    [device_id]
+  );
+  return new Response(JSON.stringify({ result: data }), { status: 200 });
+});
+
+// UPDATE Alarm
+app.put("/alarm/:id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  const { name, device_id, operator, threshold, sensor } = req.body;
+  await db.query(
+    "UPDATE alarms SET description = ?, device_id = ?, operator = ?, threshold = ?, sensor_type = ? WHERE id = ?",
+    [name, device_id, operator, threshold, sensor, req.params.id]
+  );
+  return { message: "Berhasil mengupdate data alarm." };
+});
+
+// DELETE Alarm
+app.delete("/alarm/:id", async (req: JWT) => {
+  console.log("Headers received: ", req.headers);
+  await authorizeRequest(req);
+
+  await db.query("DELETE FROM alarms WHERE id = ?", [req.params.id]);
+  return { message: "Berhasil menghapus data alarm." };
+});
+
 app.listen(Bun.env.SERVER_PORT!, () => {
   // MQTT Setup
-  // connectRabbitMQ();
   mqttClient.on('connect', () => {
     console.log('✅ Berhasil terkoneksi ke MQTT broker');
     

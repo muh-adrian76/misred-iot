@@ -9,6 +9,7 @@ export const widgetRoutes = new Elysia({ prefix: '/widget' })
 
   // ➕ CREATE Widget
   .post('/', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
 
     const { description, device_id, sensor_type } = req.body;
@@ -26,6 +27,7 @@ export const widgetRoutes = new Elysia({ prefix: '/widget' })
 
   // 📄 READ Semua Widget
   .get('/', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const [data] = await db.query("SELECT * FROM widgets");
     return new Response(JSON.stringify({ result: data }), { status: 200 });
@@ -33,6 +35,7 @@ export const widgetRoutes = new Elysia({ prefix: '/widget' })
 
   // 📄 READ Widget by Device ID
   .get('/:device_id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const { device_id } = req.params;
     const [data] = await db.query("SELECT * FROM widgets WHERE device_id = ?", [device_id]);
@@ -41,6 +44,7 @@ export const widgetRoutes = new Elysia({ prefix: '/widget' })
 
   // ✏️ UPDATE Widget
   .put('/:id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
 
     const { description, device_id, sensor_type } = req.body;
@@ -54,6 +58,7 @@ export const widgetRoutes = new Elysia({ prefix: '/widget' })
 
   // ❌ DELETE Widget
   .delete('/:id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     await db.query("DELETE FROM widgets WHERE id = ?", [req.params.id]);
     return new Response(JSON.stringify({ message: "Berhasil menghapus data widget." }), { status: 200 });

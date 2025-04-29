@@ -1,8 +1,7 @@
 import { JWT } from "./interface";
 
-export async function authorizeRequest(req: JWT) {
-    console.log("Headers received: ", req.headers);
-    const { jwt, error, headers } = req;
+async function validateToken(req: JWT) {
+  const { jwt, error, headers } = req;
     if (!headers || typeof headers.authorization !== "string") {
       throw new Error("Authorization header missing or invalid");
     }
@@ -29,6 +28,14 @@ export async function authorizeRequest(req: JWT) {
           throw new Error('Invalid or expired refresh token');
         }
       }
+    }
+}
+export async function authorizeRequest(req: JWT) {
+    console.log("Headers received: ", req.headers);
+    try {
+      await validateToken(req);  // Memanggil authorizeRequest untuk verifikasi
+    } catch (error) {
+      return new Response("Unauthorized", { status: 401 }); // Jika gagal, kembalikan Unauthorized
     }
   }
   

@@ -38,6 +38,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // 🔐 Login User
   .post('/login', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     const { username, password, email } = req.body;
 
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
@@ -88,6 +89,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // 🔁 Refresh Token
   .get('/renew/:id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     const { id } = req.params;
 
     const [rows] = await db.query<any[]>(
@@ -140,6 +142,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // 🔍 Get all users
   .get("/", async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req)
     const [rows] = await db.query<any[]>("SELECT * FROM users");
     return rows;
@@ -147,6 +150,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // 🔍 Get user by ID
   .get("/:id", async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const [rows] = await db.query<any[]>("SELECT * FROM users WHERE id = ?", [req.params.id]);
     return rows[0] || new Response("User not found", { status: 404 });
@@ -154,6 +158,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // ✏️ Update user by ID
   .put("/:id", async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const { username, password, name, email } = req.body;
 
@@ -170,6 +175,7 @@ export const userRoutes = new Elysia({ prefix: "/user" })
 
   // ❌ Delete user
   .delete("/:id", async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const [result] = await db.query<ResultSetHeader>("DELETE FROM users WHERE id = ?", [req.params.id]);
 

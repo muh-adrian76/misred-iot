@@ -1,6 +1,7 @@
 import { connect } from "mqtt";
 import mysql from "mysql2/promise";
 
+// MySQL
 export const db = await mysql.createConnection({
   host: Bun.env.DB_HOST,
   user: Bun.env.DB_USER,
@@ -11,39 +12,6 @@ export const db = await mysql.createConnection({
 
 // MQTT
 export const mqttClient = connect(Bun.env.RABBITMQ_URL_MQTT!); // Contoh: 'mqtt://localhost:1883'
-
-// AMQP
-// export const connectRabbitMQ = async () => {
-//     try {
-//         const connection = await connect(Bun.env.RABBITMQ_URL_AMQP!);
-//         const channel = await connection.createChannel();
-
-//         await channel.assertExchange("device_exchange", "topic", { durable: false });
-//         const { queue } = await channel.assertQueue("device_queue", { exclusive: true });
-//         await channel.bindQueue(queue, "device_exchange", "device/data");
-
-//         channel.consume(queue, async (message) => {
-//             if (message) {
-//                 const data = JSON.parse(message.content.toString());
-//                 console.log("Payload dari publisher: ", data);
-
-//                 // Simpan data ke database
-//                 await db.query(
-//                     `INSERT INTO payloads (device_id, ph, cod, tss, nh3n, flow, server_time)
-//                     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-//                     [data.device_id, data.ph, data.cod, data.tss, data.nh3n, data.flow]
-//                 );
-
-//                 console.log("Berhasil menyimpan data sensor ke database.");
-//                 channel.ack(message);
-//             }
-//         });
-
-//         console.log("✅ Berhasil terkoneksi dengan broker MQTT.");
-//     } catch (error) {
-//         console.error("❌ Gagal terkoneksi dengan broker MQTT", error);
-//     }
-// };
 
 // CHIRPSTACK
 const CHIRPSTACK_URL = Bun.env.CHIRPSTACK_URL;

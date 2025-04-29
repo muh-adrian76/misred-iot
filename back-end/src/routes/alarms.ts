@@ -9,6 +9,7 @@ export const alarmRoutes = new Elysia({ prefix: '/alarm' })
 
   // ➕ CREATE Alarm
   .post('/', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
 
     const { name, device_id, operator, threshold, sensor } = req.body;
@@ -26,6 +27,7 @@ export const alarmRoutes = new Elysia({ prefix: '/alarm' })
 
   // 📄 READ Semua Alarm
   .get('/', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const [data] = await db.query("SELECT * FROM alarms");
     return new Response(JSON.stringify({ result: data }), { status: 200 });
@@ -33,6 +35,7 @@ export const alarmRoutes = new Elysia({ prefix: '/alarm' })
 
   // 📄 READ Alarm by Device ID
   .get('/:device_id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const { device_id } = req.params;
     const [data] = await db.query("SELECT * FROM alarms WHERE device_id = ?", [device_id]);
@@ -41,6 +44,7 @@ export const alarmRoutes = new Elysia({ prefix: '/alarm' })
 
   // ✏️ UPDATE Alarm
   .put('/:id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
 
     const { name, device_id, operator, threshold, sensor } = req.body;
@@ -54,6 +58,7 @@ export const alarmRoutes = new Elysia({ prefix: '/alarm' })
 
   // ❌ DELETE Alarm
   .delete('/:id', async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     await db.query("DELETE FROM alarms WHERE id = ?", [req.params.id]);
     return new Response(JSON.stringify({ message: "Berhasil menghapus data alarm." }), { status: 200 });

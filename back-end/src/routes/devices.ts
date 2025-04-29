@@ -43,6 +43,7 @@ export const deviceRoutes = new Elysia({ prefix: '/device' })
 
   // 📥 Get all devices
   .get("/", async (req: JWT) => {
+    console.log("Headers received: ", req.headers);
     await authorizeRequest(req);
     const [data] = await db.query<any[]>("SELECT * FROM devices");
     return new Response(JSON.stringify({ result: data }), { status: 200 });
