@@ -1,4 +1,4 @@
-import { JWT } from "./interface";
+import { JWT } from "./types";
 
 async function validateToken(req: JWT) {
   const { jwt, error, headers } = req;

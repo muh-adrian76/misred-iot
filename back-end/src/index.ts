@@ -2,10 +2,10 @@ import { cors } from "@elysiajs/cors";
 import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
 import { randomBytes } from "crypto";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { ResultSetHeader } from 'mysql2';
 import { authorizeRequest } from "./utils/authorize";
-import { Auth, JWT } from './utils/interface';
+import { Auth, JWT } from './utils/types';
 import { Chirpstack, db, mqttClient } from "./utils/middleware";
 
 const app = new Elysia()
@@ -18,6 +18,95 @@ const app = new Elysia()
     })
   )
   .use(swagger())
+  // USER ENDPOINTS
+  .post('/user/register', ({ body }) => ({ message: `User ${body.username} registered.` }), {
+    body: t.Object({ username: t.String(), email: t.String(), password: t.String() })
+  })
+  .post('/user/login', ({ body }) => ({ message: `User ${body.email} logged in.` }), {
+    body: t.Object({ email: t.String(), password: t.String() })
+  })
+  .get('/user/renew/:id', ({ params }) => ({ message: `Token renewed for user ${params.id}` }), {
+    params: t.Object({ id: t.String() })
+  })
+  .post('/user/logout/:id', ({ params }) => ({ message: `User ${params.id} logged out.` }), {
+    params: t.Object({ id: t.String() })
+  })
+  .get('/user', () => ({ message: 'All users fetched.' }))
+  .get('/user/:id', ({ params }) => ({ message: `User ${params.id} fetched.` }), {
+    params: t.Object({ id: t.String() })
+  })
+  .put('/user/:id', ({ params, body }) => ({ message: `User ${params.id} updated.` }), {
+    params: t.Object({ id: t.String() }),
+    body: t.Partial(t.Object({ username: t.String(), email: t.String(), password: t.String() }))
+  })
+  .delete('/user/:id', ({ params }) => ({ message: `User ${params.id} deleted.` }), {
+    params: t.Object({ id: t.String() })
+  })
+
+  // DEVICE ENDPOINTS
+  .post('/device', ({ body }) => ({ message: `Device ${body.name} created.` }), {
+    body: t.Object({ name: t.String(), location: t.String(), description: t.Optional(t.String()) })
+  })
+  .get('/device', () => ({ message: 'All devices fetched.' }))
+  .get('/device/:id', ({ params }) => ({ message: `Device ${params.id} fetched.` }), {
+    params: t.Object({ id: t.String() })
+  })
+  .put('/device/:id', ({ params, body }) => ({ message: `Device ${params.id} updated.` }), {
+    params: t.Object({ id: t.String() }),
+    body: t.Partial(t.Object({ name: t.String(), location: t.String(), description: t.String() }))
+  })
+  .delete('/device/:id', ({ params }) => ({ message: `Device ${params.id} deleted.` }), {
+    params: t.Object({ id: t.String() })
+  })
+
+  // PAYLOAD ENDPOINTS
+  .post('/payload', ({ body }) => ({ message: `Payload for device ${body.device_id} stored.` }), {
+    body: t.Object({
+      device_id: t.String(), ph: t.Number(), cod: t.Number(), tss: t.Number(),
+      nh3n: t.Number(), flow: t.Number(), timestamp: t.Optional(t.String())
+    })
+  })
+  .get('/payload', () => ({ message: 'All payloads fetched.' }))
+  .get('/payload/:device_id', ({ params }) => ({ message: `Payload for device ${params.device_id} fetched.` }), {
+    params: t.Object({ device_id: t.String() })
+  })
+
+  // WIDGET ENDPOINTS
+  .post('/widget', ({ body }) => ({ message: `Widget for device ${body.device_id} created.` }), {
+    body: t.Object({ device_id: t.String(), type: t.String(), config: t.Record(t.String(), t.Any()) })
+  })
+  .get('/widget', () => ({ message: 'All widgets fetched.' }))
+  .get('/widget/:device_id', ({ params }) => ({ message: `Widgets for device ${params.device_id} fetched.` }), {
+    params: t.Object({ device_id: t.String() })
+  })
+  .put('/widget/:id', ({ params, body }) => ({ message: `Widget ${params.id} updated.` }), {
+    params: t.Object({ id: t.String() }),
+    body: t.Partial(t.Object({ type: t.String(), config: t.Record(t.String(), t.Any()) }))
+  })
+  .delete('/widget/:id', ({ params }) => ({ message: `Widget ${params.id} deleted.` }), {
+    params: t.Object({ id: t.String() })
+  })
+
+  // ALARM ENDPOINTS
+  .post('/alarm', ({ body }) => ({ message: `Alarm for ${body.parameter} created.` }), {
+    body: t.Object({
+      device_id: t.String(), parameter: t.String(), threshold: t.Number(),
+      condition: t.String(), message: t.String()
+    })
+  })
+  .get('/alarm', () => ({ message: 'All alarms fetched.' }))
+  .get('/alarm/:device_id', ({ params }) => ({ message: `Alarms for device ${params.device_id} fetched.` }), {
+    params: t.Object({ device_id: t.String() })
+  })
+  .put('/alarm/:id', ({ params, body }) => ({ message: `Alarm ${params.id} updated.` }), {
+    params: t.Object({ id: t.String() }),
+    body: t.Partial(t.Object({
+      parameter: t.String(), threshold: t.Number(), condition: t.String(), message: t.String()
+    }))
+  })
+  .delete('/alarm/:id', ({ params }) => ({ message: `Alarm ${params.id} deleted.` }), {
+    params: t.Object({ id: t.String() })
+  })
   .use(
     jwt({
       name: "jwt",

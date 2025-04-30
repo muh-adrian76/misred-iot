@@ -1,7 +1,7 @@
 import { Elysia } from 'elysia';
 import { ResultSetHeader } from 'mysql2';
 import { authorizeRequest } from '../utils/authorize';
-import { Auth, JWT } from '../utils/interface';
+import { Auth, JWT } from '../utils/types';
 import { db } from '../utils/middleware';
 
 export const userRoutes = new Elysia({ prefix: "/user" })

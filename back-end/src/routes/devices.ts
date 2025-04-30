@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import { Elysia } from 'elysia';
 import { ResultSetHeader } from 'mysql2';
 import { authorizeRequest } from '../utils/authorize';
-import { JWT } from '../utils/interface';
+import { JWT } from '../utils/types';
 import { Chirpstack, db } from '../utils/middleware';
 
 export const deviceRoutes = new Elysia({ prefix: '/device' })
