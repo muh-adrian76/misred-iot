@@ -82,9 +82,44 @@ export const userRoutes = new Elysia({ prefix: "/user" })
       user.id,
     ]);
 
-    return new Response(JSON.stringify({ accessToken, refreshToken }), {
+    return new Response(JSON.stringify({ accessToken, user }), {
       status: 200,
     });
+  })
+
+  .post('/verify-token', async (req: JWT) => {
+      const authHeader = req.headers['authorization'];
+  
+      // Cek apakah header Authorization ada
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ message: 'Authorization header missing' }),
+          { status: 401 }
+        );
+      }
+  
+      // Ambil token dari header Authorization
+      const token = authHeader.split(' ')[1]; // Token setelah 'Bearer'
+      if (!token) {
+        return new Response(
+          JSON.stringify({ message: 'Token missing in Authorization header' }),
+          { status: 401 }
+        );
+      }
+  
+      // Verifikasi token menggunakan jwt.verify
+      const decoded = await req.jwt.verify(token); // Memverifikasi JWT token
+      if (!decoded) {
+        return new Response(
+          JSON.stringify({ message: 'Invalid or expired token' }),
+          { status: 401 }
+        );
+      }    
+      // Jika token valid, kembalikan data decoded
+      return new Response(
+        JSON.stringify({ message: 'Token is valid', decoded }),
+        { status: 200 }
+      );
   })
 
   // 🔁 Refresh Token

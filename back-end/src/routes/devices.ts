@@ -28,7 +28,7 @@ export const deviceRoutes = new Elysia({ prefix: '/device' })
     }
 
     const [result] = await db.query<ResultSetHeader>(
-      "INSERT INTO devices (description, board_type, protocol, mqtt_topic, mqtt_qos, lora_profile, jwt_signature) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO devices (description, board_type, protocol, mqtt_topic, mqtt_qos, lora_profile, refresh_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [name, board, protocol, topic ?? null, qos ?? null, loraProfile ?? null, jwtSecret]
     );
 
@@ -83,10 +83,10 @@ export const deviceRoutes = new Elysia({ prefix: '/device' })
     await authorizeRequest(req);
 
     const { id } = req.params;
-    await db.query("DELETE FROM devices WHERE id = ?", [id]);
     await db.query("DELETE FROM payloads WHERE devices_id = ?", [id]);
     await db.query("DELETE FROM widgets WHERE devices_id = ?", [id]);
     await db.query("DELETE FROM alarms WHERE devices_id = ?", [id]);
+    await db.query("DELETE FROM devices WHERE id = ?", [id]);
 
     return new Response(
       JSON.stringify({ message: "Perangkat berhasil dihapus" }),

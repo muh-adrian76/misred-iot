@@ -9,26 +9,27 @@ export interface JWT {
           description: any;
         }>;
     body: {
-      name: string;
-      board: string;
-      protocol: string;
-      device_id: number;
-      ph: number;
-      cod: number;
-      tss: number;
-      nh3n: number;
-      flow: number;
-      server_time: string;
-      operator: string;
-      threshold: number;
-      sensor: string;
-      username: string,
+      name?: string;
+      board?: string;
+      protocol?: string;
+      device_id?: number;
+      ph?: number;
+      cod?: number;
+      tss?: number;
+      nh3n?: number;
+      flow?: number;
+      server_time?: string;
+      operator?: string;
+      threshold?: number;
+      sensor?: string;
+      username?: string,
       password: string, 
-      email: string, 
-      otp: string, 
-      refresh_token: string,
-      description: string,
-      sensor_type: string
+      email?: string, 
+      otp?: string, 
+      refresh_token?: string,
+      description?: string,
+      sensor_type?: string,
+      last_login?: string,
     };
     params: {
       id: number;

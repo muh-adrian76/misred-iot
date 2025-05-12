@@ -11,8 +11,8 @@ async function validateToken(req: JWT) {
     const authorize = await jwt.verify(token);
   
     try {
-      if (!authorize) return error(401, "Unauthorized");
-      return authorize; 
+      return error(401, "Unauthorized");
+      // return authorize; 
     } catch (err: any) {
       if (err.name === 'TokenExpiredError') {
         try {
