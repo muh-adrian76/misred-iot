@@ -1,6 +1,6 @@
-import { ChartDataArea } from "@/charts/ChartDataArea/area"
-import { ChartDataBar } from "@/charts/ChartDataBar/bar"
-import { ChartDataPie } from "@/charts/ChartDataPie/pie"
+import { ChartDataArea } from "@/charts/area"
+import { ChartDataBar } from "@/charts/bar"
+import { ChartDataPie } from "@/charts/pie"
 import { AppSidebar } from "@/components/app-sidebar"
 // import {
 //   Breadcrumb,
