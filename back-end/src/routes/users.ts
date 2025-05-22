@@ -1,221 +1,231 @@
-import { Elysia } from 'elysia';
-import { ResultSetHeader } from 'mysql2';
-import { authorizeRequest } from '../utils/authorize';
-import { Auth, JWT } from '../utils/types';
-import { db } from '../utils/middleware';
+import { Elysia, t } from "elysia";
+import { ResultSetHeader } from "mysql2";
+import { authorizeRequest } from "../utils/authorize";
+import { Types } from "../utils/types";
+import { db } from "../utils/middleware";
 
 export const userRoutes = new Elysia({ prefix: "/user" })
-  // 📝 Register User
-  .post('/register', async (req: Auth) => {
-    const { username, password, email } = req.body;
-
-    if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
-      return new Response(
-        JSON.stringify({ message: 'Email tidak valid. Gagal menambahkan user.' }),
-        { status: 400 }
-      );
-    }
-
-    const hashedPassword = await Bun.password.hash(password, {
-      algorithm: 'bcrypt',
-    });
-
-    const [result] = email
-      ? await db.query<ResultSetHeader>(
-          'INSERT INTO users (email, password, last_login) VALUES (?, ?, NOW())',
-          [email, hashedPassword]
-        )
-      : await db.query<ResultSetHeader>(
-          'INSERT INTO users (username, password, last_login) VALUES (?, ?, NOW())',
-          [username, hashedPassword]
-        );
-
-    return new Response(
-      JSON.stringify({ message: 'User berhasil terdaftar', id: result.insertId }),
-      { status: 201 }
-    );
-  })
-
-  // 🔐 Login User
-  .post('/login', async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    const { username, password, email } = req.body;
-
-    if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
-      return new Response(
-        JSON.stringify({ message: 'Email tidak valid. Gagal menambahkan user.' }),
-        { status: 400 }
-      );
-    }
-
-    const [rows] = await db.query<any[]>(
-      'SELECT * FROM users WHERE username = ? OR email = ?',
-      [username, email]
-    );
-
-    if (!rows || rows.length === 0) {
-      return new Response(JSON.stringify({ message: 'Invalid credentials' }), {
-        status: 401,
-      });
-    }
-
-    const user = rows[0];
-    const isMatch = await Bun.password.verify(password, user.password);
-
-    if (!user || !isMatch) {
-      return new Response(JSON.stringify({ message: 'Invalid credentials' }), {
-        status: 401,
-      });
-    }
-
-    const accessToken = await req.jwt.sign({
-      sub: user.id,
-      iat: Math.floor(Date.now() / 1000),
-      type: 'access',
-    });
-
-    const response = await fetch(`http://localhost:7601/sign/${user.id}`);
-    const refreshToken = await response.text();
-
-    await db.query('UPDATE users SET refresh_token = ? WHERE id = ?', [
-      refreshToken,
-      user.id,
-    ]);
-
-    return new Response(JSON.stringify({ accessToken, user }), {
-      status: 200,
-    });
-  })
-
-  .post('/verify-token', async (req: JWT) => {
-      const authHeader = req.headers['authorization'];
-  
-      // Cek apakah header Authorization ada
-      if (!authHeader) {
-        return new Response(
-          JSON.stringify({ message: 'Authorization header missing' }),
-          { status: 401 }
-        );
-      }
-  
-      // Ambil token dari header Authorization
-      const token = authHeader.split(' ')[1]; // Token setelah 'Bearer'
-      if (!token) {
-        return new Response(
-          JSON.stringify({ message: 'Token missing in Authorization header' }),
-          { status: 401 }
-        );
-      }
-  
-      // Verifikasi token menggunakan jwt.verify
-      const decoded = await req.jwt.verify(token); // Memverifikasi JWT token
-      if (!decoded) {
-        return new Response(
-          JSON.stringify({ message: 'Invalid or expired token' }),
-          { status: 401 }
-        );
-      }    
-      // Jika token valid, kembalikan data decoded
-      return new Response(
-        JSON.stringify({ message: 'Token is valid', decoded }),
-        { status: 200 }
-      );
-  })
-
-  // 🔁 Refresh Token
-  .get('/renew/:id', async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    const { id } = req.params;
-
-    const [rows] = await db.query<any[]>(
-      'SELECT refresh_token FROM users WHERE id = ?',
-      [id]
-    );
-
-    const refreshToken = rows?.[0]?.refresh_token;
-
-    try {
-      const decoded = await req.jwt.verify(refreshToken);
-
-      const newAccessToken = await req.jwt.sign({
-        sub: decoded.sub,
-        iat: Math.floor(Date.now() / 1000),
-        type: 'access',
-      });
-
-      return new Response(JSON.stringify({ accessToken: newAccessToken }), {
-        status: 200,
-      });
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ message: 'Invalid or expired refresh token' }),
-        { status: 401 }
-      );
-    }
-  })
-
-  
-  // Logout
-  .post("/logout/:id", async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    await authorizeRequest(req);
-  
-    const { id } = req.params;
-  
-    const [result] = await db.query<any[]>('SELECT refresh_token FROM users WHERE id = ?', [id]);
-    const refreshToken = result[0];
-    if (!refreshToken)
-      return new Response(JSON.stringify({ message: "Invalid refresh token." }), {
-        status: 400,
-      });
-  
-    await db.query("UPDATE users SET refresh_token = ?", [""]);
-    return new Response(JSON.stringify({ message: "User berhasil logout" }), {
-      status: 200,
-    });
-  })
-
   // 🔍 Get all users
-  .get("/", async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    await authorizeRequest(req)
-    const [rows] = await db.query<any[]>("SELECT * FROM users");
-    return rows;
-  })
+  .get(
+    "/all",
+    //@ts-ignore
+    async ({ jwt, headers: { authorization } }: Types) => {
+      const decoded = await authorizeRequest(jwt, authorization);
+      const [rows] = await db.query<any[]>("SELECT * FROM users");
+      return rows;
+    },
+    {
+      type: "json",
+      response: {
+        200: t.Object(
+          {
+            result: t.Array(
+              t.Object({
+                id: t.Number({
+                  description: "ID user",
+                  example: 1,
+                }),
+                name: t.String({
+                  description: "Username user",
+                  example: "contoh",
+                }),
+                email: t.String({
+                  description: "Email user",
+                  example: "contoh@gmail.com",
+                }),
+                last_login: t.String({
+                  description: "Waktu login terakhir user",
+                  example: "2023-07-30T15:00:00Z",
+                }),
+              }),
+              { description: "Daftar semua pengguna yang terdaftar" }
+            ),
+          },
+          { description: "Response yang berisi data semua pengguna" }
+        ),
+        404: t.Object(
+          {
+            message: t.String({
+              description: "Pesan error jika tidak ada user ditemukan",
+              example: "Belum ada user yang terdaftar",
+            }),
+          },
+          { description: "User tidak ditemukan" }
+        ),
+      },
+      detail: {
+        tags: ["User"],
+        description: "Mengambil semua data user",
+        summary: "Get all users",
+      },
+    }
+  )
 
   // 🔍 Get user by ID
-  .get("/:id", async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    await authorizeRequest(req);
-    const [rows] = await db.query<any[]>("SELECT * FROM users WHERE id = ?", [req.params.id]);
-    return rows[0] || new Response("User not found", { status: 404 });
-  })
+  .get(
+    "/:id",
+    //@ts-ignore
+    async ({ jwt, headers: { authorization }, params }: Types) => {
+      const decoded = await authorizeRequest(jwt, authorization);
+      const [rows] = await db.query<any[]>("SELECT * FROM users WHERE id = ?", [
+        params.id,
+      ]);
+      return rows[0] || new Response("User tidak ditemukan", { status: 404 });
+    },
+    {
+      type: "json",
+      response: {
+        200: t.Object(
+          {
+            id: t.Number({
+              description: "ID pengguna",
+              example: 1,
+            }),
+            name: t.String({
+              description: "Username pengguna",
+              example: "contoh",
+            }),
+            email: t.String({
+              description: "Email pengguna",
+              example: "contoh@gmail.com",
+            }),
+            last_login: t.String({
+              description: "Waktu login terakhir pengguna",
+              example: "2023-07-30T15:00:00Z",
+            }),
+          },
+          { description: "Response yang berisi data pengguna berdasarkan ID" }
+        ),
+        404: t.Object(
+          {
+            message: t.String({
+              description: "Pesan error jika user tidak ditemukan",
+              example: "User tidak ditemukan",
+            }),
+          },
+          { description: "User tidak ditemukan" }
+        ),
+      },
+      detail: {
+        tags: ["User"],
+        description: "Mengambil data user berdasarkan ID",
+        summary: "Get user by ID",
+      },
+    }
+  )
 
   // ✏️ Update user by ID
-  .put("/:id", async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    await authorizeRequest(req);
-    const { username, password, name, email } = req.body;
+  .put(
+    "/:id",
+    //@ts-ignore
+    async ({ jwt, headers: { authorization }, params, body }: Types) => {
+      const decoded = await authorizeRequest(jwt, authorization);
+      const { name, password } = body;
 
-    const [result] = await db.query<ResultSetHeader>(
-      `UPDATE users SET username=?, password=?, name=?, email=? WHERE id=?`,
-      [username, password, name, email, req.params.id]
-    );
+      const [result] = await db.query<ResultSetHeader>(
+        `UPDATE users SET password=?, name=?, WHERE id=?`,
+        [password, name, params.id]
+      );
 
-    return {
-      message: "User berhasil diperbarui",
-      affectedRows: result.affectedRows,
-    };
-  })
+      return {
+        message: "User berhasil diperbarui",
+        id: params.id,
+      };
+    },
+    {
+      type: "json",
+      body: t.Object({
+        name: t.String({
+          example: "contoh yang diperbarui",
+        }),
+        password: t.String({
+          example: "password baru",
+        }),
+      }),
+      response: {
+        200: t.Object(
+          {
+            message: t.String({
+              description: "Pesan sukses setelah berhasil memperbarui user",
+              example: "User berhasil diperbarui",
+            }),
+            id: t.Number({
+              description:
+                "ID user yang berhasil diperbarui",
+              example: 1,
+            }),
+          },
+          { description: "Data user berhasil diperbarui" }
+        ),
+        400: t.Object(
+          {
+            message: t.String({
+              description: "Pesan error jika input tidak valid",
+              example: "Input tidak valid.",
+            }),
+          },
+          { description: "Input tidak valid" }
+        ),
+        404: t.Object(
+          {
+            message: t.String({
+              description:
+                "Pesan error jika user dengan ID yang diberikan tidak ditemukan",
+              example: "User tidak ditemukan",
+            }),
+          },
+          { description: "User tidak ditemukan" }
+        ),
+      },
+      detail: {
+        tags: ["User"],
+        description: "Memperbarui data user berdasarkan ID",
+        summary: "Update user",
+      },
+    }
+  )
 
   // ❌ Delete user
-  .delete("/:id", async (req: JWT) => {
-    console.log("Headers received: ", req.headers);
-    await authorizeRequest(req);
-    const [result] = await db.query<ResultSetHeader>("DELETE FROM users WHERE id = ?", [req.params.id]);
+  .delete(
+    "/:id",
+    //@ts-ignore
+    async ({ jwt, headers: { authorization }, params }: Types) => {
+      const decoded = await authorizeRequest(jwt, authorization);
+      const [result] = await db.query<ResultSetHeader>(
+        "DELETE FROM users WHERE id = ?",
+        [params.id]
+      );
 
-    return {
-      message: "User berhasil dihapus",
-      affectedRows: result.affectedRows,
-    };
-  })
+      return {
+        message: "User berhasil dihapus",
+      };
+    },
+    {
+      type: "json",
+      response: {
+        200: t.Object(
+          {
+            message: t.String({
+              description: "Pesan berhasil menghapus user",
+              example: "User berhasil dihapus",
+            }),
+          },
+          { description: "User berhasil dihapus" }
+        ),
+        404: t.Object(
+          {
+            message: t.String({
+              description: "Pesan error jika user tidak ditemukan",
+              example: "User tidak ditemukan",
+            }),
+          },
+          { description: "User tidak ditemukan" }
+        ),
+      },
+      detail: {
+        tags: ["User"],
+        description: "Menghapus data user berdasarkan ID",
+        summary: "Delete user",
+      },
+    }
+  );
