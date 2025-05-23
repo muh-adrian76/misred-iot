@@ -11,7 +11,7 @@ export const db = await mysql.createConnection({
 });
 
 // MQTT
-export const mqttClient = connect(Bun.env.RABBITMQ_URL_MQTT!); // Contoh: 'mqtt://localhost:1883'
+export const mqttClient = connect(Bun.env.RABBITMQ_URL_MQTT!);
 
 // CHIRPSTACK
 const CHIRPSTACK_URL = Bun.env.CHIRPSTACK_URL;

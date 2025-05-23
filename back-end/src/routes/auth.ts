@@ -39,6 +39,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
       );
     },
     {
+      //@ts-ignore
       type: "json",
       body: t.Object({
         email: t.String({
@@ -208,7 +209,7 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }
   )
 
-  .post(
+  .get(
     "/verify-token",
     // @ts-ignore
     async ({ jwt, headers: { authorization } }: Types) => {

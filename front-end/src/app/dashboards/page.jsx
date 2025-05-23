@@ -18,14 +18,14 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import useAuth from "@/hooks/useAuth";
+import useAuth from "@/hooks/use-auth";
 
 export default function Page() {
-  // Cek Otorisasi
+  // Check Authorization
   const isAuthenticated = useAuth();
-    if (!isAuthenticated) {
-      return null;
-    }
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <SidebarProvider>

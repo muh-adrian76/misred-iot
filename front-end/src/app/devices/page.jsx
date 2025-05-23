@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown, ChevronDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -50,7 +50,7 @@ import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/s
 import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
-import useAuth from "@/hooks/useAuth";
+import useAuth from "@/hooks/use-auth";
 
 ////////
 export default function Page() {
@@ -281,12 +281,10 @@ export default function Page() {
 
   // Check Authorization
   const isAuthenticated = useAuth();
+  if (!isAuthenticated) {
+    return null;
+  }
   
-    if (!isAuthenticated) {
-      return null;
-    }
-  console.log("Otorisasi:", isAuthenticated);
-
   return (
     <SidebarProvider>
     <AppSidebar />
