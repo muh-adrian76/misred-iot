@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const verifyToken = async (token, router) => {
-  const res = await fetch("http://localhost:7600/user/verify-token", {
+  const res = await fetch("http://localhost:7600/auth/verify-token", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -44,7 +44,6 @@ const useAuth = () => {
       }
     }
   }, [router]);
-
   return isAuthenticated;
 };
 

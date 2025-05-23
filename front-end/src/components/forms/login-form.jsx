@@ -23,7 +23,7 @@ export function LoginForm({
     e.preventDefault();
 
     try {
-      const res = await fetch("http://localhost:7600/user/login", {
+      const res = await fetch("http://localhost:7600/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

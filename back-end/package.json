@@ -3,10 +3,10 @@
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"bun run --watch src/index.ts\" \"bun run --watch src/tokenizer.ts\"",
+    "dev": "concurrently \"bun run --watch src/index.ts\" \"bun run --watch src/utils/tokenizer.ts\"",
     "truncate": "bun run src/utils/truncate.ts",
     "reset-db": "bun run truncate alarms widgets payloads users devices",
-    "publisher": "bun run src/publisher.ts"
+    "publisher": "bun run src/utils/publisher.ts"
   },
   "dependencies": {
     "@chirpstack/chirpstack-api": "^4.11.1",
@@ -17,6 +17,7 @@
     "concurrently": "^9.1.2",
     "crypto": "^1.0.1",
     "elysia": "^1.2.25",
+    "hono": "^4.7.10",
     "mqtt": "^5.10.4",
     "mysql2": "^3.13.0"
   },
