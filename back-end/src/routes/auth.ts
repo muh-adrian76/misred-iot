@@ -208,21 +208,23 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }
   )
 
-  .get(
+  .post(
     "/verify-token",
     // @ts-ignore
     async ({ jwt, headers: { authorization } }: Types) => {
-      const decoded = await jwt.verify(authorization);
-      if (!decoded) {
+      try {
+        const decoded = await authorizeRequest(jwt, authorization);
+        if (decoded) {
+          return new Response(JSON.stringify({ message: "Token valid", decoded }), {
+            status: 200,
+          });
+        }
+      } catch (error) {
         return new Response(
           JSON.stringify({ message: "Unauthorized. Token sudah tidak valid" }),
           { status: 401 }
         );
       }
-
-      return new Response(JSON.stringify({ message: "Token valid", decoded }), {
-        status: 200,
-      });
     },
     {
       type: "json",

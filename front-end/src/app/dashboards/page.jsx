@@ -1,23 +1,32 @@
-import { ChartDataArea } from "@/charts/area"
-import { ChartDataBar } from "@/charts/bar"
-import { ChartDataPie } from "@/charts/pie"
-import { AppSidebar } from "@/components/app-sidebar"
-// import {
-//   Breadcrumb,
-//   BreadcrumbItem,
-//   BreadcrumbLink,
-//   BreadcrumbList,
-//   BreadcrumbPage,
-//   BreadcrumbSeparator,
-// } from "@/components/ui/breadcrumb"
+"use client"
+
+import { ChartDataArea } from "@/components/charts/area"
+import { ChartDataBar } from "@/components/charts/bar"
+import { ChartDataPie } from "@/components/charts/pie"
+import { AppSidebar } from "@/components/features/app-sidebar"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import useAuth from "@/hooks/useAuth";
 
 export default function Page() {
+  // Cek Otorisasi
+  const isAuthenticated = useAuth();
+    if (!isAuthenticated) {
+      return null;
+    }
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -26,7 +35,7 @@ export default function Page() {
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
-            {/* <Breadcrumb>
+            <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="#">
@@ -38,7 +47,7 @@ export default function Page() {
                   <BreadcrumbPage>Data Fetching</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
-            </Breadcrumb> */}
+            </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

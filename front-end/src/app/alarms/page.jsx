@@ -47,47 +47,48 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
+import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
+import useAuth from "@/hooks/useAuth";
 
 ////////
-export default function DataTableDemo() {
+export default function Page() {
   const [data, setData] = React.useState([
   {
     id: "1",
     boardType: "ESP32",
     protocol: "HTTP",
     name: "Device1",
-    token: ".............",
+    token: "test-device-1",
   },
   {
     id: "2",
     boardType: "Arduino Nano",
     protocol: "MQTT",
     name: "Device2",
-    token: ".............",
+    token: "test-device-2",
   },
   {
     id: "3",
     boardType: "ESP32",
     protocol: "LoRaWAN",
     name: "Device3",
-    token: ".............",
+    token: "test-device-3",
   },
   {
     id: "4",
     boardType: "ESP8266",
     protocol: "MQTT",
     name: "Device4",
-    token: ".............",
+    token: "test-device-4",
   },
   {
     id: "5",
     boardType: "ESP8266",
     protocol: "HTTP",
     name: "Device5",
-    token: ".............",
+    token: "test-device-5",
   },
   ])
 
@@ -134,7 +135,7 @@ export default function DataTableDemo() {
     },
     {
       accessorKey: "token",
-      header: "Token",
+      header: "UID",
       cell: ({ row }) => {
         const token = row.getValue("token")
 
@@ -250,8 +251,6 @@ export default function DataTableDemo() {
   toast.success("Device berhasil ditambahkan!")
   }
 
-  
-
   const table = useReactTable({
     data,
     columns,
@@ -279,6 +278,14 @@ export default function DataTableDemo() {
       .includes(filterValue.toLowerCase())
     },
   })
+
+  // Check Authorization
+  const isAuthenticated = useAuth();
+  
+    if (!isAuthenticated) {
+      return null;
+    }
+  console.log("Otorisasi:", isAuthenticated);
 
   return (
     <SidebarProvider>

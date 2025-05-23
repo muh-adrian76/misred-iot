@@ -12,8 +12,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Misred-Sparing",
-  description: "Sistem Pemantauan Limbah Cair Industri Multi-Protokol Terintegrasi IoT dan JWT",
+  title: "MiSREd-IoT",
+  description: "Multi-input, Scalable, Reliable, and Easy-to-deploy IoT Platform",
 };
 
 export default function RootLayout({ children }) {
@@ -21,9 +21,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="icon" href="/misred-logo.png" />
-        <link rel="manifest" href="/site.webmanifest" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Misred-Sparing" />
+        <meta name="description" content="MiSREd-IoT Platform" />
         <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@tabler/core@1.2.0/dist/css/tabler-socials.min.css" />
       </head>
