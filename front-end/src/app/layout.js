@@ -1,13 +1,10 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { Quicksand } from "next/font/google";
 import "./globals.css";
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const quicksand = Quicksand({
+  variable: "--font-quicksand",
   subsets: ["latin"],
 });
 
@@ -18,19 +15,20 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="icon" href="/misred-logo.png" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="MiSREd-IoT Platform" />
-        <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@tabler/core@1.2.0/dist/css/tabler-socials.min.css" />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
+      <html lang="en">
+        <head>
+          <link rel="icon" href="/misred-logo.png" />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="description" content="MiSREd-IoT Platform" />
+        </head>
+        <body
+          className={`${quicksand.variable} antialiased`}
+        >
+          {children}
+          <Toaster />
+        </body>
+      </html>
+    </GoogleOAuthProvider>
   );
 }

@@ -13,8 +13,12 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { IconClockEdit, IconCpu, IconDashboard } from "@tabler/icons-react";
+import Loader from "./loader-text";
+import { googleLogout } from "@react-oauth/google";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
-// This is sample data.
+// Nav Data.
 const data = {
   user: {
     name: "Test User",
@@ -39,28 +43,22 @@ const data = {
       icon: IconClockEdit,
     },
   ],
-  // dropdown: [
-  //   {
-  //     name: "Design Engineering",
-  //     url: "#",
-  //     icon: Frame,
-  //   },
-  //   {
-  //     name: "Sales & Marketing",
-  //     url: "#",
-  //     icon: PieChart,
-  //   },
-  //   {
-  //     name: "Travel",
-  //     url: "#",
-  //     icon: Map,
-  //   },
-  // ],
 };
 
 export function AppSidebar({ ...props }) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    googleLogout();
+    router.push("/login");
+  };
+
   return (
-    <Sidebar collapsible="icon" variant='floating' {...props}>
+    <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
         <SidebarMenuButton
           size="lg"
@@ -76,10 +74,16 @@ export function AppSidebar({ ...props }) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavDropdown projects={data.projects} /> */}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
+        <Button
+          variant="outline"
+          className="w-full mt-2"
+          onClick={handleLogout}
+        >
+          Logout
+        </Button>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

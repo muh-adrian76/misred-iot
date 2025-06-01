@@ -50,7 +50,7 @@ import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/s
 import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
-import useAuth from "@/hooks/useAuth";
+import useAuth from "@/hooks/use-auth";
 
 ////////
 export default function Page() {
