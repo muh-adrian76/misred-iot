@@ -1,54 +1,6 @@
-import { randomBytes } from "crypto";
-import { Elysia, t } from "elysia";
-import { ResultSetHeader } from "mysql2";
-import { authorizeRequest } from "../utils/authorize";
-import { Types } from "../utils/types";
-import { Chirpstack, db, mqttClient } from "../utils/middleware";
+import { t } from "elysia";
 
-export const deviceRoutes = new Elysia({ prefix: "/device" })
-  // 🔘 Create device
-  .post(
-    "/",
-    async ({ jwt, headers: { authorization }, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { name, board, protocol } = body;
-      let topic: string | undefined;
-      let qos: string | undefined;
-      let loraProfile: string | undefined;
-      const aesKey = randomBytes(32).toString("hex");
-
-      if (protocol === "mqtt") {
-        (topic = "device/data"), (qos = "0");
-      }
-
-      if (protocol === "lora") {
-        loraProfile = await Chirpstack(authorization);
-      }
-
-      const [result] = await db.query<ResultSetHeader>(
-        "INSERT INTO devices (description, board_type, protocol, mqtt_topic, mqtt_qos, lora_profile, refresh_token) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [
-          name,
-          board,
-          protocol,
-          topic ?? null,
-          qos ?? null,
-          loraProfile ?? null,
-          aesKey,
-        ]
-      );
-
-      return new Response(
-        JSON.stringify({
-          message: "Perangkat berhasil terdaftar",
-          id: result.insertId,
-          key: aesKey,
-        }),
-        { status: 201 }
-      );
-    },
-    {
+const postDeviceSchema = {
       type: "json",
       body: t.Object({
         name: t.String({
@@ -115,18 +67,8 @@ export const deviceRoutes = new Elysia({ prefix: "/device" })
         summary: "Create device",
       },
     }
-  )
 
-  // 📥 Get all devices
-  .get(
-    "/all",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization } }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [data] = await db.query<any[]>("SELECT * FROM devices");
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+const getAllDevicesSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -178,24 +120,8 @@ export const deviceRoutes = new Elysia({ prefix: "/device" })
         summary: "Get all devices",
       },
     }
-  )
 
-  // 📥 Get device by ID
-  //@ts-ignore
-  .get(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { id } = params;
-      const [data] = await db.query<any[]>(
-        "SELECT * FROM devices WHERE id = ?",
-        [id]
-      );
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+const getDeviceByIdSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -256,36 +182,8 @@ export const deviceRoutes = new Elysia({ prefix: "/device" })
         summary: "Get device by ID",
       },
     }
-  )
 
-  // ✏️ Update device
-  .put(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { id } = params;
-      const { name, board, protocol, topic, qos, lora_profile } = body;
-      await db.query(
-        "UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, mqtt_qos = ?, lora_profile = ? WHERE id = ?",
-        [
-          name,
-          board,
-          protocol,
-          topic ?? null,
-          qos ?? null,
-          lora_profile ?? null,
-          id,
-        ]
-      );
-
-      return new Response(
-        JSON.stringify({ message: "Perangkat berhasil diupdate", id: id }),
-        { status: 200 }
-      );
-    },
-    {
+const putDeviceSchema = {
       type: "json",
       body: t.Object({
         name: t.String({
@@ -357,27 +255,8 @@ export const deviceRoutes = new Elysia({ prefix: "/device" })
         summary: "Update device",
       },
     }
-  )
 
-  // ❌ Delete device
-  .delete(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { id } = params;
-      await db.query("DELETE FROM payloads WHERE devices_id = ?", [id]);
-      await db.query("DELETE FROM widgets WHERE devices_id = ?", [id]);
-      await db.query("DELETE FROM alarms WHERE devices_id = ?", [id]);
-      await db.query("DELETE FROM devices WHERE id = ?", [id]);
-
-      return new Response(
-        JSON.stringify({ message: "Perangkat berhasil dihapus" }),
-        { status: 200 }
-      );
-    },
-    {
+const deleteDeviceSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -405,4 +284,5 @@ export const deviceRoutes = new Elysia({ prefix: "/device" })
         summary: "Delete device",
       },
     }
-  );
+
+export { postDeviceSchema, getAllDevicesSchema, getDeviceByIdSchema,putDeviceSchema, deleteDeviceSchema };

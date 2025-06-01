@@ -42,6 +42,7 @@ import {
   SelectValue,
   SelectContent,
   SelectItem,
+<<<<<<< HEAD
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +55,16 @@ import {
 import { AppSidebar } from "@/components/features/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
+=======
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
+import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/features/app-sidebar"
+import { Separator } from "@/components/ui/separator"
+import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
+>>>>>>> back-end/oop
 import useAuth from "@/hooks/use-auth";
 
 ////////

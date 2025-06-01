@@ -1,20 +1,6 @@
-import { Elysia, t } from "elysia";
-import { ResultSetHeader } from "mysql2";
-import { authorizeRequest } from "../utils/authorize";
-import { Types } from "../utils/types";
-import { db } from "../utils/middleware";
+import { t } from "elysia";
 
-export const userRoutes = new Elysia({ prefix: "/user" })
-  // 🔍 Get all users
-  .get(
-    "/all",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization } }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [rows] = await db.query<any[]>("SELECT * FROM users");
-      return rows;
-    },
-    {
+const getAllUsersSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -59,20 +45,8 @@ export const userRoutes = new Elysia({ prefix: "/user" })
         summary: "Get all users",
       },
     }
-  )
 
-  // 🔍 Get user by ID
-  .get(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [rows] = await db.query<any[]>("SELECT * FROM users WHERE id = ?", [
-        params.id,
-      ]);
-      return rows[0] || new Response("User tidak ditemukan", { status: 404 });
-    },
-    {
+const getUserByIdSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -112,27 +86,8 @@ export const userRoutes = new Elysia({ prefix: "/user" })
         summary: "Get user by ID",
       },
     }
-  )
 
-  // ✏️ Update user by ID
-  .put(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const { name, password } = body;
-
-      const [result] = await db.query<ResultSetHeader>(
-        `UPDATE users SET password=?, name=?, WHERE id=?`,
-        [password, name, params.id]
-      );
-
-      return {
-        message: "User berhasil diperbarui",
-        id: params.id,
-      };
-    },
-    {
+const putUserSchema = {
       type: "json",
       body: t.Object({
         name: t.String({
@@ -183,24 +138,8 @@ export const userRoutes = new Elysia({ prefix: "/user" })
         summary: "Update user",
       },
     }
-  )
 
-  // ❌ Delete user
-  .delete(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [result] = await db.query<ResultSetHeader>(
-        "DELETE FROM users WHERE id = ?",
-        [params.id]
-      );
-
-      return {
-        message: "User berhasil dihapus",
-      };
-    },
-    {
+const deleteUserSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -228,4 +167,5 @@ export const userRoutes = new Elysia({ prefix: "/user" })
         summary: "Delete user",
       },
     }
-  );
+
+export { getAllUsersSchema, getUserByIdSchema, putUserSchema, deleteUserSchema };

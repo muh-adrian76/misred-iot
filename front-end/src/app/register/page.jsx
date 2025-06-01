@@ -8,7 +8,7 @@ export default function Page() {
           <div className="flex h-8 w-8 items-center justify-center rounded-md text-primary-foreground">
             <img src="/misred-logo.png" alt="" />
           </div>
-          Misred-Sparing
+          Misred-IoT
         </div>
         <RegisterForm />
       </div>

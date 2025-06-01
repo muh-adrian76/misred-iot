@@ -1,34 +1,6 @@
-// routes/alarm.ts
-import { Elysia, t } from "elysia";
-import { ResultSetHeader } from "mysql2";
-import { authorizeRequest } from "../utils/authorize";
-import { Types } from "../utils/types";
-import { db } from "../utils/middleware";
+import { t } from "elysia";
 
-export const alarmRoutes = new Elysia({ prefix: "/alarm" })
-
-  // ➕ CREATE Alarm
-  .post(
-    "/",
-    async ({ jwt, headers: { authorization }, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { name, device_id, operator, threshold, sensor } = body;
-      const [result] = await db.query<ResultSetHeader>(
-        `INSERT INTO alarms (description, device_id, operator, threshold, last_sended, sensor_type)
-       VALUES (?, ?, ?, ?, NOW(), ?)`,
-        [name, device_id, operator, threshold, sensor]
-      );
-
-      return new Response(
-        JSON.stringify({
-          message: "Berhasil menambah data alarm",
-          id: result.insertId,
-        }),
-        { status: 201 }
-      );
-    },
-    {
+const postAlarmSchema = {
       type: "json",
       body: t.Object({
         name: t.String({
@@ -80,18 +52,8 @@ export const alarmRoutes = new Elysia({ prefix: "/alarm" })
         summary: "Create alarm",
       },
     }
-  )
 
-  // 📄 READ Semua Alarm
-  .get(
-    "/all",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization } }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [data] = await db.query("SELECT * FROM alarms");
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+const getAllAlarmsSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -135,22 +97,8 @@ export const alarmRoutes = new Elysia({ prefix: "/alarm" })
         summary: "Get all alarms",
       },
     }
-  )
 
-  // 📄 READ Alarm by Device ID
-  .get(
-    "/:device_id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const { device_id } = params;
-      const [data] = await db.query(
-        "SELECT * FROM alarms WHERE device_id = ?",
-        [device_id]
-      );
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+const getAlarmByDeviceIdSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -206,30 +154,8 @@ export const alarmRoutes = new Elysia({ prefix: "/alarm" })
         summary: "Get alarm by device_id",
       },
     }
-  )
 
-  // ✏️ UPDATE Alarm
-  .put(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { name, device_id, operator, threshold, sensor } = body;
-      await db.query(
-        `UPDATE alarms SET description = ?, device_id = ?, operator = ?, threshold = ?, sensor_type = ? WHERE id = ?`,
-        [name, device_id, operator, threshold, sensor, params.id]
-      );
-
-      return new Response(
-        JSON.stringify({
-          message: "Berhasil mengupdate data alarm.",
-          id: params.id,
-        }),
-        { status: 200 }
-      );
-    },
-    {
+const putAlarmSchema = {
       type: "json",
       body: t.Object({
         name: t.String({
@@ -290,21 +216,8 @@ export const alarmRoutes = new Elysia({ prefix: "/alarm" })
         summary: "Update alarm",
       },
     }
-  )
 
-  // ❌ DELETE Alarm
-  .delete(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      await db.query("DELETE FROM alarms WHERE id = ?", [params.id]);
-      return new Response(
-        JSON.stringify({ message: "Berhasil menghapus data alarm." }),
-        { status: 200 }
-      );
-    },
-    {
+const deleteAlarmSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -332,4 +245,5 @@ export const alarmRoutes = new Elysia({ prefix: "/alarm" })
         summary: "Delete alarm",
       },
     }
-  );
+
+export { postAlarmSchema, getAllAlarmsSchema, getAlarmByDeviceIdSchema, putAlarmSchema, deleteAlarmSchema };

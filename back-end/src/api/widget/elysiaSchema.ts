@@ -1,34 +1,6 @@
-// routes/widget.ts
-import { Elysia, t } from "elysia";
-import { ResultSetHeader } from "mysql2";
-import { authorizeRequest } from "../utils/authorize";
-import { Types } from "../utils/types";
-import { db } from "../utils/middleware";
+import { t } from "elysia";
 
-export const widgetRoutes = new Elysia({ prefix: "/widget" })
-
-  // ➕ CREATE Widget
-  .post(
-    "/",
-    async ({ jwt, headers: { authorization }, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { description, device_id, sensor_type } = body;
-      const [result] = await db.query<ResultSetHeader>(
-        `INSERT INTO widgets (description, device_id, sensor_type)
-       VALUES (?, ?, ?)`,
-        [description, device_id, sensor_type]
-      );
-
-      return new Response(
-        JSON.stringify({
-          message: "Berhasil menambah data widget",
-          id: result.insertId,
-        }),
-        { status: 201 }
-      );
-    },
-    {
+const postWidgetSchema = {
       type: "json",
       body: t.Object({
         description: t.String({
@@ -73,18 +45,8 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         summary: "Create widget",
       },
     }
-  )
 
-  // 📄 READ Semua Widget
-  .get(
-    "/all",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization } }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const [data] = await db.query("SELECT * FROM widgets");
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+const getAllWidgetsSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -97,7 +59,7 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
                 }),
                 description: t.String({
                   description: "Deskripsi widget",
-                  example: "Temperature Widget",
+                  example: "COD Widget",
                 }),
                 device_id: t.String({
                   description: "ID perangkat terkait dengan widget",
@@ -105,7 +67,7 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
                 }),
                 sensor_type: t.String({
                   description: "Tipe sensor yang digunakan oleh widget",
-                  example: "Temperature Sensor",
+                  example: "COD Sensor",
                 }),
               }),
               { description: "Daftar semua data widget" }
@@ -129,22 +91,8 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         summary: "Get all widgets",
       },
     }
-  )
-
-  // 📄 READ Widget by Device ID
-  .get(
-    "/:device_id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      const { device_id } = params;
-      const [data] = await db.query(
-        "SELECT * FROM widgets WHERE device_id = ?",
-        [device_id]
-      );
-      return new Response(JSON.stringify({ result: data }), { status: 200 });
-    },
-    {
+  
+const getWidgetByDeviceIdSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -157,7 +105,7 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
                 }),
                 description: t.String({
                   description: "Deskripsi widget",
-                  example: "Temperature Widget",
+                  example: "COD Widget",
                 }),
                 device_id: t.String({
                   description: "ID perangkat terkait dengan widget",
@@ -165,7 +113,7 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
                 }),
                 sensor_type: t.String({
                   description: "Tipe sensor yang digunakan oleh widget",
-                  example: "Temperature Sensor",
+                  example: "COD Sensor",
                 }),
               }),
               { description: "Daftar widget berdasarkan device_id" }
@@ -196,32 +144,13 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         summary: "Get widget by device_id",
       },
     }
-  )
 
-  // ✏️ UPDATE Widget
-  .put(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params, body }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-
-      const { description, device_id, sensor_type } = body;
-      await db.query(
-        `UPDATE widgets SET description = ?, device_id = ?, sensor_type = ? WHERE id = ?`,
-        [description, device_id, sensor_type, params.id]
-      );
-
-      return new Response(
-        JSON.stringify({ message: "Berhasil mengupdate data widget." }),
-        { status: 200 }
-      );
-    },
-    {
+const putWidgetSchema = {
       type: "json",
       body: t.Object({
         description: t.String({
           description: "Deskripsi widget yang akan diperbarui",
-          example: "Updated Temperature Widget",
+          example: "Flow Meter Widget",
         }),
         device_id: t.String({
           description: "ID perangkat yang terkait dengan widget",
@@ -229,7 +158,7 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         }),
         sensor_type: t.String({
           description: "Tipe sensor yang digunakan oleh widget",
-          example: "Updated Temperature Sensor",
+          example: "Flow Meter Sensor",
         }),
       }),
       response: {
@@ -258,21 +187,8 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         summary: "Update widget",
       },
     }
-  )
 
-  // ❌ DELETE Widget
-  .delete(
-    "/:id",
-    //@ts-ignore
-    async ({ jwt, headers: { authorization }, params }: Types) => {
-      const decoded = await authorizeRequest(jwt, authorization);
-      await db.query("DELETE FROM widgets WHERE id = ?", [params.id]);
-      return new Response(
-        JSON.stringify({ message: "Berhasil menghapus data widget." }),
-        { status: 200 }
-      );
-    },
-    {
+const deleteWidgetSchema = {
       type: "json",
       response: {
         200: t.Object(
@@ -300,4 +216,5 @@ export const widgetRoutes = new Elysia({ prefix: "/widget" })
         summary: "Delete widget",
       },
     }
-  );
+
+export { postWidgetSchema, getAllWidgetsSchema, getWidgetByDeviceIdSchema, putWidgetSchema, deleteWidgetSchema };

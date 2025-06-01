@@ -9,6 +9,7 @@ export interface Types {
         description: any;
       }>;
   body: {
+    code:string;
     name?: string;
     board?: string;
     protocol?: string;
@@ -34,13 +35,16 @@ export interface Types {
     last_login?: string;
   };
   params: {
-    id: number;
-    device_id: number;
+    id: string;
+    device_id: string;
     sensor: string;
     sub: string;
     iat: number;
     type: string;
   };
+  cookie: {
+    auth: any;
+  }
   headers: {
     [x: string]: any;
     authorization: string;
