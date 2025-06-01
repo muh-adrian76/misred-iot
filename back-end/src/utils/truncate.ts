@@ -1,4 +1,6 @@
-import { db } from "./middleware";
+import { MySQLDatabase } from "./middleware";
+
+const db = await MySQLDatabase.getInstance();
 
 async function truncateTable(tableName: string) {
   try {
