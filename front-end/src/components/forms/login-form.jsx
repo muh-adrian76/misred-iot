@@ -65,11 +65,7 @@ export function LoginForm({
         showToast("success", "Login berhasil!", `Selamat datang, ${data.user.name}`);
         setTimeout(() => {
           router.push("/dashboards");
-<<<<<<< HEAD
-        }, 1000);
-=======
         }, 1500);
->>>>>>> back-end/oop
       }
     } catch (error) {
       showToast("error", "Terjadi kesalahan, coba lagi nanti!", `${error.message}`);

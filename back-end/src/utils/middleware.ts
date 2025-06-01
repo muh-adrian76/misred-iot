@@ -20,9 +20,6 @@ export class MySQLDatabase {
 }
 
 // MQTT
-<<<<<<< HEAD
-export const mqttClient = connect(Bun.env.RABBITMQ_URL_MQTT!);
-=======
 export class MQTTClient {
   private static client: MqttClient;
 
@@ -33,7 +30,6 @@ export class MQTTClient {
     return MQTTClient.client;
   }
 }
->>>>>>> back-end/oop
 
 // CHIRPSTACK
 interface ApplicationResponse {
