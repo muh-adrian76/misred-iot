@@ -1,7 +1,6 @@
 import { Connection, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
-import { authorizeRequest } from "../utils/helper";
 
 export class AuthService {
   private db: Connection;
