@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,16 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import useAuth from "@/hooks/use-auth";
+import { Bell, Moon, Sun } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Page() {
   // Always call hooks at the top
@@ -32,10 +42,22 @@ export default function Page() {
   const [chartName, setChartName] = useState("");
   const [deviceNumber, setDeviceNumber] = useState("");
   const [chartType, setChartType] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   // Check Authorization
   const isAuthenticated = useAuth();
-  
+
+  useEffect(() => {
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      setIsDarkMode(true);
+    } else {
+      document.documentElement.classList.remove("dark");
+      setIsDarkMode(false);
+    }
+  }, []);
+
   // If not authenticated, render nothing or a fallback
   if (!isAuthenticated) {
     return null;
@@ -63,27 +85,71 @@ export default function Page() {
     }
   };
 
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setIsDarkMode(true);
+    }
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
+        <header className="flex h-16 mb-3 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+          {/* Left Section: Sidebar Trigger and Breadcrumbs */}
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
+                {/* <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="#">
                     Building Your Application
                   </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                </BreadcrumbItem> */}
+                {/* <BreadcrumbSeparator className="hidden md:block" /> */}
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+          </div>
+
+          {/* Right Section: Theme Toggle, Notifications, User Avatar */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Notifications">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/avatars/01.png" alt="User Avatar" /> {/* Ganti dengan path avatar pengguna jika ada */}
+                    <AvatarFallback>U</AvatarFallback> {/* Inisial pengguna */}
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profil</DropdownMenuItem>
+                <DropdownMenuItem>Pengaturan</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  {/* Tambahkan fungsi logout di sini */}
+                  Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -107,13 +173,16 @@ export default function Page() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="device-number">Nomor Device</Label>
-                    <Input
-                      id="device-number"
-                      value={deviceNumber}
-                      onChange={(e) => setDeviceNumber(e.target.value)}
-                      placeholder="Masukkan nomor device"
-                    />
+                    <Label htmlFor="device-number">Device</Label>
+                    <Select onValueChange={(value) => setChartType(value)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Pilih device" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="line">1</SelectItem>
+                        <SelectItem value="bar">2</SelectItem>
+                      </SelectContent>
+                      </Select>
                   </div>
                   <div>
                     <Label htmlFor="chart-type">Jenis Chart</Label>

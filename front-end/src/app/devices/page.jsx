@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import {useState} from "react"
 import {
   flexRender,
   getCoreRowModel,
@@ -14,11 +14,22 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -51,10 +62,12 @@ import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
 import useAuth from "@/hooks/use-auth";
+import { Bell, Moon, Sun } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 ////////
 export default function Page() {
-  const [data, setData] = React.useState([
+  const [data, setData] = useState([
   {
     id: "1",
     boardType: "ESP32",
@@ -214,19 +227,20 @@ export default function Page() {
   ]
 
 
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
-  const [editDevice, setEditDevice] = React.useState(null)
-  const [globalFilter, setGlobalFilter] = React.useState("")
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editDevice, setEditDevice] = useState(null)
+  const [globalFilter, setGlobalFilter] = useState("")
 
-  const [sorting, setSorting] = React.useState([])
-  const [columnFilters, setColumnFilters] = React.useState([])
-  const [columnVisibility, setColumnVisibility] = React.useState({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = useState([])
+  const [columnFilters, setColumnFilters] = useState([])
+  const [columnVisibility, setColumnVisibility] = useState({})
+  const [rowSelection, setRowSelection] = useState({})
 
-  const [name, setName] = React.useState("")
-  const [boardType, setBoardType] = React.useState("")
-  const [protocol, setProtocol] = React.useState("")
-  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [name, setName] = useState("")
+  const [boardType, setBoardType] = useState("")
+  const [protocol, setProtocol] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
 
   const handleAddDevice = () => {
@@ -279,6 +293,19 @@ export default function Page() {
     },
   })
 
+  const toggleTheme = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setIsDarkMode(true);
+    }
+  };
+
+
   // Check Authorization
   const isAuthenticated = useAuth();
   if (!isAuthenticated) {
@@ -290,11 +317,56 @@ export default function Page() {
     <AppSidebar />
     <SidebarInset>
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 px-4">
-        <div className="flex items-center gap-2 px-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        </div>
+        <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+          {/* Left Section: Sidebar Trigger and Breadcrumbs */}
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList>
+                {/* <BreadcrumbItem className="hidden md:block">
+                  <BreadcrumbLink href="#">
+                    Building Your Application
+                  </BreadcrumbLink>
+                </BreadcrumbItem> */}
+                {/* <BreadcrumbSeparator className="hidden md:block" /> */}
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Devices</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+
+          {/* Right Section: Theme Toggle, Notifications, User Avatar */}
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Notifications">
+              <Bell className="h-5 w-5" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/avatars/01.png" alt="User Avatar" /> {/* Ganti dengan path avatar pengguna jika ada */}
+                    <AvatarFallback>U</AvatarFallback> {/* Inisial pengguna */}
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profil</DropdownMenuItem>
+                <DropdownMenuItem>Pengaturan</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  {/* Tambahkan fungsi logout di sini */}
+                  Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </header>
         
 
@@ -303,7 +375,7 @@ export default function Page() {
         {/* Filter + Column visibility controls */}
         <div className="flex items-center py-4">
             <Input
-              placeholder="Find device..."
+              placeholder="Cari device..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
@@ -311,7 +383,7 @@ export default function Page() {
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="ml-auto">
-                Columns <ChevronDown className="ml-2 h-4 w-4" />
+                Filter <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -335,14 +407,14 @@ export default function Page() {
             {/* Add device */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="ml-2">Add Device</Button>
+                <Button className="ml-2">Tambah Device</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Add Device</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle>Tambah Device</DialogTitle>
+                  {/* <DialogDescription>
                     Add your device here. Click add when you're done.
-                  </DialogDescription>
+                  </DialogDescription> */}
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -353,13 +425,13 @@ export default function Page() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="boardType" className="text-right">
-                      Type Board
+                      Tipe Board
                     </Label>
                     <Input id="boardType" value={boardType} onChange={(e) => setBoardType(e.target.value)} className="col-span-3" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="protocol" className="text-right">
-                      Protocol
+                      Protokol
                     </Label>
                     <Select value={protocol} onValueChange={setProtocol}>
                       <SelectTrigger className="col-span-3">
@@ -374,7 +446,7 @@ export default function Page() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" onClick={handleAddDevice}>Add</Button>
+                  <Button type="button" onClick={handleAddDevice}>Tambah</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -437,7 +509,7 @@ export default function Page() {
                       toast.success("Device berhasil diperbarui!")
                     }}
                   >
-                    Save Change
+                    Simpan
                   </Button>
                 </DialogFooter>
               </DialogContent>
