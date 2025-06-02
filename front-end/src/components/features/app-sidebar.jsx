@@ -15,10 +15,10 @@ import {
   SquareTerminal,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { NavMain } from "@/components/features/nav-main"
+import { NavProjects } from "@/components/features/nav-projects"
+import { NavUser } from "@/components/features/nav-user"
+import { TeamSwitcher } from "@/components/features/team-switcher"
 import {
   Sidebar,
   SidebarContent,
@@ -60,7 +60,7 @@ const data = {
     },  
     {
       title: "Devices",
-      url: "/devices",
+      url: "/device",
       icon: IconCpu,
     },
     {
@@ -92,6 +92,8 @@ const data = {
   //   },
   // ],
 }
+
+export const user = data.user
 
 export function AppSidebar({
   ...props

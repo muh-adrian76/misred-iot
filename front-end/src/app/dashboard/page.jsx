@@ -86,6 +86,7 @@ export default function Page() {
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
+              <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
@@ -102,16 +103,17 @@ export default function Page() {
                   {tabs.map((tab) => (
                     <TabsTrigger key={tab} value={tab} className="flex items-center space-x-1 group">
                       <span>{tab}</span>
-                      <button
+                      <span
                         onClick={(e) => {
                           e.stopPropagation()
                           handleRemoveTab(tab)
                         }}
-                        className="text-red-500 ml-2 invisible group-hover:visible"
+                        role="button"
                         title="Delete Tab"
+                        className="text-red-500 ml-2 invisible group-hover:visible cursor-pointer"
                       >
                         ×
-                      </button>
+                      </span>
                     </TabsTrigger>
                   ))}
 
