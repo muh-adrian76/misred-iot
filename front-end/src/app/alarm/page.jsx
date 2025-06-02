@@ -58,6 +58,9 @@ import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/s
 import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
+import AddAlarmDialog from "@/components/features/add-alarm"
+import EditAlarmDialog from "@/components/features/edit-alarm"
+import ConfirmDeleteAlarmDialog from "@/components/features/delete-alarm"
 
 
 
@@ -85,12 +88,14 @@ export default function DataTableDemo() {
 
   const flatData = React.useMemo(() => {
   return devices.flatMap((device) =>
-    device.sensors.map((sensor) => ({
-      ...sensor,
-      name: device.name,
-    }))
+    device.sensors
+      .filter(sensor => sensor.threshold !== "") // hanya tampilkan yang ada threshold
+      .map((sensor) => ({
+        ...sensor,
+        name: device.name,
+      }))
   )
-  }, [devices])
+}, [devices])
   // Edit Table
   const columns = [
     {
@@ -200,32 +205,30 @@ export default function DataTableDemo() {
   }
 
   const deviceIndex = devices.findIndex((d) => d.name === name)
-
   if (deviceIndex === -1) {
     toast.error("Device not found!")
     return
   }
 
-  const existing = devices[deviceIndex].sensors.some(
+  const sensorIndex = devices[deviceIndex].sensors.findIndex(
     (sensor) => sensor.sensorName === sensorName
   )
 
-  if (existing) {
+  if (sensorIndex === -1) {
+    toast.error("Sensor tidak ditemukan pada device!")
+    return
+  }
+
+  if (devices[deviceIndex].sensors[sensorIndex].threshold !== "") {
     toast.error("Alarm untuk sensor ini sudah ada pada device tersebut!")
     return
   }
 
-  const newSensor = {
-    id: String(Date.now()),
-    sensorName,
-    threshold,
-  }
-
-  // Salin array devices lalu tambahkan sensor pada device yang sesuai
+  // Update threshold sensor yang sudah ada
   const updatedDevices = [...devices]
-  updatedDevices[deviceIndex] = {
-    ...updatedDevices[deviceIndex],
-    sensors: [...updatedDevices[deviceIndex].sensors, newSensor],
+  updatedDevices[deviceIndex].sensors[sensorIndex] = {
+    ...updatedDevices[deviceIndex].sensors[sensorIndex],
+    threshold,
   }
 
   setDevices(updatedDevices)
@@ -346,196 +349,39 @@ export default function DataTableDemo() {
             </DropdownMenuContent>
             </DropdownMenu>
             {/* Add alarm */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="ml-2">Add Alarm</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add Alarm</DialogTitle>
-                  <DialogDescription>
-                    Add your alarm here. Click add when you're done.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="sensorName" className="text-right">
-                      Sensor
-                    </Label>
-                    <Input id="sensorName" value={sensorName} onChange={(e) => setsensorName(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      DeviceName
-                    </Label>
-                    <Select
-                      value={name}
-                      onValueChange={(value) => setName(value)}
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Pilih Device" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[...new Set(flatData.map((d) => d.name))].map((deviceName) => (
-                          <SelectItem key={deviceName} value={deviceName}>
-                            {deviceName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="threshold" className="text-right">
-                      Threshold
-                    </Label>
-                    <Input id="threshold" type="number" value={threshold} onChange={(e) => setthreshold(e.target.value)} className="col-span-3" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" onClick={handleAddAlarm}>Add</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <AddAlarmDialog
+              open={dialogOpen}
+              setOpen={setDialogOpen}
+              sensorName={sensorName}
+              setsensorName={setsensorName}
+              name={name}
+              setName={setName}
+              threshold={threshold}
+              setthreshold={setthreshold}
+              handleAddAlarm={handleAddAlarm}
+              flatData={flatData}
+              devices={devices}
+              toast={toast}
+            />
             {/* Edit table */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Alarm</DialogTitle>
-                  <DialogDescription>Change alarm information in here.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="sensorEdit" className="text-right">Sensor</Label>
-                    <Input
-                      id="sensorEdit"
-                      className="col-span-3"
-                      value={editAlarm?.sensorName || ""}
-                      onChange={(e) =>
-                        setEditAlarm({ ...editAlarm, sensorName: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nameEdit" className="text-right">DeviceName</Label>
-                    <Select
-                      value={editAlarm?.name || ""}
-                      onValueChange={(value) =>
-                        setEditAlarm({ ...editAlarm, name: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Pilih Device" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[...new Set(flatData.map((d) => d.name))].map((deviceName) => (
-                          <SelectItem key={deviceName} value={deviceName}>
-                            {deviceName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="thresholdEdit" className="text-right">Threshold</Label>
-                    <Input
-                      id="thresholdEdit"
-                      className="col-span-3"
-                      value={editAlarm?.threshold || ""}
-                      onChange={(e) =>
-                        setEditAlarm({ ...editAlarm, threshold: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => {
-                      const sensorToUpdate = editAlarm
-
-                      // Validasi sebelum update
-                      const targetDevice = devices.find((d) => d.name === sensorToUpdate.name)
-                      if (!targetDevice) {
-                        toast.error("Device tidak ditemukan!")
-                        return
-                      }
-
-                      const sensorDuplicate = targetDevice.sensors.find(
-                        (s) =>
-                          s.sensorName === sensorToUpdate.sensorName &&
-                          s.id !== sensorToUpdate.id // pastikan bukan dirinya sendiri
-                      )
-
-                      if (sensorDuplicate) {
-                        toast.error("Sensor ini sudah ada di device yang dipilih!")
-                        return // 🚫 batalkan update
-                      }
-
-                      // Update jika lolos validasi
-                      setDevices((prevDevices) => {
-                        return prevDevices.map((device) => {
-                          if (device.name !== sensorToUpdate.name) return device
-
-                          const updatedSensors = device.sensors.map((sensor) => {
-                            if (sensor.id === sensorToUpdate.id) {
-                              const { name, ...sensorData } = sensorToUpdate
-                              return sensorData
-                            }
-                            return sensor
-                          })
-
-                          return {
-                            ...device,
-                            sensors: updatedSensors,
-                          }
-                        })
-                      })
-
-                      setEditDialogOpen(false)
-                      toast.success("Sensor berhasil diperbarui!")
-                    }}
-                  >
-                    Save Change
-                  </Button>
-
-
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <EditAlarmDialog
+              open={editDialogOpen}
+              setOpen={setEditDialogOpen}
+              editAlarm={editAlarm}
+              setEditAlarm={setEditAlarm}
+              devices={devices}
+              setDevices={setDevices}
+              flatData={flatData}
+              toast={toast}
+            />
             {/* Confirm Delete */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Hapus Device?</DialogTitle>
-                  <DialogDescription>
-                    Apakah kamu yakin ingin menghapus sensor <strong>{alarmToDelete?.sensorName}</strong>?
-                    Tindakan ini tidak dapat dibatalkan.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-                    Batal
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      setDevices((prevDevices) => {
-                        return prevDevices.map((device) => ({
-                          ...device,
-                          sensors: device.sensors.filter(
-                            (sensor) => sensor.id !== alarmToDelete.id
-                          ),
-                        }))
-                      })
-                      setDeleteDialogOpen(false)
-                      toast.success("Alarm berhasil dihapus!")
-                    }}
-                  >
-                    Hapus
-                  </Button>
-
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>            
+            <ConfirmDeleteAlarmDialog
+              open={deleteDialogOpen}
+              setOpen={setDeleteDialogOpen}
+              alarmToDelete={alarmToDelete}
+              setDevices={setDevices}
+              toast={toast}
+            />            
         </div>
 
         {/* Table */}
