@@ -1,8 +1,8 @@
 import { WidthProvider, Responsive } from "react-grid-layout"
-import { ChartDataArea } from "@/components/features/charts/area"
-import { ChartDataBar } from "@/components/features/charts/bar"
-import { ChartDataPie } from "@/components/features/charts/pie"
-import { ChartDataLine } from "@/components/features/charts/line"
+import { ChartDataArea } from "@/components/charts/area"
+import { ChartDataBar } from "@/components/charts/bar"
+import { ChartDataPie } from "@/components/charts/pie"
+import { ChartDataLine } from "@/components/charts/line"
 import {
   Sheet,
   SheetContent,
