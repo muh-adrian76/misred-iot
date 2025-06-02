@@ -58,49 +58,39 @@ import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/s
 import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
-import { user } from "@/components/features/app-sidebar"
 
 
-////////
+
+
 export default function DataTableDemo() {
-  const [data, setData] = React.useState([
+  const [devices, setDevices] = React.useState([
   {
-    id: "1",
-    boardType: "ESP32",
-    protocol: "HTTP",
     name: "Device1",
-    uid: "shadcn-device1-1",
+    sensors: [
+      { id: "1", sensorName: "pH", threshold: "7" },
+      { id: "2", sensorName: "COD", threshold: "100" },
+      { id: "3", sensorName: "NH3-N", threshold: ".10" },
+      { id: "4", sensorName: "TSS", threshold: "30" },
+      { id: "5", sensorName: "Flowmeter", threshold: "100" },
+    ],
   },
   {
-    id: "2",
-    boardType: "Arduino Nano",
-    protocol: "MQTT",
     name: "Device2",
-    uid: "shadcn-device2-2",
+    sensors: [
+      { id: "6", sensorName: "pH", threshold: "9" },
+      { id: "7", sensorName: "TSS", threshold: "28" },
+    ],
   },
-  {
-    id: "3",
-    boardType: "ESP32",
-    protocol: "LoRaWAN",
-    name: "Device3",
-    uid: "shadcn-device3-3",
-  },
-  {
-    id: "4",
-    boardType: "ESP8266",
-    protocol: "MQTT",
-    name: "Device4",
-    uid: "shadcn-device4-4",
-  },
-  {
-    id: "5",
-    boardType: "ESP8266",
-    protocol: "HTTP",
-    name: "Device5",
-    uid: "shadcn-device5-5",
-  },
-  ])
+])
 
+  const flatData = React.useMemo(() => {
+  return devices.flatMap((device) =>
+    device.sensors.map((sensor) => ({
+      ...sensor,
+      name: device.name,
+    }))
+  )
+  }, [devices])
   // Edit Table
   const columns = [
     {
@@ -126,84 +116,38 @@ export default function DataTableDemo() {
       enableHiding: false,
     },
     {
-      accessorKey: "name",
+      accessorKey: "sensorName",
       header: ({ column }) => (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
+          Sensor
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
     },
     {
-      accessorKey: "boardType",
-      header: "Type Board",
-      cell: ({ row }) => <div>{row.getValue("boardType")}</div>,
+      accessorKey: "name",
+      header: "Device Name",
+      cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
     {
-      accessorKey: "uid",
-      header: "UID",
-      cell: ({ row }) => {
-        const uid = row.getValue("uid")
-
-        const handleCopy = () => {
-          navigator.clipboard.writeText(uid)
-          toast.success("uid disalin!")
-        }
-
-        return (
-          <div className="flex items-center gap-2">
-            <span className="truncate max-w-[160px]">{uid}</span>
-            <Button variant="ghost" size="icon" onClick={handleCopy}>
-              <IconCopy className="size-3"/>
-            </Button>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "protocol",
-      header: () => <div className="text-right">Protocol</div>,
-        cell: ({ row }) => {
-          const protocol = row.getValue("protocol")
-
-          const getBadgeStyle = (protocol) => {
-            switch (protocol.toLowerCase()) {
-              case "http":
-                return "border-blue-500 text-blue-500"
-              case "mqtt":
-                return "border-green-500 text-green-500"
-              case "lorawan":
-                return "border-red-500 text-red-500"
-              default:
-                return "border-gray-500 text-gray-500"
-            }
-          }
-
-          return (
-            <div className="text-right">
-              <Badge variant="outline" className={getBadgeStyle(protocol)}>
-                {protocol.toUpperCase()}
-              </Badge>
-            </div>
-          )
-        },
+      accessorKey: "threshold",
+      header: "Threshold",
+      cell: ({ row }) => <div>{row.getValue("threshold")}</div>,
     },
     {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const device = row.original
-
-        const handleDelete = () => {
-          setData((prev) => prev.filter((d) => d.id !== device.id))
-          toast.success("Device berhasil dihapus!")
-        }
+        const alarm = row.original
 
         const handleEdit = () => {
-          setEditDevice(device)
+          setEditAlarm({
+            ...alarm,
+            name: alarm.name, // penting untuk tracking nama device
+          })
           setEditDialogOpen(true)
         }
 
@@ -216,7 +160,7 @@ export default function DataTableDemo() {
               variant="destructive"
               size="sm"
               onClick={() => {
-                setDeviceToDelete(device)
+                setAlarmToDelete(alarm)
                 setDeleteDialogOpen(true)
               }}
             >
@@ -231,10 +175,10 @@ export default function DataTableDemo() {
 
 
   const [editDialogOpen, setEditDialogOpen] = React.useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
-  const [deviceToDelete, setDeviceToDelete] = React.useState(null)
-  const [editDevice, setEditDevice] = React.useState(null)
+  const [editAlarm, setEditAlarm] = React.useState(null)
   const [globalFilter, setGlobalFilter] = React.useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [alarmToDelete, setAlarmToDelete] = React.useState(null)
 
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
@@ -242,42 +186,84 @@ export default function DataTableDemo() {
   const [rowSelection, setRowSelection] = React.useState({})
 
   const [name, setName] = React.useState("")
-  const [boardType, setBoardType] = React.useState("")
-  const [protocol, setProtocol] = React.useState("")
+  const [sensorName, setsensorName] = React.useState("")
+  const [threshold, setthreshold] = React.useState("")
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
+  
 
-const handleAddDevice = () => {
-  if (!name || !boardType || !protocol) {
+
+  const handleAddAlarm = () => {
+  if (!name || !sensorName || !threshold) {
     toast.error("All fields must be filled!")
     return
   }
 
-  const nomorUrut = data.length + 1
-  const formattedName = user.name.toLowerCase().replace(/\s+/g, "-")
-  const formattedDevice = name.toLowerCase().replace(/\s+/g, "-")
-  const uid = `${formattedName}-${formattedDevice}-${nomorUrut}`
+  const deviceIndex = devices.findIndex((d) => d.name === name)
 
-  const newDevice = {
-    id: String(Date.now()),
-    name,
-    boardType,
-    protocol,
-    uid,
+  if (deviceIndex === -1) {
+    toast.error("Device not found!")
+    return
   }
 
-  setData((prev) => [...prev, newDevice])
+  const existing = devices[deviceIndex].sensors.some(
+    (sensor) => sensor.sensorName === sensorName
+  )
+
+  if (existing) {
+    toast.error("Alarm untuk sensor ini sudah ada pada device tersebut!")
+    return
+  }
+
+  const newSensor = {
+    id: String(Date.now()),
+    sensorName,
+    threshold,
+  }
+
+  // Salin array devices lalu tambahkan sensor pada device yang sesuai
+  const updatedDevices = [...devices]
+  updatedDevices[deviceIndex] = {
+    ...updatedDevices[deviceIndex],
+    sensors: [...updatedDevices[deviceIndex].sensors, newSensor],
+  }
+
+  setDevices(updatedDevices)
+
+  // Reset form
   setName("")
-  setBoardType("")
-  setProtocol("")
+  setsensorName("")
+  setthreshold("")
   setDialogOpen(false)
-  toast.success("Device berhasil ditambahkan!")
+
+  toast.success("Alarm berhasil ditambahkan!")
 }
+
+  const handleSaveEdit = () => {
+  const deviceIndex = devices.findIndex((d) => d.name === editAlarm.name)
+  if (deviceIndex === -1) return
+
+  const sensorIndex = devices[deviceIndex].sensors.findIndex(
+    (s) => s.id === editAlarm.id
+  )
+  if (sensorIndex === -1) return
+
+  const updatedDevices = [...devices]
+  updatedDevices[deviceIndex].sensors[sensorIndex] = {
+    ...editAlarm,
+  }
+  delete updatedDevices[deviceIndex].sensors[sensorIndex].name // optional cleanup
+  setDevices(updatedDevices)
+  setEditDialogOpen(false)
+  toast.success("Sensor berhasil diperbarui!")
+}
+
+
 
   
 
   const table = useReactTable({
-    data,
+    data: flatData,
     columns,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
@@ -303,7 +289,7 @@ const handleAddDevice = () => {
       .includes(filterValue.toLowerCase())
     },
   })
-   
+
   return (
     <SidebarProvider>
     <AppSidebar />
@@ -317,7 +303,7 @@ const handleAddDevice = () => {
           <BreadcrumbList>
             <BreadcrumbSeparator className="hidden md:block" />
               <BreadcrumbItem>
-                <BreadcrumbPage>Devices</BreadcrumbPage>
+                <BreadcrumbPage>Alarm</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
         </Breadcrumb>
@@ -330,7 +316,7 @@ const handleAddDevice = () => {
         {/* Filter + Column visibility controls */}
         <div className="flex items-center py-4">
             <Input
-              placeholder="Find device..."
+              placeholder="Find alarm ..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
@@ -359,49 +345,54 @@ const handleAddDevice = () => {
                 ))}
             </DropdownMenuContent>
             </DropdownMenu>
-            {/* Add device */}
+            {/* Add alarm */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="ml-2">Add Device</Button>
+                <Button className="ml-2">Add Alarm</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Add Device</DialogTitle>
+                  <DialogTitle>Add Alarm</DialogTitle>
                   <DialogDescription>
-                    Add your device here. Click add when you're done.
+                    Add your alarm here. Click add when you're done.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="sensorName" className="text-right">
+                      Sensor
+                    </Label>
+                    <Input id="sensorName" value={sensorName} onChange={(e) => setsensorName(e.target.value)} className="col-span-3" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
-                      Name
+                      DeviceName
                     </Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardType" className="text-right">
-                      Type Board
-                    </Label>
-                    <Input id="boardType" value={boardType} onChange={(e) => setBoardType(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocol" className="text-right">
-                      Protocol
-                    </Label>
-                    <Select value={protocol} onValueChange={setProtocol}>
+                    <Select
+                      value={name}
+                      onValueChange={(value) => setName(value)}
+                    >
                       <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select protocol" />
+                        <SelectValue placeholder="Pilih Device" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
+                        {[...new Set(flatData.map((d) => d.name))].map((deviceName) => (
+                          <SelectItem key={deviceName} value={deviceName}>
+                            {deviceName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="threshold" className="text-right">
+                      Threshold
+                    </Label>
+                    <Input id="threshold" type="number" value={threshold} onChange={(e) => setthreshold(e.target.value)} className="col-span-3" />
+                  </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" onClick={handleAddDevice}>Add</Button>
+                  <Button type="button" onClick={handleAddAlarm}>Add</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -409,63 +400,104 @@ const handleAddDevice = () => {
             <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Edit Device</DialogTitle>
-                  <DialogDescription>Change device information in here.</DialogDescription>
+                  <DialogTitle>Edit Alarm</DialogTitle>
+                  <DialogDescription>Change alarm information in here.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nameEdit" className="text-right">Name</Label>
+                    <Label htmlFor="sensorEdit" className="text-right">Sensor</Label>
                     <Input
-                      id="nameEdit"
+                      id="sensorEdit"
                       className="col-span-3"
-                      value={editDevice?.name || ""}
+                      value={editAlarm?.sensorName || ""}
                       onChange={(e) =>
-                        setEditDevice({ ...editDevice, name: e.target.value })
+                        setEditAlarm({ ...editAlarm, sensorName: e.target.value })
                       }
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardEdit" className="text-right">Type Board</Label>
-                    <Input
-                      id="boardEdit"
-                      className="col-span-3"
-                      value={editDevice?.boardType || ""}
-                      onChange={(e) =>
-                        setEditDevice({ ...editDevice, boardType: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocolEdit" className="text-right">Protocol</Label>
+                    <Label htmlFor="nameEdit" className="text-right">DeviceName</Label>
                     <Select
-                      value={editDevice?.protocol || ""}
+                      value={editAlarm?.name || ""}
                       onValueChange={(value) =>
-                        setEditDevice({ ...editDevice, protocol: value })
+                        setEditAlarm({ ...editAlarm, name: value })
                       }
                     >
                       <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Pilih protokol" />
+                        <SelectValue placeholder="Pilih Device" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
+                        {[...new Set(flatData.map((d) => d.name))].map((deviceName) => (
+                          <SelectItem key={deviceName} value={deviceName}>
+                            {deviceName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                  </div>                  
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="thresholdEdit" className="text-right">Threshold</Label>
+                    <Input
+                      id="thresholdEdit"
+                      className="col-span-3"
+                      value={editAlarm?.threshold || ""}
+                      onChange={(e) =>
+                        setEditAlarm({ ...editAlarm, threshold: e.target.value })
+                      }
+                    />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button
                     onClick={() => {
-                      setData((prev) =>
-                        prev.map((d) => (d.id === editDevice.id ? editDevice : d))
+                      const sensorToUpdate = editAlarm
+
+                      // Validasi sebelum update
+                      const targetDevice = devices.find((d) => d.name === sensorToUpdate.name)
+                      if (!targetDevice) {
+                        toast.error("Device tidak ditemukan!")
+                        return
+                      }
+
+                      const sensorDuplicate = targetDevice.sensors.find(
+                        (s) =>
+                          s.sensorName === sensorToUpdate.sensorName &&
+                          s.id !== sensorToUpdate.id // pastikan bukan dirinya sendiri
                       )
+
+                      if (sensorDuplicate) {
+                        toast.error("Sensor ini sudah ada di device yang dipilih!")
+                        return // 🚫 batalkan update
+                      }
+
+                      // Update jika lolos validasi
+                      setDevices((prevDevices) => {
+                        return prevDevices.map((device) => {
+                          if (device.name !== sensorToUpdate.name) return device
+
+                          const updatedSensors = device.sensors.map((sensor) => {
+                            if (sensor.id === sensorToUpdate.id) {
+                              const { name, ...sensorData } = sensorToUpdate
+                              return sensorData
+                            }
+                            return sensor
+                          })
+
+                          return {
+                            ...device,
+                            sensors: updatedSensors,
+                          }
+                        })
+                      })
+
                       setEditDialogOpen(false)
-                      toast.success("Device berhasil diperbarui!")
+                      toast.success("Sensor berhasil diperbarui!")
                     }}
                   >
                     Save Change
                   </Button>
+
+
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -475,7 +507,7 @@ const handleAddDevice = () => {
                 <DialogHeader>
                   <DialogTitle>Hapus Device?</DialogTitle>
                   <DialogDescription>
-                    Apakah kamu yakin ingin menghapus device <strong>{deviceToDelete?.name}</strong>?
+                    Apakah kamu yakin ingin menghapus sensor <strong>{alarmToDelete?.sensorName}</strong>?
                     Tindakan ini tidak dapat dibatalkan.
                   </DialogDescription>
                 </DialogHeader>
@@ -486,19 +518,24 @@ const handleAddDevice = () => {
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      setData((prev) =>
-                        prev.filter((item) => item.id !== deviceToDelete.id)
-                      )
+                      setDevices((prevDevices) => {
+                        return prevDevices.map((device) => ({
+                          ...device,
+                          sensors: device.sensors.filter(
+                            (sensor) => sensor.id !== alarmToDelete.id
+                          ),
+                        }))
+                      })
                       setDeleteDialogOpen(false)
-                      toast.success("Device berhasil dihapus!")
+                      toast.success("Alarm berhasil dihapus!")
                     }}
                   >
                     Hapus
                   </Button>
+
                 </DialogFooter>
               </DialogContent>
-            </Dialog>
-
+            </Dialog>            
         </div>
 
         {/* Table */}
