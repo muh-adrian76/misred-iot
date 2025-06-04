@@ -1,7 +1,8 @@
 import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "next-themes";
 
 const defaultFont = JetBrains_Mono({
   variable: "--font-sans",
@@ -10,7 +11,8 @@ const defaultFont = JetBrains_Mono({
 
 export const metadata = {
   title: "MiSREd-IoT",
-  description: "Multi-input, Scalable, Reliable, and Easy-to-deploy IoT Platform",
+  description:
+    "Multi-input, Scalable, Reliable, and Easy-to-deploy IoT Platform",
 };
 
 export default function RootLayout({ children }) {
@@ -22,10 +24,10 @@ export default function RootLayout({ children }) {
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content="MiSREd-IoT Platform" />
         </head>
-        <body
-          className={`${defaultFont.variable} antialiased`}
-        >
-          {children}
+        <body className={`${defaultFont.variable} antialiased`}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            {children}
+          </ThemeProvider>
           <Toaster richColors />
         </body>
       </html>
