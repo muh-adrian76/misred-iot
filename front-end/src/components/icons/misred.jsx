@@ -1,13 +1,12 @@
 export function MisredIcon({ className, width = 397, height = 386, ...props }) {
 return (
     <svg
-      width={width}
-      height={height}
+      width="397"
+      height="386"
       viewBox="0 0 397 386"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      {...props}
+      className="loader"
     >
       <path
         fillRule="evenodd"

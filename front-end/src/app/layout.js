@@ -1,10 +1,10 @@
-import { Quicksand } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from "@/components/ui/sonner";
 
-const quicksand = Quicksand({
-  variable: "--font-quicksand",
+const defaultFont = JetBrains_Mono({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
           <meta name="description" content="MiSREd-IoT Platform" />
         </head>
         <body
-          className={`${quicksand.variable} antialiased`}
+          className={`${defaultFont.variable} antialiased`}
         >
           {children}
           <Toaster richColors />

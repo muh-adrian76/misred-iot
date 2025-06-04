@@ -5,10 +5,10 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-export async function fetchFromBackend(endpoint, options = {}) {
+export function fetchFromBackend(endpoint, options = {}) {
   const server = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const res = await fetch(`${server}${endpoint}`, {
+  return fetch(`${server}${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -16,7 +16,4 @@ export async function fetchFromBackend(endpoint, options = {}) {
     },
     credentials: "include", // penting untuk cookie
   });
-
-  const data = await res.json();
-  return { status: res.status, data };
 }

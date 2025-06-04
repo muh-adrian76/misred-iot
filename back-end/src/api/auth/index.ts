@@ -23,6 +23,7 @@ export function authRoutes(authService: AuthService) {
             status: result.status,
           });
         },
+        // @ts-ignore
         postRegisterSchema
       )
 
