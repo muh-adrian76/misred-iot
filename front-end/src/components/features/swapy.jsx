@@ -110,8 +110,8 @@ export function SwapyDragArea({
                 {/* Header: Tombol drag + delete */}
                 <div className="flex items-center justify-between px-2 py-1 bg-muted border-b rounded-t-xl">
                   <div className="drag-handle flex items-center cursor-move text-muted-foreground">
-                    <Move className="w-4 h-4 mr-1" />
-                    Move
+                    <Move className="w-4 h-4 mr-3" />
+                    Ketuk disini
                   </div>
                   <button
                     onClick={(e) => {

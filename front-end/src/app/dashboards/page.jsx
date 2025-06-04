@@ -43,7 +43,7 @@ import {
   Moon,
   Laptop,
 } from "lucide-react";
-import { useTheme } from "next-themes"; // pastikan sudah install next-themes
+import { useTheme } from "next-themes";
 
 export default function Page() {
   const [tabs, setTabs] = useState([]);
@@ -148,7 +148,7 @@ export default function Page() {
       </div>
       <SidebarInset>
         <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between">
-          <div className="flex items-center gap-4 px-1">
+          <div className="flex items-center gap-4 px-4">
             <SidebarTrigger className="md:hidden" />
             {/* <Separator orientation="vertical" className="h-6" /> */}
 
@@ -167,7 +167,7 @@ export default function Page() {
           </div>
 
           {/* Kanan: Action Buttons */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 px-4">
             {/* Notifikasi */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -247,7 +247,7 @@ export default function Page() {
         </header>
 
         <div className="p-4 space-y-4">
-          <div className="flex items-center gap-4 justify-between">
+          <div className="flex items-center px-3.5 gap-4 justify-between">
             {tabs.length > 0 ? (
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>

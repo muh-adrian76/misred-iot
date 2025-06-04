@@ -1,13 +1,12 @@
 "use client";
 import { useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,11 +26,11 @@ export function SettingsDialog({ open, setOpen }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetContent side="right" className="max-w-xl w-full">
+        <SheetHeader>
+          <SheetTitle>Settings</SheetTitle>
+        </SheetHeader>
         <Tabs value={tab} onValueChange={setTab} className="mt-4">
           <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -80,11 +79,11 @@ export function SettingsDialog({ open, setOpen }) {
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <DialogClose asChild>
-                  <Button type="button" variant="outline">
+                <SheetClose asChild>
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                     Batal
                   </Button>
-                </DialogClose>
+                </SheetClose>
                 <Button type="submit">Simpan</Button>
               </div>
             </form>
@@ -102,7 +101,7 @@ export function SettingsDialog({ open, setOpen }) {
             <div>Pengaturan alarms di sini.</div>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
