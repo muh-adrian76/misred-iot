@@ -1,8 +1,8 @@
 import { randomBytes } from "crypto";
 import { Elysia } from "elysia";
-import { authorizeRequest } from "../../utils/helper";
+import { authorizeRequest } from "../../lib/utils";
 import { DeviceService } from "../../services/DeviceService";
-import { chirpstackService } from "../../utils/middleware";
+import { chirpstackService } from "../../lib/middleware";
 import {
   deleteDeviceSchema,
   getAllDevicesSchema,

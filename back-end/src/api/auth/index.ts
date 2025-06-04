@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { authorizeRequest, clearAuthCookie, setAuthCookie } from "../../utils/helper";
+import { authorizeRequest, clearAuthCookie, setAuthCookie } from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import {
   getRefreshTokenSchema,

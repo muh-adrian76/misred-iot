@@ -2,8 +2,8 @@ import { cors } from "@elysiajs/cors";
 import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
-import { MySQLDatabase, MQTTClient } from "./utils/middleware";
-import { apiTags } from "./utils/helper";
+import { MySQLDatabase, MQTTClient } from "./lib/middleware";
+import { apiTags } from "./lib/utils";
 
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";

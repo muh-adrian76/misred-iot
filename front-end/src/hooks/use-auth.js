@@ -20,7 +20,7 @@ const verifyToken = async (router) => {
   return true;
 };
 
-const useAuth = () => {
+export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
@@ -34,5 +34,3 @@ const useAuth = () => {
   }, [router]);
   return isAuthenticated;
 };
-
-export default useAuth;

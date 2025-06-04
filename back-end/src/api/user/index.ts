@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { authorizeRequest } from "../../utils/helper";
+import { authorizeRequest } from "../../lib/utils";
 import { UserService } from "../../services/UserService";
 import {
   getAllUsersSchema,

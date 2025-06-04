@@ -1,6 +1,6 @@
 // routes/widget.ts
 import { Elysia } from "elysia";
-import { authorizeRequest } from "../../utils/helper";
+import { authorizeRequest } from "../../lib/utils";
 import { WidgetService } from "../../services/WidgetService";
 import {
   deleteWidgetSchema,

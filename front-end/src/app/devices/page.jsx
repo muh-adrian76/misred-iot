@@ -1,6 +1,6 @@
 "use client"
 
-import {useState} from "react"
+import * as React from "react"
 import {
   flexRender,
   getCoreRowModel,
@@ -9,10 +9,16 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown } from "lucide-react"
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -20,16 +26,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/breadcrumb"
 import {
   Table,
   TableBody,
@@ -61,49 +58,57 @@ import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/s
 import { AppSidebar } from "@/components/features/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
-import useAuth from "@/hooks/use-auth";
-import { Bell, Moon, Sun } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { user } from "@/components/features/app-sidebar"
+import AddDeviceDialog from "@/components/features/add-device"
+import EditDeviceDialog from "@/components/features/edit-device"
+import ConfirmDeleteDialog from "@/components/features/delete-device"
+import { useAuth } from "@/hooks/use-auth"
 
 ////////
-export default function Page() {
-  const [data, setData] = useState([
+export default function DataTableDemo() {
+  const [data, setData] = React.useState([
   {
     id: "1",
     boardType: "ESP32",
     protocol: "HTTP",
     name: "Device1",
-    token: "test-device-1",
+    uid: "shadcn-device1-1",
   },
   {
     id: "2",
     boardType: "Arduino Nano",
     protocol: "MQTT",
     name: "Device2",
-    token: "test-device-2",
+    uid: "shadcn-device2-2",
   },
   {
     id: "3",
     boardType: "ESP32",
     protocol: "LoRaWAN",
     name: "Device3",
-    token: "test-device-3",
+    uid: "shadcn-device3-3",
   },
   {
     id: "4",
     boardType: "ESP8266",
     protocol: "MQTT",
     name: "Device4",
-    token: "test-device-4",
+    uid: "shadcn-device4-4",
   },
   {
     id: "5",
     boardType: "ESP8266",
     protocol: "HTTP",
     name: "Device5",
-    token: "test-device-5",
+    uid: "shadcn-device5-5",
   },
   ])
+
+  const user = {
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "/avatars/shadcn.jpg",
+  }
 
   // Edit Table
   const columns = [
@@ -147,19 +152,19 @@ export default function Page() {
       cell: ({ row }) => <div>{row.getValue("boardType")}</div>,
     },
     {
-      accessorKey: "token",
+      accessorKey: "uid",
       header: "UID",
       cell: ({ row }) => {
-        const token = row.getValue("token")
+        const uid = row.getValue("uid")
 
         const handleCopy = () => {
-          navigator.clipboard.writeText(token)
-          toast.success("Token disalin!")
+          navigator.clipboard.writeText(uid)
+          toast.success("uid disalin!")
         }
 
         return (
           <div className="flex items-center gap-2">
-            <span className="truncate max-w-[160px]">{token}</span>
+            <span className="truncate max-w-[160px]">{uid}</span>
             <Button variant="ghost" size="icon" onClick={handleCopy}>
               <IconCopy className="size-3"/>
             </Button>
@@ -216,7 +221,14 @@ export default function Page() {
             <Button className="ml-auto" variant="outline" size="sm" onClick={handleEdit}>
               <IconEdit/>
             </Button>
-            <Button className="ml-2" variant="destructive" size="sm" onClick={handleDelete}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                setDeviceToDelete(device)
+                setDeleteDialogOpen(true)
+              }}
+            >
               <IconTrashX/>
             </Button>
           </div>
@@ -227,43 +239,51 @@ export default function Page() {
   ]
 
 
-  const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const [editDevice, setEditDevice] = useState(null)
-  const [globalFilter, setGlobalFilter] = useState("")
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+  const [deviceToDelete, setDeviceToDelete] = React.useState(null)
+  const [editDevice, setEditDevice] = React.useState(null)
+  const [globalFilter, setGlobalFilter] = React.useState("")
 
-  const [sorting, setSorting] = useState([])
-  const [columnFilters, setColumnFilters] = useState([])
-  const [columnVisibility, setColumnVisibility] = useState({})
-  const [rowSelection, setRowSelection] = useState({})
+  const [sorting, setSorting] = React.useState([])
+  const [columnFilters, setColumnFilters] = React.useState([])
+  const [columnVisibility, setColumnVisibility] = React.useState({})
+  const [rowSelection, setRowSelection] = React.useState({})
 
-  const [name, setName] = useState("")
-  const [boardType, setBoardType] = useState("")
-  const [protocol, setProtocol] = useState("")
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [name, setName] = React.useState("")
+  const [boardType, setBoardType] = React.useState("")
+  const [protocol, setProtocol] = React.useState("")
+  const [dialogOpen, setDialogOpen] = React.useState(false)
 
 
-  const handleAddDevice = () => {
+const handleAddDevice = () => {
   if (!name || !boardType || !protocol) {
     toast.error("All fields must be filled!")
     return
   }
+
+  const nomorUrut = data.length + 1
+  const formattedName = user.name.toLowerCase().replace(/\s+/g, "-")
+  const formattedDevice = name.toLowerCase().replace(/\s+/g, "-")
+  const uid = `${formattedName}-${formattedDevice}-${nomorUrut}`
 
   const newDevice = {
     id: String(Date.now()),
     name,
     boardType,
     protocol,
-    token: ".............",
+    uid,
   }
 
   setData((prev) => [...prev, newDevice])
   setName("")
   setBoardType("")
   setProtocol("")
-  setDialogOpen(false) // Tutup dialog
+  setDialogOpen(false)
   toast.success("Device berhasil ditambahkan!")
-  }
+}
+
+  
 
   const table = useReactTable({
     data,
@@ -292,81 +312,31 @@ export default function Page() {
       .includes(filterValue.toLowerCase())
     },
   })
-
-  const toggleTheme = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDarkMode(true);
-    }
-  };
-
-
+   
   // Check Authorization
   const isAuthenticated = useAuth();
   if (!isAuthenticated) {
     return null;
   }
-  
+
   return (
     <SidebarProvider>
     <AppSidebar />
     <SidebarInset>
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-          {/* Left Section: Sidebar Trigger and Breadcrumbs */}
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                {/* <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem> */}
-                {/* <BreadcrumbSeparator className="hidden md:block" /> */}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Devices</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          {/* Right Section: Theme Toggle, Notifications, User Avatar */}
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/avatars/01.png" alt="User Avatar" /> {/* Ganti dengan path avatar pengguna jika ada */}
-                    <AvatarFallback>U</AvatarFallback> {/* Inisial pengguna */}
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profil</DropdownMenuItem>
-                <DropdownMenuItem>Pengaturan</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  {/* Tambahkan fungsi logout di sini */}
-                  Keluar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 px-4">
+        <div className="flex items-center gap-2 px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbSeparator className="hidden md:block" />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Devices</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+        </Breadcrumb>
+        </div>
         </header>
         
 
@@ -375,7 +345,7 @@ export default function Page() {
         {/* Filter + Column visibility controls */}
         <div className="flex items-center py-4">
             <Input
-              placeholder="Cari device..."
+              placeholder="Find device..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
@@ -383,7 +353,7 @@ export default function Page() {
             <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="ml-auto">
-                Filter <ChevronDown className="ml-2 h-4 w-4" />
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -405,115 +375,34 @@ export default function Page() {
             </DropdownMenuContent>
             </DropdownMenu>
             {/* Add device */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="ml-2">Tambah Device</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Tambah Device</DialogTitle>
-                  {/* <DialogDescription>
-                    Add your device here. Click add when you're done.
-                  </DialogDescription> */}
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardType" className="text-right">
-                      Tipe Board
-                    </Label>
-                    <Input id="boardType" value={boardType} onChange={(e) => setBoardType(e.target.value)} className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocol" className="text-right">
-                      Protokol
-                    </Label>
-                    <Select value={protocol} onValueChange={setProtocol}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select protocol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" onClick={handleAddDevice}>Tambah</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <AddDeviceDialog
+              open={dialogOpen}
+              setOpen={setDialogOpen}
+              name={name}
+              setName={setName}
+              boardType={boardType}
+              setBoardType={setBoardType}
+              protocol={protocol}
+              setProtocol={setProtocol}
+              handleAddDevice={handleAddDevice}
+            />
             {/* Edit table */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Device</DialogTitle>
-                  <DialogDescription>Change device information in here.</DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nameEdit" className="text-right">Name</Label>
-                    <Input
-                      id="nameEdit"
-                      className="col-span-3"
-                      value={editDevice?.name || ""}
-                      onChange={(e) =>
-                        setEditDevice({ ...editDevice, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardEdit" className="text-right">Type Board</Label>
-                    <Input
-                      id="boardEdit"
-                      className="col-span-3"
-                      value={editDevice?.boardType || ""}
-                      onChange={(e) =>
-                        setEditDevice({ ...editDevice, boardType: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocolEdit" className="text-right">Protocol</Label>
-                    <Select
-                      value={editDevice?.protocol || ""}
-                      onValueChange={(value) =>
-                        setEditDevice({ ...editDevice, protocol: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Pilih protokol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => {
-                      setData((prev) =>
-                        prev.map((d) => (d.id === editDevice.id ? editDevice : d))
-                      )
-                      setEditDialogOpen(false)
-                      toast.success("Device berhasil diperbarui!")
-                    }}
-                  >
-                    Simpan
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <EditDeviceDialog
+              open={editDialogOpen}
+              setOpen={setEditDialogOpen}
+              editDevice={editDevice}
+              setEditDevice={setEditDevice}
+              setData={setData}
+              toast={toast}
+            />
+            {/* Confirm Delete */}
+            <ConfirmDeleteDialog
+              open={deleteDialogOpen}
+              setOpen={setDeleteDialogOpen}
+              deviceToDelete={deviceToDelete}
+              setData={setData}
+              toast={toast}
+            />
         </div>
 
         {/* Table */}

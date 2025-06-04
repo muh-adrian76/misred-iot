@@ -1,217 +1,163 @@
 "use client"
 
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChartDataLine } from "@/components/charts/line";
-import { ChartDataBar } from "@/components/charts/bar";
-import { ChartDataArea } from "@/components/charts/area";
-import { AppSidebar } from "@/components/features/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import useAuth from "@/hooks/use-auth";
-import { Bell, Moon, Sun } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { AppSidebar } from "@/components/features/app-sidebar"
+import { SwapyDragArea } from "@/components/features/swapy"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AddChartDialog } from "@/components/features/add-chart"
+import { toast } from "sonner"
+import { useAuth } from "@/hooks/use-auth"
 
 export default function Page() {
-  // Always call hooks at the top
-  const [charts, setCharts] = useState([]);
-  const [chartName, setChartName] = useState("");
-  const [deviceNumber, setDeviceNumber] = useState("");
-  const [chartType, setChartType] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [tabs, setTabs] = useState([])
+  const [activeTab, setActiveTab] = useState("")
+  const [openSheet, setOpenSheet] = useState(false)
+  const [tabItems, setTabItems] = useState({})
+  const [tabLayouts, setTabLayouts] = useState({})
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.includes(activeTab)) {
+      setActiveTab(tabs[0])
+    }
+  }, [tabs, activeTab])
+
+  const handleAddChart = (tab, chartType) => {
+    const id = `${chartType}-${Date.now()}`
+    const defaultLayoutItem = {
+      i: id,
+      x: 0,
+      y: Infinity,
+      w: 3,
+      h: 2,
+    }
+
+    if (!tabs.includes(tab)) {
+      setTabs((prev) => [...prev, tab])
+    }
+    setActiveTab(tab)
+    setTabItems((prev) => ({
+      ...prev,
+      [tab]: [...(prev[tab] || []), { id, type: chartType }],
+    }))
+    setTabLayouts((prev) => ({
+      ...prev,
+      [tab]: [...(prev[tab] || []), defaultLayoutItem],
+    }))
+    toast.success(`${chartType.toUpperCase()} chart successfully added to "${tab}" tab`)
+  }
+
+  const handleRemoveTab = (tabToRemove) => {
+  const newTabs = tabs.filter((t) => t !== tabToRemove)
+  setTabs(newTabs)
+
+  const newTabItems = { ...tabItems }
+  delete newTabItems[tabToRemove]
+  setTabItems(newTabItems)
+
+  const newTabLayouts = { ...tabLayouts }
+  delete newTabLayouts[tabToRemove]
+  setTabLayouts(newTabLayouts)
+
+  if (activeTab === tabToRemove) {
+    setActiveTab(newTabs[0] || "")
+  }
+  }
+
+
+  const setItemsForTab = (items) => {
+    setTabItems((prev) => ({ ...prev, [activeTab]: items }))
+  }
+
+  const setLayoutsForTab = (layouts) => {
+    setTabLayouts((prev) => ({ ...prev, [activeTab]: layouts }))
+  }
 
   // Check Authorization
   const isAuthenticated = useAuth();
-
-  useEffect(() => {
-    const storedTheme = localStorage.getItem("theme");
-    if (storedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-      setIsDarkMode(true);
-    } else {
-      document.documentElement.classList.remove("dark");
-      setIsDarkMode(false);
-    }
-  }, []);
-
-  // If not authenticated, render nothing or a fallback
   if (!isAuthenticated) {
     return null;
   }
-
-  const handleAddChart = () => {
-    if (chartName && deviceNumber && chartType) {
-      setCharts([...charts, { name: chartName, device: deviceNumber, type: chartType }]);
-      setChartName("");
-      setDeviceNumber("");
-      setChartType("");
-    }
-  };
-
-  const renderChart = (chart) => {
-    switch (chart.type) {
-      case "line":
-        return <ChartDataLine />;
-      case "bar":
-        return <ChartDataBar />;
-      case "area":
-        return <ChartDataArea />;
-      default:
-        return null;
-    }
-  };
-
-  const toggleTheme = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDarkMode(true);
-    }
-  };
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 mb-3 shrink-0 items-center justify-between gap-2 px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-          {/* Left Section: Sidebar Trigger and Breadcrumbs */}
-          <div className="flex items-center gap-2">
+        <header className="flex h-16 items-center gap-2 transition-all">
+          <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                {/* <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem> */}
-                {/* <BreadcrumbSeparator className="hidden md:block" /> */}
+              <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage>Dashboard</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-
-          {/* Right Section: Theme Toggle, Notifications, User Avatar */}
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
-              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/avatars/01.png" alt="User Avatar" /> {/* Ganti dengan path avatar pengguna jika ada */}
-                    <AvatarFallback>U</AvatarFallback> {/* Inisial pengguna */}
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profil</DropdownMenuItem>
-                <DropdownMenuItem>Pengaturan</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  {/* Tambahkan fungsi logout di sini */}
-                  Keluar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="flex justify-end mb-4">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>Tambah Chart</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Tambah Chart Baru</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4">
-                  <div>
-                    <Label htmlFor="chart-name">Nama Chart</Label>
-                    <Input
-                      id="chart-name"
-                      value={chartName}
-                      onChange={(e) => setChartName(e.target.value)}
-                      placeholder="Masukkan nama chart"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="device-number">Device</Label>
-                    <Select onValueChange={(value) => setChartType(value)}>
-                    <SelectTrigger>
-                        <SelectValue placeholder="Pilih device" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="line">1</SelectItem>
-                        <SelectItem value="bar">2</SelectItem>
-                      </SelectContent>
-                      </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="chart-type">Jenis Chart</Label>
-                    <Select onValueChange={(value) => setChartType(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih jenis chart" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="line">Line</SelectItem>
-                        <SelectItem value="bar">Bar</SelectItem>
-                        <SelectItem value="area">Area</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={handleAddChart}>Tambah</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            {tabs.length > 0 ? (
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                  {tabs.map((tab) => (
+                    <TabsTrigger key={tab} value={tab} className="flex items-center space-x-1 group">
+                      <span>{tab}</span>
+                      <span
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveTab(tab)
+                        }}
+                        role="button"
+                        title="Delete Tab"
+                        className="text-red-500 ml-2 invisible group-hover:visible cursor-pointer"
+                      >
+                        ×
+                      </span>
+                    </TabsTrigger>
+                  ))}
+
+                </TabsList>
+              </Tabs>
+            ) : (
+              <span className="text-muted-foreground italic">there are no tabs yet</span>
+            )}
+
+            <Button className="ml-auto" onClick={() => setOpenSheet(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Chart
+            </Button>
           </div>
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            {charts.map((chart, index) => (
-              <div key={index} className="aspect-video rounded-xl bg-muted/50">
-                {renderChart(chart)}
-              </div>
-            ))}
-          </div>
+
+          {activeTab && (
+            <SwapyDragArea
+              items={tabItems[activeTab] || []}
+              setItems={setItemsForTab}
+              layouts={{ lg: tabLayouts[activeTab] || [] }}
+              setLayouts={(layouts) =>
+                setLayoutsForTab(layouts.lg || [])
+              }
+              openSheet={false}
+              setOpenSheet={() => {}}
+              activeTab={activeTab}
+            />
+          )}
         </div>
-        
+
+        <AddChartDialog
+          open={openSheet}
+          setOpen={setOpenSheet}
+          existingTabs={tabs}
+          onAddChart={handleAddChart}
+        />
       </SidebarInset>
     </SidebarProvider>
-  );
+  )
 }

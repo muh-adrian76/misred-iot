@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
           className={`${quicksand.variable} antialiased`}
         >
           {children}
-          <Toaster />
+          <Toaster richColors />
         </body>
       </html>
     </GoogleOAuthProvider>

@@ -29,12 +29,11 @@ export function RegisterForm({ className, ...props }) {
     onSuccess: async ({ code }) => {
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`,
+          "/api/auth/google",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ code }),
-            credentials: "include",
           }
         );
         if (res.ok) {
@@ -80,7 +79,7 @@ export function RegisterForm({ className, ...props }) {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`,
+        "/api/auth/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

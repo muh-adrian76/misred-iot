@@ -48,13 +48,12 @@ export function LoginForm({
     if (!validateForm()) return;
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
 
       if (!res.ok) {
@@ -77,11 +76,10 @@ export function LoginForm({
     flow: "auth-code",
     onSuccess: async ({ code }) => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`, {
+        const res = await fetch("/api/auth/google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code }),
-          credentials: "include",
         });
         if (res.ok) {
           const data = await res.json();
