@@ -58,7 +58,7 @@ import { AppSidebar } from "@/components/features/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
 import AddDeviceDialog from "@/components/features/add-device";
-import EditDeviceDialog from "@/components/features/edit-device";
+import EditDeviceDialog from "@/components/forms/edit-device-form";
 import ConfirmDeleteDialog from "@/components/features/delete-device";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -71,7 +71,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { fetchFromBackend } from "@/lib/utils";
+import { fetchFromBackend } from "@/lib/helper";
 import { googleLogout } from "@react-oauth/google";
 import { useTheme } from "next-themes";
 
@@ -358,7 +358,9 @@ export default function DataTableDemo() {
           <div className="flex items-center gap-2 px-4">
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>Menu</BreadcrumbItem>
+                <BreadcrumbItem>
+                <span className="text-muted-foreground">Menu</span>
+                </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage>Devices</BreadcrumbPage>

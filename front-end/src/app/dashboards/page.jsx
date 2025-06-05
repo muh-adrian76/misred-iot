@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import {
   SidebarInset,
   SidebarProvider,
@@ -15,12 +14,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { AppSidebar } from "@/components/features/app-sidebar";
 import { SwapyDragArea } from "@/components/features/swapy";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AddChartDialog } from "@/components/features/add-chart";
-import { SettingsDialog } from "@/components/features/settings-dialog";
+import { AddChartDialog } from "@/components/forms/add-chart-form";
+import { SettingsDialog } from "@/components/forms/settings-form";
+import LogoutButton from "@/components/buttons/logout-button";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -32,15 +31,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { fetchFromBackend } from "@/lib/utils";
-import { googleLogout } from "@react-oauth/google";
 import {
-  Filter,
+  CalendarSearch,
   Download,
   RefreshCw,
   Bell,
   Sun,
   Moon,
+  Plus,
   Laptop,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -128,14 +126,6 @@ export default function Page() {
     avatar: "/avatars/shadcn.jpg", // ganti sesuai data user Anda
   };
 
-  const handleLogout = async () => {
-    await fetchFromBackend("/auth/logout", {
-      method: "POST",
-    });
-    googleLogout?.();
-    router.push("/login");
-  };
-
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <div
@@ -147,7 +137,7 @@ export default function Page() {
         <AppSidebar />
       </div>
       <SidebarInset>
-        <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between">
+        <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between sticky top-0">
           <div className="flex items-center gap-4 px-4">
             <SidebarTrigger className="md:hidden" />
             {/* <Separator orientation="vertical" className="h-6" /> */}
@@ -156,7 +146,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <span className="text-muted-foreground">Home</span>
+                  <span className="text-muted-foreground">Menu</span>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
@@ -238,8 +228,8 @@ export default function Page() {
                 <DropdownMenuItem onClick={() => setOpenSettings(true)}>
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  Logout
+                <DropdownMenuItem>
+                  <LogoutButton />
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -247,50 +237,55 @@ export default function Page() {
         </header>
 
         <div className="p-4 space-y-4">
-          <div className="flex items-center px-3.5 gap-4 justify-between">
-            {tabs.length > 0 ? (
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  {tabs.map((tab) => (
-                    <TabsTrigger
-                      key={tab}
-                      value={tab}
-                      className="flex items-center space-x-1 group"
-                    >
-                      <span>{tab}</span>
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveTab(tab);
-                        }}
-                        role="button"
-                        title="Delete Tab"
-                        className="text-red-500 ml-2 invisible group-hover:visible cursor-pointer"
-                      >
-                        ×
-                      </span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            ) : (
-              // <span className="text-muted-foreground">
-              //   Dashboard masih kosong.
-              // </span>
-              ""
-            )}
-          </div>
+          {tabs.length === 0 && !activeTab ? (
+            <div className="flex items-center justify-center h-screen">
+              <span className="text-muted-foreground text-lg">
+                Dashboard masih kosong. Tambahkan widget untuk memulai.
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center px-3.5 gap-4 justify-between">
+                {tabs.length > 0 && (
+                  <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList>
+                      {tabs.map((tab) => (
+                        <TabsTrigger
+                          key={tab}
+                          value={tab}
+                          className="flex items-center space-x-1 group"
+                        >
+                          <span>{tab}</span>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveTab(tab);
+                            }}
+                            role="button"
+                            title="Delete Tab"
+                            className="text-red-500 ml-2 invisible group-hover:visible cursor-pointer"
+                          >
+                            ×
+                          </span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
+              </div>
 
-          {activeTab && (
-            <SwapyDragArea
-              items={tabItems[activeTab] || []}
-              setItems={setItemsForTab}
-              layouts={{ lg: tabLayouts[activeTab] || [] }}
-              setLayouts={(layouts) => setLayoutsForTab(layouts.lg || [])}
-              openSheet={false}
-              setOpenSheet={() => {}}
-              activeTab={activeTab}
-            />
+              {activeTab && (
+                <SwapyDragArea
+                  items={tabItems[activeTab] || []}
+                  setItems={setItemsForTab}
+                  layouts={{ lg: tabLayouts[activeTab] || [] }}
+                  setLayouts={(layouts) => setLayoutsForTab(layouts.lg || [])}
+                  openSheet={false}
+                  setOpenSheet={() => {}}
+                  activeTab={activeTab}
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -310,7 +305,7 @@ export default function Page() {
           {/* Filter */}
           <Button variant="outline">
             <span className="sr-only">Filter</span>
-            <Filter className="w-5 h-5" />
+            <CalendarSearch className="w-5 h-5" />
             <span className="ml-2 hidden sm:inline">Filter</span>
           </Button>
           {/* Export */}
@@ -338,7 +333,6 @@ export default function Page() {
           existingTabs={tabs}
           onAddChart={handleAddChart}
         />
-        <SettingsDialog open={openSettings} setOpen={setOpenSettings} />
       </SidebarInset>
     </SidebarProvider>
   );

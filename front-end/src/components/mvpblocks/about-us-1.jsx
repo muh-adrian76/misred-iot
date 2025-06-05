@@ -1,4 +1,4 @@
-'use client';;
+'use client';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Spotlight } from '@/components/ui/spotlight';
@@ -107,16 +107,16 @@ export default function AboutUs1() {
               <BorderBeam
                 duration={8}
                 size={300}
-                className="from-transparent via-primary/40 to-transparent" />
+                className="from-transparent via-red-500/40 to-transparent" />
 
               <div
                 className="mb-6 inline-flex aspect-square h-16 w-16 flex-1 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm">
-                <Rocket className="h-8 w-8 text-primary" />
+                <Rocket className="h-8 w-8 text-red-500" />
               </div>
 
               <div className="space-y-4">
                 <h2
-                  className="mb-4 bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-3xl font-bold text-transparent">
+                  className="mb-4 bg-gradient-to-r from-red-500/90 to-primary/70 bg-clip-text text-3xl font-bold text-transparent">
                   Our Mission
                 </h2>
 

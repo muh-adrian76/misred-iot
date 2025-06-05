@@ -82,7 +82,7 @@ export function AddChartDialog({
                 </div>
             )}    
             <div>
-              <Label>Create a new tab</Label>
+              <Label className="mb-3">Create a new tab</Label>
               <Input
                 value={newTab}
                 onChange={(e) => {

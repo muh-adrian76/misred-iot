@@ -13,7 +13,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { GoogleIcon } from "@/components/icons/google";
 
 import { cn } from "@/lib/utils";
-import { fetchFromBackend } from "@/lib/utils";
+import { fetchFromBackend } from "@/lib/helper";
 
 export function LoginForm({ className, ...props }) {
   const [email, setEmail] = useState("");

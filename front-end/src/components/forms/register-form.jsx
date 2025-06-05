@@ -17,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/features/toaster";
 
 import { useGoogleLogin } from "@react-oauth/google";
-import { cn, fetchFromBackend } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { fetchFromBackend } from "@/lib/helper";
 import { GoogleIcon } from "../icons/google";
 import { motion } from "framer-motion";
 
