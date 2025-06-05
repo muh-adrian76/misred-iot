@@ -3,10 +3,14 @@
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"bun run --watch src/server.ts\" \"bun run --watch src/lib/tokenizer.ts\"",
-    "truncate": "bun run src/lib/truncate.ts",
-    "reset-db": "bun run truncate alarms widgets payloads users devices",
-    "publisher": "bun run src/lib/publisher.ts"
+    "dev-bun": "concurrently \"bun run --watch src/server.ts\" \"bun run --watch src/lib/tokenizer.ts\"",
+    "dev-npm": "concurrently \"ts-node-dev --respawn src/server.ts\" \"ts-node-dev --respawn src/lib/tokenizer.ts\"",
+    "truncate-bun": "bun run src/lib/truncate.ts",
+    "truncate-npm": "ts-node src/lib/truncate.ts",
+    "reset-db-bun": "bun run truncate-bun alarms widgets payloads users devices",
+    "reset-db-npm": "npm run truncate-npm alarms widgets payloads users devices",
+    "publisher-bun": "bun run src/lib/publisher.ts",
+    "publisher-npm": "ts-node run src/lib/publisher.ts"
   },
   "dependencies": {
     "@chirpstack/chirpstack-api": "^4.11.1",
@@ -23,7 +27,10 @@
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.12",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "typescript": "^5.4.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
   },
   "module": "src/server.js"
 }

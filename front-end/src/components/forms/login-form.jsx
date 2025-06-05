@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/features/toaster";
@@ -14,12 +14,14 @@ import { GoogleIcon } from "@/components/icons/google";
 
 import { cn } from "@/lib/utils";
 import { fetchFromBackend } from "@/lib/helper";
+import { useUser } from "@/contexts/user-context";
 
 export function LoginForm({ className, ...props }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { setUser } = useUser();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -37,6 +39,7 @@ export function LoginForm({ className, ...props }) {
       !res.ok
         ? showToast("warning", "Login gagal!", `${data.message}`)
         : setTimeout(() => {
+          setUser(data.user);
             router.push("/dashboards");
           }, 500);
     } catch (error) {
@@ -66,6 +69,7 @@ export function LoginForm({ className, ...props }) {
         !res.ok
           ? showToast("error", "Google login gagal!", `${data.message}`)
           : setTimeout(() => {
+            setUser(data.user);
               router.push("/dashboards");
             }, 500);
       } catch (error) {
@@ -87,7 +91,7 @@ export function LoginForm({ className, ...props }) {
               <div className="flex flex-col items-center text-center">
                 <div className="flex gap-4 mb-4">
                 <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-                  <img src="/misred-logo.png" alt="" />
+                  <img src="/misred-logo-red.svg" alt="" />
                 </div>
                 <h1 className="text-2xl tracking-wider font-bold">
                   Misred-IoT

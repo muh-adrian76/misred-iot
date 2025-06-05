@@ -39,7 +39,7 @@ async function setAuthCookie(auth: any, jwt: any, userId: string) {
     sameSite: Bun.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
     secure: Bun.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
-    maxAge: 60 * 60,
+    maxAge: 60 * 60 * 24,
   });
 }
 

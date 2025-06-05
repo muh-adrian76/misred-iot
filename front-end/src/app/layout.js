@@ -3,6 +3,7 @@ import "./globals.css";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "next-themes";
+import { UserProvider } from "@/contexts/user-context";
 
 const defaultFont = JetBrains_Mono({
   variable: "--font-sans",
@@ -20,7 +21,7 @@ export default function RootLayout({ children }) {
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
       <html lang="en" suppressHydrationWarning>
         <head>
-          <link rel="icon" href="/misred-logo.svg" />
+          <link rel="icon" href="/misred-logo-red.svg" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content="MiSREd-IoT Platform" />
           <meta
@@ -29,9 +30,11 @@ export default function RootLayout({ children }) {
           />
         </head>
         <body className={`${defaultFont.variable} antialiased`}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
-          </ThemeProvider>
+          <UserProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              {children}
+            </ThemeProvider>
+          </UserProvider>
           <Toaster richColors />
         </body>
       </html>

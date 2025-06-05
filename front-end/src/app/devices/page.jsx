@@ -16,7 +16,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -29,37 +28,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Bell, Sun, Moon, Laptop } from "lucide-react";
 import {
   SidebarInset,
-  SidebarTrigger,
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
-import { Separator } from "@/components/ui/separator";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
-import AddDeviceDialog from "@/components/features/add-device";
-import EditDeviceDialog from "@/components/forms/edit-device-form";
-import ConfirmDeleteDialog from "@/components/features/delete-device";
+import AddDeviceForm from "@/components/forms/add-device-form";
+import EditDeviceForm from "@/components/forms/edit-device-form";
+import DeleteDeviceForm from "@/components/forms/delete-device-form";
 import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
@@ -70,7 +50,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/helper";
 import { googleLogout } from "@react-oauth/google";
 import { useTheme } from "next-themes";
@@ -224,7 +203,7 @@ export default function DataTableDemo() {
 
         const handleEdit = () => {
           setEditDevice(device);
-          setEditDialogOpen(true);
+          setEditFormOpen(true);
         };
 
         return (
@@ -242,7 +221,7 @@ export default function DataTableDemo() {
               size="sm"
               onClick={() => {
                 setDeviceToDelete(device);
-                setDeleteDialogOpen(true);
+                setDeleteFormOpen(true);
               }}
             >
               <IconTrashX />
@@ -253,8 +232,8 @@ export default function DataTableDemo() {
     },
   ];
 
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [editFormOpen, setEditFormOpen] = React.useState(false);
+  const [deleteFormOpen, setDeleteFormOpen] = React.useState(false);
   const [deviceToDelete, setDeviceToDelete] = React.useState(null);
   const [editDevice, setEditDevice] = React.useState(null);
   const [globalFilter, setGlobalFilter] = React.useState("");
@@ -267,7 +246,7 @@ export default function DataTableDemo() {
   const [name, setName] = React.useState("");
   const [boardType, setBoardType] = React.useState("");
   const [protocol, setProtocol] = React.useState("");
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [FormOpen, setFormOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const [openSettings, setOpenSettings] = React.useState(false);
@@ -297,7 +276,7 @@ export default function DataTableDemo() {
     setName("");
     setBoardType("");
     setProtocol("");
-    setDialogOpen(false);
+    setFormOpen(false);
     toast.success("Device berhasil ditambahkan!");
   };
 
@@ -483,10 +462,11 @@ export default function DataTableDemo() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
             {/* Add device */}
-            <AddDeviceDialog
-              open={dialogOpen}
-              setOpen={setDialogOpen}
+            <AddDeviceForm
+              open={FormOpen}
+              setOpen={setFormOpen}
               name={name}
               setName={setName}
               boardType={boardType}
@@ -495,19 +475,19 @@ export default function DataTableDemo() {
               setProtocol={setProtocol}
               handleAddDevice={handleAddDevice}
             />
-            {/* Edit table */}
-            <EditDeviceDialog
-              open={editDialogOpen}
-              setOpen={setEditDialogOpen}
+            {/* Edit device */}
+            <EditDeviceForm
+              open={editFormOpen}
+              setOpen={setEditFormOpen}
               editDevice={editDevice}
               setEditDevice={setEditDevice}
               setData={setData}
               toast={toast}
             />
-            {/* Confirm Delete */}
-            <ConfirmDeleteDialog
-              open={deleteDialogOpen}
-              setOpen={setDeleteDialogOpen}
+            {/* Delete device */}
+            <DeleteDeviceForm
+              open={deleteFormOpen}
+              setOpen={setDeleteFormOpen}
               deviceToDelete={deviceToDelete}
               setData={setData}
               toast={toast}

@@ -1,4 +1,3 @@
-"use client";
 import { RegisterForm } from "@/components/forms/register-form";
 
 export default function Page() {
@@ -9,7 +8,7 @@ export default function Page() {
           className="flex items-center gap-2 self-center text-xl tracking-wide"
         >
           <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-            <img src="/misred-logo.png" alt="" />
+            <img src="/misred-logo-red.svg" alt="" />
           </div>
           Misred-IoT
         </div>

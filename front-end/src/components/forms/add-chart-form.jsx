@@ -15,7 +15,7 @@ import { toast } from "sonner"
 
 const chartTypes = ["area", "bar", "pie", "line"]
 
-export function AddChartDialog({
+export function AddChartForm({
   open,
   setOpen,
   existingTabs = [],

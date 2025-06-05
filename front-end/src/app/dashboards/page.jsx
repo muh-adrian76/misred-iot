@@ -5,56 +5,33 @@ import { Button } from "@/components/ui/button";
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { AppSidebar } from "@/components/features/app-sidebar";
 import { SwapyDragArea } from "@/components/features/swapy";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AddChartDialog } from "@/components/forms/add-chart-form";
-import { SettingsDialog } from "@/components/forms/settings-form";
-import LogoutButton from "@/components/buttons/logout-button";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
+import { AddChartForm } from "@/components/forms/add-chart-form";
+import AppNavbar from "@/components/features/app-navbar";
 import {
   CalendarSearch,
   Download,
   RefreshCw,
-  Bell,
-  Sun,
-  Moon,
   Plus,
-  Laptop,
 } from "lucide-react";
-import { useTheme } from "next-themes";
+import { toast } from "sonner";
+
+import { useUser } from "@/contexts/user-context";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Page() {
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState("");
-  const [openSheet, setOpenSheet] = useState(false);
+  const [openChartSheet, setOpenChartSheet] = useState(false);
   const [tabItems, setTabItems] = useState({});
   const [tabLayouts, setTabLayouts] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [openSettings, setOpenSettings] = useState(false);
 
   const isAuthenticated = useAuth();
-  const router = useRouter();
-  const { setTheme, theme } = useTheme();
+  const { user } = useUser();
 
   useEffect(() => {
     if (tabs.length > 0 && !tabs.includes(activeTab)) {
@@ -119,13 +96,6 @@ export default function Page() {
     return null;
   }
 
-  // Data user, bisa dari context/auth
-  const user = {
-    name: "Test User",
-    email: "test@user.com",
-    avatar: "/avatars/shadcn.jpg", // ganti sesuai data user Anda
-  };
-
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       <div
@@ -137,109 +107,12 @@ export default function Page() {
         <AppSidebar />
       </div>
       <SidebarInset>
-        <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between sticky top-0">
-          <div className="flex items-center gap-4 px-4">
-            <SidebarTrigger className="md:hidden" />
-            {/* <Separator orientation="vertical" className="h-6" /> */}
-
-            {/* Breadcrumb */}
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <span className="text-muted-foreground">Menu</span>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          {/* Kanan: Action Buttons */}
-          <div className="flex items-center gap-4 px-4">
-            {/* Notifikasi */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="relative rounded-full"
-                >
-                  <Bell className="w-5 h-5" />
-                  {/* Notif */}
-                  {/* <span className="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full" /> */}
-                  <span className="sr-only">Notifikasi</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <div className="px-3 py-2 font-medium">Notifikasi Terbaru</div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm pH tinggi di Device1</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm TSS rendah di Device2</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Tema */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  {theme === "dark" ? (
-                    <Moon className="w-5 h-5" />
-                  ) : theme === "light" ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Laptop className="w-5 h-5" />
-                  )}
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  <Sun className="mr-2 w-4 h-4" /> Cerah
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  <Moon className="mr-2 w-4 h-4" /> Gelap
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  <Laptop className="mr-2 w-4 h-4" /> Sistem
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Profil */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback>{user.name[0]}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-3 py-2">
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {user.email}
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setOpenSettings(true)}>
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <LogoutButton />
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+        <AppNavbar page="Dashboards" profile={user}></AppNavbar>
 
         <div className="p-4 space-y-4">
           {tabs.length === 0 && !activeTab ? (
             <div className="flex items-center justify-center h-screen">
-              <span className="text-muted-foreground text-lg">
+              <span className="text-muted-foreground text-lg text-center">
                 Dashboard masih kosong. Tambahkan widget untuk memulai.
               </span>
             </div>
@@ -327,9 +200,9 @@ export default function Page() {
           </Button>
         </div>
 
-        <AddChartDialog
-          open={openSheet}
-          setOpen={setOpenSheet}
+        <AddChartForm
+          open={openChartSheet}
+          setOpen={setOpenChartSheet}
           existingTabs={tabs}
           onAddChart={handleAddChart}
         />

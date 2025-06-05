@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { user } from "@/components/features/app-sidebar" // pastikan user diimport jika perlu
 
-export default function EditDeviceDialog({
+export default function EditDeviceForm({
   open,
   setOpen,
   editDevice,

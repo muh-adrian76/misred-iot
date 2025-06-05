@@ -30,6 +30,11 @@ const sidebarMenu = [
     },
   ];
 
+export const user = {
+    name: "Test User",
+    email: "test@user.com",
+  };
+
 export function AppSidebar({ ...props }) {
 
   return (
@@ -40,7 +45,7 @@ export function AppSidebar({ ...props }) {
           className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
         >
           <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-            <img src="/misred-logo.svg" alt="" className="size-6" />
+            <img src="/misred-logo-red.svg" alt="" className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-lg leading-tight">
             <span className="truncate">MiSREd-IoT</span>

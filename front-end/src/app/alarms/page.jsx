@@ -28,38 +28,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+} from "@/components/ui/table";;
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   SidebarInset,
-  SidebarTrigger,
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { Bell, Sun, Moon, Laptop } from "lucide-react";
 import { AppSidebar } from "@/components/features/app-sidebar";
-import { Separator } from "@/components/ui/separator";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
-import AddAlarmDialog from "@/components/features/add-alarm";
-import EditAlarmDialog from "@/components/forms/edit-alarm-form";
-import ConfirmDeleteAlarmDialog from "@/components/features/delete-alarm";
+import AddAlarmForm from "@/components/forms/add-alarm-form";
+import EditAlarmForm from "@/components/forms/edit-alarm-form";
+import DeleteAlarmForm from "@/components/forms/delete-alarm-form";
 import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
@@ -70,7 +51,6 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/helper";
 import { googleLogout } from "@react-oauth/google";
 import { useTheme } from "next-themes";
@@ -170,7 +150,7 @@ export default function DataTableDemo() {
             ...alarm,
             name: alarm.name, // penting untuk tracking nama device
           });
-          setEditDialogOpen(true);
+          setEditFormOpen(true);
         };
 
         return (
@@ -188,7 +168,7 @@ export default function DataTableDemo() {
               size="sm"
               onClick={() => {
                 setAlarmToDelete(alarm);
-                setDeleteDialogOpen(true);
+                setDeleteFormOpen(true);
               }}
             >
               <IconTrashX />
@@ -199,10 +179,10 @@ export default function DataTableDemo() {
     },
   ];
 
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [editFormOpen, setEditFormOpen] = React.useState(false);
   const [editAlarm, setEditAlarm] = React.useState(null);
   const [globalFilter, setGlobalFilter] = React.useState("");
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [deleteFormOpen, setDeleteFormOpen] = React.useState(false);
   const [alarmToDelete, setAlarmToDelete] = React.useState(null);
 
   const [sorting, setSorting] = React.useState([]);
@@ -213,7 +193,7 @@ export default function DataTableDemo() {
   const [name, setName] = React.useState("");
   const [sensorName, setsensorName] = React.useState("");
   const [threshold, setthreshold] = React.useState("");
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [FormOpen, setFormOpen] = React.useState(false);
 
   const [openSettings, setOpenSettings] = React.useState(false);
   const isAuthenticated = useAuth();
@@ -258,7 +238,7 @@ export default function DataTableDemo() {
     setName("");
     setsensorName("");
     setthreshold("");
-    setDialogOpen(false);
+    setFormOpen(false);
 
     toast.success("Alarm berhasil ditambahkan!");
   };
@@ -278,7 +258,7 @@ export default function DataTableDemo() {
     };
     delete updatedDevices[deviceIndex].sensors[sensorIndex].name; // optional cleanup
     setDevices(updatedDevices);
-    setEditDialogOpen(false);
+    setEditFormOpen(false);
     toast.success("Sensor berhasil diperbarui!");
   };
 
@@ -465,9 +445,9 @@ export default function DataTableDemo() {
               </DropdownMenuContent>
             </DropdownMenu>
             {/* Add alarm */}
-            <AddAlarmDialog
-              open={dialogOpen}
-              setOpen={setDialogOpen}
+            <AddAlarmForm
+              open={FormOpen}
+              setOpen={setFormOpen}
               sensorName={sensorName}
               setsensorName={setsensorName}
               name={name}
@@ -480,9 +460,9 @@ export default function DataTableDemo() {
               toast={toast}
             />
             {/* Edit table */}
-            <EditAlarmDialog
-              open={editDialogOpen}
-              setOpen={setEditDialogOpen}
+            <EditAlarmForm
+              open={editFormOpen}
+              setOpen={setEditFormOpen}
               editAlarm={editAlarm}
               setEditAlarm={setEditAlarm}
               devices={devices}
@@ -491,9 +471,9 @@ export default function DataTableDemo() {
               toast={toast}
             />
             {/* Confirm Delete */}
-            <ConfirmDeleteAlarmDialog
-              open={deleteDialogOpen}
-              setOpen={setDeleteDialogOpen}
+            <DeleteAlarmForm
+              open={deleteFormOpen}
+              setOpen={setDeleteFormOpen}
               alarmToDelete={alarmToDelete}
               setDevices={setDevices}
               toast={toast}

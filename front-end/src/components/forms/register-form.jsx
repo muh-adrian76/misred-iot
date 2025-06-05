@@ -15,18 +15,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/features/toaster";
-
-import { useGoogleLogin } from "@react-oauth/google";
-import { cn } from "@/lib/utils";
-import { fetchFromBackend } from "@/lib/helper";
-import { GoogleIcon } from "../icons/google";
 import { motion } from "framer-motion";
+
+import { cn } from "@/lib/utils";
+import { useGoogleLogin } from "@react-oauth/google";
+import { fetchFromBackend } from "@/lib/helper";
+import { useUser } from "@/contexts/user-context";
+import { GoogleIcon } from "../icons/google";
 
 export function RegisterForm({ className, ...props }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { setUser } = useUser();
 
   // Google login handler
   const googleLogin = useGoogleLogin({
@@ -39,16 +41,17 @@ export function RegisterForm({ className, ...props }) {
           body: JSON.stringify({ code }),
         });
 
+        const data = await res.json();
         !res.ok
           ? showToast("error", "Google login gagal!", `${data.message}`)
-          :
-            setTimeout(() => {
+          : setTimeout(() => {
+              setUser(data.user);
               router.push("/dashboards");
             }, 500);
       } catch {
         showToast("error", "Google login gagal!");
       } finally {
-        setIsLoading(false); 
+        setIsLoading(false);
       }
     },
     onError: () => toast.error("Google login gagal!"),
@@ -99,15 +102,20 @@ export function RegisterForm({ className, ...props }) {
 
       setTimeout(async () => {
         try {
-          await fetchFromBackend("/auth/login", {
+          const res = await fetchFromBackend("/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
             credentials: "include",
           });
-          setTimeout(() => {
-            router.push("/dashboards");
-          }, 500);
+
+          const data = await res.json();
+          !res.ok
+            ? showToast("warning", "Login gagal!", `${data.message}`)
+            : setTimeout(() => {
+                setUser(data.user);
+                router.push("/dashboards");
+              }, 500);
         } catch {
           showToast("warning", "Peringatan", "Gagal melakukan login.");
         }
@@ -120,10 +128,7 @@ export function RegisterForm({ className, ...props }) {
   };
 
   return (
-    <div
-      className={cn("flex flex-col gap-6", className)}
-      {...props}
-    >
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl mb-3">Registrasi Akun</CardTitle>
