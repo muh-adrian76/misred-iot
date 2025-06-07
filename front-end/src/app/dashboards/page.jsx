@@ -14,12 +14,13 @@ import AppNavbar from "@/components/features/app-navbar";
 import {
   CalendarSearch,
   Download,
-  RefreshCw,
+  Search,
   Plus,
+  Move
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { useUser } from "@/contexts/user-context";
+import { useUser } from "@/providers/user-provider";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Page() {
@@ -113,7 +114,7 @@ export default function Page() {
           {tabs.length === 0 && !activeTab ? (
             <div className="flex items-center justify-center h-screen">
               <span className="text-muted-foreground text-lg text-center">
-                Dashboard masih kosong. Tambahkan widget untuk memulai.
+                Dashboard masih kosong. Tambahkan widget untuk memulainya.
               </span>
             </div>
           ) : (
@@ -153,8 +154,8 @@ export default function Page() {
                   setItems={setItemsForTab}
                   layouts={{ lg: tabLayouts[activeTab] || [] }}
                   setLayouts={(layouts) => setLayoutsForTab(layouts.lg || [])}
-                  openSheet={false}
-                  setOpenSheet={() => {}}
+                  openChartSheet={false}
+                  setOpenChartSheet={() => {}}
                   activeTab={activeTab}
                 />
               )}
@@ -167,36 +168,37 @@ export default function Page() {
             fixed left-1/2 bottom-4 -translate-x-1/2
             flex gap-2
             bg-background/80 backdrop-blur-md shadow-lg rounded-xl
-            px-6 py-2
-            z-50
+            px-2 py-2
+            z-10
             border
             max-w-full
             w-fit
             sm:gap-3
           "
         >
-          {/* Filter */}
-          <Button variant="outline">
+          <Button className="cursor-pointer" variant="outline" onClick={() => setOpenChartSheet(true)}>
+            <Plus className="w-5 h-5" />
+            <span className="ml-1 hidden sm:inline">Widget</span>
+          </Button>
+          <Button className="cursor-pointer" variant="outline">
+            <span className="sr-only">Edit</span>
+            <Move className="w-5 h-5" />
+            <span className="ml-1 hidden sm:inline">Edit</span>
+          </Button>
+          <Button className="cursor-pointer" variant="destructive">
+            <span className="sr-only">Search</span>
+            <Search className="w-5 h-5" />
+            <span className="ml-1 hidden sm:inline">Tab</span>
+          </Button>
+          <Button className="cursor-pointer" variant="outline">
             <span className="sr-only">Filter</span>
             <CalendarSearch className="w-5 h-5" />
-            <span className="ml-2 hidden sm:inline">Filter</span>
+            <span className="ml-1 hidden sm:inline">Filter</span>
           </Button>
-          {/* Export */}
-          <Button variant="outline">
+          <Button className="cursor-pointer" variant="outline">
             <span className="sr-only">Export</span>
             <Download className="w-5 h-5" />
-            <span className="ml-2 hidden sm:inline">Export</span>
-          </Button>
-          {/* Refresh */}
-          <Button variant="outline">
-            <span className="sr-only">Refresh</span>
-            <RefreshCw className="w-5 h-5" />
-            <span className="ml-2 hidden sm:inline">Refresh</span>
-          </Button>
-          {/* Add Chart */}
-          <Button onClick={() => setOpenSheet(true)}>
-            <Plus className="w-5 h-5" />
-            <span className="ml-2 hidden sm:inline">Widget</span>
+            <span className="ml-1 hidden sm:inline">Export</span>
           </Button>
         </div>
 

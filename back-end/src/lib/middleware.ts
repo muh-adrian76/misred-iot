@@ -8,11 +8,11 @@ export class MySQLDatabase {
   static async getInstance(): Promise<Connection> {
     if (!MySQLDatabase.instance) {
       MySQLDatabase.instance = await mysql.createConnection({
-        host: Bun.env.MYSQL_HOST,
-        user: Bun.env.MYSQL_USER,
-        password: Bun.env.MYSQL_PASSWORD,
-        database: Bun.env.MYSQL_NAME,
-        port: Number(Bun.env.MYSQL_PORT),
+        host: process.env.MYSQL_HOST,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_NAME,
+        port: Number(process.env.MYSQL_PORT),
       });
     }
     return MySQLDatabase.instance;
@@ -25,7 +25,7 @@ export class MQTTClient {
 
   static getInstance(): MqttClient {
     if (!MQTTClient.client) {
-      MQTTClient.client = connect(Bun.env.RABBITMQ_URL_MQTT!);
+      MQTTClient.client = connect(process.env.RABBITMQ_URL_MQTT!);
     }
     return MQTTClient.client;
   }
@@ -51,8 +51,8 @@ class ChirpstackService {
   private serverUrl: string;
 
   constructor() {
-    this.chirpstackUrl = Bun.env.CHIRPSTACK_URL!;
-    this.serverUrl = Bun.env.SERVER_URL!;
+    this.chirpstackUrl = process.env.CHIRPSTACK_URL!;
+    this.serverUrl = process.env.SERVER_URL!;
   }
 
   async createApplication(jwt_token: string): Promise<string> {

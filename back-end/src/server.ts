@@ -56,7 +56,7 @@ class Server {
     this.app.use(widgetRoutes(this.widgetService));
     this.app.use(alarmRoutes(this.alarmService));
 
-    this.app.listen(Bun.env.BACKEND_PORT!, () => {
+    this.app.listen(process.env.BACKEND_PORT!, () => {
       console.log(
         `🦊 Server telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
       );
@@ -67,7 +67,7 @@ class Server {
     this.app
       .use(
         cors({
-          origin: Bun.env.FRONTEND_URL!,
+          origin: process.env.FRONTEND_URL!,
           preflight: true,
           credentials: true,
           methods: ["GET", "POST", "PUT", "DELETE"],
@@ -77,8 +77,8 @@ class Server {
       .use(
         jwt({
           name: "jwt",
-          secret: Bun.env.JWT_SECRET!,
-          exp: Bun.env.ACCESS_TOKEN_AGE,
+          secret: process.env.JWT_SECRET!,
+          exp: process.env.ACCESS_TOKEN_AGE,
         })
       )
       .use(

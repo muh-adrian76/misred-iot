@@ -58,12 +58,16 @@ const postLoginSchema = {
           {
             id: t.String({ description: "ID pengguna", example: "1" }),
             name: t.String({
-              description: "Nama sementara yang diambil dari email",
-              example: "contoh",
-            }),
+            description: "Nama pengguna",
+            example: "contoh",
+          }),
             email: t.String({
               description: "Email pengguna",
               example: "contoh@gmail.com",
+            }),
+            created_at: t.String({
+              description: "Waktu pembuatan akun",
+              example: "2023-09-01T12:00:00Z",
             }),
             last_login: t.String({
               description: "Waktu terakhir login",

@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { authorizeRequest, clearAuthCookie, setAuthCookie } from "../../lib/utils";
+import { clearAuthCookie, setAuthCookie } from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import {
   getRefreshTokenSchema,
@@ -32,7 +32,7 @@ export function authRoutes(authService: AuthService) {
         "/login",
         // @ts-ignore
         async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.login(body, jwt, auth);
+          const result = await authService.login(body);
 
           if (result.status === 200) {
             await setAuthCookie(auth, jwt, result.user?.id);
@@ -54,8 +54,7 @@ export function authRoutes(authService: AuthService) {
         async ({ jwt, cookie: { auth } }) => {
           const result = await authService.verifyToken(
             jwt,
-            auth,
-            authorizeRequest
+            auth
           );
           return new Response(
             JSON.stringify(
@@ -88,7 +87,7 @@ export function authRoutes(authService: AuthService) {
         "/logout",
         // @ts-ignore
         async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.logout(jwt, auth, authorizeRequest);
+          const result = await authService.logout(jwt, auth);
           clearAuthCookie(auth);
           
           return new Response(JSON.stringify(result), {

@@ -1,6 +1,7 @@
 import { Connection, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
+import { authorizeRequest } from "../lib/utils";
 
 export class AuthService {
   private db: Connection;
@@ -15,13 +16,7 @@ export class AuthService {
     );
   }
 
-  async register({
-    email,
-    password,
-  }: {
-    password: string;
-    email: string;
-  }) {
+  async register({ email, password }: { password: string; email: string }) {
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
         status: 400,
@@ -33,11 +28,11 @@ export class AuthService {
     const hashedPassword = await Bun.password.hash(password, {
       algorithm: "bcrypt",
     });
-    const name = email.split('@')[0];
+    const name = email.split("@")[0];
 
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        "INSERT INTO users (id, email, password, name, last_login) VALUES (?, ?, ?, ?, NOW())",
+        "INSERT INTO users (id, email, password, name, created_at) VALUES (?, ?, ?, ?, NOW())",
         [userId, email, hashedPassword, name]
       );
       if (result.affectedRows > 0) {
@@ -54,11 +49,7 @@ export class AuthService {
     }
   }
 
-  async login(
-    { email, password }: { email: string; password: string },
-    jwt: any,
-    auth: any
-  ) {
+  async login({ email, password }: { email: string; password: string }) {
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
         status: 400,
@@ -67,7 +58,7 @@ export class AuthService {
     }
 
     const [rows] = await this.db.query<any[]>(
-      "SELECT id, email, password, name, last_login FROM users WHERE email = ?",
+      "SELECT id, email, password, name, created_at FROM users WHERE email = ?",
       [email]
     );
 
@@ -91,10 +82,11 @@ export class AuthService {
     const response = await fetch(`http://localhost:7601/sign/${user.id}`);
     const refreshToken = await response.text();
 
-    await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
-      refreshToken,
-      user.id,
-    ]);
+    const now = new Date();
+    await this.db.query(
+      "UPDATE users SET last_login = ?, refresh_token = ? WHERE id = ?",
+      [now, refreshToken, user.id]
+    );
 
     return {
       status: 200,
@@ -102,14 +94,13 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
-        last_login: user.last_login
-          ? user.last_login.toISOString()
-          : new Date().toISOString(),
+        created_at: user.created_at.toISOString(),
+        last_login: user.last_login.toISOString(),
       },
     };
   }
 
-  async verifyToken(jwt: any, auth: any, authorizeRequest: any) {
+  async verifyToken(jwt: any, auth: any) {
     try {
       const decoded = await authorizeRequest(jwt, auth);
       if (decoded) {
@@ -139,19 +130,23 @@ export class AuthService {
     }
   }
 
-  async logout(jwt: any, auth: any, authorizeRequest: any) {
+  async logout(jwt: any, auth: any) {
     const decoded = await authorizeRequest(jwt, auth);
-    const { id } = decoded.sub;
+    const id = decoded.sub;
     const [result] = await this.db.query<any[]>(
       "SELECT refresh_token FROM users WHERE id = ?",
       [id]
     );
+
     const refreshToken = result[0];
     if (!refreshToken)
       return { status: 400, message: "Refresh token tidak valid." };
 
-    await this.db.query("UPDATE users SET refresh_token = ?", [""]);
-    
+    await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      "",
+      id,
+    ]);
+
     return { status: 200, message: "User berhasil logout" };
   }
 
@@ -179,35 +174,39 @@ export class AuthService {
 
     let userId: string;
     let userName: string;
-    const oauthPassword: string = "GOOGLE_OAUTH_USER";
+    let userCreatedAt: string;
+    const oauthPassword: string = "GOOGLE_OAUTH_USER"; // Kredensial khusus untuk Gmail
     const serverTime = new Date();
 
     try {
       const [rows] = await this.db.query<any[]>(
-        "SELECT id, email, name FROM users WHERE email = ?",
+        "SELECT id, email, name, created_at FROM users WHERE email = ?",
         [payload.email]
       );
 
       if (rows && rows.length > 0) {
         userId = rows[0].id;
         userName = rows[0].name;
-        await this.db.query(
-          "UPDATE users SET last_login = NOW() WHERE id = ?",
-          [userId]
-        );
+        userCreatedAt = rows[0].created_at;
+        await this.db.query("UPDATE users SET last_login = ? WHERE id = ?", [
+          serverTime,
+          userId,
+        ]);
       } else {
         userId = uuidv4().slice(0, 8);
         const [result] = await this.db.query<ResultSetHeader>(
-          "INSERT INTO users (id, password, email, name, last_login) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO users (id, password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?)",
           [
             userId,
             oauthPassword,
             payload.email,
             payload.name || payload.email.split("@")[0],
             serverTime,
+            serverTime,
           ]
         );
         userName = payload.name || payload.email.split("@")[0];
+        userCreatedAt = serverTime.toISOString()
 
         if (result.affectedRows === 0) {
           return { status: 400, message: "Gagal menambahkan user Google." };
@@ -228,6 +227,7 @@ export class AuthService {
           id: userId,
           name: userName,
           email: payload.email,
+          created_at: userCreatedAt,
           last_login: serverTime.toISOString(),
         },
       };

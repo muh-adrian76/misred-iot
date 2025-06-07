@@ -25,7 +25,7 @@ export function NavMain({ items }) {
               <SidebarMenuButton asChild isActive={isActive}>
                 <a href={item.url}>
                   {item.icon && <item.icon />}
-                  <span>{item.title}</span>
+                  <span className="ml-2">{item.title}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>

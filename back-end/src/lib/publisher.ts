@@ -1,7 +1,8 @@
 import { connect } from 'mqtt';
 
-const client = connect(Bun.env.RABBITMQ_URL_MQTT!);
+const client = connect(process.env.RABBITMQ_URL_MQTT!);
 
+// Testing publisher MQTT
 client.on("connect", () => {
     client.publish("device/data", JSON.stringify({
         device_id: 2,

@@ -14,15 +14,17 @@
   },
   "dependencies": {
     "@chirpstack/chirpstack-api": "^4.11.1",
-    "@elysiajs/cors": "^1.2.0",
-    "@elysiajs/jwt": "^1.2.0",
-    "@elysiajs/swagger": "^1.2.2",
+    "@elysiajs/cors": "^1.3.3",
+    "@elysiajs/jwt": "^1.3.1",
+    "@elysiajs/swagger": "^1.3.0",
     "concurrently": "^9.1.2",
     "crypto": "^1.0.1",
-    "elysia": "^1.2.25",
+    "elysia": "^1.3.4",
     "google-auth-library": "^9.15.1",
     "mqtt": "^5.10.4",
     "mysql2": "^3.13.0",
+    "react": "^0.0.0-experimental-280ff6fe-20250606",
+    "react-dom": "^0.0.0-experimental-280ff6fe-20250606",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

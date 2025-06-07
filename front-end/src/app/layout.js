@@ -1,9 +1,12 @@
-import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { JetBrains_Mono } from "next/font/google";
+import { brandLogo } from "@/lib/helper";
+
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { UserProvider } from "@/providers/user-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "next-themes";
-import { UserProvider } from "@/contexts/user-context";
+import { ViewTransitions } from "next-view-transitions";
 
 const defaultFont = JetBrains_Mono({
   variable: "--font-sans",
@@ -19,9 +22,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
+      <ViewTransitions>
       <html lang="en" suppressHydrationWarning>
         <head>
-          <link rel="icon" href="/misred-logo-red.svg" />
+          <link rel="icon" href={brandLogo} />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="description" content="MiSREd-IoT Platform" />
           <meta
@@ -38,6 +42,7 @@ export default function RootLayout({ children }) {
           <Toaster richColors />
         </body>
       </html>
+      </ViewTransitions>
     </GoogleOAuthProvider>
   );
 }

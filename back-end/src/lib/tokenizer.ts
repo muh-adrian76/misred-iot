@@ -3,6 +3,7 @@ import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 
+// Server untuk pembuatan refresh token
 const app = new Elysia()
   .use(
     cors()
@@ -11,14 +12,14 @@ const app = new Elysia()
   .use(
     jwt({
       name: "jwt",
-      secret: Bun.env.JWT_SECRET!,
-      exp: Bun.env.REFRESH_TOKEN_AGE
+      secret: process.env.JWT_SECRET!,
+      exp: process.env.REFRESH_TOKEN_AGE
     })
   )
   .get('/sign/:name', ({ jwt, params: { name } }) => {
     return jwt.sign({
       // @ts-ignore
-      sub: Number(name),
+      sub: name,
       iat: Math.floor(Date.now() / 1000),
       type: "refresh",
     })

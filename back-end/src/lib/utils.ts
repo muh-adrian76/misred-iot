@@ -1,3 +1,4 @@
+// Objek group untuk pembuatan dokumentasi API
 const apiTags = [
   {
     name: "Auth",
@@ -26,6 +27,29 @@ const apiTags = [
   },
 ];
 
+// Konversi waktu dari string ke angka
+function cookieAgeConverter(input: string) {
+  const match = input.match(/^(\d+)([smhd])$/); // Regex untuk memisahkan angka dan satuan
+  if (!match) throw new Error("Format waktu tidak valid. Gunakan format seperti '30m', '1h', dll.");
+
+  const value = parseInt(match[1], 10); // Angka
+  const unit = match[2];                // Satuan
+
+  switch (unit) {
+    case "s": // Detik
+      return value;
+    case "m": // Menit
+      return value * 60;
+    case "h": // Jam
+      return value * 60 * 60;
+    case "d": // Hari
+      return value * 60 * 60 * 24;
+    default:
+      throw new Error("Satuan waktu tidak valid. Gunakan 's', 'm', 'h', atau 'd'.");
+  }
+}
+
+// Fungsi untuk membuat cookie user
 async function setAuthCookie(auth: any, jwt: any, userId: string) {
   const value = await jwt.sign({
     sub: userId,
@@ -36,24 +60,26 @@ async function setAuthCookie(auth: any, jwt: any, userId: string) {
   auth.set({
     value,
     httpOnly: true,
-    sameSite: Bun.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
-    secure: Bun.env.USE_SECURE_COOKIE === "true" ? true : false,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: cookieAgeConverter(process.env.ACCESS_TOKEN_AGE!),
   });
 }
 
+// Fungsi untuk menghapus cookie user
 function clearAuthCookie(auth: any) {
   auth.set({
     value: "",
     httpOnly: true,
-    sameSite: Bun.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
-    secure: Bun.env.USE_SECURE_COOKIE === "true" ? true : false,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
     maxAge: 0,
   });
 }
 
+// Fungsi untuk request token baru
 async function renewToken(decoded: any) {
   const response = await fetch(
     `http://localhost:7600/auth/renew/${decoded.sub}`
@@ -66,6 +92,7 @@ async function renewToken(decoded: any) {
   return { accessToken };
 }
 
+// Fungsi untuk verify token jwt
 async function authorizeRequest(jwt: any, auth: any) {
   try {
     let token = auth?.value;

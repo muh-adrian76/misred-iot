@@ -9,43 +9,39 @@ import {
   SidebarMenuButton,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { IconClockEdit, IconCpu, IconLayoutDashboard } from "@tabler/icons-react";
+import { LayoutDashboard, Cpu, Siren } from "lucide-react";
+import { brandLogo } from "@/lib/helper";
 
 // Data menu
 const sidebarMenu = [
     {
       title: "Dashboards",
       url: "/dashboards",
-      icon: IconLayoutDashboard,
+      icon: LayoutDashboard,
     },
     {
       title: "Devices",
       url: "/devices",
-      icon: IconCpu,
+      icon: Cpu,
     },
     {
       title: "Alarms",
       url: "alarms",
-      icon: IconClockEdit,
+      icon: Siren,
     },
   ];
-
-export const user = {
-    name: "Test User",
-    email: "test@user.com",
-  };
 
 export function AppSidebar({ ...props }) {
 
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="border-b-2">
         <SidebarMenuButton
           size="lg"
           className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
         >
           <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-            <img src="/misred-logo-red.svg" alt="" className="size-6" />
+            <img src={brandLogo} alt="Logo" className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-lg leading-tight">
             <span className="truncate">MiSREd-IoT</span>

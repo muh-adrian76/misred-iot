@@ -1,10 +1,12 @@
 "use client";
 
-import { fetchFromBackend } from "@/lib/helper";
-import { Button } from "../ui/button";
-import { googleLogout } from "@react-oauth/google";
 import { useRouter } from "next/navigation";
+
+import { Button } from "../ui/button";
 import { LogOut } from "lucide-react";
+
+import { fetchFromBackend } from "@/lib/helper";
+import { googleLogout } from "@react-oauth/google";
 
 export default function LogoutButton({asChild}) {
   const router = useRouter();
@@ -21,11 +23,11 @@ export default function LogoutButton({asChild}) {
     return (
       <Button
       variant="ghost"
-      className="w-full cursor-pointer justify-start gap-2 hover:bg-red-50 hover:text-red-500 dark:hover:text-red-400"
+      className="w-full cursor-pointer justify-between gap-4 hover:bg-red-50 hover:text-primary"
       onClick={handleLogout}
     >
+      Log Out
       <LogOut className="w-5 h-5" />
-      Logout
     </Button>
     );
   }

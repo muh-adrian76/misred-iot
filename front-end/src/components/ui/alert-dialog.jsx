@@ -76,7 +76,7 @@ function AlertDialogFooter({
   return (
     <div
       data-slot="alert-dialog-footer"
-      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-center", className)}
       {...props} />
   );
 }
@@ -88,7 +88,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      className={cn("text-lg font-semibold", className)}
+      className={cn("text-lg text-center font-semibold", className)}
       {...props} />
   );
 }
@@ -109,7 +109,7 @@ function AlertDialogAction({
   className,
   ...props
 }) {
-  return (<AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} {...props} />);
+  return (<AlertDialogPrimitive.Action className={cn(buttonVariants({ variant: "destructive" }), className)} {...props} />);
 }
 
 function AlertDialogCancel({

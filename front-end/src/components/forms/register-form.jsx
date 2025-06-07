@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,13 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/features/toaster";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, scale } from "framer-motion";
+import { Link } from "next-view-transitions";
 
 import { cn } from "@/lib/utils";
-import { useGoogleLogin } from "@react-oauth/google";
 import { fetchFromBackend } from "@/lib/helper";
-import { useUser } from "@/contexts/user-context";
-import { GoogleIcon } from "../icons/google";
+import { useUser } from "@/providers/user-provider";
+import { brandLogo } from "@/lib/helper";
+import GoogleButton from "../buttons/google-button";
 
 export function RegisterForm({ className, ...props }) {
   const [email, setEmail] = useState("");
@@ -29,33 +29,6 @@ export function RegisterForm({ className, ...props }) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { setUser } = useUser();
-
-  // Google login handler
-  const googleLogin = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: async ({ code }) => {
-      try {
-        const res = await fetchFromBackend("/auth/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-        });
-
-        const data = await res.json();
-        !res.ok
-          ? showToast("error", "Google login gagal!", `${data.message}`)
-          : setTimeout(() => {
-              setUser(data.user);
-              router.push("/dashboards");
-            }, 500);
-      } catch {
-        showToast("error", "Google login gagal!");
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onError: () => toast.error("Google login gagal!"),
-  });
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -128,70 +101,100 @@ export function RegisterForm({ className, ...props }) {
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl mb-3">Registrasi Akun</CardTitle>
-          <CardDescription>Tolong isi informasi berikut</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister}>
-            <div className="grid gap-6">
+    <AnimatePresence>
+      <motion.div
+        key="Logo"
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="flex items-center gap-2 self-center text-xl tracking-wide
+        "
+      >
+        <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
+          <img src={brandLogo} alt="Logo" />
+        </div>
+        Misred-IoT
+      </motion.div>
+      <motion.div
+        key="Register"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        whileHover={{scale: 1.02}}
+        className={cn("flex flex-col gap-6 rounded-2xl", className)}
+        {...props}
+      >
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl mb-3">Registrasi Akun</CardTitle>
+            <CardDescription>Tolong isi informasi berikut</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleRegister}>
               <div className="grid gap-6">
-                <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="contoh@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
+                <div className="grid gap-6">
+                  <div className="grid gap-3">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="contoh@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="******"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                  <div className="grid gap-3">
+                    <div className="flex items-center">
+                      <Label htmlFor="password">Password</Label>
+                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="********"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full cursor-pointer"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Memproses..." : "Daftar"}
+                  </Button>
+                </div>
+                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+                  <span className="bg-card text-muted-foreground relative z-10 px-2">
+                    Atau
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <GoogleButton
+                    router={router}
+                    action="Daftar"
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
+                    setUser={setUser}
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Memproses..." : "Daftar"}
-                </Button>
+                <div className="text-center text-sm">
+                  Kembali ke halaman{" "}
+                  <Link
+                    href={"/login"}
+                    className="underline underline-offset-4"
+                  >
+                    Login
+                  </Link>
+                </div>
               </div>
-              <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  Atau
-                </span>
-              </div>
-              <div className="flex flex-col gap-4">
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="w-full"
-                  onClick={() => googleLogin()}
-                >
-                  <GoogleIcon className="h-5 w-5 mr-2" />
-                  Daftar dengan Gmail
-                </Button>
-              </div>
-              <div className="text-center text-sm">
-                Kembali ke halaman{" "}
-                <Link href={"/login"} className="underline underline-offset-4">
-                  Login
-                </Link>
-              </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </AnimatePresence>
   );
 }
