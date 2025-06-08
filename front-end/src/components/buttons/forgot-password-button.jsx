@@ -81,10 +81,10 @@ export default function ForgotPasswordButton({
               </Button>
               <button
                 type="button"
-                className="text-sm underline-offset-2 hover:underline text-center cursor-pointer"
+                className="text-sm underline-offset-4 hover:underline text-center cursor-pointer"
                 onClick={() => setShowForgotPassword(false)}
               >
-                Kembali ke Login
+                Kembali ke halaman login
               </button>
             </div>
           </form>

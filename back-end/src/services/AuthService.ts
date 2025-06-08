@@ -1,6 +1,7 @@
 import { Connection, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
+import bcrypt from "bcrypt";
 import { authorizeRequest } from "../lib/utils";
 
 export class AuthService {
@@ -10,8 +11,8 @@ export class AuthService {
   constructor(db: Connection) {
     this.db = db;
     this.googleClient = new OAuth2Client(
-      Bun.env.GOOGLE_CLIENT_ID,
-      Bun.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
       "postmessage"
     );
   }
@@ -24,17 +25,30 @@ export class AuthService {
       };
     }
 
-    const userId = uuidv4().slice(0, 8);
-    const hashedPassword = await Bun.password.hash(password, {
-      algorithm: "bcrypt",
-    });
-    const name = email.split("@")[0];
-
     try {
+      // Pengecekan apakah email sudah terdaftar
+      const [existingUser] = await this.db.query<any[]>(
+        "SELECT id FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (existingUser.length > 0) {
+        return {
+          status: 400,
+          message: "Email sudah terdaftar. Gunakan email lain.",
+        };
+      }
+
+      // Jika email belum terdaftar, lanjutkan proses insert
+      const userId = uuidv4().slice(0, 8);
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const name = email.split("@")[0];
+
       const [result] = await this.db.query<ResultSetHeader>(
         "INSERT INTO users (id, email, password, name, created_at) VALUES (?, ?, ?, ?, NOW())",
         [userId, email, hashedPassword, name]
       );
+
       if (result.affectedRows > 0) {
         return { status: 201, message: "User berhasil terdaftar", id: userId };
       } else {
@@ -74,7 +88,7 @@ export class AuthService {
       };
     }
 
-    const isMatch = await Bun.password.verify(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!user || !isMatch) {
       return { status: 401, message: "Kredensial tidak valid" };
     }
@@ -95,7 +109,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         created_at: user.created_at.toISOString(),
-        last_login: user.last_login.toISOString(),
+        last_login: now.toISOString(),
       },
     };
   }
@@ -150,7 +164,7 @@ export class AuthService {
     return { status: 200, message: "User berhasil logout" };
   }
 
-  async googleLogin({ code }: { code: string }, jwt: any, auth: any) {
+  async googleLogin({ code }: { code: string }) {
     if (!code) {
       return { status: 400, message: "Missing code" };
     }
@@ -161,7 +175,7 @@ export class AuthService {
       tokens = googleTokens;
       const ticket = await this.googleClient.verifyIdToken({
         idToken: tokens.id_token!,
-        audience: Bun.env.GOOGLE_CLIENT_ID,
+        audience: process.env.GOOGLE_CLIENT_ID,
       });
       payload = ticket.getPayload();
     } catch (err) {
@@ -195,7 +209,7 @@ export class AuthService {
       } else {
         userId = uuidv4().slice(0, 8);
         const [result] = await this.db.query<ResultSetHeader>(
-          "INSERT INTO users (id, password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?)",
+          "INSERT INTO users (id, password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?)",
           [
             userId,
             oauthPassword,
@@ -206,7 +220,7 @@ export class AuthService {
           ]
         );
         userName = payload.name || payload.email.split("@")[0];
-        userCreatedAt = serverTime.toISOString()
+        userCreatedAt = serverTime.toISOString();
 
         if (result.affectedRows === 0) {
           return { status: 400, message: "Gagal menambahkan user Google." };

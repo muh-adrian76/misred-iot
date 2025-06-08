@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 import { useUser } from "@/providers/user-provider";
 import { useAuth } from "@/hooks/use-auth";
+import { redirect, unauthorized } from 'next/navigation'
 
 export default function Page() {
   const [tabs, setTabs] = useState([]);
@@ -94,7 +95,7 @@ export default function Page() {
 
   // Check Authorization
   if (!isAuthenticated) {
-    return null;
+    redirect("/401")
   }
 
   return (

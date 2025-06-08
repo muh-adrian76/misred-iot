@@ -102,7 +102,7 @@ export function authRoutes(authService: AuthService) {
         "/google",
         // @ts-ignore
         async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.googleLogin(body, jwt, auth);
+          const result = await authService.googleLogin(body);
 
           if (result.status === 200 && result.user?.id) {
           await setAuthCookie(auth, jwt, result.user.id);

@@ -4,16 +4,12 @@ import { useEffect } from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 export function ThemeProvider({ children, ...props }) {
-  // Reset tema ke "system" saat user menutup tab
   useEffect(() => {
-    const resetThemeToSystem = () => {
-      localStorage.setItem("theme", "system");
-    };
+    const savedTheme = localStorage.getItem("theme");
 
-    window.addEventListener("beforeunload", resetThemeToSystem);
-    return () => {
-      window.removeEventListener("beforeunload", resetThemeToSystem);
-    };
+    if (!savedTheme) {
+      localStorage.setItem("theme", "system");
+    }
   }, []);
 
   return <NextThemesProvider {...props}>{children}</NextThemesProvider>;

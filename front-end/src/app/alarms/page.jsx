@@ -292,7 +292,7 @@ export default function DataTableDemo() {
 
   // Check Authorization
   if (!isAuthenticated) {
-    return null;
+    redirect("/401")
   }
 
   const handleLogout = async () => {

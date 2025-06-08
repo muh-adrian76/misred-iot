@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function Home() {
-  redirect('/login') // redirect saat halaman diakses
+export default function Page() {
+  redirect('/dashboards') // redirect saat halaman diakses
 }
