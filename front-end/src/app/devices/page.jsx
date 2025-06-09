@@ -1,6 +1,9 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
+import { useUser } from "@/providers/user-provider";
+import { useAuth } from "@/hooks/use-auth";
+
 import {
   flexRender,
   getCoreRowModel,
@@ -14,13 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import {
   Table,
   TableBody,
   TableCell,
@@ -29,34 +25,47 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { Bell, Sun, Moon, Laptop } from "lucide-react";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
+import AppNavbar from "@/components/features/app-navbar";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
 import AddDeviceForm from "@/components/forms/add-device-form";
 import EditDeviceForm from "@/components/forms/edit-device-form";
 import DeleteDeviceForm from "@/components/forms/delete-device-form";
-import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { showToast } from "@/components/features/toaster";
 import { fetchFromBackend } from "@/lib/helper";
-import { googleLogout } from "@react-oauth/google";
-import { useTheme } from "next-themes";
 
 ////////
-export default function DataTableDemo() {
-  const [data, setData] = React.useState([
+export default function Page() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [deleteFormOpen, setDeleteFormOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState(null);
+  const [editDevice, setEditDevice] = useState(null);
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+
+  const [name, setName] = useState("");
+  const [boardType, setBoardType] = useState("");
+  const [protocol, setProtocol] = useState("");
+  const [FormOpen, setFormOpen] = useState(false);
+
+  const isAuthenticated = useAuth();
+  const { user } = useUser();
+
+  const [data, setData] = useState([
     {
       id: "1",
       boardType: "ESP32",
@@ -94,12 +103,6 @@ export default function DataTableDemo() {
     },
   ]);
 
-  const user = {
-    name: "Test User",
-    email: "test@user.com",
-    avatar: "/avatars/shadcn.jpg", // ganti sesuai data user Anda
-  };
-  
   // Edit Table
   const columns = [
     {
@@ -149,7 +152,7 @@ export default function DataTableDemo() {
 
         const handleCopy = () => {
           navigator.clipboard.writeText(uid);
-          toast.success("uid disalin!");
+          showToast.success("uid disalin!");
         };
 
         return (
@@ -198,7 +201,7 @@ export default function DataTableDemo() {
 
         const handleDelete = () => {
           setData((prev) => prev.filter((d) => d.id !== device.id));
-          toast.success("Device berhasil dihapus!");
+          showToast.success("Device berhasil dihapus!");
         };
 
         const handleEdit = () => {
@@ -232,30 +235,9 @@ export default function DataTableDemo() {
     },
   ];
 
-  const [editFormOpen, setEditFormOpen] = React.useState(false);
-  const [deleteFormOpen, setDeleteFormOpen] = React.useState(false);
-  const [deviceToDelete, setDeviceToDelete] = React.useState(null);
-  const [editDevice, setEditDevice] = React.useState(null);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-
-  const [sorting, setSorting] = React.useState([]);
-  const [columnFilters, setColumnFilters] = React.useState([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
-
-  const [name, setName] = React.useState("");
-  const [boardType, setBoardType] = React.useState("");
-  const [protocol, setProtocol] = React.useState("");
-  const [FormOpen, setFormOpen] = React.useState(false);
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
-
-  const [openSettings, setOpenSettings] = React.useState(false);
-  const isAuthenticated = useAuth();
-  const { setTheme, theme } = useTheme();
-
   const handleAddDevice = () => {
     if (!name || !boardType || !protocol) {
-      toast.error("All fields must be filled!");
+      showToast.error("All fields must be filled!");
       return;
     }
 
@@ -277,7 +259,7 @@ export default function DataTableDemo() {
     setBoardType("");
     setProtocol("");
     setFormOpen(false);
-    toast.success("Device berhasil ditambahkan!");
+    showToast.success("Device berhasil ditambahkan!");
   };
 
   const table = useReactTable({
@@ -308,18 +290,10 @@ export default function DataTableDemo() {
     },
   });
 
-  // Check Authorization
+  // Check JWT
   if (!isAuthenticated) {
     return null;
   }
-
-  const handleLogout = async () => {
-    await fetchFromBackend("/auth/logout", {
-      method: "POST",
-    });
-    googleLogout?.();
-    router.push("/login");
-  };
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -327,106 +301,12 @@ export default function DataTableDemo() {
         onMouseEnter={() => setSidebarOpen(true)}
         onMouseLeave={() => setSidebarOpen(false)}
         className="relative"
-        style={{ height: "100vh" }}
+        style={{ height: "100vh" }} // pastikan area hover cukup tinggi
       >
         <AppSidebar />
       </div>
       <SidebarInset>
-        {/* Header */}
-         <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between">
-          <div className="flex items-center gap-2 px-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                <span className="text-muted-foreground">Menu</span>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Devices</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          {/* Kanan: Action Buttons */}
-          <div className="flex items-center gap-4 px-4">
-            {/* Notifikasi */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="relative rounded-full"
-                >
-                  <Bell className="w-5 h-5" />
-                  {/* Notif */}
-                  {/* <span className="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full" /> */}
-                  <span className="sr-only">Notifikasi</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <div className="px-3 py-2 font-medium">Notifikasi Terbaru</div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm pH tinggi di Device1</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm TSS rendah di Device2</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Tema */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  {theme === "dark" ? (
-                    <Moon className="w-5 h-5" />
-                  ) : theme === "light" ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Laptop className="w-5 h-5" />
-                  )}
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  <Sun className="mr-2 w-4 h-4" /> Cerah
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  <Moon className="mr-2 w-4 h-4" /> Gelap
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  <Laptop className="mr-2 w-4 h-4" /> Sistem
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Profil */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback>{user.name[0]}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-3 py-2">
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {user.email}
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setOpenSettings(true)}>
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+        <AppNavbar page="Devices" profile={user} />
 
         {/* Main content */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -482,7 +362,7 @@ export default function DataTableDemo() {
               editDevice={editDevice}
               setEditDevice={setEditDevice}
               setData={setData}
-              toast={toast}
+              toast={showToast}
             />
             {/* Delete device */}
             <DeleteDeviceForm
@@ -490,7 +370,7 @@ export default function DataTableDemo() {
               setOpen={setDeleteFormOpen}
               deviceToDelete={deviceToDelete}
               setData={setData}
-              toast={toast}
+              toast={showToast}
             />
           </div>
 

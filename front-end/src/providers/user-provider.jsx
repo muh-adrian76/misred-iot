@@ -25,7 +25,6 @@ export function UserProvider({ children }) {
       if (user) {
         localStorage.setItem("user", JSON.stringify(user));
       } else {
-        console.log("Removing user from localStorage");
         localStorage.removeItem("user");
       }
     }

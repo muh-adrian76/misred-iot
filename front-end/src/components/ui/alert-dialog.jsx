@@ -109,7 +109,7 @@ function AlertDialogAction({
   className,
   ...props
 }) {
-  return (<AlertDialogPrimitive.Action className={cn(buttonVariants({ variant: "destructive" }), className)} {...props} />);
+  return (<AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} {...props} />);
 }
 
 function AlertDialogCancel({

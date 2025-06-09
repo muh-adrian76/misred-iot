@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
 import GoogleButton from "../buttons/google-button";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterForm({
   className,
@@ -31,6 +32,7 @@ export default function RegisterForm({
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -148,15 +150,30 @@ export default function RegisterForm({
                     <div className="flex items-center">
                       <Label htmlFor="password">Password</Label>
                     </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="********"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete="current-password"
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="********"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        required
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        {showPassword ? (
+                          <Eye
+                            className="relative h-5 w-5"
+                            onClick={() => setShowPassword(false)}
+                          />
+                        ) : (
+                          <EyeOff
+                            className="relative h-5 w-5"
+                            onClick={() => setShowPassword(true)}
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <Button
                     type="submit"

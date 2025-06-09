@@ -92,7 +92,7 @@ export default function Page() {
     setTabLayouts((prev) => ({ ...prev, [activeTab]: layouts }));
   };
 
-  // Check Authorization
+  // Check JWT
   if (!isAuthenticated) {
     return null;
   }
@@ -108,7 +108,7 @@ export default function Page() {
         <AppSidebar />
       </div>
       <SidebarInset>
-        <AppNavbar page="Dashboards" profile={user}></AppNavbar>
+        <AppNavbar page="Dashboards" profile={user} />
 
         <div className="p-4 space-y-4">
           {tabs.length === 0 && !activeTab ? (
@@ -185,7 +185,7 @@ export default function Page() {
             <Move className="w-5 h-5" />
             <span className="ml-1 hidden sm:inline">Edit</span>
           </Button>
-          <Button className="cursor-pointer" variant="destructive">
+          <Button className="cursor-pointer">
             <span className="sr-only">Search</span>
             <Search className="w-5 h-5" />
             <span className="ml-1 hidden sm:inline">Tab</span>

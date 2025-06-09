@@ -36,17 +36,14 @@ export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader className="border-b-2">
-        <SidebarMenuButton
-          size="lg"
-          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-        >
+        <div className="flex gap-3 items-center">
           <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
             <img src={brandLogo} alt="Logo" className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-lg leading-tight">
             <span className="truncate">MiSREd-IoT</span>
           </div>
-        </SidebarMenuButton>
+          </div>
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={sidebarMenu} />

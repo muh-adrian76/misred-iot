@@ -22,7 +22,7 @@ export function NavMain({ items }) {
 
           return (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={isActive}>
+              <SidebarMenuButton asChild isActive={isActive} className="transition-all duration-200">
                 <a href={item.url}>
                   {item.icon && <item.icon />}
                   <span className="ml-2">{item.title}</span>

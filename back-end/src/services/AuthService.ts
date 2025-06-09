@@ -110,7 +110,7 @@ export class AuthService {
         email: user.email,
         created_at: user.created_at.toISOString(),
         last_login: now.toISOString(),
-        phone: user.phone
+        phone: user.phone,
       },
     };
   }
@@ -206,12 +206,13 @@ export class AuthService {
         userName = rows[0].name;
         userPassword = rows[0].password;
         userCreatedAt = rows[0].created_at;
-        userPhone = rows[0].phone
+        userPhone = rows[0].phone;
 
         if (userPassword !== "GOOGLE_OAUTH_USER") {
           return {
             status: 400,
-            message: "Email telah didaftarkan pada platform. Silahkan mengisi kredensial pada form yang tersedia.",
+            message:
+              "Email telah didaftarkan pada platform. Silahkan mengisi kredensial pada form yang tersedia.",
           };
         }
 
@@ -256,7 +257,7 @@ export class AuthService {
           email: payload.email,
           created_at: userCreatedAt,
           last_login: serverTime.toISOString(),
-          phone: userPhone
+          phone: userPhone,
         },
       };
     } catch (err: any) {
@@ -268,15 +269,67 @@ export class AuthService {
     }
   }
 
-  async reset({
-    oldPassword,
-    newPassword,
-  }: {
-    oldPassword: string;
-    newPassword: string;
-  }) {}
+  async resetPassword(
+    id: string,
+    { oldPassword, newPassword }: { oldPassword: string; newPassword: string }
+  ) {
+    if (!oldPassword || !newPassword) {
+      return {
+        status: 400,
+        message: "Password lama dan baru harus diisi.",
+      };
+    }
+    if (oldPassword === newPassword) {
+      return {
+        status: 400,
+        message: "Password baru tidak boleh sama dengan password lama.",
+      };
+    }
+    if (newPassword.length < 8) {
+      return {
+        status: 400,
+        message: "New password harus memiliki minimal 8 karakter.",
+      };
+    }
 
-  async updatePassword({ email }: { email: string }) {
+    try {
+      const [rows] = await this.db.query<any[]>(
+        "SELECT password FROM users WHERE id = ?",
+        [id]
+      );
+  
+      if (!rows || rows.length === 0) {
+        return { status: 404, message: "User tidak ditemukan." };
+      }
+  
+      const user = rows[0];
+      if (user.password === "GOOGLE_OAUTH_USER") {
+        return {
+          status: 400,
+          message:
+            "Akun ini terdaftar melalui Google OAuth. Silahkan ubah password akun anda pada website Google.",
+        };
+      }
+
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return { status: 400, message: "Password lama tidak valid." };
+      }
+  
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await this.db.query("UPDATE users SET password = ? WHERE id = ?", [
+        hashedNewPassword,
+        id,
+      ]);
+  
+      return { status: 200, message: "Password berhasil diperbarui." };
+    } catch (error) {
+      console.error(error);
+      return { status: 500, message: "Terjadi kesalahan pada server." };
+    }
+  }
+
+  async resetForgottenPassword({ email }: { email: string }) {
     if (!email || !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return { status: 400, message: "Email tidak valid." };
     }

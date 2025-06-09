@@ -1,5 +1,9 @@
 import { Elysia } from "elysia";
-import { clearAuthCookie, setAuthCookie } from "../../lib/utils";
+import {
+  authorizeRequest,
+  clearAuthCookie,
+  setAuthCookie,
+} from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import {
   getRefreshTokenSchema,
@@ -8,6 +12,8 @@ import {
   postLoginSchema,
   postLogoutSchema,
   postRegisterSchema,
+  postResetPasswordSchema,
+  postResetForgottenPasswordSchema,
 } from "./elysiaSchema";
 
 export function authRoutes(authService: AuthService) {
@@ -99,31 +105,32 @@ export function authRoutes(authService: AuthService) {
         postGoogleLoginSchema
       )
 
-      // Update-password
-      .post(
-        "/update-password",
+      // Reset-forgotten-password
+      .put(
+        "/reset-forgotten-password",
         // @ts-ignore
         async ({ body }: any) => {
-          const result = await authService.updatePassword(body);
+          const result = await authService.resetForgottenPassword(body);
           return new Response(JSON.stringify(result), {
             status: result.status,
           });
         },
-        // postUpdatePasswordSchema
+        postResetForgottenPasswordSchema
       )
-      
+
       // Reset-password
-      // .post(
-      //   "/reset-password",
-      //   // @ts-ignore
-      //   async ({ body }: any) => {
-      //     const result = await authService.reset(body);
-      //     return new Response(JSON.stringify(result), {
-      //       status: result.status,
-      //     });
-      //   },
-      //   postResetPasswordSchema
-      // )
+      .put(
+        "/reset-password",
+        // @ts-ignore
+        async ({ jwt, cookie: { auth }, body }: any) => {
+          const decoded = await authorizeRequest(jwt, auth);
+          const result = await authService.resetPassword(decoded.sub, body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        postResetPasswordSchema
+      )
 
       // Logout
       .post(

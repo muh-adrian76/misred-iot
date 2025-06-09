@@ -36,7 +36,7 @@ export class UserService {
       return null;
     } catch (error) {
       console.error(error);
-      return { status: 500, message: "Terjadi kesalahan pada server." };
+      throw new Error("Gagal memperbarui user");
     }
   }
 

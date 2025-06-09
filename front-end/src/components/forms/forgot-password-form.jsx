@@ -23,8 +23,8 @@ export default function ForgotPasswordForm({
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetchFromBackend("/auth/update-password", {
-        method: "POST",
+      const res = await fetchFromBackend("/auth/reset-forgotten-password", {
+        method: "PUT",
         body: JSON.stringify({ email }),
       });
 

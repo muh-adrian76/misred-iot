@@ -1,5 +1,7 @@
+"use client";
 import { Glow, GlowArea } from "@/components/features/glow";
 import { Button } from "@/components/ui/button";
+import CheckboxButton from "@/components/buttons/checkbox-button";
 import {
   CardFooter,
   Card,
@@ -19,6 +21,7 @@ export default function Home() {
               <CardTitle>Free plan</CardTitle>
               <CardDescription className="max-w-sm">
                 2 Monthly free games, trials and perks for you to enjoy.
+                <CheckboxButton name="Ya, hapus"/>
               </CardDescription>
             </CardHeader>
             <CardContent>

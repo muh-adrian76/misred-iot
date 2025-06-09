@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState, useMemo } from "react";
+import { useUser } from "@/providers/user-provider";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,17 +11,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import {
   Table,
   TableBody,
@@ -28,15 +20,12 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";;
+} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
-import { Bell, Sun, Moon, Laptop } from "lucide-react";
+import { showToast } from "@/components/features/toaster";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
+import AppNavbar from "@/components/features/app-navbar";
 import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
 import AddAlarmForm from "@/components/forms/add-alarm-form";
 import EditAlarmForm from "@/components/forms/edit-alarm-form";
@@ -48,15 +37,30 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuCheckboxItem,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { fetchFromBackend } from "@/lib/helper";
-import { googleLogout } from "@react-oauth/google";
-import { useTheme } from "next-themes";
 
-export default function DataTableDemo() {
-  const [devices, setDevices] = React.useState([
+export default function Page() {
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editAlarm, setEditAlarm] = useState(null);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [deleteFormOpen, setDeleteFormOpen] = useState(false);
+  const [alarmToDelete, setAlarmToDelete] = useState(null);
+
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+
+  const [name, setName] = useState("");
+  const [sensorName, setsensorName] = useState("");
+  const [threshold, setthreshold] = useState("");
+  const [FormOpen, setFormOpen] = useState(false);
+
+  const isAuthenticated = useAuth();
+  const { user } = useUser();
+
+  const [devices, setDevices] = useState([
     {
       name: "Device1",
       sensors: [
@@ -76,14 +80,9 @@ export default function DataTableDemo() {
     },
   ]);
 
-  const user = {
-    name: "Test User",
-    email: "test@user.com",
-    avatar: "/avatars/shadcn.jpg", // ganti sesuai data user Anda
-  };
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const flatData = React.useMemo(() => {
+  const flatData = useMemo(() => {
     return devices.flatMap((device) =>
       device.sensors
         .filter((sensor) => sensor.threshold !== "") // hanya tampilkan yang ada threshold
@@ -179,35 +178,15 @@ export default function DataTableDemo() {
     },
   ];
 
-  const [editFormOpen, setEditFormOpen] = React.useState(false);
-  const [editAlarm, setEditAlarm] = React.useState(null);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-  const [deleteFormOpen, setDeleteFormOpen] = React.useState(false);
-  const [alarmToDelete, setAlarmToDelete] = React.useState(null);
-
-  const [sorting, setSorting] = React.useState([]);
-  const [columnFilters, setColumnFilters] = React.useState([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
-
-  const [name, setName] = React.useState("");
-  const [sensorName, setsensorName] = React.useState("");
-  const [threshold, setthreshold] = React.useState("");
-  const [FormOpen, setFormOpen] = React.useState(false);
-
-  const [openSettings, setOpenSettings] = React.useState(false);
-  const isAuthenticated = useAuth();
-  const { setTheme, theme } = useTheme();
-
   const handleAddAlarm = () => {
     if (!name || !sensorName || !threshold) {
-      toast.error("All fields must be filled!");
+      showToast.error("All fields must be filled!");
       return;
     }
 
     const deviceIndex = devices.findIndex((d) => d.name === name);
     if (deviceIndex === -1) {
-      toast.error("Device not found!");
+      showToast.error("Device not found!");
       return;
     }
 
@@ -216,12 +195,12 @@ export default function DataTableDemo() {
     );
 
     if (sensorIndex === -1) {
-      toast.error("Sensor tidak ditemukan pada device!");
+      showToast.error("Sensor tidak ditemukan pada device!");
       return;
     }
 
     if (devices[deviceIndex].sensors[sensorIndex].threshold !== "") {
-      toast.error("Alarm untuk sensor ini sudah ada pada device tersebut!");
+      showToast.error("Alarm untuk sensor ini sudah ada pada device tersebut!");
       return;
     }
 
@@ -240,7 +219,7 @@ export default function DataTableDemo() {
     setthreshold("");
     setFormOpen(false);
 
-    toast.success("Alarm berhasil ditambahkan!");
+    showToast.success("Alarm berhasil ditambahkan!");
   };
 
   const handleSaveEdit = () => {
@@ -259,7 +238,7 @@ export default function DataTableDemo() {
     delete updatedDevices[deviceIndex].sensors[sensorIndex].name; // optional cleanup
     setDevices(updatedDevices);
     setEditFormOpen(false);
-    toast.success("Sensor berhasil diperbarui!");
+    showToast.success("Sensor berhasil diperbarui!");
   };
 
   const table = useReactTable({
@@ -290,18 +269,10 @@ export default function DataTableDemo() {
     },
   });
 
-  // Check Authorization
+  // Check JWT
   if (!isAuthenticated) {
     return null;
   }
-
-  const handleLogout = async () => {
-    await fetchFromBackend("/auth/logout", {
-      method: "POST",
-    });
-    googleLogout?.();
-    router.push("/login");
-  };
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -309,106 +280,12 @@ export default function DataTableDemo() {
         onMouseEnter={() => setSidebarOpen(true)}
         onMouseLeave={() => setSidebarOpen(false)}
         className="relative"
-        style={{ height: "100vh" }}
+        style={{ height: "100vh" }} // pastikan area hover cukup tinggi
       >
         <AppSidebar />
       </div>
       <SidebarInset>
-        {/* Header */}
-         <header className="flex h-16 items-center border-b bg-background px-4 gap-4 justify-between">
-          <div className="flex items-center gap-2 px-4">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                <span className="text-muted-foreground">Menu</span>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Alarm</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-
-          {/* Kanan: Action Buttons */}
-          <div className="flex items-center gap-4 px-4">
-            {/* Notifikasi */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="relative rounded-full"
-                >
-                  <Bell className="w-5 h-5" />
-                  {/* Notif */}
-                  {/* <span className="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full" /> */}
-                  <span className="sr-only">Notifikasi</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <div className="px-3 py-2 font-medium">Notifikasi Terbaru</div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm pH tinggi di Device1</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span className="text-sm">Alarm TSS rendah di Device2</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Tema */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full">
-                  {theme === "dark" ? (
-                    <Moon className="w-5 h-5" />
-                  ) : theme === "light" ? (
-                    <Sun className="w-5 h-5" />
-                  ) : (
-                    <Laptop className="w-5 h-5" />
-                  )}
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  <Sun className="mr-2 w-4 h-4" /> Cerah
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  <Moon className="mr-2 w-4 h-4" /> Gelap
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  <Laptop className="mr-2 w-4 h-4" /> Sistem
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {/* Profil */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback>{user.name[0]}</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="px-3 py-2">
-                  <div className="font-medium">{user.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {user.email}
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setOpenSettings(true)}>
-                  Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
+        <AppNavbar page="Alarms" profile={user} />
 
         {/* Main content */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -457,7 +334,7 @@ export default function DataTableDemo() {
               handleAddAlarm={handleAddAlarm}
               flatData={flatData}
               devices={devices}
-              toast={toast}
+              toast={showToast}
             />
             {/* Edit table */}
             <EditAlarmForm
@@ -468,7 +345,7 @@ export default function DataTableDemo() {
               devices={devices}
               setDevices={setDevices}
               flatData={flatData}
-              toast={toast}
+              toast={showToast}
             />
             {/* Confirm Delete */}
             <DeleteAlarmForm
@@ -476,7 +353,7 @@ export default function DataTableDemo() {
               setOpen={setDeleteFormOpen}
               alarmToDelete={alarmToDelete}
               setDevices={setDevices}
-              toast={toast}
+              toast={showToast}
             />
           </div>
 
