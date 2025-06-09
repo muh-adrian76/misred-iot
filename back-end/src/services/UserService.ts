@@ -8,21 +8,36 @@ export class UserService {
   }
 
   async getAllUsers() {
-    const [rows] = await this.db.query("SELECT * FROM users");
+    const [rows] = await this.db.query(
+      "SELECT id, name, email, created_at, last_login, phone FROM users"
+    );
     return rows;
   }
 
   async getUserById(id: string) {
-    const [rows] = await this.db.query("SELECT * FROM users WHERE id = ?", [id]);
+    const [rows] = await this.db.query(
+      "SELECT id, name, email, created_at, last_login, phone FROM users WHERE id = ?",
+      [id]
+    );
     return Array.isArray(rows) ? rows[0] : null;
   }
 
-  async updateUser(id: string, name: string, password: string) {
-    const [result] = await this.db.query<ResultSetHeader>(
-      "UPDATE users SET password=?, name=? WHERE id=?",
-      [password, name, id]
-    );
-    return result.affectedRows > 0;
+  async updateUser(id: string, name: string, phone: string | null) {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "UPDATE users SET name=?, phone=? WHERE id=?",
+        [name, phone, id]
+      );
+      if (result.affectedRows > 0) {
+        const updatedUser = await this.getUserById(id);
+        return updatedUser;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(error);
+      return { status: 500, message: "Terjadi kesalahan pada server." };
+    }
   }
 
   async deleteUser(id: string) {

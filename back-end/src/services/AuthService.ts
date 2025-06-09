@@ -72,7 +72,7 @@ export class AuthService {
     }
 
     const [rows] = await this.db.query<any[]>(
-      "SELECT id, email, password, name, created_at FROM users WHERE email = ?",
+      "SELECT id, email, password, name, created_at, phone FROM users WHERE email = ?",
       [email]
     );
 
@@ -110,6 +110,7 @@ export class AuthService {
         email: user.email,
         created_at: user.created_at.toISOString(),
         last_login: now.toISOString(),
+        phone: user.phone
       },
     };
   }
@@ -188,20 +189,32 @@ export class AuthService {
 
     let userId: string;
     let userName: string;
+    let userPassword: string;
     let userCreatedAt: string;
+    let userPhone: string = "";
     const oauthPassword: string = "GOOGLE_OAUTH_USER"; // Kredensial khusus untuk Gmail
     const serverTime = new Date();
 
     try {
       const [rows] = await this.db.query<any[]>(
-        "SELECT id, email, name, created_at FROM users WHERE email = ?",
+        "SELECT id, email, name, password, created_at, phone FROM users WHERE email = ?",
         [payload.email]
       );
 
       if (rows && rows.length > 0) {
         userId = rows[0].id;
         userName = rows[0].name;
+        userPassword = rows[0].password;
         userCreatedAt = rows[0].created_at;
+        userPhone = rows[0].phone
+
+        if (userPassword !== "GOOGLE_OAUTH_USER") {
+          return {
+            status: 400,
+            message: "Email telah didaftarkan pada platform. Silahkan mengisi kredensial pada form yang tersedia.",
+          };
+        }
+
         await this.db.query("UPDATE users SET last_login = ? WHERE id = ?", [
           serverTime,
           userId,
@@ -243,6 +256,7 @@ export class AuthService {
           email: payload.email,
           created_at: userCreatedAt,
           last_login: serverTime.toISOString(),
+          phone: userPhone
         },
       };
     } catch (err: any) {
@@ -251,6 +265,56 @@ export class AuthService {
         msg = "Email sudah terdaftar.";
       }
       return { status: 400, message: msg };
+    }
+  }
+
+  async reset({
+    oldPassword,
+    newPassword,
+  }: {
+    oldPassword: string;
+    newPassword: string;
+  }) {}
+
+  async updatePassword({ email }: { email: string }) {
+    if (!email || !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
+      return { status: 400, message: "Email tidak valid." };
+    }
+
+    try {
+      const [rows] = await this.db.query<any[]>(
+        "SELECT id, name, password FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (!rows || rows.length === 0) {
+        return { status: 404, message: "Email tidak terdaftar." };
+      }
+
+      const user = rows[0];
+      if (user.password === "GOOGLE_OAUTH_USER") {
+        return {
+          status: 400,
+          message:
+            "Email terdaftar pada platform Google, silahkan ubah password akun anda pada website Google.",
+        };
+      }
+
+      const newPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      await this.db.query("UPDATE users SET password = ? WHERE id = ?", [
+        hashedPassword,
+        user.id,
+      ]);
+
+      return {
+        status: 200,
+        updatedPassword: newPassword,
+      };
+    } catch (error) {
+      console.error(error);
+      return { status: 500, message: "Terjadi kesalahan pada server." };
     }
   }
 }

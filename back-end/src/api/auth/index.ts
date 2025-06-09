@@ -52,10 +52,7 @@ export function authRoutes(authService: AuthService) {
         "/verify-token",
         // @ts-ignore
         async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.verifyToken(
-            jwt,
-            auth
-          );
+          const result = await authService.verifyToken(jwt, auth);
           return new Response(
             JSON.stringify(
               result ?? {
@@ -82,21 +79,6 @@ export function authRoutes(authService: AuthService) {
         getRefreshTokenSchema
       )
 
-      // Logout
-      .post(
-        "/logout",
-        // @ts-ignore
-        async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.logout(jwt, auth);
-          clearAuthCookie(auth);
-          
-          return new Response(JSON.stringify(result), {
-            status: result.status,
-          });
-        },
-        postLogoutSchema
-      )
-
       // Google OAuth
       .post(
         "/google",
@@ -105,7 +87,7 @@ export function authRoutes(authService: AuthService) {
           const result = await authService.googleLogin(body);
 
           if (result.status === 200 && result.user?.id) {
-          await setAuthCookie(auth, jwt, result.user.id);
+            await setAuthCookie(auth, jwt, result.user.id);
             return new Response(JSON.stringify({ user: result.user }), {
               status: 200,
             });
@@ -115,6 +97,47 @@ export function authRoutes(authService: AuthService) {
           });
         },
         postGoogleLoginSchema
+      )
+
+      // Update-password
+      .post(
+        "/update-password",
+        // @ts-ignore
+        async ({ body }: any) => {
+          const result = await authService.updatePassword(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        // postUpdatePasswordSchema
+      )
+      
+      // Reset-password
+      // .post(
+      //   "/reset-password",
+      //   // @ts-ignore
+      //   async ({ body }: any) => {
+      //     const result = await authService.reset(body);
+      //     return new Response(JSON.stringify(result), {
+      //       status: result.status,
+      //     });
+      //   },
+      //   postResetPasswordSchema
+      // )
+
+      // Logout
+      .post(
+        "/logout",
+        // @ts-ignore
+        async ({ jwt, cookie: { auth } }) => {
+          const result = await authService.logout(jwt, auth);
+          clearAuthCookie(auth);
+
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        postLogoutSchema
       )
   );
 }

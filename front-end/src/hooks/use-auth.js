@@ -14,7 +14,7 @@ const verifyToken = async (router) => {
   });
 
   if (!res.ok) {
-    router.push("/login");
+    router.push("/401");
     return false;
   }
 

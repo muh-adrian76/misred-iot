@@ -7,15 +7,17 @@ export default function NotFound() {
     <AnimatePresence>
       <div className="flex flex-col items-center justify-center min-h-screen bg-muted text-center p-6">
         <motion.img
+          key="404-image"
           src="/404.svg"
           alt="404 Not Found"
-          className="w-96 h-96"
+          className="w-96 h-auto mb-10"
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0 }}
           transition={{ duration: 1, ease: "easeInOut" }}
         />
         <motion.div
+          key="404-description"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}

@@ -19,25 +19,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-import { Bell, Sun, Moon, Laptop, Settings, User } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Bell, Settings, User } from "lucide-react";
 
 import { ProfileForm } from "../forms/profile-form";
 import LogoutButton from "../buttons/logout-button";
+import ThemeButton from "../buttons/theme-button";
 
 export default function AppNavbar({ page, profile }) {
-  const { setTheme, theme } = useTheme();
-  const [systemTheme, setSystemTheme] = useState("light");
   const [openProfileSheet, setOpenProfileSheet] = useState(false);
   const [overlay, setOverlay] = useState(false);
   const [dropdownProfileOpen, setDropdownProfileOpen] = useState(false); // fix overlapping
-
-  // Cek tema saat ini
-  useEffect(() => {
-    const mediaTheme = window.matchMedia("(prefers-color-scheme: dark)");
-
-    return () => setSystemTheme(mediaTheme.matches ? "dark" : "light");
-  }, []);
 
   return (
     <>
@@ -94,23 +85,7 @@ export default function AppNavbar({ page, profile }) {
           </DropdownMenu>
 
           {/* Tema */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full cursor-pointer"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            {theme === "dark" ? (
-              <Moon className="w-5 h-5" />
-            ) : theme === "light" ? (
-              <Sun className="w-5 h-5" />
-            ) : systemTheme === "dark" ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
-            <span className="sr-only">Toggle theme</span>
-          </Button>
+          <ThemeButton />
 
           {/* Profil */}
           <DropdownMenu

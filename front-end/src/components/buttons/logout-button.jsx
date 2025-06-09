@@ -16,7 +16,7 @@ export default function LogoutButton({asChild}) {
       method: "POST",
     });
     googleLogout?.();
-    router.push("/login");
+    router.push("/auths");
   };
 
   if (asChild) {

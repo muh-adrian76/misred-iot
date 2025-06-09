@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,21 +13,24 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { showToast } from "@/components/features/toaster";
-import { AnimatePresence, motion, scale } from "framer-motion";
-import { Link } from "next-view-transitions";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { fetchFromBackend } from "@/lib/helper";
-import { useUser } from "@/providers/user-provider";
 import { brandLogo } from "@/lib/helper";
 import GoogleButton from "../buttons/google-button";
 
-export function RegisterForm({ className, ...props }) {
+export default function RegisterForm({
+  className,
+  router,
+  setUser,
+  isLoading,
+  setIsLoading,
+  setShowRegister,
+  ...props
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-  const { setUser } = useUser();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -58,7 +60,6 @@ export function RegisterForm({ className, ...props }) {
     try {
       const res = await fetchFromBackend("/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -77,9 +78,7 @@ export function RegisterForm({ className, ...props }) {
         try {
           const res = await fetchFromBackend("/auth/login", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
-            credentials: "include",
           });
 
           const data = await res.json();
@@ -101,11 +100,11 @@ export function RegisterForm({ className, ...props }) {
   };
 
   return (
-    <AnimatePresence>
+    <div className="flex w-full max-w-sm flex-col gap-6">
       <motion.div
-        key="Logo"
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
         className="flex items-center gap-2 self-center text-xl tracking-wide
         "
@@ -113,14 +112,14 @@ export function RegisterForm({ className, ...props }) {
         <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
           <img src={brandLogo} alt="Logo" />
         </div>
-        Misred-IoT
+        MiSREd-IoT
       </motion.div>
       <motion.div
-        key="Register"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        whileHover={{scale: 1.02}}
+        whileHover={{ scale: 1.02 }}
         className={cn("flex flex-col gap-6 rounded-2xl", className)}
         {...props}
       >
@@ -183,18 +182,19 @@ export function RegisterForm({ className, ...props }) {
                 </div>
                 <div className="text-center text-sm">
                   Kembali ke halaman{" "}
-                  <Link
-                    href={"/login"}
-                    className="underline underline-offset-4"
+                  <button
+                    type="button"
+                    onClick={() => setShowRegister(false)}
+                    className="cursor-pointer underline underline-offset-4"
                   >
                     Login
-                  </Link>
+                  </button>
                 </div>
               </div>
             </form>
           </CardContent>
         </Card>
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 }
