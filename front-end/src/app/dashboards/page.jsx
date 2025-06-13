@@ -57,16 +57,16 @@ export default function Page() {
     }
   }, [dashboards, widgets]);
 
-  const createDashboard = async (name) => {
-    if (!name.trim()) {
+  const createDashboard = async (description) => {
+    if (!description.trim()) {
       toast.error("Nama dashboard tidak boleh kosong");
       return null;
     }
 
     try {
-      const res = await fetchFromBackend("/api/dashboard", {
+      const res = await fetchFromBackend("/dashboard", {
         method: "POST",
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ description }),
       });
 
       if (!res.ok) {
@@ -96,7 +96,7 @@ export default function Page() {
 
     try {
       // Cari dashboard ID berdasarkan nama tab
-      const res = await fetchFromBackend("/api/widget", {
+      const res = await fetchFromBackend("/widget", {
         method: "POST",
         body: JSON.stringify({
           description: `${chartType} chart`,
@@ -141,7 +141,7 @@ export default function Page() {
       }
 
       // Hapus dashboard dari backend
-      const res = await fetchFromBackend(`/api/dashboard/${dashboard.id}`, {
+      const res = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
         method: "DELETE",
       });
 

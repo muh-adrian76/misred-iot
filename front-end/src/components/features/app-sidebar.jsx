@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { NavMain } from "./nav-main";
+import { NavElement } from "./nav-element";
 import {
   Sidebar,
   SidebarContent,
@@ -51,7 +51,7 @@ export function AppSidebar({ ...props }) {
           </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarMenu} />
+        <NavElement items={sidebarMenu} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
