@@ -1,5 +1,9 @@
 import { Elysia } from "elysia";
-import { authorizeRequest, clearAuthCookie, setAuthCookie } from "../../utils/helper";
+import {
+  authorizeRequest,
+  clearAuthCookie,
+  setAuthCookie,
+} from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import {
   getRefreshTokenSchema,
@@ -8,6 +12,8 @@ import {
   postLoginSchema,
   postLogoutSchema,
   postRegisterSchema,
+  postResetPasswordSchema,
+  postResetForgottenPasswordSchema,
 } from "./elysiaSchema";
 
 export function authRoutes(authService: AuthService) {
@@ -23,6 +29,7 @@ export function authRoutes(authService: AuthService) {
             status: result.status,
           });
         },
+        // @ts-ignore
         postRegisterSchema
       )
 
@@ -31,7 +38,7 @@ export function authRoutes(authService: AuthService) {
         "/login",
         // @ts-ignore
         async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.login(body, jwt, auth);
+          const result = await authService.login(body);
 
           if (result.status === 200) {
             await setAuthCookie(auth, jwt, result.user?.id);
@@ -51,11 +58,7 @@ export function authRoutes(authService: AuthService) {
         "/verify-token",
         // @ts-ignore
         async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.verifyToken(
-            jwt,
-            auth,
-            authorizeRequest
-          );
+          const result = await authService.verifyToken(jwt, auth);
           return new Response(
             JSON.stringify(
               result ?? {
@@ -82,30 +85,15 @@ export function authRoutes(authService: AuthService) {
         getRefreshTokenSchema
       )
 
-      // Logout
-      .post(
-        "/logout",
-        // @ts-ignore
-        async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.logout(jwt, auth, authorizeRequest);
-          clearAuthCookie(auth);
-          
-          return new Response(JSON.stringify(result), {
-            status: result.status,
-          });
-        },
-        postLogoutSchema
-      )
-
       // Google OAuth
       .post(
         "/google",
         // @ts-ignore
         async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.googleLogin(body, jwt, auth);
+          const result = await authService.googleLogin(body);
 
           if (result.status === 200 && result.user?.id) {
-          await setAuthCookie(auth, jwt, result.user.id);
+            await setAuthCookie(auth, jwt, result.user.id);
             return new Response(JSON.stringify({ user: result.user }), {
               status: 200,
             });
@@ -115,6 +103,61 @@ export function authRoutes(authService: AuthService) {
           });
         },
         postGoogleLoginSchema
+      )
+
+      // Reset-forgotten-password
+      .put(
+        "/reset-forgotten-password",
+        // @ts-ignore
+        async ({ body }: any) => {
+          const result = await authService.resetForgottenPassword(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        postResetForgottenPasswordSchema
+      )
+
+      // Reset-password
+      .put(
+        "/reset-password",
+        // @ts-ignore
+        async ({ jwt, cookie: { auth }, body }: any) => {
+          try {
+            const decoded = await authorizeRequest(jwt, auth);
+            if (!decoded) {
+              return new Response(
+                JSON.stringify({ message: "Unauthorized" }),
+                { status: 401 }
+              );
+            }
+            const result = await authService.resetPassword(decoded.sub, body);
+            return new Response(JSON.stringify(result), {
+              status: result.status,
+            });
+          } catch (error) {
+            return new Response(
+              JSON.stringify({ message: "Unauthorized" }),
+              { status: 401 }
+            );
+          }
+        },
+        postResetPasswordSchema
+      )
+
+      // Logout
+      .post(
+        "/logout",
+        // @ts-ignore
+        async ({ jwt, cookie: { auth } }) => {
+          const result = await authService.logout(jwt, auth);
+          clearAuthCookie(auth);
+
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        postLogoutSchema
       )
   );
 }

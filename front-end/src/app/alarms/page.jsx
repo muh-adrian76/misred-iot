@@ -1,6 +1,7 @@
 "use client";
 
-import * as React from "react";
+import { useState, useMemo } from "react";
+import { useUser } from "@/providers/user-provider";
 import {
   flexRender,
   getCoreRowModel,
@@ -10,15 +11,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -27,86 +21,78 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-<<<<<<< HEAD
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import {
-  SidebarInset,
-  SidebarTrigger,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { showToast } from "@/components/features/toaster";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
-import { Separator } from "@/components/ui/separator";
-import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
-=======
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
-import { SidebarInset, SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/features/app-sidebar"
-import { Separator } from "@/components/ui/separator"
-import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react"
->>>>>>> back-end/oop
-import useAuth from "@/hooks/use-auth";
+import AppNavbar from "@/components/features/app-navbar";
 
-////////
+import { Copy, Edit, Trash } from "lucide-react";
+import AddAlarmForm from "@/components/forms/add-alarm-form";
+import EditAlarmForm from "@/components/forms/edit-alarm-form";
+import DeleteAlarmForm from "@/components/forms/delete-alarm-form";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import { fetchFromBackend } from "@/lib/helper";
+
 export default function Page() {
-  const [data, setData] = React.useState([
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editAlarm, setEditAlarm] = useState(null);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [deleteFormOpen, setDeleteFormOpen] = useState(false);
+  const [alarmToDelete, setAlarmToDelete] = useState(null);
+
+  const [sorting, setSorting] = useState([]);
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [columnVisibility, setColumnVisibility] = useState({});
+  const [rowSelection, setRowSelection] = useState({});
+
+  const [name, setName] = useState("");
+  const [sensorName, setsensorName] = useState("");
+  const [threshold, setthreshold] = useState("");
+  const [FormOpen, setFormOpen] = useState(false);
+
+  const isAuthenticated = useAuth();
+  const { user } = useUser();
+
+  const [devices, setDevices] = useState([
     {
-      id: "1",
-      boardType: "ESP32",
-      protocol: "HTTP",
       name: "Device1",
-      token: "test-device-1",
+      sensors: [
+        { id: "1", sensorName: "pH", threshold: ">8.5; <6.5" },
+        { id: "2", sensorName: "COD", threshold: ">100; <50" },
+        { id: "3", sensorName: "NH3-N", threshold: ">75; <10" },
+        { id: "4", sensorName: "TSS", threshold: ">300" },
+        { id: "5", sensorName: "Flowmeter", threshold: ">1000" },
+      ],
     },
     {
-      id: "2",
-      boardType: "Arduino Nano",
-      protocol: "MQTT",
       name: "Device2",
-      token: "test-device-2",
-    },
-    {
-      id: "3",
-      boardType: "ESP32",
-      protocol: "LoRaWAN",
-      name: "Device3",
-      token: "test-device-3",
-    },
-    {
-      id: "4",
-      boardType: "ESP8266",
-      protocol: "MQTT",
-      name: "Device4",
-      token: "test-device-4",
-    },
-    {
-      id: "5",
-      boardType: "ESP8266",
-      protocol: "HTTP",
-      name: "Device5",
-      token: "test-device-5",
+      sensors: [
+        { id: "6", sensorName: "pH", threshold: "9" },
+        { id: "7", sensorName: "TSS", threshold: "28" },
+      ],
     },
   ]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const flatData = useMemo(() => {
+    return devices.flatMap((device) =>
+      device.sensors
+        .filter((sensor) => sensor.threshold !== "") // hanya tampilkan yang ada threshold
+        .map((sensor) => ({
+          ...sensor,
+          name: device.name,
+        }))
+    );
+  }, [devices]);
   // Edit Table
   const columns = [
     {
@@ -132,85 +118,39 @@ export default function Page() {
       enableHiding: false,
     },
     {
-      accessorKey: "name",
+      accessorKey: "sensorName",
       header: ({ column }) => (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
+          Sensor
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
     },
     {
-      accessorKey: "boardType",
-      header: "Type Board",
-      cell: ({ row }) => <div>{row.getValue("boardType")}</div>,
+      accessorKey: "name",
+      header: "Device Name",
+      cell: ({ row }) => <div>{row.getValue("name")}</div>,
     },
     {
-      accessorKey: "token",
-      header: "UID",
-      cell: ({ row }) => {
-        const token = row.getValue("token");
-
-        const handleCopy = () => {
-          navigator.clipboard.writeText(token);
-          toast.success("Token disalin!");
-        };
-
-        return (
-          <div className="flex items-center gap-2">
-            <span className="truncate max-w-[160px]">{token}</span>
-            <Button variant="ghost" size="icon" onClick={handleCopy}>
-              <IconCopy className="size-3" />
-            </Button>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "protocol",
-      header: () => <div className="text-right">Protocol</div>,
-      cell: ({ row }) => {
-        const protocol = row.getValue("protocol");
-
-        const getBadgeStyle = (protocol) => {
-          switch (protocol.toLowerCase()) {
-            case "http":
-              return "border-blue-500 text-blue-500";
-            case "mqtt":
-              return "border-green-500 text-green-500";
-            case "lorawan":
-              return "border-red-500 text-red-500";
-            default:
-              return "border-gray-500 text-gray-500";
-          }
-        };
-
-        return (
-          <div className="text-right">
-            <Badge variant="outline" className={getBadgeStyle(protocol)}>
-              {protocol.toUpperCase()}
-            </Badge>
-          </div>
-        );
-      },
+      accessorKey: "threshold",
+      header: "Threshold",
+      cell: ({ row }) => <div>{row.getValue("threshold")}</div>,
     },
     {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const device = row.original;
-
-        const handleDelete = () => {
-          setData((prev) => prev.filter((d) => d.id !== device.id));
-          toast.success("Device berhasil dihapus!");
-        };
+        const alarm = row.original;
 
         const handleEdit = () => {
-          setEditDevice(device);
-          setEditDialogOpen(true);
+          setEditAlarm({
+            ...alarm,
+            name: alarm.name, // penting untuk tracking nama device
+          });
+          setEditFormOpen(true);
         };
 
         return (
@@ -221,15 +161,17 @@ export default function Page() {
               size="sm"
               onClick={handleEdit}
             >
-              <IconEdit />
+              <Edit />
             </Button>
             <Button
-              className="ml-2"
               variant="destructive"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => {
+                setAlarmToDelete(alarm);
+                setDeleteFormOpen(true);
+              }}
             >
-              <IconTrashX />
+              <Trash />
             </Button>
           </div>
         );
@@ -237,44 +179,71 @@ export default function Page() {
     },
   ];
 
-  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
-  const [editDevice, setEditDevice] = React.useState(null);
-  const [globalFilter, setGlobalFilter] = React.useState("");
-
-  const [sorting, setSorting] = React.useState([]);
-  const [columnFilters, setColumnFilters] = React.useState([]);
-  const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
-
-  const [name, setName] = React.useState("");
-  const [boardType, setBoardType] = React.useState("");
-  const [protocol, setProtocol] = React.useState("");
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-
-  const handleAddDevice = () => {
-    if (!name || !boardType || !protocol) {
-      toast.error("All fields must be filled!");
+  const handleAddAlarm = () => {
+    if (!name || !sensorName || !threshold) {
+      showToast.error("All fields must be filled!");
       return;
     }
 
-    const newDevice = {
-      id: String(Date.now()),
-      name,
-      boardType,
-      protocol,
-      token: ".............",
+    const deviceIndex = devices.findIndex((d) => d.name === name);
+    if (deviceIndex === -1) {
+      showToast.error("Device not found!");
+      return;
+    }
+
+    const sensorIndex = devices[deviceIndex].sensors.findIndex(
+      (sensor) => sensor.sensorName === sensorName
+    );
+
+    if (sensorIndex === -1) {
+      showToast.error("Sensor tidak ditemukan pada device!");
+      return;
+    }
+
+    if (devices[deviceIndex].sensors[sensorIndex].threshold !== "") {
+      showToast.error("Alarm untuk sensor ini sudah ada pada device tersebut!");
+      return;
+    }
+
+    // Update threshold sensor yang sudah ada
+    const updatedDevices = [...devices];
+    updatedDevices[deviceIndex].sensors[sensorIndex] = {
+      ...updatedDevices[deviceIndex].sensors[sensorIndex],
+      threshold,
     };
 
-    setData((prev) => [...prev, newDevice]);
+    setDevices(updatedDevices);
+
+    // Reset form
     setName("");
-    setBoardType("");
-    setProtocol("");
-    setDialogOpen(false); // Tutup dialog
-    toast.success("Device berhasil ditambahkan!");
+    setsensorName("");
+    setthreshold("");
+    setFormOpen(false);
+
+    showToast.success("Alarm berhasil ditambahkan!");
+  };
+
+  const handleSaveEdit = () => {
+    const deviceIndex = devices.findIndex((d) => d.name === editAlarm.name);
+    if (deviceIndex === -1) return;
+
+    const sensorIndex = devices[deviceIndex].sensors.findIndex(
+      (s) => s.id === editAlarm.id
+    );
+    if (sensorIndex === -1) return;
+
+    const updatedDevices = [...devices];
+    updatedDevices[deviceIndex].sensors[sensorIndex] = {
+      ...editAlarm,
+    };
+    delete updatedDevices[deviceIndex].sensors[sensorIndex].name; // optional cleanup
+    setDevices(updatedDevices);
+    setEditFormOpen(false);
+    showToast.success("Sensor berhasil diperbarui!");
   };
 
   const table = useReactTable({
-    data,
+    data: flatData,
     columns,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
@@ -301,30 +270,30 @@ export default function Page() {
     },
   });
 
-  // Check Authorization
-  const isAuthenticated = useAuth();
+  // Check JWT
   if (!isAuthenticated) {
     return null;
   }
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
+    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      <div
+        onMouseEnter={() => setSidebarOpen(true)}
+        onMouseLeave={() => setSidebarOpen(false)}
+        className="relative"
+        style={{ height: "100vh" }} // pastikan area hover cukup tinggi
+      >
+        <AppSidebar />
+      </div>
       <SidebarInset>
-        {/* Header */}
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 px-4">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-          </div>
-        </header>
+        <AppNavbar page="Alarms" profile={user} />
 
         {/* Main content */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           {/* Filter + Column visibility controls */}
           <div className="flex items-center py-4">
             <Input
-              placeholder="Find device..."
+              placeholder="Find alarm ..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
@@ -353,141 +322,40 @@ export default function Page() {
                   ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* Add device */}
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="ml-2">Add Device</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Add Device</DialogTitle>
-                  <DialogDescription>
-                    Add your device here. Click add when you're done.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardType" className="text-right">
-                      Type Board
-                    </Label>
-                    <Input
-                      id="boardType"
-                      value={boardType}
-                      onChange={(e) => setBoardType(e.target.value)}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocol" className="text-right">
-                      Protocol
-                    </Label>
-                    <Select value={protocol} onValueChange={setProtocol}>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select protocol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="button" onClick={handleAddDevice}>
-                    Add
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            {/* Add alarm */}
+            <AddAlarmForm
+              open={FormOpen}
+              setOpen={setFormOpen}
+              sensorName={sensorName}
+              setsensorName={setsensorName}
+              name={name}
+              setName={setName}
+              threshold={threshold}
+              setthreshold={setthreshold}
+              handleAddAlarm={handleAddAlarm}
+              flatData={flatData}
+              devices={devices}
+              toast={showToast}
+            />
             {/* Edit table */}
-            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Edit Device</DialogTitle>
-                  <DialogDescription>
-                    Change device information in here.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="nameEdit" className="text-right">
-                      Name
-                    </Label>
-                    <Input
-                      id="nameEdit"
-                      className="col-span-3"
-                      value={editDevice?.name || ""}
-                      onChange={(e) =>
-                        setEditDevice({ ...editDevice, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="boardEdit" className="text-right">
-                      Type Board
-                    </Label>
-                    <Input
-                      id="boardEdit"
-                      className="col-span-3"
-                      value={editDevice?.boardType || ""}
-                      onChange={(e) =>
-                        setEditDevice({
-                          ...editDevice,
-                          boardType: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="protocolEdit" className="text-right">
-                      Protocol
-                    </Label>
-                    <Select
-                      value={editDevice?.protocol || ""}
-                      onValueChange={(value) =>
-                        setEditDevice({ ...editDevice, protocol: value })
-                      }
-                    >
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Pilih protokol" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MQTT">MQTT</SelectItem>
-                        <SelectItem value="HTTP">HTTP</SelectItem>
-                        <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={() => {
-                      setData((prev) =>
-                        prev.map((d) =>
-                          d.id === editDevice.id ? editDevice : d
-                        )
-                      );
-                      setEditDialogOpen(false);
-                      toast.success("Device berhasil diperbarui!");
-                    }}
-                  >
-                    Save Change
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <EditAlarmForm
+              open={editFormOpen}
+              setOpen={setEditFormOpen}
+              editAlarm={editAlarm}
+              setEditAlarm={setEditAlarm}
+              devices={devices}
+              setDevices={setDevices}
+              flatData={flatData}
+              toast={showToast}
+            />
+            {/* Confirm Delete */}
+            <DeleteAlarmForm
+              open={deleteFormOpen}
+              setOpen={setDeleteFormOpen}
+              alarmToDelete={alarmToDelete}
+              setDevices={setDevices}
+              toast={showToast}
+            />
           </div>
 
           {/* Table */}

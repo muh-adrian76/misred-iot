@@ -1,6 +1,6 @@
 // routes/widget.ts
 import { Elysia } from "elysia";
-import { authorizeRequest } from "../../utils/helper";
+import { authorizeRequest } from "../../lib/utils";
 import { WidgetService } from "../../services/WidgetService";
 import {
   deleteWidgetSchema,
@@ -32,14 +32,14 @@ export function widgetRoutes(widgetService: WidgetService) {
       postWidgetSchema
     )
 
-    // READ Semua Widget
+    // READ Semua Widget by Dashboard ID
     .get(
-      "/all",
+      "/dashboard/:dashboardId",
       //@ts-ignore
-      async ({ jwt, cookie }) => {
+      async ({ jwt, cookie, params }) => {
         await authorizeRequest(jwt, cookie.auth);
-        const data = await widgetService.getAllWidgets();
-        return new Response(JSON.stringify({ result: data }), { status: 200 });
+        const widgets = await widgetService.getWidgetsByDashboardId(params.dashboardId);
+        return new Response(JSON.stringify({ result: widgets }), { status: 200 });
       },
       getAllWidgetsSchema
     )

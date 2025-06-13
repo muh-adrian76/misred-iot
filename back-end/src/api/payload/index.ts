@@ -1,8 +1,8 @@
 // routes/sensor.ts
 import { Elysia, t } from "elysia";
 import { ResultSetHeader } from "mysql2";
-import { authorizeRequest } from "../../utils/helper";
-import { Types } from "../../utils/types";
+import { authorizeRequest } from "../../lib/utils";
+import { Types } from "../../lib/types";
 import { PayloadService } from "../../services/PayloadService";
 import { getAllPayloadsSchema, getPayloadByDeviceIdSchema, postPayloadSchema } from "./elysiaSchema";
 

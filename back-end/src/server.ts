@@ -2,8 +2,8 @@ import { cors } from "@elysiajs/cors";
 import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
-import { MySQLDatabase, MQTTClient } from "./utils/middleware";
-import { apiTags } from "./utils/helper";
+import { MySQLDatabase, MQTTClient } from "./lib/middleware";
+import { apiTags } from "./lib/utils";
 
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";
@@ -11,6 +11,8 @@ import { deviceRoutes } from "./api/device";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
+import { dashboardRoutes } from "./api/dashboard";
+import { datastreamRoutes } from "./api/datastream";
 
 import { AuthService } from "./services/AuthService";
 import { UserService } from "./services/UserService";
@@ -18,19 +20,23 @@ import { DeviceService } from "./services/DeviceService";
 import { PayloadService } from "./services/PayloadService";
 import { WidgetService } from "./services/WidgetService";
 import { AlarmService } from "./services/AlarmService";
+import { DashboardService } from "./services/DashboardService";
+import { DatastreamService } from "./services/DatastreamService";
 
 class Server {
   private app: Elysia;
   private db!: Awaited<ReturnType<typeof MySQLDatabase.getInstance>>;
   private mqttClient!: ReturnType<typeof MQTTClient.getInstance>;
-  
+
   private authService!: AuthService;
   private userService!: UserService;
   private deviceService!: DeviceService;
   private payloadService!: PayloadService;
   private widgetService!: WidgetService;
   private alarmService!: AlarmService;
-  
+  private dashboardService!: DashboardService;
+  private datastreamService!: DatastreamService;
+
   constructor() {
     this.app = new Elysia();
   }
@@ -44,30 +50,26 @@ class Server {
     this.payloadService = new PayloadService(this.db);
     this.widgetService = new WidgetService(this.db);
     this.alarmService = new AlarmService(this.db);
-    
-    this.setupPlugin();
-    this.setupErrorHandler();
+    this.dashboardService = new DashboardService(this.db);
+    this.datastreamService = new DatastreamService(this.db);
+
     this.setupMQTT();
 
-    this.app.use(authRoutes(this.authService));
-    this.app.use(userRoutes(this.userService));
-    this.app.use(deviceRoutes(this.deviceService));
-    this.app.use(payloadRoutes(this.payloadService));
-    this.app.use(widgetRoutes(this.widgetService));
-    this.app.use(alarmRoutes(this.alarmService));
-
-    this.app.listen(Bun.env.BACKEND_PORT!, () => {
-      console.log(
-        `🦊 Server telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
-      );
-    });
-  }
-
-  private setupPlugin() {
     this.app
+      // API
+      .use(authRoutes(this.authService))
+      .use(userRoutes(this.userService))
+      .use(deviceRoutes(this.deviceService))
+      .use(payloadRoutes(this.payloadService))
+      .use(widgetRoutes(this.widgetService))
+      .use(alarmRoutes(this.alarmService))
+      .use(dashboardRoutes(this.dashboardService))
+      .use(datastreamRoutes(this.datastreamService))
+
+      // Plugin
       .use(
         cors({
-          origin: Bun.env.FRONTEND_URL!,
+          origin: process.env.FRONTEND_URL!,
           preflight: true,
           credentials: true,
           methods: ["GET", "POST", "PUT", "DELETE"],
@@ -77,8 +79,8 @@ class Server {
       .use(
         jwt({
           name: "jwt",
-          secret: Bun.env.JWT_SECRET!,
-          exp: Bun.env.ACCESS_TOKEN_AGE,
+          secret: process.env.JWT_SECRET!,
+          exp: process.env.ACCESS_TOKEN_AGE,
         })
       )
       .use(
@@ -101,15 +103,19 @@ class Server {
             },
           },
         })
-      );
-  }
+      )
 
-  private setupErrorHandler() {
-    this.app.onError(({ error, code }) => {
-      console.error("❌ Terjadi kesalahan:", error);
-      if (code === "NOT_FOUND") return "Anda salah alamat :(";
-      if (code === "VALIDATION") return "Invalid user";
-    });
+      // Error handler
+      .onError(({ error, code }) => {
+        console.error("❌ Terjadi kesalahan:", error);
+        if (code === "NOT_FOUND") return "Anda salah alamat :(";
+        if (code === "VALIDATION") return "Invalid user";
+      })
+      .listen(process.env.BACKEND_PORT!, () => {
+        console.log(
+          `🦊 Server telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
+        );
+      });
   }
 
   private setupMQTT() {

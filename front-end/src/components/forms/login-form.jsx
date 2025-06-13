@@ -1,191 +1,171 @@
 "use client";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import Link from "next/link"
-import { showToast } from "@/components/features/toaster"
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useGoogleLogin } from '@react-oauth/google';
-import { GoogleIcon } from "@/components/icons/google";
+import { motion } from "framer-motion";
 
-export function LoginForm({
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { showToast } from "@/components/features/toaster";
+
+import { brandLogo, fetchFromBackend } from "@/lib/helper";
+import GoogleButton from "../buttons/google-button";
+import { Eye, EyeOff } from "lucide-react";
+
+export default function LoginForm({
   className,
+  router,
+  setUser,
+  isLoading,
+  setIsLoading,
+  setShowRegister,
+  setShowForgotPassword,
   ...props
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const router = useRouter();
-
-  const validateForm = () => {
-    let isValid = true;
-
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setEmailError("Email tidak valid. Contoh: user@example.com");
-      isValid = false;
-    } else {
-      setEmailError("");
-    }
-
-    if (password.length < 6) {
-      setPasswordError("Password harus memiliki minimal 6 karakter.");
-      isValid = false;
-    } else {
-      setPasswordError("");
-    }
-
-    return isValid;
-  };
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) return;
-
+    setIsLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
+      const res = await fetchFromBackend("/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
+      const data = await res.json();
 
-      if (!res.ok) {
-        const { message } = await res.json();
-        showToast("warning", "Login gagal!", `${message}`);
-      } else {
-        const data = await res.json();
-        showToast("success", "Login berhasil!", `Selamat datang, ${data.user.name}`);
-        setTimeout(() => {
-          router.push("/dashboards");
-        }, 1500);
-      }
+      !res.ok
+        ? showToast("warning", "Login gagal!", `${data.message}`)
+        : setTimeout(() => {
+            setUser(data.user);
+            router.push("/dashboards");
+          }, 500);
     } catch (error) {
-      showToast("error", "Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
+      showToast(
+        "error",
+        "Terjadi kesalahan, coba lagi nanti!",
+        `${error.message}`
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Google login handler
-  const googleLogin = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: async ({ code }) => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code }),
-          credentials: "include",
-        });
-        if (res.ok) {
-          const data = await res.json();
-          showToast("success", "Login Google berhasil!", `Selamat datang, ${data.user.name}`);
-          setTimeout(() => router.push("/dashboards"), 500);
-        } else {
-          showToast("error", "Google login gagal!", `${data.message}`)
-        }
-      } catch {
-        showToast("error", "Google login gagal!", `${res.message}`)
-      }
-    },
-    onError: () => showToast("error", "Google login gagal!", "Silahkan login kembali"),
-  });
-
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card className="overflow-hidden p-0">
-        <CardContent className="grid p-0 md:grid-cols-2">
+    <div className="w-full max-w-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        whileHover={{ scale: 1.02 }}
+        className="flex flex-col gap-6"
+        {...props}
+      >
+        <Card className="overflow-hidden p-0">
           <form className="p-6 md:p-8" onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl tracking-wider font-bold">Misred-IoT</h1>
+                <div className="flex gap-4 mb-4">
+                  <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
+                    <img src={brandLogo} alt="Logo" />
+                  </div>
+                  <h1 className="text-2xl tracking-wider font-bold">
+                    MiSREd-IoT
+                  </h1>
+                </div>
                 <p className="text-muted-foreground text-balance">
-                  Sistem Pemantauan Limbah Cair Industri
+                  Isi email dan password untuk masuk ke akun Anda.
                 </p>
               </div>
               <div className="grid gap-3">
-                <Label htmlFor="email">Email</Label>
+                <div className="flex items-center">
+                  <Label htmlFor="email">Email</Label>
+                  <button
+                    type="button"
+                    className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
+                    onClick={() => setShowRegister(true)}
+                  >
+                    Belum punya akun?
+                  </button>
+                </div>
                 <Input
                   id="email"
                   type="email"
                   placeholder="contoh@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                   required
                 />
-                {emailError && (
-                  <span className="text-sm text-red-500">{emailError}</span>
-                )}
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    href={"/forgot-password"}
-                    className="ml-auto text-sm underline-offset-2 hover:underline"
+                  <button
+                    type="button"
+                    className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
+                    onClick={() => setShowForgotPassword(true)} // Tampilkan form lupa password
                   >
                     Lupa password?
-                  </Link>
+                  </button>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                {passwordError && (
-                  <span className="text-sm text-red-500">{passwordError}</span>
-                )}
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="********"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    {showPassword ? (
+                      <Eye
+                        className="relative h-5 w-5"
+                        onClick={() => setShowPassword(false)}
+                      />
+                    ) : (
+                      <EyeOff
+                        className="relative h-5 w-5"
+                        onClick={() => setShowPassword(true)}
+                      />
+                    )}
+                  </div>
+                </div>
               </div>
-              <Button type="submit" className="w-full">
-                Masuk
-              </Button>
-              <div
-                className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t"
+              <Button
+                type="submit"
+                className="w-full cursor-pointer"
+                disabled={isLoading}
               >
+                {isLoading ? "Memproses..." : "Masuk"}
+              </Button>
+              <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
                 <span className="bg-card text-muted-foreground relative z-10 px-2">
                   Atau
                 </span>
               </div>
               <div className="grid grid-cols-1">
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="w-full flex items-center justify-center gap-2 border-gray-300 hover:bg-gray-100"
-                  onClick={() => googleLogin()}
-                >
-                  <GoogleIcon className="w-5 h-5" />
-                  Login dengan Google
-                </Button>
-              </div>
-              <div className="text-center text-sm">
-                Belum punya akun?{" "}
-                <Link
-                  href={"/register"}
-                  className="underline ml-1 underline-offset-4"
-                >
-                  Daftar
-                </Link>
+                <GoogleButton
+                  router={router}
+                  action="Log In"
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  setUser={setUser}
+                />
               </div>
             </div>
           </form>
-          <div className="bg-muted relative hidden md:block">
-            <img
-              src="/vector-auth.png"
-              alt="Image"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-            />
-          </div>
-        </CardContent>
-      </Card>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,52 +12,32 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useGoogleLogin } from "@react-oauth/google";
-import Link from "next/link";
 import { showToast } from "@/components/features/toaster";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { GoogleIcon } from "../icons/google";
+import { motion } from "framer-motion";
 
-export function RegisterForm({ className, ...props }) {
+import { cn } from "@/lib/utils";
+import { fetchFromBackend } from "@/lib/helper";
+import { brandLogo } from "@/lib/helper";
+import GoogleButton from "../buttons/google-button";
+import { Eye, EyeOff } from "lucide-react";
+
+export default function RegisterForm({
+  className,
+  router,
+  setUser,
+  isLoading,
+  setIsLoading,
+  setShowRegister,
+  ...props
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
-
-  // Google login handler
-  const googleLogin = useGoogleLogin({
-    flow: "auth-code",
-    onSuccess: async ({ code }) => {
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/google`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code }),
-            credentials: "include",
-          }
-        );
-        if (res.ok) {
-          const data = await res.json();
-          showToast(
-            "success",
-            "Login Google berhasil!",
-            `Selamat datang, ${data.user.name}`
-          );
-          setTimeout(() => router.push("/dashboards"), 1500);
-        } else {
-          showToast("warning", "Google login gagal!");
-        }
-      } catch {
-        showToast("error", "Google login gagal!");
-      }
-    },
-    onError: () => toast.error("Google login gagal!"),
-  });
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+
     if (!email || !password) {
       showToast(
         "warning",
@@ -79,14 +60,10 @@ export function RegisterForm({ className, ...props }) {
     }
 
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/register`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetchFromBackend("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
 
       if (!res.ok) {
         const errorMessage = await res.json();
@@ -101,94 +78,140 @@ export function RegisterForm({ className, ...props }) {
 
       setTimeout(async () => {
         try {
-          const login = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, password }),
-              credentials: "include",
-            }
-          );
-          setTimeout(() => {
-            router.push("/dashboards");
-          }, 500);
+          const res = await fetchFromBackend("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await res.json();
+          !res.ok
+            ? showToast("warning", "Login gagal!", `${data.message}`)
+            : setTimeout(() => {
+                setUser(data.user);
+                router.push("/dashboards");
+              }, 500);
         } catch {
           showToast("warning", "Peringatan", "Gagal melakukan login.");
         }
       }, 500);
     } catch (error) {
       showToast("error", "Terjadi kesalahan, coba lagi nanti!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-xl">Registrasi Akun</CardTitle>
-          <CardDescription>
-            Tolong isi informasi berikut untuk mendaftar
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister}>
-            <div className="grid gap-6">
-              <div className="flex flex-col gap-4">
-                <Button
-                  variant="outline"
-                  type="button"
-                  className="w-full"
-                  onClick={() => googleLogin()}
-                >
-                  <GoogleIcon className="h-5 w-5" />
-                  Daftar dengan Google
-                </Button>
-              </div>
-              <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                  Atau
-                </span>
-              </div>
+    <div className="flex w-full max-w-sm flex-col gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -50 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className="flex items-center gap-2 self-center text-xl tracking-wide
+        "
+      >
+        <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
+          <img src={brandLogo} alt="Logo" />
+        </div>
+        MiSREd-IoT
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        whileHover={{ scale: 1.02 }}
+        className={cn("flex flex-col gap-6 rounded-2xl", className)}
+        {...props}
+      >
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl mb-3">Registrasi Akun</CardTitle>
+            <CardDescription>Tolong isi informasi berikut</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleRegister}>
               <div className="grid gap-6">
-                <div className="grid gap-3">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="contoh@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <div className="flex items-center">
-                    <Label htmlFor="password">Password</Label>
+                <div className="grid gap-6">
+                  <div className="grid gap-3">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="contoh@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="******"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                  <div className="grid gap-3">
+                    <div className="flex items-center">
+                      <Label htmlFor="password">Password</Label>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="********"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        required
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        {showPassword ? (
+                          <Eye
+                            className="relative h-5 w-5"
+                            onClick={() => setShowPassword(false)}
+                          />
+                        ) : (
+                          <EyeOff
+                            className="relative h-5 w-5"
+                            onClick={() => setShowPassword(true)}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full cursor-pointer"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Memproses..." : "Daftar"}
+                  </Button>
+                </div>
+                <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
+                  <span className="bg-card text-muted-foreground relative z-10 px-2">
+                    Atau
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <GoogleButton
+                    router={router}
+                    action="Daftar"
+                    isLoading={isLoading}
+                    setIsLoading={setIsLoading}
+                    setUser={setUser}
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Daftar
-                </Button>
+                <div className="text-center text-sm">
+                  Kembali ke halaman{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowRegister(false)}
+                    className="cursor-pointer underline underline-offset-4"
+                  >
+                    Login
+                  </button>
+                </div>
               </div>
-              <div className="text-center text-sm">
-                Kembali ke halaman{" "}
-                <Link href={"/login"} className="underline underline-offset-4">
-                  Login
-                </Link>
-              </div>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // routes/alarm.ts
 import { Elysia } from "elysia";
-import { authorizeRequest } from "../../utils/helper";
+import { authorizeRequest } from "../../lib/utils";
 import { AlarmService } from "../../services/AlarmService";
 import {
   deleteAlarmSchema,
