@@ -1,7 +1,8 @@
+"use client";
 import styled from "styled-components";
 import MisredTextIcon from "../icons/misred-text";
 
-const LoaderText = () => {
+export default function LoaderText() {
   return (
     <StyledWrapper>
       <MisredTextIcon className="loaderText" />
@@ -45,5 +46,3 @@ const StyledWrapper = styled.div`
     }
   }
 `;
-
-export default LoaderText;

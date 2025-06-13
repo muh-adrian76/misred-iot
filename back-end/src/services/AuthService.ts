@@ -145,26 +145,6 @@ export class AuthService {
     }
   }
 
-  async logout(jwt: any, auth: any) {
-    const decoded = await authorizeRequest(jwt, auth);
-    const id = decoded.sub;
-    const [result] = await this.db.query<any[]>(
-      "SELECT refresh_token FROM users WHERE id = ?",
-      [id]
-    );
-
-    const refreshToken = result[0];
-    if (!refreshToken)
-      return { status: 400, message: "Refresh token tidak valid." };
-
-    await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
-      "",
-      id,
-    ]);
-
-    return { status: 200, message: "User berhasil logout" };
-  }
-
   async googleLogin({ code }: { code: string }) {
     if (!code) {
       return { status: 400, message: "Missing code" };
@@ -369,5 +349,25 @@ export class AuthService {
       console.error(error);
       return { status: 500, message: "Terjadi kesalahan pada server." };
     }
+  }
+
+  async logout(jwt: any, auth: any) {
+    const decoded = await authorizeRequest(jwt, auth);
+    const id = decoded.sub;
+    const [result] = await this.db.query<any[]>(
+      "SELECT refresh_token FROM users WHERE id = ?",
+      [id]
+    );
+
+    const refreshToken = result[0];
+    if (!refreshToken)
+      return { status: 400, message: "Refresh token tidak valid." };
+
+    await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      "",
+      id,
+    ]);
+
+    return { status: 200, message: "User berhasil logout" };
   }
 }

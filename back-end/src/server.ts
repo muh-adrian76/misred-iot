@@ -11,6 +11,8 @@ import { deviceRoutes } from "./api/device";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
+import { dashboardRoutes } from "./api/dashboard";
+import { datastreamRoutes } from "./api/datastream";
 
 import { AuthService } from "./services/AuthService";
 import { UserService } from "./services/UserService";
@@ -18,6 +20,8 @@ import { DeviceService } from "./services/DeviceService";
 import { PayloadService } from "./services/PayloadService";
 import { WidgetService } from "./services/WidgetService";
 import { AlarmService } from "./services/AlarmService";
+import { DashboardService } from "./services/DashboardService";
+import { DatastreamService } from "./services/DatastreamService";
 
 class Server {
   private app: Elysia;
@@ -30,6 +34,8 @@ class Server {
   private payloadService!: PayloadService;
   private widgetService!: WidgetService;
   private alarmService!: AlarmService;
+  private dashboardService!: DashboardService;
+  private datastreamService!: DatastreamService;
 
   constructor() {
     this.app = new Elysia();
@@ -44,6 +50,8 @@ class Server {
     this.payloadService = new PayloadService(this.db);
     this.widgetService = new WidgetService(this.db);
     this.alarmService = new AlarmService(this.db);
+    this.dashboardService = new DashboardService(this.db);
+    this.datastreamService = new DatastreamService(this.db);
 
     this.setupMQTT();
 
@@ -55,7 +63,9 @@ class Server {
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
       .use(alarmRoutes(this.alarmService))
-      
+      .use(dashboardRoutes(this.dashboardService))
+      .use(datastreamRoutes(this.datastreamService))
+
       // Plugin
       .use(
         cors({

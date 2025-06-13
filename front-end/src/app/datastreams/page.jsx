@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
+
 import { Copy, Edit, Trash } from "lucide-react";
 import AddDeviceForm from "@/components/forms/add-device-form";
 import EditDeviceForm from "@/components/forms/edit-device-form";
@@ -101,12 +102,57 @@ export default function Page() {
       name: "Device5",
       uid: "shadcn-device5-5",
     },
+    {
+      id: "2",
+      boardType: "Arduino Nano",
+      protocol: "MQTT",
+      name: "Device2",
+      uid: "shadcn-device2-2",
+    },
+    {
+      id: "3",
+      boardType: "ESP32",
+      protocol: "LoRaWAN",
+      name: "Device3",
+      uid: "shadcn-device3-3",
+    },
+    {
+      id: "4",
+      boardType: "ESP8266",
+      protocol: "MQTT",
+      name: "Device4",
+      uid: "shadcn-device4-4",
+    },
+    {
+      id: "5",
+      boardType: "ESP8266",
+      protocol: "HTTP",
+      name: "Device5",
+      uid: "shadcn-device5-5",
+    },
+    {
+      id: "5",
+      boardType: "ESP8266",
+      protocol: "HTTP",
+      name: "Device5",
+      uid: "shadcn-device5-5",
+    },
   ]);
 
   // Edit Table
   const columns = [
     {
-      id: "index",
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
@@ -296,7 +342,7 @@ export default function Page() {
         <AppSidebar />
       </div>
       <SidebarInset>
-        <AppNavbar page="Devices" profile={user} />
+        <AppNavbar page="Datastreams" profile={user} />
 
         {/* Main content */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -308,6 +354,30 @@ export default function Page() {
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
             />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Columns <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Add device */}
             <AddDeviceForm

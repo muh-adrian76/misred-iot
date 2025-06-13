@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Cpu, Siren } from "lucide-react";
+import { LayoutDashboard, Cpu, Siren, CircuitBoard } from "lucide-react";
 import { brandLogo } from "@/lib/helper";
 
 // Data menu
@@ -23,6 +23,11 @@ const sidebarMenu = [
       title: "Devices",
       url: "/devices",
       icon: Cpu,
+    },
+    {
+      title: "Datastreams",
+      url: "/datastreams",
+      icon: CircuitBoard,
     },
     {
       title: "Alarms",

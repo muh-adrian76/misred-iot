@@ -1,12 +1,12 @@
 import "./globals.css";
 import { JetBrains_Mono } from "next/font/google";
-import { brandLogo } from "@/lib/helper";
+import { Toaster } from "@/components/ui/sonner";
+import { ViewTransitions } from "next-view-transitions";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { UserProvider } from "@/providers/user-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { ViewTransitions } from "next-view-transitions";
+import { brandLogo } from "@/lib/helper";
 
 const defaultFont = JetBrains_Mono({
   variable: "--font-sans",

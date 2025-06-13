@@ -20,29 +20,50 @@ export function AddChartForm({
   setOpen,
   existingTabs = [],
   onAddChart,
+  createDashboard,
+  dashboards,
 }) {
-  const [step, setStep] = useState(1)
-  const [selectedTab, setSelectedTab] = useState("")
-  const [newTab, setNewTab] = useState("")
-  const [selectedChart, setSelectedChart] = useState("")
+  const [step, setStep] = useState(1);
+  const [selectedTab, setSelectedTab] = useState("");
+  const [newTab, setNewTab] = useState("");
+  const [selectedChart, setSelectedChart] = useState("");
 
   const handleNext = () => {
     if (!selectedTab && !newTab) {
-      toast.error("Select a tab or create a new tab")
-      return
+      toast.error("Select a tab or create a new tab");
+      return;
     }
-    setStep(2)
-  }
+    setStep(2);
+  };
 
-  const handleSubmit = () => {
-    const tab = selectedTab || newTab
-    onAddChart(tab, selectedChart)
-    setStep(1)
-    setSelectedTab("")
-    setNewTab("")
-    setSelectedChart("")
-    setOpen(false)
-  }
+  const handleSubmit = async () => {
+    const tab = selectedTab || newTab;
+
+    try {
+      let dashboardId;
+
+      if (newTab) {
+        dashboardId = await createDashboard(newTab);
+      } else {
+        const dashboard = dashboards.find((d) => d.name === tab);
+        if (!dashboard) {
+          throw new Error("Dashboard tidak ditemukan");
+        }
+        dashboardId = dashboard.id;
+      }
+
+      onAddChart(tab, selectedChart, dashboardId);
+
+      setStep(1);
+      setSelectedTab("");
+      setNewTab("");
+      setSelectedChart("");
+      setOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menambahkan chart");
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -61,8 +82,8 @@ export function AddChartForm({
                   className="w-full border rounded p-2"
                   value={selectedTab}
                   onChange={(e) => {
-                    setSelectedTab(e.target.value)
-                    setNewTab("")
+                    setSelectedTab(e.target.value);
+                    setNewTab("");
                   }}
                 >
                   <option value="">-- Choose Tab --</option>
@@ -75,19 +96,19 @@ export function AddChartForm({
               </div>
             )}
             {existingTabs.length > 0 && (
-                <div className="flex items-center my-2">
-                    <div className="flex-grow border-t border-muted" />
-                    <span className="mx-2 text-muted-foreground text-sm">Or</span>
-                    <div className="flex-grow border-t border-muted" />
-                </div>
-            )}    
+              <div className="flex items-center my-2">
+                <div className="flex-grow border-t border-muted" />
+                <span className="mx-2 text-muted-foreground text-sm">Or</span>
+                <div className="flex-grow border-t border-muted" />
+              </div>
+            )}
             <div>
               <Label className="mb-3">Create a new tab</Label>
               <Input
                 value={newTab}
                 onChange={(e) => {
-                  setNewTab(e.target.value)
-                  setSelectedTab("")
+                  setNewTab(e.target.value);
+                  setSelectedTab("");
                 }}
                 placeholder="Tab Name"
               />
@@ -112,10 +133,7 @@ export function AddChartForm({
               ))}
             </div>
             <SheetFooter className="mt-4">
-              <Button
-                disabled={!selectedChart}
-                onClick={handleSubmit}
-              >
+              <Button disabled={!selectedChart} onClick={handleSubmit}>
                 Add Chart
               </Button>
             </SheetFooter>
@@ -123,5 +141,5 @@ export function AddChartForm({
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }

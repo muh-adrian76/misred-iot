@@ -42,7 +42,7 @@ export function ChartDataLine() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Line Chart - Multiple</CardTitle>
+        <CardTitle>Turbidity</CardTitle>
         <CardDescription></CardDescription>
       </CardHeader>
       <CardContent className="flex-1 h-0">

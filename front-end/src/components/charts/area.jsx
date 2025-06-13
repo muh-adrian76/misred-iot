@@ -41,7 +41,7 @@ export function ChartDataArea() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>Area Chart - Stacked</CardTitle>
+        <CardTitle>pH</CardTitle>
         <CardDescription></CardDescription>
       </CardHeader>
       <CardContent className="flex-1 h-0"> {/* ⚠️ flex-1 + h-0 = penting */}

@@ -1,4 +1,6 @@
 "use client";
+import { useState } from "react";
+import ResponsiveDialog from "@/components/features/responsive-dialog";
 import { Glow, GlowArea } from "@/components/features/glow";
 import { Button } from "@/components/ui/button";
 import CheckboxButton from "@/components/buttons/checkbox-button";
@@ -12,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { GamepadIcon, Lock, Rocket, Server, Trophy, Users } from "lucide-react";
 export default function Home() {
+  const [open, setOpen] = useState(false);
   return (
     <section>
       <GlowArea className="flex gap-8 items-center justify-center lg:py-34 flex-col lg:flex-row">
@@ -24,6 +27,7 @@ export default function Home() {
                 <CheckboxButton name="Ya, hapus"/>
               </CardDescription>
             </CardHeader>
+            <Button onClick={()=>setOpen(true)}>sdqwd</Button>
             <CardContent>
               <ul className="space-y-4">
                 <li className="flex items-center space-x-3">
@@ -97,6 +101,8 @@ export default function Home() {
           </Card>
         </Glow>
       </GlowArea>
+
+      <ResponsiveDialog open={open} setOpen={setOpen}/>
     </section>
   );
 }

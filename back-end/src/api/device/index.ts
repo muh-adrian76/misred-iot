@@ -8,6 +8,7 @@ import {
   getAllDevicesSchema,
   getDeviceByIdSchema,
   postDeviceSchema,
+  putDeviceSchema,
 } from "./elysiaSchema";
 
 export function deviceRoutes(deviceService: DeviceService) {
@@ -93,7 +94,8 @@ export function deviceRoutes(deviceService: DeviceService) {
           JSON.stringify({ message: "Perangkat berhasil diupdate", id: params.id }),
           { status: 200 }
         );
-      }
+      },
+      putDeviceSchema
     )
 
     // Delete device

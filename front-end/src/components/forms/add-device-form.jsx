@@ -18,7 +18,7 @@ export default function AddDeviceForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="ml-2">Add Device</Button>
+        <Button className="ml-auto">Tambah Device</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

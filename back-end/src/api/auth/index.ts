@@ -123,11 +123,24 @@ export function authRoutes(authService: AuthService) {
         "/reset-password",
         // @ts-ignore
         async ({ jwt, cookie: { auth }, body }: any) => {
-          const decoded = await authorizeRequest(jwt, auth);
-          const result = await authService.resetPassword(decoded.sub, body);
-          return new Response(JSON.stringify(result), {
-            status: result.status,
-          });
+          try {
+            const decoded = await authorizeRequest(jwt, auth);
+            if (!decoded) {
+              return new Response(
+                JSON.stringify({ message: "Unauthorized" }),
+                { status: 401 }
+              );
+            }
+            const result = await authService.resetPassword(decoded.sub, body);
+            return new Response(JSON.stringify(result), {
+              status: result.status,
+            });
+          } catch (error) {
+            return new Response(
+              JSON.stringify({ message: "Unauthorized" }),
+              { status: 401 }
+            );
+          }
         },
         postResetPasswordSchema
       )

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useUser } from "@/providers/user-provider";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { Glow, GlowArea } from "@/components/features/glow";
 
 import LoginForm from "@/components/forms/login-form";
 import RegisterForm from "@/components/forms/register-form";

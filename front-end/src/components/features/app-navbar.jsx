@@ -50,7 +50,7 @@ export default function AppNavbar({ page, profile }) {
     }, 1000);
   };
   return (
-    <header className="flex h-16 items-center bg-background px-4 gap-4 justify-between sticky top-0">
+    <header className="flex h-16 items-center bg-background px-4 gap-4 justify-between sticky top-0 z-50">
       <div className="flex items-center gap-4 px-4">
         <SidebarTrigger className="min-xl:hidden" />
         {/* <Separator orientation="vertical" className="h-6" /> */}

@@ -26,7 +26,8 @@ import { showToast } from "@/components/features/toaster";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
-import { IconCopy, IconEdit, IconTrashX } from "@tabler/icons-react";
+
+import { Copy, Edit, Trash } from "lucide-react";
 import AddAlarmForm from "@/components/forms/add-alarm-form";
 import EditAlarmForm from "@/components/forms/edit-alarm-form";
 import DeleteAlarmForm from "@/components/forms/delete-alarm-form";
@@ -64,11 +65,11 @@ export default function Page() {
     {
       name: "Device1",
       sensors: [
-        { id: "1", sensorName: "pH", threshold: "7" },
-        { id: "2", sensorName: "COD", threshold: "100" },
-        { id: "3", sensorName: "NH3-N", threshold: ".10" },
-        { id: "4", sensorName: "TSS", threshold: "30" },
-        { id: "5", sensorName: "Flowmeter", threshold: "100" },
+        { id: "1", sensorName: "pH", threshold: ">8.5; <6.5" },
+        { id: "2", sensorName: "COD", threshold: ">100; <50" },
+        { id: "3", sensorName: "NH3-N", threshold: ">75; <10" },
+        { id: "4", sensorName: "TSS", threshold: ">300" },
+        { id: "5", sensorName: "Flowmeter", threshold: ">1000" },
       ],
     },
     {
@@ -160,7 +161,7 @@ export default function Page() {
               size="sm"
               onClick={handleEdit}
             >
-              <IconEdit />
+              <Edit />
             </Button>
             <Button
               variant="destructive"
@@ -170,7 +171,7 @@ export default function Page() {
                 setDeleteFormOpen(true);
               }}
             >
-              <IconTrashX />
+              <Trash />
             </Button>
           </div>
         );

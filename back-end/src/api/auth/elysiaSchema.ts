@@ -274,7 +274,7 @@ const postResetForgottenPasswordSchema = {
   detail: {
     tags: ["Auth"],
     description: "Mengubah password pengguna yang sudah terautentikasi",
-    summary: "Lupa Password",
+    summary: "Forgot Password",
   },
 }
 

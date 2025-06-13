@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { UserService } from "../../services/UserService";
 import {
-  getAllUsersSchema,
+  // getAllUsersSchema,
   getUserByIdSchema,
   putUserSchema,
   deleteUserSchema,
@@ -12,16 +12,16 @@ export function userRoutes(userService: UserService) {
   return new Elysia({ prefix: "/user" })
 
     // Get all users
-    .get(
-      "/all",
-      // @ts-ignore
-      async ({ jwt, cookie }) => {
-        await authorizeRequest(jwt, cookie.auth);
-        const users = await userService.getAllUsers();
-        return users;
-      },
-      getAllUsersSchema
-    )
+    // .get(
+    //   "/all",
+    //   // @ts-ignore
+    //   async ({ jwt, cookie }) => {
+    //     await authorizeRequest(jwt, cookie.auth);
+    //     const users = await userService.getAllUsers();
+    //     return users;
+    //   },
+    //   getAllUsersSchema
+    // )
 
     // Get user by ID
     .get(
