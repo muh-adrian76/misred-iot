@@ -44,7 +44,7 @@ export default function AppNavbar({ page, profile }) {
       method: "POST",
     });
     googleLogout?.();
-    router.push("/auths");
+    router.push("/auth");
     setTimeout(() => {
       setUser(null);
     }, 1000);

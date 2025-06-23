@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { showToast } from "../features/toaster";
 import { Card } from "../ui/card";

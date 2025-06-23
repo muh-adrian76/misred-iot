@@ -7,8 +7,8 @@
     "dev-npm": "concurrently \"ts-node-dev --respawn src/server.ts\" \"ts-node-dev --respawn src/lib/tokenizer.ts\"",
     "truncate-bun": "bun run src/lib/truncate.ts",
     "truncate-npm": "ts-node src/lib/truncate.ts",
-    "reset-db-bun": "bun run truncate-bun alarms widgets payloads users devices",
-    "reset-db-npm": "npm run truncate-npm alarms widgets payloads users devices",
+    "reset-db-bun": "bun run truncate-bun alarms widgets payloads_value payloads datastreams devices dashboards users",
+    "reset-db-npm": "npm run truncate-npm alarms widgets payloads_value payloads datastreams devices dashboards users",
     "publisher-bun": "bun run src/lib/publisher.ts",
     "publisher-npm": "ts-node run src/lib/publisher.ts"
   },

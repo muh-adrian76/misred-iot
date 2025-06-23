@@ -1,0 +1,23 @@
+{
+  "name": "misred-iot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "concurrently \"bun install --cwd back-end\" \"bun install --cwd front-end\"",
+    "dev": "concurrently \"npm --prefix ./front-end run dev-npm\" \"npm --prefix ./back-end run dev-npm\"",
+    "dev-bun": "concurrently \"bun run --cwd back-end dev-bun\" \"bun run --cwd front-end dev-bun\"",
+    "start": "concurrently \"npm --prefix ./front-end run start-npm\" \"npm --prefix ./back-end run dev-npm\"",
+    "start-bun": "concurrently \"bun run --cwd front-end start-bun\" \"bun run --cwd back-end dev-bun\"",
+    "build": "npm --prefix ./front-end run build-npm",
+    "build-bun": "bun run --cwd front-end build-bun",
+    "truncate-npm": "npm --prefix ./back-end run truncate-npm",
+    "truncate-bun": "bun run --cwd back-end truncate-bun",
+    "reset-db-npm": "npm --prefix ./back-end run reset-db-npm",
+    "reset-db-bun": "bun run --cwd back-end reset-db-bun",
+    "publisher-npm": "npm --prefix ./back-end run publisher-npm",
+    "publisher-bun": "bun run  --cwd back-endpublisher-bun"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
