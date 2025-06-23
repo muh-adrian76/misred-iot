@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install": "concurrently \"bun install --cwd back-end\" \"bun install --cwd front-end\"",
+    "pm2:frontend": "pm2 start npm --name misred-frontend -- run start-npm --prefix ./front-end --watch",
+    "pm2:backend": "pm2 start npm --name misred-backend -- run dev-npm --prefix ./back-end --watch",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:logs": "pm2 logs",
     "dev": "concurrently \"npm --prefix ./front-end run dev-npm\" \"npm --prefix ./back-end run dev-npm\"",
     "dev-bun": "concurrently \"bun run --cwd back-end dev-bun\" \"bun run --cwd front-end dev-bun\"",
     "start": "concurrently \"npm --prefix ./front-end run start-npm\" \"npm --prefix ./back-end run dev-npm\"",
