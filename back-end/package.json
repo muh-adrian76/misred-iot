@@ -1,6 +1,7 @@
 {
   "name": "misred-iot-backend",
   "version": "1.0.50",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev-bun": "concurrently \"bun run --watch src/server.ts\" \"bun run --watch src/lib/tokenizer.ts\"",
