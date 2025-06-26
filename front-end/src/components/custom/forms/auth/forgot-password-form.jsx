@@ -6,7 +6,7 @@ import { Input } from "../../../ui/input";
 import { Button } from "../../../ui/button";
 import { motion } from "framer-motion";
 
-import { api } from "@/lib/api";
+import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
 import emailjs from "@emailjs/browser";
 
