@@ -6,7 +6,8 @@ import { Input } from "../../../ui/input";
 import { Button } from "../../../ui/button";
 import { motion } from "framer-motion";
 
-import { brandLogo, fetchFromBackend } from "@/lib/helper";
+import { api } from "@/lib/api";
+import { brandLogo } from "@/lib/helper";
 import emailjs from "@emailjs/browser";
 
 export default function ForgotPasswordForm({
@@ -26,15 +27,18 @@ export default function ForgotPasswordForm({
         body: JSON.stringify({ email }),
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        showToast("warning", "Gagal melakukan reset password", res.message);
+        const errorMessage = await res.json();
+        showToast(
+          "warning",
+          "Gagal melakukan reset password",
+          errorMessage.message
+        );
         return;
       }
 
       // Password baru untuk user
-      const { updatedPassword } = data;
+      const { updatedPassword } = await res.json();
 
       // // Kirim email menggunakan library Email JS
       await emailjs.send(
