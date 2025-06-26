@@ -1,37 +1,48 @@
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Public_Sans } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
+import { ViewTransitions } from "next-view-transitions";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { UserProvider } from "@/providers/user-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
+import { brandLogo } from "@/lib/helper";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const defaultFont = Public_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
 export const metadata = {
-  title: "Misred-Sparing",
-  description: "Sistem Pemantauan Limbah Cair Industri Multi-Protokol Terintegrasi IoT dan JWT",
+  title: "MiSREd-IoT",
+  description:
+    "Multi-input, Scalable, Reliable, and Easy-to-deploy IoT Platform",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="icon" href="/misred-logo.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="description" content="Misred-Sparing" />
-        <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/@tabler/core@1.2.0/dist/css/tabler-socials.min.css" />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
+      <ViewTransitions>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <link rel="icon" href={brandLogo} />
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta name="description" content="MiSREd-IoT Platform" />
+          <meta
+            name="format-detection"
+            content="telephone=no, date=no, email=no, address=no"
+          />
+        </head>
+        <body className={`${defaultFont.variable} antialiased`}>
+          <UserProvider>
+            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+              {children}
+            </ThemeProvider>
+          </UserProvider>
+          <Toaster richColors />
+        </body>
+      </html>
+      </ViewTransitions>
+    </GoogleOAuthProvider>
   );
 }
