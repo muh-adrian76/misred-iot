@@ -11,10 +11,11 @@ export default function Page() {
 
   useEffect(async () => {
     const code = router.query.code;
+    console.log(code);
     try {
       const res = await fetchFromBackend("/auth/google", {
         method: "POST",
-        body: JSON.stringify({ code }),
+        body: JSON.stringify(code),
       });
 
       const data = await res.json();
