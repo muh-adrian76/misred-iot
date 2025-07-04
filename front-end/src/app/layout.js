@@ -48,12 +48,12 @@ export default function RootLayout({ children }) {
                   {children}
                 </ThemeProvider>
               </UserProvider>
-              <Toaster
-                className="text-pretty"
-                duration={3500}
-                position="top-center"
-              />
             </LoadingProviders>
+            <Toaster
+              className="text-pretty"
+              duration={3500}
+              position="top-center"
+            />
           </body>
         </html>
       </ViewTransitions>

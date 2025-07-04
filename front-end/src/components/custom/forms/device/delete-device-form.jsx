@@ -37,12 +37,12 @@ export default function DeleteDeviceForm({
         ) : (
           deviceToDelete && (
             <>
-              Hapus datastream <i>{deviceToDelete.description}</i> ?
+              Hapus device <i>{deviceToDelete.description}</i> ?
             </>
           )
         )
       }
-      description="Tindakan ini tidak dapat dibatalkan."
+      description="Semua data yang berkaitan dengan device ini juga akan dihapus. Tindakan ini tidak dapat dibatalkan."
       checkbox={
         <CheckboxButton
           id="deleteDeviceCheckbox"

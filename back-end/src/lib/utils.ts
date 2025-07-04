@@ -1,3 +1,17 @@
+// Fix CORS error
+function subDomain(url: string) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    if (!u.hostname.startsWith("www.")) {
+      u.hostname = "www." + u.hostname;
+    }
+    return u.toString().replace(/\/$/, ""); // hilangkan trailing slash
+  } catch {
+    return url;
+  }
+}
+
 // Objek group untuk pembuatan dokumentasi API
 const apiTags = [
   {
@@ -175,6 +189,7 @@ async function authorizeRequest(jwt: any, cookie: any) {
 }
 
 export {
+  subDomain,
   apiTags,
   authorizeRequest,
   setAuthCookie,

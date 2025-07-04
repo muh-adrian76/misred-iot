@@ -14,7 +14,6 @@ export default function DashboardLayout() {
       <DashboardHeader {...logic} />
       <DashboardContent
         {...logic}
-        noDashboard={logic.dashboards.length === 0}
       />
       <DashboardDialogs {...logic} />
     </>

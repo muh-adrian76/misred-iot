@@ -3,7 +3,7 @@ import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { MySQLDatabase, MQTTClient } from "./lib/middleware";
-import { apiTags } from "./lib/utils";
+import { apiTags, subDomain } from "./lib/utils";
 
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";
@@ -69,7 +69,7 @@ class Server {
       // Plugin
       .use(
         cors({
-          origin: [process.env.FRONTEND_URL!, process.env.FRONTEND_ADMIN_URL!],
+          origin: [process.env.FRONTEND_URL!, subDomain(process.env.FRONTEND_URL!), process.env.FRONTEND_ADMIN_URL!],
           preflight: true,
           credentials: true,
           methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

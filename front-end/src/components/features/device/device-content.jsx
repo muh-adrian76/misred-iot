@@ -5,6 +5,7 @@ import { successToast } from "@/components/custom/other/toaster";
 import DataTable from "@/components/custom/tables/data-table";
 import { AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
+import { motion } from "framer-motion";
 
 export default function DeviceContent({
   devices,
@@ -105,6 +106,25 @@ export default function DeviceContent({
     },
     // Tambahkan aksi lain di sini, misal:
   ];
+
+  if (!loading && devices.length === 0) {
+    return (
+      <motion.div
+        className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
+      >
+        <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
+          <h2 className="text-xl font-semibold">Tidak ada device</h2>
+          <span className="text-muted-foreground text-balance">
+            Buat device baru pada sisi kanan atas layar.
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">

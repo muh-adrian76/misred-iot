@@ -43,7 +43,7 @@ export default function DeleteDatastreamForm({
           )
         )
       }
-      description="Tindakan ini tidak dapat dibatalkan."
+      description="Semua data yang berkaitan dengan datastream ini juga akan dihapus. Tindakan ini tidak dapat dibatalkan."
       checkbox={
         <CheckboxButton
           id="deleteDatastreamCheckbox"
