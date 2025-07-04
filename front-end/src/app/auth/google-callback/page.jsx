@@ -13,25 +13,22 @@ export default function Page() {
   useEffect(() => {
     const fetch = async () => {
       const code = query.get("code");
-      console.log(code);
-      if (code) {
-        try {
-          const res = await fetchFromBackend("/auth/google", {
-            method: "POST",
-            body: JSON.stringify({ code, mode: "redirect" }),
-          });
+      try {
+        const res = await fetchFromBackend("/auth/google", {
+          method: "POST",
+          body: JSON.stringify({ code, mode: "redirect" }),
+        });
 
-          const data = await res.json();
-          !res.ok
-            ? errorToast("Google login gagal!", `${data.message}`)
-            : setTimeout(() => {
-                setUser(data.user);
-                router.push("/dashboards");
-              }, 500);
-        } catch {
-          errorToast("Google login gagal!");
-          setIsLoading(false);
-        }
+        const data = await res.json();
+        !res.ok
+          ? errorToast("Google login gagal!", `${data.message}`)
+          : setTimeout(() => {
+              setUser(data.user);
+              router.push("/dashboards");
+            }, 500);
+      } catch {
+        errorToast("Google login gagal!");
+        setIsLoading(false);
       }
     };
     fetch();

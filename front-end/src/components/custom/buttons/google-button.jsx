@@ -38,8 +38,8 @@ export default function GoogleButton({
     },
     flow: "auth-code",
     onError: () => errorToast("Google login gagal!"),
-    ux_mode: isMobile ? "redirect" : "popup",
-    redirect_uri: isMobile
+    ux_mode: !isMobile ? "redirect" : "popup",
+    redirect_uri: !isMobile
       ? `${window.location.origin}/auth/google-callback`
       : undefined,
   });

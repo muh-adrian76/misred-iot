@@ -166,7 +166,7 @@ export class AuthService {
     mode,
   }: {
     code: string;
-    mode?: "popup" | "redirect";
+    mode: string;
   }) {
     if (!code) {
       return { status: 400, message: "Missing code" };
@@ -177,6 +177,7 @@ export class AuthService {
         ? "postmessage"
         : process.env.GOOGLE_REDIRECT_URI;
 
+        console.log(code,mode,redirectUri);
     const googleClient = new OAuth2Client(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,

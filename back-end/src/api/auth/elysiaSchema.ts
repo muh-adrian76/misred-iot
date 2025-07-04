@@ -198,6 +198,7 @@ const postGoogleLoginSchema = {
   type: "json",
   body: t.Object({
     code: t.String({ description: "Google OAuth code" }),
+    mode: t.String({ description: "Mode Google Login" }),
   }),
   response: {
     200: t.Object(
