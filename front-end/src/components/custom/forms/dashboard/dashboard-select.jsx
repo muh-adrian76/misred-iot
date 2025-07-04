@@ -29,6 +29,7 @@ export default function DashboardSelect({
   editState,
   editValue,
   onEditValueChange,
+  noDataText,
 }) {
   const [open, setOpen] = useState(false);
 
@@ -76,7 +77,7 @@ export default function DashboardSelect({
             <Command>
               <CommandInput placeholder={searchPlaceholder} className="h-9" />
               <CommandList className="truncate">
-                <CommandEmpty>Anda belum menambahkan dashboard.</CommandEmpty>
+                <CommandEmpty>{noDataText}</CommandEmpty>
                 <CommandGroup>
                   {options.map((option) => (
                     <CommandItem

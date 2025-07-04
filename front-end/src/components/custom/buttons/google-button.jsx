@@ -4,19 +4,23 @@ import { GoogleIcon } from "../icons/google";
 import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "../other/toaster";
 
-export default function GoogleButton({router, action, isLoading, setIsLoading, setUser}) {
+export default function GoogleButton({
+  router,
+  action,
+  isLoading,
+  setIsLoading,
+  setUser,
+}) {
   // Google login handler
   const googleLogin = useGoogleLogin({
-    flow: "auth-code",
     onSuccess: async ({ code }) => {
       try {
         setIsLoading(true);
         const res = await fetchFromBackend("/auth/google", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code }),
         });
-        
+
         const data = await res.json();
         !res.ok
           ? errorToast("Google login gagal!", `${data.message}`)
@@ -29,7 +33,12 @@ export default function GoogleButton({router, action, isLoading, setIsLoading, s
         setIsLoading(false);
       }
     },
+    flow: "auth-code",
     onError: () => errorToast("Google login gagal!"),
+    ux_mode: isMobile ? "redirect" : "popup",
+    redirect_uri: isMobile
+      ? `${window.location.origin}/google-callback`
+      : undefined,
   });
 
   return (

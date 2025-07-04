@@ -48,6 +48,11 @@ export default function DashboardHeader(props) {
           editState={isEditing}
           editValue={editDashboardValue}
           onEditValueChange={setEditDashboardValue}
+          noDataText={
+          !dashboards || dashboards.length === 0
+            ? "Anda belum menambahkan dashboard."
+            : "Tidak ada dashboard yang cocok."
+        }
         />
         <Button
           size={isMobile ? "icon" : "sm"}
