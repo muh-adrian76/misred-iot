@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useRouter } from "next/router";
+import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "@/components/custom/other/toaster";
 import { useUser } from "@/providers/user-provider";
