@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import ResponsiveDialog from "@/components/custom/other/responsive-dialog";
-import { Button } from "@/components/ui/button";
-import showToast from "../../other/toaster";
+import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
+import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -60,9 +59,9 @@ export default function AddWidgetDialog({
         layout: initialData?.layoutItem,
       });
       setOpen(false);
-      showToast("success", "Widget berhasil ditambahkan");
+      successToast("Widget berhasil ditambahkan");
     } catch (error) {
-      showToast("error", "Gagal menambahkan widget");
+      errorToast("Gagal menambahkan widget");
     } finally {
       setLoading(false);
     }

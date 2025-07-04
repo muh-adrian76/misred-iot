@@ -1,4 +1,5 @@
-import ResponsiveDialog from "@/components/custom/other/responsive-dialog";
+"use client";
+import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -8,16 +9,30 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { fetchFromBackend } from "@/lib/helper";
+import { ChevronDown, Check } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import showToast from "../../other/toaster";
 
 export default function EditDeviceForm({
   open,
   setOpen,
   editDevice,
-  setEditDevice,
   handleEditDevice,
+  openBoardPopover,
+  setOpenBoardPopover,
   boardOptions,
 }) {
   // Local state untuk field dinamis
@@ -42,7 +57,7 @@ export default function EditDeviceForm({
   const formContent = (
     <div className="grid gap-4 py-2">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="nameEdit" className="text-left ml-1  font-medium">
+        <Label htmlFor="nameEdit" className="text-left ml-1 font-medium max-sm:text-xs">
           Nama
         </Label>
         <Input
@@ -55,24 +70,51 @@ export default function EditDeviceForm({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1  font-medium">
-            Tipe Board
-          </Label>
-          <Select value={boardType} onValueChange={setBoardType}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Pilih tipe board" />
-            </SelectTrigger>
-            <SelectContent>
-              {boardOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-left ml-1 font-medium max-sm:text-xs">Tipe Board</Label>
+          <Popover open={openBoardPopover} onOpenChange={setOpenBoardPopover}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openBoardPopover}
+                className="justify-between w-full"
+              >
+                <span className="truncate">
+                  {boardType || "Pilih tipe board"}
+                </span>
+                <ChevronDown className="ml-2 h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full">
+              <Command>
+                <CommandInput placeholder="Cari tipe board..." />
+                <CommandList>
+                  <CommandEmpty>Tidak ada opsi.</CommandEmpty>
+                  {boardOptions.map((option) => (
+                    <CommandItem
+                      key={option}
+                      value={option}
+                      onSelect={() => {
+                        setBoardType(option);
+                        setOpenBoardPopover(false);
+                      }}
+                    >
+                      <span className="truncate">{option}</span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          boardType === option ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1  font-medium">
+          <Label className="text-left ml-1 font-medium max-sm:text-xs">
             Protokol Komunikasi
           </Label>
           <Select
@@ -84,19 +126,19 @@ export default function EditDeviceForm({
               <SelectValue placeholder="Pilih protokol" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="http">HTTP</SelectItem>
-              <SelectItem value="mqtt">MQTT</SelectItem>
-              <SelectItem value="lorawan">LoRaWAN</SelectItem>
+              <SelectItem value="HTTP">HTTP</SelectItem>
+              <SelectItem value="MQTT">MQTT</SelectItem>
+              <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
-      {protocol === "mqtt" && (
+      {protocol === "MQTT" && (
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <Label
               htmlFor="mqttTopicEdit"
-              className="text-left ml-1  font-medium"
+              className="text-left ml-1 font-medium max-sm:text-xs"
             >
               MQTT Topic
             </Label>
@@ -110,11 +152,7 @@ export default function EditDeviceForm({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label
-              className="text-left ml-1  font-medium"
-            >
-              MQTT QoS
-            </Label>
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">MQTT QoS</Label>
             <Select value={mqttQos} onValueChange={setMqttQos}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select QoS" />
@@ -128,18 +166,18 @@ export default function EditDeviceForm({
           </div>
         </div>
       )}
-      {protocol === "lorawan" && (
+      {protocol === "LoRaWAN" && (
         <div className="flex flex-col gap-2">
           <Label
             htmlFor="loraProfileEdit"
-            className="text-left ml-1  font-medium"
+            className="text-left ml-1 font-medium max-sm:text-xs"
           >
             Lora Profile
           </Label>
           <Input
             id="loraProfileEdit"
             className="w-full"
-            placeholder="Gateway 1"
+            placeholder="Contoh: Gateway 1"
             value={loraProfile}
             onChange={(e) => setLoraProfile(e.target.value)}
             required
@@ -155,9 +193,9 @@ export default function EditDeviceForm({
       name,
       board: boardType,
       protocol,
-      mqtt_topic: protocol === "mqtt" ? mqttTopic : undefined,
-      mqtt_qos: protocol === "mqtt" ? mqttQos : undefined,
-      lora_profile: protocol === "lorawan" ? loraProfile : undefined,
+      mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined,
+      mqtt_qos: protocol === "MQTT" ? mqttQos : undefined,
+      lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined,
     });
     setOpen(false);
   };
@@ -166,8 +204,11 @@ export default function EditDeviceForm({
     <ResponsiveDialog
       open={open}
       setOpen={setOpen}
-      title="Edit Device"
-      description="Ubah informasi perangkat disini."
+      title={
+        <>
+          Edit <i>{editDevice?.description || ""}</i>
+        </>
+      }
       form={formContent}
       formHandle={handleSubmit}
       confirmText="Simpan"

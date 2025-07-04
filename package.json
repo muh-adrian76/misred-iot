@@ -5,7 +5,7 @@
   "scripts": {
     "pm2": "pm2",
     "pm2:frontend": "pm2 start npm --name misred-frontend -- run start --prefix ./front-end --watch",
-    "pm2:frontend-dev": "pm2 start npm --name misred-frontend-dev -- run dev --prefix ./front-end --watch",
+    "pm2:frontend-dev": "pm2 start npm --name misred-frontend-dev -- run dev --prefix ./front-end",
     "pm2:backend": "pm2 start bun --name misred-backend -- run --cwd back-end dev-bun --watch",
     "pm2:restart": "pm2 restart all",
     "pm2:stop": "pm2 stop all",
@@ -21,7 +21,6 @@
     "publisher-bun": "bun run  --cwd back-end publisher-bun"
   },
   "dependencies": {
-    "concurrently": "^9.2.0",
     "pm2": "^6.0.8"
   }
 }

@@ -46,6 +46,7 @@ export default function DashboardSelect({
             value={editValue}
             className="w-[300px] pr-10"
             onChange={(e) => onEditValueChange(e.target.value)}
+            noInfo
             required
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">

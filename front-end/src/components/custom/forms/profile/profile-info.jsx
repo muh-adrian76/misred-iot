@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { UserPen, ShieldUser, Undo2 } from "lucide-react";
 import { convertDate, fetchFromBackend } from "@/lib/helper";
-import showToast from "../../other/toaster";
+import { successToast, errorToast } from "../../other/toaster";
 
 export default function ProfileInfoSection({
   user,
@@ -32,24 +32,26 @@ export default function ProfileInfoSection({
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        showToast("warning", "Gagal mengubah profil!");
+        errorToast("Gagal mengubah profil!");
       } else {
         const updatedUser = await res.json();
         setUser((prevUser) => ({
           ...prevUser,
           ...updatedUser,
         }));
-        showToast("success", "Berhasil mengubah profil!");
+        successToast("Berhasil mengubah profil!");
       }
     } catch (error) {
-      showToast(
-        "error",
-        "Terjadi kesalahan, coba lagi nanti!",
-        `${error.message}`
-      );
+      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
     } finally {
       setIsEditing(false);
     }
+  };
+
+  const handleResetProfile = () => {
+    setUsername(user?.name || "");
+    setPhoneNumber(user?.phone || "");
+    setIsEditing(false);
   };
 
   return (
@@ -61,9 +63,9 @@ export default function ProfileInfoSection({
         Informasi Akun
       </AccordionTrigger>
       <AccordionContent>
-        <div className="space-y-4 p-2 text-muted-foreground mb-3">
+        <div className="space-y-4 p-2 mb-3">
           <div className="flex flex-col gap-2">
-            <p className="font-semibold">Username:</p>
+            <p className="font-semibold">Nama:</p>
             <Input
               id="username"
               type="text"
@@ -94,11 +96,11 @@ export default function ProfileInfoSection({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <p className="font-semibold">Tanggal pembuatan akun:</p>
+            <p className="font-semibold">Tanggal Pembuatan Akun:</p>
             <p className="ml-2">{convertDate(user.created_at)}</p>
           </div>
           <div className="flex flex-col gap-2">
-            <p className="font-semibold">Terakhir log in:</p>
+            <p className="font-semibold">Terakhir Log In:</p>
             <p className="ml-2">{convertDate(user.last_login)}</p>
           </div>
         </div>
@@ -107,7 +109,7 @@ export default function ProfileInfoSection({
             size="lg"
             type="submit"
             variant="outline"
-            className="rounded-lg cursor-pointer"
+            className="rounded-lg cursor-pointer transition-all duration-500"
             onClick={isEditing ? handleUpdateAccount : () => setIsEditing(true)}
           >
             {isEditing ? "Simpan" : "Edit"}
@@ -116,15 +118,19 @@ export default function ProfileInfoSection({
           <Button
             size="lg"
             variant={isEditing ? "outline" : "default"}
-            className="rounded-lg cursor-pointer"
+            className="rounded-lg cursor-pointer transition-all duration-500"
             onClick={
               isEditing
-                ? () => setIsEditing(false) // Batalkan edit
+                ? handleResetProfile // Batalkan edit
                 : () => setOpenDeleteAccountDialog(true) // Buka modal hapus akun
             }
           >
             {isEditing ? "Batalkan" : "Hapus Akun"}
-            {isEditing ? <Undo2 className="h-5 w-5" /> : <ShieldUser className="h-5 w-5" />}
+            {isEditing ? (
+              <Undo2 className="h-5 w-5" />
+            ) : (
+              <ShieldUser className="h-5 w-5" />
+            )}
           </Button>
         </div>
       </AccordionContent>

@@ -14,8 +14,8 @@ import ProfilePasswordSection from "./profile-password";
 import ProfileDeleteDialog from "./profile-delete";
 
 export default function ProfileForm({ open, setOpen, user, setUser, router }) {
-  const [username, setUsername] = useState(user.name);
-  const [phoneNumber, setPhoneNumber] = useState(user.phone || "");
+  const [username, setUsername] = useState(user?.name || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
   const [showPassword, setShowPassword] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

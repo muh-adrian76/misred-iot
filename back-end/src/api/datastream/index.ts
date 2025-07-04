@@ -33,9 +33,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         //@ts-ignore
         async ({ jwt, cookie, body }) => {
           const user = await authorizeRequest(jwt, cookie);
-          const { pin, type, unit, description, defaultValue, minValue, maxValue } = body;
-          const datastreamId = await datastreamService.createDatastream({
-            userId: user.sub,
+          const {
+            deviceId,
             pin,
             type,
             unit,
@@ -43,6 +42,19 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             defaultValue,
             minValue,
             maxValue,
+            decimalValue,
+          } = body;
+          const datastreamId = await datastreamService.createDatastream({
+            userId: user.sub,
+            deviceId,
+            pin,
+            type,
+            unit,
+            description,
+            defaultValue,
+            minValue,
+            maxValue,
+            decimalValue,
           });
           return new Response(
             JSON.stringify({
@@ -61,8 +73,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         //@ts-ignore
         async ({ jwt, cookie, params, body }) => {
           await authorizeRequest(jwt, cookie);
-          const { pin, type, unit, description, defaultValue, minValue, maxValue } = body;
-          const updated = await datastreamService.updateDatastream(params.id, {
+          const {
+            deviceId,
             pin,
             type,
             unit,
@@ -70,6 +82,18 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             defaultValue,
             minValue,
             maxValue,
+            decimalValue,
+          } = body;
+          const updated = await datastreamService.updateDatastream(params.id, {
+            deviceId,
+            pin,
+            type,
+            unit,
+            description,
+            defaultValue,
+            minValue,
+            maxValue,
+            decimalValue,
           });
           if (!updated) {
             return new Response("Datastream gagal diupdate", { status: 400 });

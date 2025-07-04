@@ -1,7 +1,7 @@
 import { useState } from "react";
-import ResponsiveDialog from "@/components/custom/other/responsive-dialog";
+import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
 import { cn } from "@/lib/utils";
-import showToast from "../../other/toaster";
+import { errorToast } from "@/components/custom/other/toaster";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -12,7 +12,7 @@ export default function AddDashboardDialog({ open, setOpen, onCreateDashboard })
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      showToast("error", "Nama dashboard tidak boleh kosong");
+      errorToast("Nama dashboard tidak boleh kosong");
       return;
     }
     setLoading(true);

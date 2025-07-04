@@ -35,6 +35,7 @@ const getAllDatastreamsSchema = {
 const postDatastreamSchema = {
   type: "json",
   body: t.Object({
+    deviceId: t.String({ description: "ID perangkat yang memiliki datastream", example: "device-1" }),
     pin: t.String({ description: "Pin datastream", example: "V1" }),
     type: t.String({ description: "Jenis datastream", example: "temperature" }),
     unit: t.Optional(t.String({ description: "Satuan pengukuran", example: "°C" })),
@@ -42,6 +43,7 @@ const postDatastreamSchema = {
     defaultValue: t.String({ description: "Nilai default", example: 0 }),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
+    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"})
   }),
   response: {
     201: t.Object(
@@ -68,6 +70,7 @@ const postDatastreamSchema = {
 const putDatastreamSchema = {
   type: "json",
   body: t.Object({
+    deviceId: t.String({ description: "ID perangkat yang memiliki datastream", example: "device-2" }),
     pin: t.String({ description: "Pin datastream", example: "V1" }),
     type: t.String({ description: "Jenis datastream", example: "temperature" }),
     unit: t.Optional(t.String({ description: "Satuan pengukuran", example: "°C" })),
@@ -75,6 +78,7 @@ const putDatastreamSchema = {
     defaultValue: t.String({ description: "Nilai default", example: 0 }),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
+    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"})
   }),
   response: {
     200: t.Object(

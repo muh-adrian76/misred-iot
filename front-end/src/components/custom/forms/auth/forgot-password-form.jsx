@@ -1,5 +1,5 @@
 import { useState } from "react";
-import showToast from "../../other/toaster";
+import { successToast, errorToast } from "../../other/toaster";
 import { Card } from "../../../ui/card";
 import { Label } from "../../../ui/label";
 import { Input } from "../../../ui/input";
@@ -8,10 +8,10 @@ import { motion } from "framer-motion";
 
 import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
-import emailjs from "@emailjs/browser";
 
 export default function ForgotPasswordForm({
   isLoading,
+  logoFont,
   setIsLoading,
   setShowForgotPassword,
   ...props
@@ -29,44 +29,32 @@ export default function ForgotPasswordForm({
 
       if (!res.ok) {
         const errorMessage = await res.json();
-        showToast(
-          "warning",
-          "Gagal melakukan reset password",
-          errorMessage.message
-        );
+        errorToast("Gagal melakukan reset password", errorMessage.message);
         return;
       }
 
       // Password baru untuk user
       const { updatedPassword } = await res.json();
 
-      // // Kirim email menggunakan library Email JS
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAIL_SERVICE_ID,
-        process.env.NEXT_PUBLIC_EMAIL_TEMPLATE_ID,
-        // Parameter buatan untuk library EmailJS, sesuaikan dengan konten pada template
-        {
-          email: email,
-          password: updatedPassword,
-        },
-        process.env.NEXT_PUBLIC_EMAIL_PUBLIC_KEY
+      // Kirim email ke user
+      await fetch("/api/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: updatedPassword }),
+      });
+
+      successToast(
+        "Email terkirim!",
+        "Silakan cek email Anda pada bagian kotak masuk atau spam."
       );
-
-      // Kirim email menggunakan library Resend
-      // const response = await fetch("/api/resend", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ email, password: updatedPassword }),
-      // });
-
-      showToast("success", "Email terkirim!", "Silakan cek email Anda.");
       setTimeout(() => setShowForgotPassword(false), 2000);
     } catch (error) {
-      console.error("EmailJS Error:", error);
-      showToast(
-        "warning",
+      console.error("Pengiriman email gagal:", error);
+      errorToast(
         "Gagal melakukan reset password!",
-        error?.text || error?.message || "Terjadi kesalahan pada EmailJS"
+        error?.text ||
+          error?.message ||
+          "Pengiriman email gagal, coba lagi nanti."
       );
     } finally {
       setIsLoading(false);
@@ -85,7 +73,7 @@ export default function ForgotPasswordForm({
         <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
           <img src={brandLogo} alt="Logo" />
         </div>
-        MiSREd-IoT
+        <h1 className={`text-3xl tracking-wider ${logoFont}`}>MiSREd-IoT</h1>
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: -100 }}
@@ -100,9 +88,9 @@ export default function ForgotPasswordForm({
           <form className="p-6 md:p-8" onSubmit={handleForgotPassword}>
             <div className="flex flex-col gap-6">
               <div className="flex flex-col items-center text-center">
-                <p className="text-muted-foreground text-balance">
-                  Masukkan email anda untuk me-reset password.
-                </p>
+                <h1 className="font-bold text-xl text-balance">
+                  Reset Kata Sandi
+                </h1>
               </div>
               <div className="grid gap-3">
                 <Label htmlFor="forgot-email">Email</Label>
@@ -130,7 +118,7 @@ export default function ForgotPasswordForm({
                   onClick={() => setShowForgotPassword(false)}
                   className="cursor-pointer underline underline-offset-4"
                 >
-                  Login
+                  Log In
                 </button>
               </div>
             </div>

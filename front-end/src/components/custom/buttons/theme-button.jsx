@@ -1,15 +1,19 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "../other/description-tooltip";
 
 export default function ThemeButton() {
   const { setTheme, theme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleThemeToggle = useCallback(
     (e) => {
@@ -21,7 +25,6 @@ export default function ThemeButton() {
         return;
       }
 
-      // Set coordinates from the click event
       if (e) {
         root.style.setProperty("--x", `${e.clientX}px`);
         root.style.setProperty("--y", `${e.clientY}px`);
@@ -39,28 +42,30 @@ export default function ThemeButton() {
       <Button
         variant="outline"
         size="icon"
-        className="rounded-full cursor-pointer"
+        className="rounded-full cursor-pointer transition-all duration-500"
         onClick={handleThemeToggle}
       >
         <AnimatePresence mode="wait">
-          <motion.div
-            key={theme}
-            initial={{ x: 5, y: -5, opacity: 0 }} // Muncul dari kanan atas
-            animate={{ x: 0, y: 0, opacity: 1 }} // Bergerak ke tengah
-            exit={{ x: -5, y: 5, opacity: 0 }} // Keluar ke kiri bawah
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-          >
-            {theme === "dark" ? (
-              <Moon className="w-5 h-5" />
-            ) : theme === "light" ? (
-              <Sun className="w-5 h-5" />
-            ) : systemTheme === "dark" ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
-            <span className="sr-only">Toggle theme</span>
-          </motion.div>
+          {mounted && (
+            <motion.div
+              key={theme}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+            >
+              {theme === "dark" ? (
+                <Moon className="w-5 h-5" />
+              ) : theme === "light" ? (
+                <Sun className="w-5 h-5" />
+              ) : systemTheme === "dark" ? (
+                <Moon className="w-5 h-5" />
+              ) : (
+                <Sun className="w-5 h-5" />
+              )}
+              <span className="sr-only">Toggle theme</span>
+            </motion.div>
+          )}
         </AnimatePresence>
       </Button>
     </DescriptionTooltip>

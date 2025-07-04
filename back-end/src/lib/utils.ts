@@ -68,7 +68,7 @@ async function setAuthCookie(
   });
 
   // Set access token
-  cookie.auth.set({
+  cookie.access_token.set({
     value,
     httpOnly: true,
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
@@ -78,7 +78,7 @@ async function setAuthCookie(
   });
 
   // Set refresh token
-  cookie.refresh_auth.set({
+  cookie.refresh_token.set({
     value: refreshToken,
     httpOnly: true,
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
@@ -91,7 +91,7 @@ async function setAuthCookie(
 // Fungsi untuk menghapus cookie user
 function clearAuthCookie(cookie: any) {
   // Hapus access token
-  cookie.auth.set({
+  cookie.access_token.set({
     value: "",
     httpOnly: true,
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
@@ -101,7 +101,7 @@ function clearAuthCookie(cookie: any) {
   });
 
   // Hapus refresh token
-  cookie.refresh_auth.set({
+  cookie.refresh_token.set({
     value: "",
     httpOnly: true,
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
@@ -114,10 +114,10 @@ function clearAuthCookie(cookie: any) {
 // Fungsi untuk request token baru
 async function renewToken(decoded: any, cookie: any) {
   const response = await fetch(
-    `http://localhost:${process.env.BACKEND_PORT}/auth/renew/${decoded.sub}`,
+    `${process.env.BACKEND_URL}/auth/renew/${decoded.sub}`,
     {
       headers: {
-        cookie: `refresh_auth=${cookie.refresh_auth?.value}`,
+        cookie: `refresh_token=${cookie.refresh_token?.value}`,
       },
     }
   );
@@ -132,8 +132,8 @@ async function renewToken(decoded: any, cookie: any) {
 // Fungsi untuk verify token jwt
 async function authorizeRequest(jwt: any, cookie: any) {
   try {
-    const accessToken = cookie.auth?.value;
-    const refreshToken = cookie.refresh_auth?.value;
+    const accessToken = cookie.access_token?.value;
+    const refreshToken = cookie.refresh_token?.value;
     let decoded;
 
     // 1. Jika access token ada, coba verifikasi
@@ -157,7 +157,7 @@ async function authorizeRequest(jwt: any, cookie: any) {
     if (!newAccessToken) throw new Error("Gagal memperbarui access token.");
 
     // 5. Set access token baru ke cookie
-    cookie.auth.set({
+    cookie.access_token.set({
       value: newAccessToken,
       httpOnly: true,
       sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",

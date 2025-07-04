@@ -67,7 +67,7 @@ export class AuthService {
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
         status: 400,
-        message: "Email tidak valid. Gagal menambahkan user.",
+        message: "Email tidak valid.",
       };
     }
 
@@ -276,19 +276,19 @@ export class AuthService {
     if (!oldPassword || !newPassword) {
       return {
         status: 400,
-        message: "Password lama dan baru harus diisi.",
+        message: "Kata sandi lama dan baru harus diisi.",
       };
     }
     if (oldPassword === newPassword) {
       return {
         status: 400,
-        message: "Password baru tidak boleh sama dengan password lama.",
+        message: "Kata sandi baru tidak boleh sama dengan kata sandi lama.",
       };
     }
     if (newPassword.length < 8) {
       return {
         status: 400,
-        message: "New password harus memiliki minimal 8 karakter.",
+        message: "Kata sandi baru harus memiliki minimal 8 karakter.",
       };
     }
 
@@ -313,7 +313,7 @@ export class AuthService {
 
       const isMatch = await bcrypt.compare(oldPassword, user.password);
       if (!isMatch) {
-        return { status: 400, message: "Password lama tidak valid." };
+        return { status: 400, message: "Kata sandi lama tidak valid." };
       }
 
       const hashedNewPassword = await bcrypt.hash(newPassword, 10);
@@ -322,7 +322,7 @@ export class AuthService {
         id,
       ]);
 
-      return { status: 200, message: "Password berhasil diperbarui." };
+      return { status: 200, message: "Kata sandi berhasil diperbarui." };
     } catch (error) {
       console.error(error);
       return { status: 500, message: "Terjadi kesalahan pada server." };

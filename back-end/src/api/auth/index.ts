@@ -91,7 +91,7 @@ export function authRoutes(authService: AuthService) {
         "/renew/:id",
         // @ts-ignore
         async ({ jwt, params, cookie }) => {
-          const refreshTokenFromCookie = cookie.refresh_auth?.value;
+          const refreshTokenFromCookie = cookie.refresh_token?.value;
           const result = await authService.renewToken(
             jwt,
             params.id,

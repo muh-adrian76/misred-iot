@@ -1,29 +1,97 @@
-import React from "react";
+import { useState } from "react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { ScrollContent } from "./scroll-content";
+import { ChartNoAxesCombined, Minimize2, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
-const chartList = [
-  { type: "line", label: "Line Chart" },
-  { type: "bar", label: "Bar Chart" },
-  { type: "pie", label: "Pie Chart" },
-  { type: "area", label: "Area Chart" },
-  // Tambahkan jenis chart lain sesuai kebutuhan
-];
+export default function WidgetBox({ onChartDrag, isMobile }) {
+  const [minimize, setMinimize] = useState(false);
 
-export default function WidgetBox({ onChartDrag }) {
-  return (
-    <div className="flex flex-col gap-3 mb-4 fixed top-[20%] right-2 z-50">
-      {chartList.map((chart) => (
-        <div
-          key={chart.type}
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData("chartType", chart.type);
-            // if (onChartDrag) onChartDrag(chart.type);
-          }}
-          className="border rounded p-3 bg-white shadow cursor-grab hover:bg-gray-50"
+  const widget = (
+    <>
+      <ScrollContent onChartDrag={onChartDrag} />
+      <ScrollBar orientation="horizontal" className="xl:hidden" />
+      <ScrollBar orientation="vertical" className="hidden xl:block" />
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 50 }}
+          transition={{ duration: 0.5, delay: 1.5, ease: "easeInOut" }}
+          className="fixed widget-box z-10 w-8/9 rounded-md bottom-18 left-1/2 transform -translate-x-1/2 bg-background shadow-lg p-4"
         >
-          {chart.label}
-        </div>
-      ))}
+          <div className="flex gap-2 justify-between items-center">
+            <div className="flex gap-3 font-semibold">
+              <ChartNoAxesCombined />
+              <span>Pilihan Widget</span>
+            </div>
+            {minimize === true ? (
+              <Button
+                size="xs"
+                variant="ghost"
+                className="opacity-80 hover:opacity-100"
+                onClick={() => {
+                  setMinimize(false);
+                }}
+              >
+                <Maximize2 className="w-5 h-5 mr-2" /> Perbesar
+              </Button>
+            ) : (
+              <Button
+                size="xs"
+                variant="ghost"
+                className="opacity-80 hover:opacity-100"
+                onClick={() => {
+                  setMinimize(true);
+                }}
+              >
+                <Minimize2 className="w-5 h-5 mr-2" /> Perkecil
+              </Button>
+            )}
+          </div>
+          <ScrollArea
+            className={cn(
+              "w-full rounded-md pt-2 pb-3",
+              minimize === true ? "hidden" : "block"
+            )}
+          >
+            <div className="flex flex-row xl:flex-col w-max xl:w-full h-auto xl:h-max space-x-4 xl:space-x-0 xl:space-y-4">
+              {widget}
+            </div>
+          </ScrollArea>
+        </motion.div>
+      </>
+    );
+  }
+
+  return (
+    <div className="sticky top-[130px] self-start">
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 50 }}
+        transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
+        className="flex w-[325px] h-125 bg-background"
+      >
+        <ScrollArea className="w-84 rounded-md border">
+          <div className="flex pt-4 pb-0 px-4 justify-center items-center">
+            <div className="flex gap-3 font-semibold">
+              <ChartNoAxesCombined />
+              <span>Pilihan Widget</span>
+            </div>
+          </div>
+          <div className="flex flex-row lg:flex-col w-max lg:w-full h-auto lg:h-max space-x-4 lg:space-x-0 lg:space-y-4 p-4">
+            {widget}
+          </div>
+        </ScrollArea>
+      </motion.div>
     </div>
   );
 }

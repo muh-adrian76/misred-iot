@@ -72,7 +72,7 @@ class Server {
           origin: [process.env.FRONTEND_URL!, process.env.FRONTEND_ADMIN_URL!],
           preflight: true,
           credentials: true,
-          methods: ["GET", "POST", "PUT", "DELETE"],
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
           allowedHeaders: ["Content-Type", "Authorization"],
         })
       )

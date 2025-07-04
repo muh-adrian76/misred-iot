@@ -89,7 +89,7 @@ function CommandList({
 function CommandEmpty({
   ...props
 }) {
-  return (<CommandPrimitive.Empty data-slot="command-empty" className="py-6 text-center text-sm" {...props} />);
+  return (<CommandPrimitive.Empty data-slot="command-empty" className="py-3 text-center text-sm" {...props} />);
 }
 
 function CommandGroup({

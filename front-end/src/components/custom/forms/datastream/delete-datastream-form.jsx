@@ -1,6 +1,5 @@
-import ConfirmDialog from "@/components/custom/other/confirm-dialog";
+import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
 import CheckboxButton from "../../buttons/checkbox-button";
-import { useState } from "react";
 
 export default function DeleteDatastreamForm({
   open,
@@ -9,11 +8,18 @@ export default function DeleteDatastreamForm({
   handleDeleteDatastream,
   deleteChecked,
   setDeleteChecked,
+  setSelectedRows,
 }) {
-
   const handleDelete = async () => {
-    await handleDeleteDatastream(datastream.id);
+    if (Array.isArray(datastream)) {
+      for (const ds of datastream) {
+        await handleDeleteDatastream(ds.id);
+      }
+    } else if (datastream) {
+      await handleDeleteDatastream(datastream.id);
+    }
     setOpen(false);
+    setSelectedRows([]);
     setDeleteChecked(false);
   };
 
@@ -22,12 +28,19 @@ export default function DeleteDatastreamForm({
       open={open}
       setOpen={setOpen}
       title={
-        datastream ? (
+        Array.isArray(datastream) && datastream.length === 1 ? (
           <>
-            Hapus datastream <i>"{datastream.description || datastream.pin}"</i>?
+            Hapus datastream{" "}
+            <i>{datastream[0].description || datastream[0].pin || ""}</i> ?
           </>
+        ) : Array.isArray(datastream) && datastream.length > 1 ? (
+          <>Hapus {datastream.length} datastream terpilih ?</>
         ) : (
-          ""
+          datastream && (
+            <>
+              Hapus datastream <i>{datastream.description}</i> ?
+            </>
+          )
         )
       }
       description="Tindakan ini tidak dapat dibatalkan."

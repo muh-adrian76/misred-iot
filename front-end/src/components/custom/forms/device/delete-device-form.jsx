@@ -1,7 +1,5 @@
-import ConfirmDialog from "@/components/custom/other/confirm-dialog";
-import { fetchFromBackend } from "@/lib/helper";
+import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
 import CheckboxButton from "../../buttons/checkbox-button";
-import showToast from "../../other/toaster";
 
 export default function DeleteDeviceForm({
   open,
@@ -10,10 +8,19 @@ export default function DeleteDeviceForm({
   handleDeleteDevice,
   deleteChecked,
   setDeleteChecked,
+  setSelectedRows,
 }) {
   const handleDelete = async () => {
-    await handleDeleteDevice(deviceToDelete.id);
+    if (Array.isArray(deviceToDelete)) {
+      for (const device of deviceToDelete) {
+        await handleDeleteDevice(device.id);
+      }
+    } else if (deviceToDelete) {
+      await handleDeleteDevice(deviceToDelete.id);
+    }
     setOpen(false);
+    setSelectedRows([]);
+    setDeleteChecked(false);
   };
 
   return (
@@ -21,13 +28,18 @@ export default function DeleteDeviceForm({
       open={open}
       setOpen={setOpen}
       title={
-        deviceToDelete ? (
+        Array.isArray(deviceToDelete) && deviceToDelete.length === 1 ? (
           <>
-            Hapus device{" "}
-            <i>"{deviceToDelete.name || deviceToDelete.description}"</i> ?
+            Hapus device <i>{deviceToDelete[0].description || ""}</i> ?
           </>
+        ) : Array.isArray(deviceToDelete) && deviceToDelete.length > 1 ? (
+          <>Hapus {deviceToDelete.length} device terpilih ?</>
         ) : (
-          ""
+          deviceToDelete && (
+            <>
+              Hapus datastream <i>{deviceToDelete.description}</i> ?
+            </>
+          )
         )
       }
       description="Tindakan ini tidak dapat dibatalkan."

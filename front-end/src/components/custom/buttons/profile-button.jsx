@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@/providers/user-provider";
+import { useUser, userType } from "@/providers/user-provider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,10 +13,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Settings, User } from "lucide-react";
+import { Settings2, User } from "lucide-react";
 
 import DescriptionTooltip from "../other/description-tooltip";
-import ConfirmDialog from "../other/confirm-dialog";
+import ConfirmDialog from "../dialogs/confirm-dialog";
 import ProfileForm from "../forms/profile/profile-form";
 
 import { fetchFromBackend } from "@/lib/helper";
@@ -38,7 +38,7 @@ export default function ProfileButton() {
     googleLogout?.();
     router.push("/auth");
     setTimeout(() => {
-      setUser(null);
+      setUser(userType);
     }, 2500);
   };
 
@@ -52,27 +52,31 @@ export default function ProfileButton() {
           <DropdownMenuTrigger asChild>
             <Button
               size="icon"
-              className="relative rounded-full cursor-pointer bg-primary hover:bg-red-600"
+              className="relative rounded-full cursor-pointer bg-primary hover:bg-red-600  transition-all"
             >
               <User className="w-5 h-5" />
               <span className="sr-only">Profile</span>
             </Button>
           </DropdownMenuTrigger>
         </DescriptionTooltip>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" disablePortal>
           <div className="px-3 py-3 flex gap-4 items-center">
             <Avatar>
               <AvatarFallback className="bg-red-100 text-primary">
-                {user.name[0] || "User"}
+                {user?.name?.[0] || "U"}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1">
-              <div className="font-medium text-sm">{user.name || "Nama User"}</div>
-              <div className="text-xs text-muted-foreground">{user.email || "Email User"}</div>
+              <div className="font-medium text-sm">
+                {user?.name || "Nama User"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {user?.email || "Email User"}
+              </div>
             </div>
             <DescriptionTooltip content="Pengaturan">
-              <Settings
-                className="w-5 h-5 hover:text-primary cursor-pointer"
+              <Settings2
+                className="w-5 h-5 hover:text-primary cursor-pointer transition-all duration-300"
                 onClick={() => {
                   setOpenDropdownProfile(false);
                   setTimeout(() => {
@@ -86,7 +90,7 @@ export default function ProfileButton() {
           <DropdownMenuItem asChild inset="true">
             <Button
               variant="ghost"
-              className="w-full cursor-pointer justify-between gap-4 hover:bg-red-50 hover:text-primary"
+              className="w-full cursor-pointer justify-between gap-4 hover:bg-red-50 hover:text-primary transition-all"
               onClick={() => {
                 setOpenDropdownProfile(false);
                 setTimeout(() => {

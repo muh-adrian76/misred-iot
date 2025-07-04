@@ -4,13 +4,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-export default function DescriptionTooltip({children, content}) {
+export default function DescriptionTooltip({children, content, side}) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         {children}
       </TooltipTrigger>
-      <TooltipContent>
+      <TooltipContent side={side}>
         <p>{content}</p>
       </TooltipContent>
     </Tooltip>

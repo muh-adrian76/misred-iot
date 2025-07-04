@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import showToast from "@/components/custom/other/toaster";
+import { successToast, errorToast } from "../../other/toaster";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function RegisterForm({
   className,
+  logoFont,
   router,
   setUser,
   isLoading,
@@ -36,23 +37,15 @@ export default function RegisterForm({
     setIsLoading(true);
 
     if (!email || !password) {
-      showToast(
-        "warning",
-        "Peringatan",
-        "Email dan password tidak boleh kosong!"
-      );
+      errorToast("Peringatan", "Email dan password tidak boleh kosong!");
       return;
     }
     if (password.length < 6) {
-      showToast(
-        "warning",
-        "Peringatan",
-        "Password harus lebih dari 6 karakter!"
-      );
+      errorToast("Peringatan", "Password harus lebih dari 6 karakter!");
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      showToast("warning", "Peringatan", "Email tidak valid!");
+      errorToast("Peringatan", "Email tidak valid!");
       return;
     }
 
@@ -64,14 +57,13 @@ export default function RegisterForm({
 
       if (!res.ok) {
         const errorMessage = await res.json();
-        showToast(
-          "warning",
+        errorToast(
           errorMessage.message || "Gagal registrasi, coba lagi nanti!"
         );
         return;
       }
 
-      showToast("success", "Registrasi berhasil!");
+      successToast("Registrasi berhasil!");
 
       setTimeout(async () => {
         try {
@@ -82,17 +74,17 @@ export default function RegisterForm({
 
           const data = await res.json();
           !res.ok
-            ? showToast("warning", "Login gagal!", `${data.message}`)
+            ? errorToast("Login gagal!", `${data.message}`)
             : setTimeout(() => {
                 setUser(data.user);
                 router.push("/dashboards");
               }, 100);
         } catch {
-          showToast("warning", "Peringatan", "Gagal melakukan login.");
+          errorToast("Peringatan", "Gagal melakukan login.");
         }
       }, 500);
     } catch (error) {
-      showToast("error", "Terjadi kesalahan, coba lagi nanti!");
+      errorToast("Terjadi kesalahan, coba lagi nanti!");
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +103,7 @@ export default function RegisterForm({
         <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
           <img src={brandLogo} alt="Logo" />
         </div>
-        MiSREd-IoT
+        <h1 className={`text-3xl tracking-wider ${logoFont}`}>MiSREd-IoT</h1>
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: 50 }}
@@ -140,37 +132,45 @@ export default function RegisterForm({
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
+                      noInfo
                       required
                     />
                   </div>
                   <div className="grid gap-3">
                     <div className="flex items-center">
-                      <Label htmlFor="password">Password</Label>
+                      <Label htmlFor="password">Kata Sandi</Label>
                     </div>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        className="pr-10"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="********"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        autoComplete="current-password"
-                        required
-                      />
-                      <div className="absolute inset-y-0 right-0 flex items-center cursor-pointer pr-3">
-                        {showPassword ? (
-                          <Eye
-                            className="relative h-5 w-5"
-                            onClick={() => setShowPassword(false)}
-                          />
-                        ) : (
-                          <EyeOff
-                            className="relative h-5 w-5"
-                            onClick={() => setShowPassword(true)}
-                          />
-                        )}
+                    <div>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          className="pr-10"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="********"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          autoComplete="current-password"
+                          minLength={8}
+                          noInfo
+                          required
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center cursor-pointer pr-3">
+                          {showPassword ? (
+                            <Eye
+                              className="relative h-5 w-5"
+                              onClick={() => setShowPassword(false)}
+                            />
+                          ) : (
+                            <EyeOff
+                              className="relative h-5 w-5"
+                              onClick={() => setShowPassword(true)}
+                            />
+                          )}
+                        </div>
                       </div>
+                      <span className="px-1 text-sm text-pretty opacity-100 flex pt-2 text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs">
+                        Karakter alfanumerik dibatasi hanya (@ / . - _)
+                      </span>
                     </div>
                   </div>
                   <Button
@@ -202,7 +202,7 @@ export default function RegisterForm({
                     onClick={() => setShowRegister(false)}
                     className="cursor-pointer underline underline-offset-4"
                   >
-                    Login
+                    Log In
                   </button>
                 </div>
               </div>

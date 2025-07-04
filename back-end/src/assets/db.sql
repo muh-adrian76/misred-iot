@@ -47,11 +47,12 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `description` text,
   `board_type` varchar(255) DEFAULT NULL,
-  `protocol` enum('http','mqtt','lora') NOT NULL,
+  `protocol` varchar(10) NOT NULL,
   `mqtt_topic` varchar(255) DEFAULT NULL,
   `mqtt_qos` enum('0','1','2') DEFAULT '0',
   `lora_profile` text,
   `key` text NOT NULL,
+  `status` enum('offline','online') DEFAULT 'offline',
   `user_id` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
@@ -68,15 +69,18 @@ CREATE TABLE IF NOT EXISTS `payloads` (
 
 CREATE TABLE IF NOT EXISTS `datastreams` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `description` TEXT DEFAULT NULL,
+  `description` TEXT NOT NULL,
   `pin` VARCHAR(10) NOT NULL,
   `type` VARCHAR(10) NOT NULL,
-  `unit` VARCHAR(50) DEFAULT NULL,
-  `default_value` INT NOT NULL,
-  `min_value` INT NOT NULL,
-  `max_value` INT NOT NULL,
+  `unit` VARCHAR(50) NOT NULL,
+  `default_value` VARCHAR(255) NOT NULL,
+  `min_value` DOUBLE NOT NULL,
+  `max_value` DOUBLE NOT NULL,
+  `decimal_value` VARCHAR(10) NOT NULL,
+  `device_id` INT NOT NULL,
   `user_id` varchar(255) NOT NULL,
   PRIMARY KEY (`id`),
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

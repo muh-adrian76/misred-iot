@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import showToast from "@/components/custom/other/toaster";
+import { errorToast } from "../../other/toaster";
 
 import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
@@ -13,6 +13,7 @@ import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginForm({
   className,
+  logoFont,
   router,
   setUser,
   isLoading,
@@ -36,17 +37,13 @@ export default function LoginForm({
       const data = await res.json();
 
       !res.ok
-        ? showToast("warning", "Login gagal!", `${data.message}`)
+        ? errorToast("Login gagal!", `${data.message}`)
         : setTimeout(() => {
             setUser(data.user);
             router.push("/dashboards");
           }, 100);
     } catch (error) {
-      showToast(
-        "error",
-        "Terjadi kesalahan, coba lagi nanti!",
-        `${error.message}`
-      );
+      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -66,18 +63,13 @@ export default function LoginForm({
         <Card className="overflow-hidden p-0">
           <form className="p-6 md:p-8" onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex gap-4 mb-4">
-                  <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-                    <img src={brandLogo} alt="Logo" />
-                  </div>
-                  <h1 className="text-2xl tracking-wider font-bold">
-                    MiSREd-IoT
-                  </h1>
+              <div className="flex gap-4 mb-4 justify-center items-center">
+                <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
+                  <img src={brandLogo} alt="Logo" />
                 </div>
-                {/* <p className="text-muted-foreground text-balance">
-                  Isi email dan password untuk masuk ke akun Anda.
-                </p> */}
+                <h1 className={`text-3xl tracking-wider ${logoFont}`}>
+                  MiSREd-IoT
+                </h1>
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">
@@ -87,7 +79,7 @@ export default function LoginForm({
                     className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
                     onClick={() => setShowRegister(true)}
                   >
-                    Belum punya akun?
+                    Belum punya akun ?
                   </button>
                 </div>
                 <Input
@@ -97,18 +89,19 @@ export default function LoginForm({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  noInfo
                   required
                 />
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Kata Sandi</Label>
                   <button
                     type="button"
                     className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
                     onClick={() => setShowForgotPassword(true)}
                   >
-                    Lupa password?
+                    Lupa kata sandi ?
                   </button>
                 </div>
                 <div className="relative">
@@ -118,8 +111,10 @@ export default function LoginForm({
                     type={showPassword ? "text" : "password"}
                     placeholder="********"
                     value={password}
+                    minLength={8}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
+                    noInfo
                     required
                   />
                   <div className="absolute inset-y-0 right-0 cursor-pointer flex items-center pr-3">

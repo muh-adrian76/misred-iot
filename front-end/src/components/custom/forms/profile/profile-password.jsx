@@ -1,10 +1,13 @@
-import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import {
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, UserLock } from "lucide-react";
-import showToast from "../../other/toaster";
+import { successToast, errorToast } from "../../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
-import { useState } from "react";
 
 export default function ProfilePasswordSection({
   user,
@@ -19,17 +22,11 @@ export default function ProfilePasswordSection({
     e.preventDefault();
 
     if (oldPassword === newPassword) {
-      showToast(
-        "warning",
-        "Password baru tidak boleh sama dengan password lama!"
-      );
+      errorToast("Password baru tidak boleh sama dengan password lama!");
       return;
     }
     if (newPassword.length < 8) {
-      showToast(
-        "warning",
-        "Password baru harus memiliki setidaknya 8 karakter!"
-      );
+      errorToast("Password baru harus memiliki setidaknya 8 karakter!");
       return;
     }
     try {
@@ -42,20 +39,17 @@ export default function ProfilePasswordSection({
         method: "PUT",
         body: JSON.stringify(payload),
       });
+      const data = await res.json();
 
       if (!res.ok) {
-        showToast("warning", "Gagal mengubah password!");
+        errorToast("Gagal mengubah password!", data.message || "");
       } else {
-        showToast("success", "Berhasil mengubah password!");
+        successToast("Berhasil mengubah password!");
         setOldPassword("");
         setNewPassword("");
       }
     } catch (error) {
-      showToast(
-        "error",
-        "Terjadi kesalahan, coba lagi nanti!",
-        `${error.message}`
-      );
+      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
     }
   };
 
@@ -65,7 +59,7 @@ export default function ProfilePasswordSection({
       className="bg-card px-4 shadow-2xs rounded-2xl mb-6"
     >
       <AccordionTrigger className="font-semibold">
-        Ganti Password
+        Ganti Kata Sandi
       </AccordionTrigger>
       <AccordionContent>
         <div className="space-y-4 p-2 text-muted-foreground">
@@ -80,38 +74,34 @@ export default function ProfilePasswordSection({
               />
             </div>
             <div className="relative flex flex-col gap-3 mb-3">
-              <div className="flex gap-2 cursor-pointer hover:text-black">
+              <div className="flex gap-2 cursor-pointer hover:text-foreground">
                 {showPassword ? (
                   <span
                     onClick={() => setShowPassword(false)}
                     className="flex gap-2"
                   >
-                    Sembunyikan
-                    <Eye className="relative h-5 w-5" />
+                    Sembunyikan Kata Sandi
+                    <EyeOff className="relative h-5 w-5" />
                   </span>
                 ) : (
                   <span
                     onClick={() => setShowPassword(true)}
                     className="flex gap-2"
                   >
-                    Tampilkan
-                    <EyeOff className="relative h-5 w-5" />
+                    Tampilkan Kata Sandi
+                    <Eye className="relative h-5 w-5" />
                   </span>
                 )}
               </div>
-              <div className="flex items-center border rounded-md">
-                <Input
-                  id="old-password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Masukkan password lama"
-                  autoComplete="old-password"
-                  value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="relative">
+              <Input
+                id="old-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Masukkan password lama"
+                autoComplete="old-password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                required
+              />
               <Input
                 id="new-password"
                 type={showPassword ? "text" : "password"}
@@ -126,7 +116,7 @@ export default function ProfilePasswordSection({
           <Button
             variant="outline"
             onClick={handleSavePassword}
-            className="w-full cursor-pointer"
+            className="w-full cursor-pointer transition-all duration-500"
           >
             Simpan Perubahan
             <UserLock className="h-5 w-5" />

@@ -2,22 +2,22 @@ import { WidthProvider, Responsive } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-import { ChartDataArea } from "@/components/custom/widgets/charts/area";
-import { ChartDataBar } from "@/components/custom/widgets/charts/bar";
-import { ChartDataPie } from "@/components/custom/widgets/charts/pie";
-import { ChartDataLine } from "@/components/custom/widgets/charts/line";
+import { AreaChartWidget } from "@/components/custom/widgets/widget-component/charts/area";
+import { BarChartWidget } from "@/components/custom/widgets/widget-component/charts/bar";
+import { LineChartWidget } from "@/components/custom/widgets/widget-component/charts/line";
+import { PieChartWidget } from "@/components/custom/widgets/widget-component/charts/pie";
 import { Button } from "@/components/ui/button";
 import { Trash2, Move, Settings2 } from "lucide-react";
-import showToast from "../other/toaster";
+import { errorToast } from "../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-const chartComponents = {
-  area: ChartDataArea,
-  bar: ChartDataBar,
-  pie: ChartDataPie,
-  line: ChartDataLine,
+const widgetComponents = {
+  area: AreaChartWidget,
+  bar: BarChartWidget,
+  line: LineChartWidget,
+  pie: PieChartWidget,
 };
 
 export default function SwapyDragArea({
@@ -54,7 +54,7 @@ export default function SwapyDragArea({
         lg: (layouts.lg || []).filter((layout) => layout.i !== id),
       });
     } catch (error) {
-      showToast("error", "Gagal menghapus widget dari database");
+      errorToast("Gagal menghapus widget dari database");
     }
   };
 
@@ -69,9 +69,10 @@ export default function SwapyDragArea({
       onDrop={handleAddWidget}
     >
       <ResponsiveGridLayout
-        className="layout bg-white border-2 border-dashed border-gray-300 rounded-lg min-h-[350px] 
-    bg-[linear-gradient(90deg,#f3f4f6_1px,transparent_1px),linear-gradient(180deg,#f3f4f6_1px,transparent_1px)] 
-    bg-[size:48px_48px]"
+        className="layout bg-background border-r border-gray-200 dark:border-gray-700 rounded-lg min-h-[350px] 
+                  bg-[linear-gradient(90deg,#e5e7eb_1px,transparent_1px),linear-gradient(180deg,#e5e7eb_1px,transparent_1px)] 
+                  dark:bg-[linear-gradient(90deg,#364153_1px,transparent_1px),linear-gradient(180deg,#364153_1px,transparent_1px)] 
+                  bg-[size:64px_48px]"
         layouts={layouts}
         onLayoutChange={onLayoutChange}
         breakpoints={{ lg: 1024, md: 768, sm: 480 }}
@@ -87,17 +88,17 @@ export default function SwapyDragArea({
             key="empty"
             className="widget-info absolute top-1/2 text-center left-1/2 min-w-lg transform -translate-x-1/2 -translate-y-1/2 inset-0 flex flex-col items-center pointer-events-none select-none"
           >
-            <h2 className="text-2xl font-bold mb-2 text-gray-700">
+            <h2 className="text-2xl font-bold mb-2 text-muted-foreground">
               Tambah widget baru
             </h2>
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               <b>Pilih</b> atau <b>tarik</b> kedalam kanvas.
             </p>
           </div>
         )}
         {items.map((item) => {
-          const ChartComponent = chartComponents[item.type];
-          if (!ChartComponent)
+          const WidgetComponent = widgetComponents[item.type];
+          if (!WidgetComponent)
             return <div key={item.id}>Tipe chart tidak ditemukan.</div>;
           return (
             <div key={item.id} className="relative group">
@@ -133,7 +134,7 @@ export default function SwapyDragArea({
 
                 {/* Chart Content */}
                 <div className="flex-1 p-4 overflow-hidden">
-                  <ChartComponent />
+                  <WidgetComponent />
                 </div>
               </div>
             </div>

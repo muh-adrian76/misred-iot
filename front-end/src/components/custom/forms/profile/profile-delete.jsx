@@ -1,6 +1,6 @@
-import ConfirmDialog from "../../other/confirm-dialog";
+import ConfirmDialog from "../../dialogs/confirm-dialog";
 import CheckboxButton from "../../buttons/checkbox-button";
-import showToast from "../../other/toaster";
+import { successToast, errorToast } from "../../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 
 export default function ProfileDeleteDialog({
@@ -14,8 +14,7 @@ export default function ProfileDeleteDialog({
     e.preventDefault();
     const checkbox = document.getElementById("deleteAccountCheckbox");
     if (!checkbox.checked) {
-      showToast(
-        "warning",
+      errorToast(
         "Anda harus mencentang kotak untuk mengonfirmasi penghapusan akun!"
       );
       return null;
@@ -26,17 +25,13 @@ export default function ProfileDeleteDialog({
       });
 
       if (!res.ok) {
-        showToast("warning", "Gagal menghapus akun!");
+        errorToast("Gagal menghapus akun!");
       } else {
-        showToast("success", "Akun berhasil dihapus!");
+        successToast("Akun berhasil dihapus!");
         router.push("/auth");
       }
     } catch (error) {
-      showToast(
-        "error",
-        "Terjadi kesalahan, coba lagi nanti!",
-        `${error.message}`
-      );
+      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
     }
   };
 

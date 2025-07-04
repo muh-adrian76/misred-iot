@@ -3,8 +3,18 @@ import { createContext, useContext, useState, useEffect } from "react";
 
 const UserContext = createContext();
 
+// Dummy
+export const userType = {
+    id: "",
+    name: "",
+    email: "",
+    created_at: "",
+    last_login: "",
+    phone: "",
+  }
+
 export function UserProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(userType);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Ambil user dari localStorage

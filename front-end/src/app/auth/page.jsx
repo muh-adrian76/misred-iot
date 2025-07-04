@@ -1,4 +1,9 @@
-import AuthLayout from "@/components/layout/main/auth-layout";
+import AuthLayout from "./_layout";
+
+export const metadata = {
+  title: "Login - MiSREd-IoT",
+  description: "Halaman login MiSREd-IoT",
+};
 
 export default function Page() {
   return (

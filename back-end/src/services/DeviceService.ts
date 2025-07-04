@@ -91,9 +91,8 @@ export class DeviceService {
 
   async deleteDevice(id: string, userId: string) {
     try {
-      await this.db.query("DELETE FROM payloads WHERE devices_id = ?", [id]);
-      await this.db.query("DELETE FROM widgets WHERE devices_id = ?", [id]);
-      await this.db.query("DELETE FROM alarms WHERE devices_id = ?", [id]);
+      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
+      await this.db.query("DELETE FROM widgets WHERE device_id = ?", [id]);
       const [result] = await this.db.query<ResultSetHeader>(
         "DELETE FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]

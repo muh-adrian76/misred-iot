@@ -1,7 +1,24 @@
-import React from "react";
+"use client";
+import { cn } from "@/lib/utils";
+import { useRef, useEffect } from "react";
 import styled from "styled-components";
 
-const CheckboxButton = ({ id, text, checked, onChange }) => {
+const CheckboxButton = ({
+  id,
+  text,
+  checked,
+  onChange,
+  indeterminate,
+  ...props
+}) => {
+  const ref = useRef();
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.indeterminate = !!indeterminate;
+    }
+  }, [indeterminate]);
+
   return (
     <StyledWrapper>
       <div className="checkbox-wrapper-46">
@@ -11,6 +28,8 @@ const CheckboxButton = ({ id, text, checked, onChange }) => {
           className="inp-cbx"
           checked={checked}
           onChange={onChange}
+          ref={ref}
+          {...props}
         />
         <label htmlFor={id} className="cbx">
           <span>
@@ -18,7 +37,7 @@ const CheckboxButton = ({ id, text, checked, onChange }) => {
               <polyline points="1.5 6 4.5 9 10.5 1" />
             </svg>
           </span>
-          <span className="ml-2 max-sm:text-sm">{text}</span>
+          <span className={cn("max-sm:text-sm", text ? "ml-2" : "")}>{text}</span>
         </label>
       </div>
     </StyledWrapper>
@@ -27,8 +46,17 @@ const CheckboxButton = ({ id, text, checked, onChange }) => {
 
 const StyledWrapper = styled.div`
   .checkbox-wrapper-46 input[type="checkbox"] {
-    display: none;
-    visibility: hidden;
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    z-index: 1;
+    cursor: pointer;
+  }
+
+  .checkbox-wrapper-46 {
+    position: relative;
   }
 
   .checkbox-wrapper-46 .cbx {
@@ -45,8 +73,9 @@ const StyledWrapper = styled.div`
   }
   .checkbox-wrapper-46 .cbx span:first-child {
     position: relative;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    margin-left: 7px;
+    height: 20px;
     border-radius: 3px;
     transform: scale(1);
     vertical-align: middle;
@@ -55,8 +84,8 @@ const StyledWrapper = styled.div`
   }
   .checkbox-wrapper-46 .cbx span:first-child svg {
     position: absolute;
-    top: 3px;
-    left: 2px;
+    top: 4px;
+    left: 3px;
     fill: none;
     stroke: #ffffff;
     stroke-width: 2;

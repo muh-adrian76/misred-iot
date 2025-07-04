@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 // Fungsi fetch ke API Backend
 export function fetchFromBackend(endpoint, options = {}) {
   const server = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -22,8 +24,8 @@ export function convertDate(dateString) {
     year: "numeric",
     month: "short",
     day: "numeric",
-    hour: "2-digit", 
-    minute: "2-digit", 
+    hour: "2-digit",
+    minute: "2-digit",
     second: "2-digit",
   });
 

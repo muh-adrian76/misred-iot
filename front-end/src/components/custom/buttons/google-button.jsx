@@ -2,7 +2,7 @@ import { Button } from "../../ui/button";
 import { useGoogleLogin } from "@react-oauth/google";
 import { GoogleIcon } from "../icons/google";
 import { fetchFromBackend } from "@/lib/helper";
-import showToast from "../other/toaster";
+import { errorToast } from "../other/toaster";
 
 export default function GoogleButton({router, action, isLoading, setIsLoading, setUser}) {
   // Google login handler
@@ -19,17 +19,17 @@ export default function GoogleButton({router, action, isLoading, setIsLoading, s
         
         const data = await res.json();
         !res.ok
-          ? showToast("error", "Google login gagal!", `${data.message}`)
+          ? errorToast("Google login gagal!", `${data.message}`)
           : setTimeout(() => {
               setUser(data.user);
-              router.push("/dashboards");
+              router.push("/console/dashboards");
             }, 500);
       } catch {
-        showToast("error", "Google login gagal!");
+        errorToast("Google login gagal!");
         setIsLoading(false);
       }
     },
-    onError: () => toast.error("Google login gagal!"),
+    onError: () => errorToast("Google login gagal!"),
   });
 
   return (
