@@ -1,5 +1,6 @@
 import DataTable from "@/components/custom/tables/data-table";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
@@ -112,9 +113,13 @@ export default function DatastreamContent({
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <h2 className="text-xl font-semibold">Tidak ada datastream</h2>
-          <span className="text-muted-foreground text-balance">
-            Buat datastream baru pada sisi kanan atas layar.
-          </span>
+            <Button
+              onClick={() => setAddFormOpen(true)}
+              className="gap-2 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Buat datastream
+            </Button>
         </div>
       </motion.div>
     );

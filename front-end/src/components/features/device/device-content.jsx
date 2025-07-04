@@ -1,6 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Edit, WifiCog, Power, PowerOff, Trash2 } from "lucide-react";
+import {
+  Copy,
+  Edit,
+  WifiCog,
+  Power,
+  PowerOff,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { successToast } from "@/components/custom/other/toaster";
 import DataTable from "@/components/custom/tables/data-table";
 import { AnimatePresence } from "framer-motion";
@@ -118,9 +126,13 @@ export default function DeviceContent({
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <h2 className="text-xl font-semibold">Tidak ada device</h2>
-          <span className="text-muted-foreground text-balance">
-            Buat device baru pada sisi kanan atas layar.
-          </span>
+          <Button
+            onClick={() => setAddFormOpen(true)}
+            className="gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Buat device
+          </Button>
         </div>
       </motion.div>
     );

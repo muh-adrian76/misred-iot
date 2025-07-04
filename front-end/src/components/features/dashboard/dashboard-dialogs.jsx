@@ -50,7 +50,7 @@ export default function DashboardDialogs(props) {
             ""
           )
         }
-        description="Semua widget di dalamnya juga akan terhapus."
+        description="Tindakan ini tidak dapat dibatalkan."
         checkbox={
           <CheckboxButton
             id="deleteDashboardCheckbox"
