@@ -25,7 +25,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
           transition={{ duration: 0.5, delay: 1.5, ease: "easeInOut" }}
-          className="widget-box z-10 rounded-md bg-background shadow-lg p-4"
+          className="widget-box z-10 rounded-md bg-background shadow-lg dark:shadow-[0_4px_16px_0_rgba(255,0,0,0.15)] p-4"
         >
           <div className="flex gap-2 justify-between items-center">
             <div className="flex gap-3 font-semibold">
@@ -72,7 +72,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
   }
 
   return (
-    <div className="sticky top-[130px] self-start">
+    <div className="fixed top-[140px] self-start">
       <motion.div
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
