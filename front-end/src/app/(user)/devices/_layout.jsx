@@ -11,11 +11,7 @@ export default function DeviceLayout() {
 
   return (
     <>
-      <DeviceContent
-        {...logic}
-        noDevice={logic.devices.length === 0}
-        search={logic.search}
-      />
+      <DeviceContent {...logic} />
       <DeviceDialogs {...logic} />
     </>
   );

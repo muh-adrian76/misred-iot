@@ -19,13 +19,13 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
 
   if (isMobile) {
     return (
-      <>
+      <div className="fixed bottom-18 w-8/9 left-1/2 -translate-x-1/2">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
           transition={{ duration: 0.5, delay: 1.5, ease: "easeInOut" }}
-          className="fixed widget-box z-10 w-8/9 rounded-md bottom-18 left-1/2 transform -translate-x-1/2 bg-background shadow-lg p-4"
+          className="widget-box z-10 rounded-md bg-background shadow-lg p-4"
         >
           <div className="flex gap-2 justify-between items-center">
             <div className="flex gap-3 font-semibold">
@@ -67,7 +67,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
             </div>
           </ScrollArea>
         </motion.div>
-      </>
+      </div>
     );
   }
 

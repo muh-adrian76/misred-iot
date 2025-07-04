@@ -105,7 +105,7 @@ export default function DatastreamContent({
   if (!loading && datastreams.length === 0) {
     return (
       <motion.div
-        className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
+        className="flex items-center justify-center h-screen"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}

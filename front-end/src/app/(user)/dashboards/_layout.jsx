@@ -12,9 +12,9 @@ export default function DashboardLayout() {
   return (
     <>
       <DashboardHeader {...logic} />
-      <DashboardContent
-        {...logic}
-      />
+      <div className="overflow-x-hidden">
+        <DashboardContent {...logic} />
+      </div>
       <DashboardDialogs {...logic} />
     </>
   );

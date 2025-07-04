@@ -1,4 +1,3 @@
-import { fetchServerSide } from "@/lib/helper";
 import DashboardLayout from "./_layout";
 
 export const metadata = {
