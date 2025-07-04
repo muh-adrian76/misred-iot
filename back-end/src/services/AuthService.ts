@@ -6,15 +6,9 @@ import { authorizeRequest } from "../lib/utils";
 
 export class AuthService {
   private db: Pool;
-  private googleClient: OAuth2Client;
 
   constructor(db: Pool) {
     this.db = db;
-    this.googleClient = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      "postmessage"
-    );
   }
 
   async register({ email, password }: { password: string; email: string }) {
@@ -93,7 +87,9 @@ export class AuthService {
       return { status: 401, message: "Kredensial tidak valid" };
     }
 
-    const response = await fetch(`${process.env.TOKENIZER_URL}/sign/${user.id}`);
+    const response = await fetch(
+      `${process.env.TOKENIZER_URL}/sign/${user.id}`
+    );
     const refreshToken = await response.text();
 
     const now = new Date();
@@ -136,7 +132,8 @@ export class AuthService {
       "SELECT refresh_token FROM users WHERE id = ?",
       [id]
     );
-    const refreshTokenFromDb = rows && rows.length > 0 ? rows[0].refresh_token : undefined;
+    const refreshTokenFromDb =
+      rows && rows.length > 0 ? rows[0].refresh_token : undefined;
     if (!refreshTokenFromDb || !refreshTokenFromCookie) {
       return {
         status: 401,
@@ -164,16 +161,33 @@ export class AuthService {
     }
   }
 
-  async googleLogin({ code }: { code: string }) {
+  async googleLogin({
+    code,
+    mode,
+  }: {
+    code: string;
+    mode?: "popup" | "redirect";
+  }) {
     if (!code) {
       return { status: 400, message: "Missing code" };
     }
 
+    const redirectUri =
+      mode === "popup" || !mode
+        ? "postmessage"
+        : process.env.GOOGLE_REDIRECT_URI;
+
+    const googleClient = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      redirectUri
+    );
+
     let tokens, payload;
     try {
-      const { tokens: googleTokens } = await this.googleClient.getToken(code);
+      const { tokens: googleTokens } = await googleClient.getToken(code);
       tokens = googleTokens;
-      const ticket = await this.googleClient.verifyIdToken({
+      const ticket = await googleClient.verifyIdToken({
         idToken: tokens.id_token!,
         audience: process.env.GOOGLE_CLIENT_ID,
       });
@@ -240,7 +254,9 @@ export class AuthService {
         }
       }
 
-      const response = await fetch(`${process.env.TOKENIZER_URL}/sign/${userId}`);
+      const response = await fetch(
+        `${process.env.TOKENIZER_URL}/sign/${userId}`
+      );
       const refreshToken = await response.text();
 
       await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [

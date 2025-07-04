@@ -21,7 +21,7 @@ export default function GoogleButton({
         setIsLoading(true);
         const res = await fetchFromBackend("/auth/google", {
           method: "POST",
-          body: JSON.stringify({ code }),
+          body: JSON.stringify({ code, mode: "popup" }),
         });
 
         const data = await res.json();

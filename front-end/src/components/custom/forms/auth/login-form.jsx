@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorToast } from "../../other/toaster";
+import { Link } from "next-view-transitions";
 
 import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
@@ -64,12 +65,14 @@ export default function LoginForm({
           <form className="p-6 md:p-8" onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="flex gap-4 mb-4 justify-center items-center">
-                <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-                  <img src={brandLogo} alt="Logo" />
-                </div>
-                <h1 className={`text-3xl tracking-wider ${logoFont}`}>
-                  MiSREd-IoT
-                </h1>
+                <Link href="/auth" className="flex gap-3 items-center">
+                  <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
+                    <img src={brandLogo} alt="Logo" />
+                  </div>
+                  <h1 className={`text-3xl tracking-wider ${logoFont}`}>
+                    MiSREd-IoT
+                  </h1>
+                </Link>
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">

@@ -1,35 +1,41 @@
 "use client";
 import { useEffect } from "react";
-import { useTransitionRouter as useRouter } from "next-view-transitions";
+import { useSearchParams, useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "@/components/custom/other/toaster";
 import { useUser } from "@/providers/user-provider";
 
 export default function Page() {
+  const query = useSearchParams();
   const router = useRouter();
   const { setUser } = useUser();
 
-  useEffect(async () => {
-    const code = router.query.code;
-    console.log(code);
-    try {
-      const res = await fetchFromBackend("/auth/google", {
-        method: "POST",
-        body: JSON.stringify(code),
-      });
+  useEffect(() => {
+    const fetch = async () => {
+      const code = query.get("code");
+      console.log(code);
+      if (code) {
+        try {
+          const res = await fetchFromBackend("/auth/google", {
+            method: "POST",
+            body: JSON.stringify({ code, mode: "redirect" }),
+          });
 
-      const data = await res.json();
-      !res.ok
-        ? errorToast("Google login gagal!", `${data.message}`)
-        : setTimeout(() => {
-            setUser(data.user);
-            router.push("/dashboards");
-          }, 500);
-    } catch {
-      errorToast("Google login gagal!");
-      setIsLoading(false);
-    }
-  }, [router]);
+          const data = await res.json();
+          !res.ok
+            ? errorToast("Google login gagal!", `${data.message}`)
+            : setTimeout(() => {
+                setUser(data.user);
+                router.push("/dashboards");
+              }, 500);
+        } catch {
+          errorToast("Google login gagal!");
+          setIsLoading(false);
+        }
+      }
+    };
+    fetch();
+  }, [router, query, setUser]);
 
   return <div>Memproses login Google...</div>;
 }
