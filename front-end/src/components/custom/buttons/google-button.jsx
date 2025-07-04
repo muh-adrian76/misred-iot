@@ -40,7 +40,7 @@ export default function GoogleButton({
     onError: () => errorToast("Google login gagal!"),
     ux_mode: !isMobile ? "redirect" : "popup",
     redirect_uri: !isMobile
-      ? `${window.location.origin}/auth/google-callback`
+      ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/google-callback`
       : undefined,
   });
 
