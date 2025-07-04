@@ -1,3 +1,4 @@
+"use client";
 import { useEffect } from "react";
 import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { fetchFromBackend } from "@/lib/helper";
