@@ -22,7 +22,7 @@ export default function GoogleButton({router, action, isLoading, setIsLoading, s
           ? errorToast("Google login gagal!", `${data.message}`)
           : setTimeout(() => {
               setUser(data.user);
-              router.push("/console/dashboards");
+              router.push("/dashboards");
             }, 500);
       } catch {
         errorToast("Google login gagal!");
