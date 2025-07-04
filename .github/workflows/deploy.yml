@@ -21,6 +21,12 @@ jobs:
           script: |
             cd ./misred-iot
             git pull origin main
+            if ! command -v bun &> /dev/null
+            then
+              curl -fsSL https://bun.sh/install | bash
+              export BUN_INSTALL="$HOME/.bun"
+              export PATH="$BUN_INSTALL/bin:$PATH"
+            fi
             bun install
             bun run build-bun
             bun run pm2:restart
