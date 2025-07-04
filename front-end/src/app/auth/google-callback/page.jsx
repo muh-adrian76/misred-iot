@@ -11,7 +11,7 @@ export default function Page() {
   const { setUser } = useUser();
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchCode = async () => {
       const code = query.get("code");
       try {
         const res = await fetchFromBackend("/auth/google", {
@@ -31,8 +31,8 @@ export default function Page() {
         setIsLoading(false);
       }
     };
-    fetch();
+    fetchCode();
   }, [router, query, setUser]);
 
-  return <div>Memproses login Google...</div>;
+  return <div className="flex justify-center items-center h-screen">Memproses login Google...</div>;
 }
