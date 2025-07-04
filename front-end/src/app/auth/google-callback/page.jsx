@@ -4,7 +4,7 @@ import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "@/components/custom/other/toaster";
 import { useUser } from "@/providers/user-provider";
 
-export default function GoogleCallback() {
+export default function Page() {
   const router = useRouter();
   const { setUser } = useUser();
 

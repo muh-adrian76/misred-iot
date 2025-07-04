@@ -23,7 +23,7 @@ export default function DashboardContent(props) {
   if (dashboards.length === 0) {
     return (
       <motion.div
-        className="flex items-center justify-center h-screen"
+        className="flex items-center justify-center h-100"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
@@ -47,7 +47,7 @@ export default function DashboardContent(props) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
         transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
-        className="flex items-center justify-center h-screen"
+        className="flex items-center justify-center h-100"
       >
         <span className="text-muted-foreground">Memuat data widget...</span>
       </motion.div>
@@ -62,7 +62,7 @@ export default function DashboardContent(props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
-        className="flex items-center justify-center h-screen"
+        className="flex items-center justify-center h-100"
         >
           <div className="flex flex-col items-center text-center gap-4">
             <h3 className="text-lg font-semibold mx-10">Tidak ada widget</h3>

@@ -118,7 +118,7 @@ export default function DeviceContent({
   if (!loading && devices.length === 0) {
     return (
       <motion.div
-        className="flex items-center justify-center h-screen"
+        className="flex items-center justify-center h-100"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
