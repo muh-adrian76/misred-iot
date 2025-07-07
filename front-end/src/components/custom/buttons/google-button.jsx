@@ -33,13 +33,14 @@ export default function GoogleButton({
             }, 500);
       } catch {
         errorToast("Google login gagal!");
+      } finally {
         setIsLoading(false);
       }
     },
     flow: "auth-code",
     onError: () => errorToast("Google login gagal!"),
-    ux_mode: !isMobile ? "redirect" : "popup",
-    redirect_uri: !isMobile
+    ux_mode: isMobile ? "redirect" : "popup",
+    redirect_uri: isMobile
       ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/google-callback`
       : undefined,
   });

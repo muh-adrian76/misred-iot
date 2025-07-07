@@ -79,7 +79,7 @@ export default function LoginForm({
                   <Label htmlFor="email">Email</Label>
                   <button
                     type="button"
-                    className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
+                    className="ml-auto text-sm underline-offset-2 underline cursor-pointer"
                     onClick={() => setShowRegister(true)}
                   >
                     Belum punya akun ?
@@ -101,7 +101,7 @@ export default function LoginForm({
                   <Label htmlFor="password">Kata Sandi</Label>
                   <button
                     type="button"
-                    className="ml-auto text-sm underline-offset-2 hover:underline cursor-pointer"
+                    className="ml-auto text-sm underline-offset-2 underline cursor-pointer"
                     onClick={() => setShowForgotPassword(true)}
                   >
                     Lupa kata sandi ?
