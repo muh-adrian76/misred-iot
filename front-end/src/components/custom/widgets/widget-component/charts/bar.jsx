@@ -6,21 +6,21 @@ import {
 } from "@/components/ui/chart";
 
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+  { month: "January", datastream_1: 186, datastream_2: 80 },
+  { month: "February", datastream_1: 305, datastream_2: 200 },
+  { month: "March", datastream_1: 237, datastream_2: 120 },
+  { month: "April", datastream_1: 73, datastream_2: 190 },
+  { month: "May", datastream_1: 209, datastream_2: 130 },
+  { month: "June", datastream_1: 214, datastream_2: 140 },
 ];
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  datastream_1: {
+    label: "Datastream 1",
     color: "var(--chart-5)",
   },
-  mobile: {
-    label: "Mobile",
+  datastream_2: {
+    label: "Datastream 2",
     color: "var(--chart-1)",
   },
 };
@@ -54,8 +54,8 @@ export function BarChartWidget({ previewMode = false }) {
           cursor={false}
           content={<ChartTooltipContent indicator="dashed" />}
         />
-        <Bar dataKey="desktop" fill={chartConfig.desktop.color} radius={4} />
-        <Bar dataKey="mobile" fill={chartConfig.mobile.color} radius={4} />
+        <Bar dataKey="datastream_1" fill={chartConfig.datastream_1.color} radius={4} />
+        <Bar dataKey="datastream_2" fill={chartConfig.datastream_2.color} radius={4} />
       </BarChart>
     </ChartContainer>
   );

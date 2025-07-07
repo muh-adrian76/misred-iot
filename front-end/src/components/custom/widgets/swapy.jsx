@@ -72,7 +72,7 @@ export default function SwapyDragArea({
         className="layout bg-background border-r border-gray-200 dark:border-gray-700 rounded-lg min-h-[350px] 
                   bg-[linear-gradient(90deg,#e5e7eb_1px,transparent_1px),linear-gradient(180deg,#e5e7eb_1px,transparent_1px)] 
                   dark:bg-[linear-gradient(90deg,#364153_1px,transparent_1px),linear-gradient(180deg,#364153_1px,transparent_1px)] 
-                  bg-[size:64px_48px]"
+                  bg-[size:96px_48px]"
         layouts={layouts}
         onLayoutChange={onLayoutChange}
         breakpoints={{ lg: 1024, md: 768, sm: 480 }}
@@ -91,8 +91,8 @@ export default function SwapyDragArea({
             <h2 className="text-2xl font-bold mb-2 text-muted-foreground">
               Tambah widget baru
             </h2>
-            <p className="text-muted-foreground">
-              <b>Pilih</b> atau <b>tarik</b> kedalam kanvas.
+            <p className="text-muted-foreground text-balance">
+              <b>Klik tombol +</b> atau <b>tarik</b> kedalam kanvas.
             </p>
           </div>
         )}

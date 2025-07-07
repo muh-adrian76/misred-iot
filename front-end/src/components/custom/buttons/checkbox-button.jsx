@@ -6,7 +6,7 @@ import styled from "styled-components";
 const CheckboxButton = ({
   id,
   text,
-  checked,
+  checked = false,
   onChange,
   indeterminate,
   ...props

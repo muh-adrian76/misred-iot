@@ -25,9 +25,9 @@ export default function DataTableToolbar({
         </span>
       </div>
       {onAdd && (
-        <Button onClick={onAdd} className="gap-2 transition-all">
+        <Button onClick={onAdd} className="gap-2 transition-all" size={isMobile ? "icon" : "sm"}>
           <Plus className="w-4 h-4" />
-          {isMobile ? content : `Tambah ${content}`}
+          {isMobile ? "" : content }
         </Button>
       )}
     </div>

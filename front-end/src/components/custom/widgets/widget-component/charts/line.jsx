@@ -8,26 +8,26 @@ import {
 export const description = "A multiple line chart";
 
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80, laptop: 120 },
-  { month: "February", desktop: 305, mobile: 200, laptop: 150 },
-  { month: "March", desktop: 237, mobile: 120, laptop: 140 },
-  { month: "April", desktop: 73, mobile: 190, laptop: 170 },
-  { month: "May", desktop: 209, mobile: 130, laptop: 130 },
-  { month: "June", desktop: 214, mobile: 140, laptop: 110 },
+  { month: "January", datastream_1: 186, datastream_2: 80, datastream_3: 120 },
+  { month: "February", datastream_1: 305, datastream_2: 200, datastream_3: 150 },
+  { month: "March", datastream_1: 237, datastream_2: 120, datastream_3: 140 },
+  { month: "April", datastream_1: 73, datastream_2: 190, datastream_3: 170 },
+  { month: "May", datastream_1: 209, datastream_2: 130, datastream_3: 130 },
+  { month: "June", datastream_1: 214, datastream_2: 140, datastream_3: 110 },
 ];
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  datastream_1: {
+    label: "Datastream 1",
     color: "var(--chart-4)",
   },
-  laptop: {
-    label: "Laptop",
-    color: "var(--chart-3)",
-  },
-  mobile: {
-    label: "Mobile",
+  datastream_2: {
+    label: "Datastream 2",
     color: "var(--chart-1)",
+  },
+  datastream_3: {
+    label: "Datastream 3",
+    color: "var(--chart-3)",
   },
 };
 
@@ -61,23 +61,23 @@ export function LineChartWidget({ previewMode = false }) {
           content={<ChartTooltipContent indicator="line" />}
         />
         <Line
-          dataKey="desktop"
+          dataKey="datastream_1"
           type="monotone"
-          stroke={chartConfig.desktop.color}
+          stroke={chartConfig.datastream_1.color}
           strokeWidth={2}
           dot={false}
         />
         <Line
-          dataKey="mobile"
+          dataKey="datastream_2"
           type="monotone"
-          stroke={chartConfig.mobile.color}
+          stroke={chartConfig.datastream_2.color}
           strokeWidth={2}
           dot={false}
         />
         <Line
-          dataKey="laptop"
+          dataKey="datastream_3"
           type="monotone"
-          stroke={chartConfig.laptop.color}
+          stroke={chartConfig.datastream_3.color}
           strokeWidth={2}
           dot={false}
         />

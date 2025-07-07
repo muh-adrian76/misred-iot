@@ -11,7 +11,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
 
   const widget = (
     <>
-      <ScrollContent onChartDrag={onChartDrag} />
+      <ScrollContent onChartDrag={onChartDrag} isMobile={isMobile} />
       <ScrollBar orientation="horizontal" className="xl:hidden" />
       <ScrollBar orientation="vertical" className="hidden xl:block" />
     </>
@@ -30,7 +30,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
           <div className="flex gap-2 justify-between items-center">
             <div className="flex gap-3 font-semibold">
               <ChartNoAxesCombined />
-              <span>Pilihan Widget</span>
+              <span>Kotak Widget</span>
             </div>
             {minimize === true ? (
               <Button
@@ -84,7 +84,7 @@ export default function WidgetBox({ onChartDrag, isMobile }) {
           <div className="flex pt-4 pb-0 px-4 justify-center items-center">
             <div className="flex gap-3 font-semibold">
               <ChartNoAxesCombined />
-              <span>Pilihan Widget</span>
+              <span>Kotak Widget</span>
             </div>
           </div>
           <div className="flex flex-row lg:flex-col w-max lg:w-full h-auto lg:h-max space-x-4 lg:space-x-0 lg:space-y-4 p-4">

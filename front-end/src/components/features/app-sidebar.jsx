@@ -13,7 +13,7 @@ import { brandLogo } from "@/lib/helper";
 import { Link } from "next-view-transitions";
 import { motion } from "framer-motion";
 
-export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, ...props }) {
+export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, logoFont, ...props }) {
   const sidebarContent = (
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader className="border-b-2">
@@ -22,9 +22,9 @@ export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, ...pr
             <img src={brandLogo} alt="Logo" className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-lg leading-tight">
-            <span className="truncate font-bold tracking-wide">
+            <h1 className={`truncate text-2xl font-bold tracking-wide ${logoFont}`}>
               MiSREd-IoT
-            </span>
+            </h1>
           </div>
         </div>
       </SidebarHeader>

@@ -2,7 +2,7 @@ import { Pool, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
 import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
-import { authorizeRequest } from "../lib/utils";
+import { authorizeRequest, subDomain } from "../lib/utils";
 
 export class AuthService {
   private db: Pool;
@@ -161,39 +161,43 @@ export class AuthService {
     }
   }
 
-  async googleLogin({
-    code,
-    mode,
-  }: {
-    code: string;
-    mode: string;
-  }) {
+  async googleLogin({ code, mode }: { code: string; mode: string }) {
     if (!code) {
       return { status: 400, message: "Missing code" };
     }
 
-    const redirectUri =
+    const redirectUris =
       mode === "popup" || !mode
-        ? "postmessage"
-        : process.env.GOOGLE_REDIRECT_URI;
+        ? ["postmessage"]
+        : [
+            process.env.GOOGLE_REDIRECT_URI!,
+            subDomain(process.env.GOOGLE_REDIRECT_URI!),
+          ];
 
-        console.log(code,mode,redirectUri);
-    const googleClient = new OAuth2Client(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      redirectUri
-    );
+    let tokens, payload, lastError;
+    for (const redirectUri of redirectUris) {
+      try {
+        const googleClient = new OAuth2Client(
+          process.env.GOOGLE_CLIENT_ID,
+          process.env.GOOGLE_CLIENT_SECRET,
+          redirectUri
+        );
+        const { tokens: googleTokens } = await googleClient.getToken(code);
+        tokens = googleTokens;
+        const ticket = await googleClient.verifyIdToken({
+          idToken: tokens.id_token!,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        payload = ticket.getPayload();
+        break;
+      } catch (err) {
+        lastError = err;
+        tokens = undefined;
+        payload = undefined;
+      }
+    }
 
-    let tokens, payload;
-    try {
-      const { tokens: googleTokens } = await googleClient.getToken(code);
-      tokens = googleTokens;
-      const ticket = await googleClient.verifyIdToken({
-        idToken: tokens.id_token!,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      payload = ticket.getPayload();
-    } catch (err) {
+    if (!tokens || !payload) {
       return { status: 401, message: "Invalid Google code" };
     }
 

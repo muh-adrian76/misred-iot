@@ -6,6 +6,11 @@ import AppSidebar from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { LayoutDashboard, Cpu, Siren, CircuitBoard } from "lucide-react";
+import localFont from "next/font/local";
+
+const logoFont = localFont({
+  src: "../../../public/logo-font.ttf",
+});
 
 const menu = [
   {
@@ -21,7 +26,7 @@ const menu = [
     icon: CircuitBoard,
     disabled: false,
   },
-  { title: "Alarms", url: "/alarms", icon: Siren, disabled: true },
+  { title: "Alarms", url: "/alarms", icon: Siren, disabled: false },
 ];
 
 export default function UserLayoutClient({ children }) {
@@ -39,6 +44,7 @@ export default function UserLayoutClient({ children }) {
           sidebarMenu={menu}
           pathname={pathname}
           isMobile={isMobile}
+          logoFont={logoFont.className}
         />
       ) : (
         <div
@@ -51,6 +57,7 @@ export default function UserLayoutClient({ children }) {
             sidebarMenu={menu}
             pathname={pathname}
             isMobile={isMobile}
+            logoFont={logoFont.className}
           />
         </div>
       )}

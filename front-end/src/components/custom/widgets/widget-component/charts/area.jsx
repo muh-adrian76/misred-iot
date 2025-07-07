@@ -7,30 +7,30 @@ import {
 } from "@/components/ui/chart";
 
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80, laptop: 120 },
-  { month: "February", desktop: 305, mobile: 200, laptop: 150 },
-  { month: "March", desktop: 237, mobile: 120, laptop: 140 },
-  { month: "April", desktop: 73, mobile: 190, laptop: 170 },
-  { month: "May", desktop: 209, mobile: 130, laptop: 130 },
-  { month: "June", desktop: 214, mobile: 140, laptop: 110 },
+  { month: "January", datastream_1: 186, datastream_2: 80, datastream_3: 120 },
+  { month: "February", datastream_1: 305, datastream_2: 200, datastream_3: 150 },
+  { month: "March", datastream_1: 237, datastream_2: 120, datastream_3: 140 },
+  { month: "April", datastream_1: 73, datastream_2: 190, datastream_3: 170 },
+  { month: "May", datastream_1: 209, datastream_2: 130, datastream_3: 130 },
+  { month: "June", datastream_1: 214, datastream_2: 140, datastream_3: 110 },
 ];
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
+  datastream_1: {
+    label: "Datastream 1",
+    color: "var(--chart-1)",
+  },
+  datastream_2: {
+    label: "Datastream 2",
     color: "var(--chart-2)",
   },
-  laptop: {
-    label: "Laptop",
+  datastream_3: {
+    label: "Datastream 3",
     color: "var(--chart-3)",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "var(--chart-1)",
   },
 };
 
-export function AreaChartWidget({previewMode = false}) {
+export function AreaChartWidget({ previewMode = false }) {
   return (
     <ChartContainer config={chartConfig} className="h-full w-full">
       <AreaChart
@@ -60,59 +60,41 @@ export function AreaChartWidget({previewMode = false}) {
           content={<ChartTooltipContent indicator="dot" />}
         />
         <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.7}
-                />
-                <stop
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.01}
-                />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.7}
-                />
-                <stop
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.01}
-                />
-              </linearGradient>
-              <linearGradient id="fillLaptop" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  stopColor="var(--color-laptop)"
-                  stopOpacity={0.7}
-                />
-                <stop
-                  stopColor="var(--color-laptop)"
-                  stopOpacity={0.01}
-                />
-              </linearGradient>
-            </defs>
+          <linearGradient id="filldatastream_1" x1="0" y1="0" x2="0" y2="1">
+            <stop stopColor="var(--color-datastream_1)" stopOpacity={0.7} />
+            <stop stopColor="var(--color-datastream_1)" stopOpacity={0.01} />
+          </linearGradient>
+          <linearGradient id="filldatastream_2" x1="0" y1="0" x2="0" y2="1">
+            <stop stopColor="var(--color-datastream_2)" stopOpacity={0.7} />
+            <stop stopColor="var(--color-datastream_2)" stopOpacity={0.01} />
+          </linearGradient>
+          <linearGradient id="filldatastream_3" x1="0" y1="0" x2="0" y2="1">
+            <stop stopColor="var(--color-datastream_3)" stopOpacity={0.7} />
+            <stop stopColor="var(--color-datastream_3)" stopOpacity={0.01} />
+          </linearGradient>
+        </defs>
         <Area
-          dataKey="mobile"
+          dataKey="datastream_1"
           type="natural"
-          fill="var(--color-mobile)"
+          fill="var(--color-datastream_1)"
           fillOpacity={0.15}
-          stroke="var(--color-mobile)"
+          stroke="var(--color-datastream_1)"
           stackId="a"
         />
         <Area
-          dataKey="desktop"
+          dataKey="datastream_2"
           type="natural"
-          fill="var(--color-desktop)"
+          fill="var(--color-datastream_2)"
           fillOpacity={0.15}
-          stroke="var(--color-desktop)"
+          stroke="var(--color-datastream_2)"
           stackId="a"
         />
         <Area
-          dataKey="laptop"
+          dataKey="datastream_3"
           type="natural"
-          fill="var(--color-laptop)"
+          fill="var(--color-datastream_3)"
           fillOpacity={0.15}
-          stroke="var(--color-laptop)"
+          stroke="var(--color-datastream_3)"
           stackId="a"
         />
       </AreaChart>

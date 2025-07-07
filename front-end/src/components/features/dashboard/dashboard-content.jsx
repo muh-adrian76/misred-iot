@@ -62,7 +62,7 @@ export default function DashboardContent(props) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
-        className="flex items-center justify-center h-100"
+          className="flex items-center justify-center h-100"
         >
           <div className="flex flex-col items-center text-center gap-4">
             <h3 className="text-lg font-semibold mx-10">Tidak ada widget</h3>

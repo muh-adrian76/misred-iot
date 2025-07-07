@@ -1,8 +1,6 @@
 import AddDashboardDialog from "@/components/custom/forms/dashboard/add-dashboard-form";
+import DeleteDashboardDialog from "@/components/custom/forms/dashboard/delete-dashboard-form";
 import AddWidgetDialog from "@/components/custom/forms/dashboard/add-widget-form";
-import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
-import CheckboxButton from "@/components/custom/buttons/checkbox-button";
-
 export default function DashboardDialogs(props) {
   const {
     openDashboardDialog,
@@ -37,32 +35,13 @@ export default function DashboardDialogs(props) {
         devices={devices}
         datastreams={datastreams}
       />
-      {/* Hapus dashboard */}
-      <ConfirmDialog
+      <DeleteDashboardDialog
         open={openDeleteDialog}
         setOpen={setOpenDeleteDialog}
-        title={
-          dashboardToDelete ? (
-            <>
-              Hapus dashboard <i>"{dashboardToDelete.description}"</i> ?
-            </>
-          ) : (
-            ""
-          )
-        }
-        description="Tindakan ini tidak dapat dibatalkan."
-        checkbox={
-          <CheckboxButton
-            id="deleteDashboardCheckbox"
-            text="Saya mengerti konsekuensinya."
-            checked={deleteChecked}
-            onChange={(e) => setDeleteChecked(e.target.checked)}
-          />
-        }
-        confirmHandle={handleDeleteDashboard}
-        confirmText="Hapus"
-        cancelText="Batal"
-        confirmDisabled={!deleteChecked}
+        dashboardToDelete={dashboardToDelete}
+        handle={handleDeleteDashboard}
+        deleteChecked={deleteChecked}
+        setDeleteChecked={setDeleteChecked}
       />
     </>
   );
