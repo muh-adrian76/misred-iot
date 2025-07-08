@@ -76,7 +76,7 @@ function AlertDialogFooter({
   return (
     <div
       data-slot="alert-dialog-footer"
-      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-center", className)}
       {...props} />
   );
 }
@@ -88,7 +88,7 @@ function AlertDialogTitle({
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      className={cn("text-lg font-semibold", className)}
+      className={cn("text-lg text-center font-semibold", className)}
       {...props} />
   );
 }
@@ -100,7 +100,7 @@ function AlertDialogDescription({
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-muted-foreground ml-2 text-sm", className)}
       {...props} />
   );
 }

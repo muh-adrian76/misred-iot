@@ -1,61 +1,74 @@
-"use client";
-
-import * as React from "react";
-import { NavMain } from "./nav-main";
 import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarMenuButton,
   SidebarRail,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { IconClockEdit, IconCpu, IconLayoutDashboard } from "@tabler/icons-react";
+import { brandLogo } from "@/lib/helper";
+import { Link } from "next-view-transitions";
+import { motion } from "framer-motion";
 
-// Data menu
-const sidebarMenu = [
-    {
-      title: "Dashboards",
-      url: "/dashboards",
-      icon: IconLayoutDashboard,
-    },
-    {
-      title: "Devices",
-      url: "/devices",
-      icon: IconCpu,
-    },
-    {
-      title: "Alarms",
-      url: "alarms",
-      icon: IconClockEdit,
-    },
-  ];
-
-export const user = {
-    name: "Test User",
-    email: "test@user.com",
-  };
-
-export function AppSidebar({ ...props }) {
-
-  return (
+export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, logoFont, ...props }) {
+  const sidebarContent = (
     <Sidebar collapsible="icon" variant="floating" {...props}>
-      <SidebarHeader>
-        <SidebarMenuButton
-          size="lg"
-          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-        >
+      <SidebarHeader className="border-b-2">
+        <div className="flex gap-3 items-center">
           <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-            <img src="/misred-logo-red.svg" alt="" className="size-6" />
+            <img src={brandLogo} alt="Logo" className="size-6" />
           </div>
           <div className="grid flex-1 text-left text-lg leading-tight">
-            <span className="truncate">MiSREd-IoT</span>
+            <h1 className={`truncate text-2xl font-bold tracking-wide ${logoFont}`}>
+              MiSREd-IoT
+            </h1>
           </div>
-        </SidebarMenuButton>
+        </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarMenu} />
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarMenu>
+            {sidebarMenu.map((item) => {
+              const isActive = pathname === item.url;
+
+              return (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="transition-all font-semibold duration-200"
+                  >
+                    <Link href={item.url} aria-disabled={item.disabled}>
+                      {item.icon && <item.icon />}
+                      <span className="ml-2">{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
+  );
+
+  if (isMobile) {
+    return <>{sidebarContent}</>;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      transition={{ duration: 1, delay: 1, ease: "easeInOut" }}
+    >
+      {sidebarContent}
+    </motion.div>
   );
 }

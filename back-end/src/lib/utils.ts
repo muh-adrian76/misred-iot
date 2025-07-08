@@ -1,3 +1,18 @@
+// Fix CORS error
+function subDomain(url: string) {
+  if (!url) return url;
+  try {
+    const u = new URL(url);
+    if (!u.hostname.startsWith("www.")) {
+      u.hostname = "www." + u.hostname;
+    }
+    return u.toString().replace(/\/$/, ""); // hilangkan trailing slash
+  } catch {
+    return url;
+  }
+}
+
+// Objek group untuk pembuatan dokumentasi API
 const apiTags = [
   {
     name: "Auth",
@@ -26,70 +41,158 @@ const apiTags = [
   },
 ];
 
-async function setAuthCookie(auth: any, jwt: any, userId: string) {
+// Konversi waktu dari string ke angka
+function cookieAgeConverter(input: string) {
+  const match = input.match(/^(\d+)([smhd])$/); // Regex untuk memisahkan angka dan satuan
+  if (!match)
+    throw new Error(
+      "Format waktu tidak valid. Gunakan format seperti '30m', '1h', dll."
+    );
+
+  const value = parseInt(match[1], 10); // Angka
+  const unit = match[2]; // Satuan
+
+  switch (unit) {
+    case "s": // Detik
+      return value;
+    case "m": // Menit
+      return value * 60;
+    case "h": // Jam
+      return value * 60 * 60;
+    case "d": // Hari
+      return value * 60 * 60 * 24;
+    default:
+      throw new Error(
+        "Satuan waktu tidak valid. Gunakan 's', 'm', 'h', atau 'd'."
+      );
+  }
+}
+
+// Fungsi untuk membuat cookie user
+async function setAuthCookie(
+  cookie: any,
+  jwt: any,
+  userId: string,
+  refreshToken: string
+) {
   const value = await jwt.sign({
     sub: userId,
     iat: Math.floor(Date.now() / 1000),
     type: "access",
   });
 
-  auth.set({
+  // Set access token
+  cookie.access_token.set({
     value,
     httpOnly: true,
-    sameSite: Bun.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
-    secure: Bun.env.USE_SECURE_COOKIE === "true" ? true : false,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: cookieAgeConverter(process.env.ACCESS_TOKEN_AGE!),
+  });
+
+  // Set refresh token
+  cookie.refresh_token.set({
+    value: refreshToken,
+    httpOnly: true,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
+    path: "/",
+    maxAge: cookieAgeConverter(process.env.REFRESH_TOKEN_AGE!), // misal 7d
   });
 }
 
-function clearAuthCookie(auth: any) {
-  auth.set({
+// Fungsi untuk menghapus cookie user
+function clearAuthCookie(cookie: any) {
+  // Hapus access token
+  cookie.access_token.set({
     value: "",
     httpOnly: true,
-    sameSite: Bun.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
-    secure: Bun.env.USE_SECURE_COOKIE === "true" ? true : false,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
+    path: "/",
+    maxAge: 0,
+  });
+
+  // Hapus refresh token
+  cookie.refresh_token.set({
+    value: "",
+    httpOnly: true,
+    sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+    secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
     maxAge: 0,
   });
 }
 
-async function renewToken(decoded: any) {
+// Fungsi untuk request token baru
+async function renewToken(decoded: any, cookie: any) {
   const response = await fetch(
-    `http://localhost:7600/auth/renew/${decoded.sub}`
+    `${process.env.BACKEND_URL}/auth/renew/${decoded.sub}`,
+    {
+      headers: {
+        cookie: `refresh_token=${cookie.refresh_token?.value}`,
+      },
+    }
   );
-  const { accessToken } = await response.json();
+  const result = await response.json();
 
-  if (!accessToken) {
+  if (!result.accessToken) {
     throw new Error("Gagal memperbarui access token.");
   }
-  return { accessToken };
+  return { accessToken: result.accessToken };
 }
 
-async function authorizeRequest(jwt: any, auth: any) {
+// Fungsi untuk verify token jwt
+async function authorizeRequest(jwt: any, cookie: any) {
   try {
-    let token = auth?.value;
-    if (!token) throw new Error("Token tidak ditemukan di cookie");
+    const accessToken = cookie.access_token?.value;
+    const refreshToken = cookie.refresh_token?.value;
     let decoded;
-    try {
-      decoded = await jwt.verify(token);
+
+    // 1. Jika access token ada, coba verifikasi
+    if (accessToken) {
+      decoded = await jwt.verify(accessToken);
       if (!decoded) throw new Error("Token tidak valid");
       return decoded;
-    } catch (err: any) {
-      // Cek apakah token sudah expired
-      if (err?.message?.toLowerCase().includes("expired")) {
-        const { accessToken } = await renewToken(jwt.decode(token));
-        if (!accessToken) throw new Error("Gagal memperbarui access token.");
-        
-        auth.value = accessToken;
-        return await jwt.verify(accessToken);
-      }
-      throw err;
     }
+
+    // 2. Jika access token tidak ada/invalid, cek refresh token
+    if (!refreshToken) {
+      throw new Error("Token tidak ditemukan di cookie");
+    }
+
+    // 3. Verifikasi refresh token di database melalui endpoint renew
+    const decodedRefresh = await jwt.verify(refreshToken);
+    if (!decodedRefresh) throw new Error("Refresh token tidak valid");
+
+    // 4. Request access token baru
+    const { accessToken: newAccessToken } = await renewToken(decodedRefresh, cookie);
+    if (!newAccessToken) throw new Error("Gagal memperbarui access token.");
+
+    // 5. Set access token baru ke cookie
+    cookie.access_token.set({
+      value: newAccessToken,
+      httpOnly: true,
+      sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
+      secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
+      path: "/",
+      maxAge: cookieAgeConverter(process.env.ACCESS_TOKEN_AGE!),
+    });
+
+    decoded = await jwt.verify(newAccessToken);
+    return decoded;
   } catch (error: any) {
     console.error("❌ Terjadi kesalahan:", error);
     throw new Error(`Unauthorized. ${error.message}`);
   }
 }
 
-export { apiTags, authorizeRequest, setAuthCookie, clearAuthCookie, renewToken };
+export {
+  subDomain,
+  apiTags,
+  authorizeRequest,
+  setAuthCookie,
+  clearAuthCookie,
+  renewToken,
+};

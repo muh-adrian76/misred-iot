@@ -1,35 +1,83 @@
-import { Connection, ResultSetHeader } from "mysql2/promise";
+import { Pool, ResultSetHeader } from "mysql2/promise";
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+  created_at: Date | string;
+  last_login: Date | string | null;
+  phone: string | null;
+};
 
 export class UserService {
-  private db: Connection;
+  private db: Pool;
 
-  constructor(db: Connection) {
+  constructor(db: Pool) {
     this.db = db;
   }
 
   async getAllUsers() {
-    const [rows] = await this.db.query("SELECT * FROM users");
-    return rows;
+    try {
+      const [rows] = await this.db.query(
+        "SELECT id, name, email, created_at, last_login, phone FROM users"
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      throw new Error("Failed to fetch users");
+    }
   }
 
   async getUserById(id: string) {
-    const [rows] = await this.db.query("SELECT * FROM users WHERE id = ?", [id]);
-    return Array.isArray(rows) ? rows[0] : null;
+    try {
+      const [rows] = await this.db.query(
+        "SELECT id, name, email, created_at, last_login, phone FROM users WHERE id = ?",
+        [id]
+      );
+      const user = Array.isArray(rows) ? (rows[0] as User) : null;
+      if (user) {
+        // Convert date fields to ISO string if they are Date objects
+        if (user.created_at instanceof Date) {
+          user.created_at = user.created_at.toISOString();
+        }
+        if (user.last_login instanceof Date) {
+          user.last_login = user.last_login.toISOString();
+        }
+      }
+      return user;
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
+      throw new Error("Failed to fetch user");
+    }
   }
 
-  async updateUser(id: string, name: string, password: string) {
-    const [result] = await this.db.query<ResultSetHeader>(
-      "UPDATE users SET password=?, name=? WHERE id=?",
-      [password, name, id]
-    );
-    return result.affectedRows > 0;
+  async updateUser(id: string, name: string, phone: string | null) {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "UPDATE users SET name=?, phone=? WHERE id=?",
+        [name, phone, id]
+      );
+      if (result.affectedRows > 0) {
+        const updatedUser = await this.getUserById(id);
+        return updatedUser;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw new Error("Failed to update user");
+    }
   }
 
   async deleteUser(id: string) {
-    const [result] = await this.db.query<ResultSetHeader>(
-      "DELETE FROM users WHERE id = ?",
-      [id]
-    );
-    return result.affectedRows > 0;
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "DELETE FROM users WHERE id = ?",
+        [id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      throw new Error("Failed to delete user");
+    }
   }
 }

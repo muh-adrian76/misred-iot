@@ -1,5 +1,9 @@
 import { Elysia } from "elysia";
-import { authorizeRequest, clearAuthCookie, setAuthCookie } from "../../lib/utils";
+import {
+  authorizeRequest,
+  clearAuthCookie,
+  setAuthCookie,
+} from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import {
   getRefreshTokenSchema,
@@ -8,6 +12,8 @@ import {
   postLoginSchema,
   postLogoutSchema,
   postRegisterSchema,
+  postResetPasswordSchema,
+  postResetForgottenPasswordSchema,
 } from "./elysiaSchema";
 
 export function authRoutes(authService: AuthService) {
@@ -31,18 +37,32 @@ export function authRoutes(authService: AuthService) {
       .post(
         "/login",
         // @ts-ignore
-        async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.login(body, jwt, auth);
+        async ({ jwt, body, cookie }) => {
+          try {
+            const result = await authService.login(body);
 
-          if (result.status === 200) {
-            await setAuthCookie(auth, jwt, result.user?.id);
-            return new Response(JSON.stringify({ user: result.user }), {
-              status: 200,
+            if (
+              result.status === 200 &&
+              result.user?.id &&
+              result.refreshToken
+            ) {
+              await setAuthCookie(
+                cookie,
+                jwt,
+                result.user?.id,
+                result.refreshToken
+              );
+              return new Response(JSON.stringify({ user: result.user }), {
+                status: 200,
+              });
+            }
+            return new Response(JSON.stringify({ message: result.message }), {
+              status: result.status,
             });
+          } catch (error) {
+            console.error(error); // Show error in console
+            return { status: 500, message: "Terjadi kesalahan pada server." };
           }
-          return new Response(JSON.stringify({ message: result.message }), {
-            status: result.status,
-          });
         },
         postLoginSchema
       )
@@ -51,12 +71,8 @@ export function authRoutes(authService: AuthService) {
       .get(
         "/verify-token",
         // @ts-ignore
-        async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.verifyToken(
-            jwt,
-            auth,
-            authorizeRequest
-          );
+        async ({ jwt, cookie }) => {
+          const result = await authService.verifyToken(jwt, cookie);
           return new Response(
             JSON.stringify(
               result ?? {
@@ -74,8 +90,13 @@ export function authRoutes(authService: AuthService) {
       .get(
         "/renew/:id",
         // @ts-ignore
-        async ({ jwt, params }) => {
-          const result = await authService.renewToken(jwt, params.id);
+        async ({ jwt, params, cookie }) => {
+          const refreshTokenFromCookie = cookie.refresh_token?.value;
+          const result = await authService.renewToken(
+            jwt,
+            params.id,
+            refreshTokenFromCookie
+          );
           return new Response(JSON.stringify(result), {
             status: result.status,
           });
@@ -83,39 +104,91 @@ export function authRoutes(authService: AuthService) {
         getRefreshTokenSchema
       )
 
+      // Google OAuth
+      .post(
+        "/google",
+        // @ts-ignore
+        async ({ jwt, body, cookie }) => {
+          try {
+            const result = await authService.googleLogin(body);
+
+            if (
+              result.status === 200 &&
+              result.user?.id &&
+              result.refreshToken
+            ) {
+              await setAuthCookie(
+                cookie,
+                jwt,
+                result.user.id,
+                result.refreshToken
+              );
+              return new Response(JSON.stringify({ user: result.user }), {
+                status: 200,
+              });
+            }
+            return new Response(JSON.stringify({ message: result.message }), {
+              status: result.status,
+            });
+          } catch (error) {
+            console.error(error); // Show error in console
+            return { status: 500, message: "Terjadi kesalahan pada server." };
+          }
+        },
+        postGoogleLoginSchema
+      )
+
+      // Reset-forgotten-password
+      .put(
+        "/reset-forgotten-password",
+        // @ts-ignore
+        async ({ body }: any) => {
+          const result = await authService.resetForgottenPassword(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        postResetForgottenPasswordSchema
+      )
+
+      // Reset-password
+      .put(
+        "/reset-password",
+        // @ts-ignore
+        async ({ jwt, cookie, body }: any) => {
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            if (!decoded) {
+              return new Response(JSON.stringify({ message: "Unauthorized" }), {
+                status: 401,
+              });
+            }
+            const result = await authService.resetPassword(decoded.sub, body);
+            return new Response(JSON.stringify(result), {
+              status: result.status,
+            });
+          } catch (error) {
+            return new Response(JSON.stringify({ message: "Unauthorized" }), {
+              status: 401,
+            });
+          }
+        },
+        postResetPasswordSchema
+      )
+
       // Logout
       .post(
         "/logout",
         // @ts-ignore
-        async ({ jwt, cookie: { auth } }) => {
-          const result = await authService.logout(jwt, auth, authorizeRequest);
-          clearAuthCookie(auth);
-          
+        async ({ jwt, cookie }) => {
+          const result = await authService.logout(jwt, cookie);
+          clearAuthCookie(cookie);
+
           return new Response(JSON.stringify(result), {
             status: result.status,
           });
         },
         postLogoutSchema
-      )
-
-      // Google OAuth
-      .post(
-        "/google",
-        // @ts-ignore
-        async ({ jwt, body, cookie: { auth } }) => {
-          const result = await authService.googleLogin(body, jwt, auth);
-
-          if (result.status === 200 && result.user?.id) {
-          await setAuthCookie(auth, jwt, result.user.id);
-            return new Response(JSON.stringify({ user: result.user }), {
-              status: 200,
-            });
-          }
-          return new Response(JSON.stringify({ message: result.message }), {
-            status: result.status,
-          });
-        },
-        postGoogleLoginSchema
       )
   );
 }

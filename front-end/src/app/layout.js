@@ -1,11 +1,15 @@
-import { JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Public_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "next-themes";
-import { UserProvider } from "@/contexts/user-context";
+import { ViewTransitions } from "next-view-transitions";
 
-const defaultFont = JetBrains_Mono({
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { UserProvider } from "@/providers/user-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
+import LoadingProviders from "@/providers/loading-provider";
+import { brandLogo } from "@/lib/helper";
+
+const defaultFont = Public_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -19,25 +23,40 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
-      <html lang="en" suppressHydrationWarning>
-        <head>
-          <link rel="icon" href="/misred-logo-red.svg" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <meta name="description" content="MiSREd-IoT Platform" />
-          <meta
-            name="format-detection"
-            content="telephone=no, date=no, email=no, address=no"
-          />
-        </head>
-        <body className={`${defaultFont.variable} antialiased`}>
-          <UserProvider>
-            <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-              {children}
-            </ThemeProvider>
-          </UserProvider>
-          <Toaster richColors />
-        </body>
-      </html>
+      <ViewTransitions>
+        <html lang="en" suppressHydrationWarning>
+          <head>
+            <link rel="icon" href={brandLogo} />
+            <meta
+              name="viewport"
+              content="width=device-width, initial-scale=1"
+            />
+            <meta name="description" content="MiSREd-IoT Platform" />
+            <meta
+              name="format-detection"
+              content="telephone=no, date=no, email=no, address=no"
+            />
+          </head>
+          <body className={`${defaultFont.variable} antialiased`}>
+            <LoadingProviders>
+              <UserProvider>
+                <ThemeProvider
+                  attribute="class"
+                  defaultTheme="system"
+                  enableSystem
+                >
+                  {children}
+                </ThemeProvider>
+              </UserProvider>
+            </LoadingProviders>
+            <Toaster
+              className="text-pretty"
+              duration={3500}
+              position="top-center"
+            />
+          </body>
+        </html>
+      </ViewTransitions>
     </GoogleOAuthProvider>
   );
 }

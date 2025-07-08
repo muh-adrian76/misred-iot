@@ -1,4 +1,4 @@
-const { fontFamily } = require("tailwindcss/defaultTheme")
+const { fontFamily } = require("tailwindcss/defaultTheme");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -29,6 +29,7 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          focus: "hsl(var(--primary-focus))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -69,10 +70,10 @@ module.exports = {
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
+        "accordion-down": "accordion-down 1s ease-out",
+        "accordion-up": "accordion-up 1s ease-out",
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};

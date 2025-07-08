@@ -1,0 +1,26 @@
+{
+  "name": "misred-iot",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "pm2": "pm2",
+    "pm2:frontend": "pm2 start npm --name misred-frontend -- run start --prefix ./front-end --watch",
+    "pm2:frontend-dev": "pm2 start npm --name misred-frontend-dev -- run dev --prefix ./front-end",
+    "pm2:backend": "pm2 start bun --name misred-backend -- run --cwd back-end dev-bun --watch",
+    "pm2:restart": "pm2 restart all",
+    "pm2:stop": "pm2 stop all",
+    "pm2:start": "pm2 start all",
+    "pm2:logs": "pm2 logs",
+    "build": "npm --prefix ./front-end run build",
+    "build-bun": "bun run --cwd front-end build-bun",
+    "truncate": "npm --prefix ./back-end run truncate",
+    "truncate-bun": "bun run --cwd back-end truncate-bun",
+    "reset-db": "npm --prefix ./back-end run reset-db",
+    "reset-db-bun": "bun run --cwd back-end reset-db-bun",
+    "publisher": "npm --prefix ./back-end run publisher",
+    "publisher-bun": "bun run  --cwd back-end publisher-bun"
+  },
+  "dependencies": {
+    "pm2": "^6.0.8"
+  }
+}

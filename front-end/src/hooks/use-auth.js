@@ -2,18 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { fetchFromBackend } from "@/lib/helper";
 
 const verifyToken = async (router) => {
-  const res = await fetch("http://localhost:7600/auth/verify-token", {
+  const res = await fetchFromBackend("/auth/verify-token", {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
   });
 
   if (!res.ok) {
-    router.push("/login");
+    router.push("/401");
     return false;
   }
 

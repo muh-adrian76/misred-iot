@@ -1,0 +1,106 @@
+## Default
+- None
+
+## Length, Distance
+- Inch, in
+- Foot, ft
+- Yard, yd
+- Mile, mi
+- Square Feet, sq ft
+- Millimeter, mm
+- Centimeter, cm
+- Meter, m
+- Square Meter, m²
+- Kilometer, km
+
+## Mass
+- Ounce, oz
+- Pound, lb
+- Stone, st
+- Quarter, qrt
+- Hundredweight, cwt
+- Ton, t
+- Milligram, mg
+- Gram, g
+- Kilogram, kg
+
+## Duration
+- Year(s), yr
+- Quarter, qrt
+- Month(s), mo
+- Week(s), wk
+- Day(s), d
+- Hour(s), hr
+- Minute(s), min
+- Second(s), s
+- Millisecond, ms
+- Millisecond, msec
+
+## Volume
+- Pint, pt
+- Gallon, gal
+- Cubic Yard, yd³
+- Liter, l
+- Milliliter, ml
+- Cubic Meter, m³
+
+## Temperature
+- Celsius, °C
+- Fahrenheit, °F
+- Kelvin, K
+
+## Speed
+- Kilometer Per Hour, km/h
+- Millimeter Per Hour, mm/h
+- Inches Per Hour, in/h
+- Cubic Meters Per Hour, m3/h
+- Mile Per Hour, mi/h
+- Mile Per Hour, mph
+- Meter Per Second, m/s
+
+## Data Volume
+- Kilo Bytes, kb
+- Mega Bytes, mb
+- Giga Bytes, gb
+
+## Electricity
+- Volt, V
+- Ampere, A
+- Milliampere, mA
+- Microampere, uA
+- Ohm, Ohm
+- Hertz, Hz
+- Watts, W
+- Watt hour, Wh
+- Kilowatts, kW
+- Kilowatt Hour, kWh
+- Farad, F
+- Siemen, S
+- Henry, H
+
+## Other
+- Percentage, %
+- RPM, rpm
+- Degrees, °
+- Gram Per Square Meter, g/m²
+- Millilitter Per Square Meter, ml/m²
+- Cubic Centimeters Per Minute, ccm
+- Cubic Feet Per Minute, cfm
+- Liter Per Square Meter, l/m²
+- Liters Per Second, l/s
+- Signal Strength, dBm
+- Volume Flow, l/min
+- Pound Per Square Inch, lbf/in²
+- Pound Per Square Inch, psi
+- Microgram Per Cubic Meter, ug/m³
+- Milligram Per Cubic Meter, mg/m³
+- Parts Per Million, ppm
+- Parts Per Billion, ppb
+- Hectopascal, hPa
+- Lux, lx
+- Pascal, Pa
+- Kilopascal, kPa
+- Pressure, kg/m²
+- Pressure, bar
+- Air Quality Index, AQI
+- Degree day(s), DD

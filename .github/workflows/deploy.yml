@@ -1,0 +1,32 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Remote VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASS }}
+          port: 8288
+          script: |
+            cd ./misred-iot
+            git pull origin main
+            if [ ! -f "$HOME/.bun/bin/bun" ]; then
+              curl -fsSL https://bun.sh/install | bash
+            fi
+
+            export BUN_INSTALL="$HOME/.bun"
+            export PATH="$BUN_INSTALL/bin:$PATH"
+            bun install
+            bun run build-bun
+            bun run pm2:restart

@@ -103,7 +103,7 @@ const getAllDevicesSchema = {
                   description: "Profil LoRa jika menggunakan LoRa",
                   example: "Profil LoRa 1",
                 }),
-                refresh_token: t.String({
+                aes_key: t.String({
                   description: "Token refresh perangkat",
                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 }),
@@ -156,7 +156,7 @@ const getDeviceByIdSchema = {
                   description: "Profil LoRa jika menggunakan LoRa",
                   example: "LoRaProfile1",
                 }),
-                refresh_token: t.String({
+                aes_key: t.String({
                   description: "Token refresh perangkat",
                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                 }),

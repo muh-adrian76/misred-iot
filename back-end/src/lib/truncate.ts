@@ -2,6 +2,7 @@ import { MySQLDatabase } from "./middleware";
 
 const db = await MySQLDatabase.getInstance();
 
+// Fungsi untuk mereset tabel pada database secara manual
 async function truncateTable(tableName: string) {
   try {
     await db.query("SET FOREIGN_KEY_CHECKS = 0");

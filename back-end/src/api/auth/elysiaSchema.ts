@@ -15,20 +15,20 @@ const postRegisterSchema = {
       {
         message: t.String({
           description: "Pesan hasil registrasi",
-          example: "User berhasil terdaftar",
+          example: "Pengguna berhasil terdaftar",
         }),
         id: t.String({
-          description: "ID user UUID yang baru terdaftar",
+          description: "ID Pengguna UUID yang baru terdaftar",
           example: "b3b1c2d3-4e5f-6789-abcd-ef0123456789",
         }),
       },
-      { description: "User berhasil terdaftar" }
+      { description: "Pengguna berhasil terdaftar" }
     ),
     400: t.Object(
       {
         message: t.String({
           description: "Pesan error jika email tidak valid/duplicate",
-          example: "Email tidak valid. Gagal menambahkan user.",
+          example: "Email tidak valid. Gagal menambahkan Pengguna.",
         }),
       },
       { description: "Email tidak valid" }
@@ -36,7 +36,7 @@ const postRegisterSchema = {
   },
   detail: {
     tags: ["Auth"],
-    description: "Mendaftarkan user baru dengan UUID",
+    description: "Mendaftarkan Pengguna baru dengan UUID",
     summary: "Register",
   },
 };
@@ -58,12 +58,16 @@ const postLoginSchema = {
           {
             id: t.String({ description: "ID pengguna", example: "1" }),
             name: t.String({
-              description: "Nama sementara yang diambil dari email",
-              example: "contoh",
-            }),
+            description: "Nama pengguna",
+            example: "contoh",
+          }),
             email: t.String({
               description: "Email pengguna",
               example: "contoh@gmail.com",
+            }),
+            created_at: t.String({
+              description: "Waktu pembuatan akun",
+              example: "2023-09-01T12:00:00Z",
             }),
             last_login: t.String({
               description: "Waktu terakhir login",
@@ -87,7 +91,7 @@ const postLoginSchema = {
   },
   detail: {
     tags: ["Auth"],
-    description: "Memulai sesi user",
+    description: "Memulai sesi Pengguna",
     summary: "Login",
   },
 };
@@ -99,7 +103,7 @@ const postLogoutSchema = {
       {
         message: t.String({
           description: "Pesan setelah berhasil logout",
-          example: "User berhasil logout",
+          example: "Pengguna berhasil logout",
         }),
       },
       { description: "Logout berhasil" }
@@ -116,7 +120,7 @@ const postLogoutSchema = {
   },
   detail: {
     tags: ["Auth"],
-    description: "Menghapus sesi user",
+    description: "Menghapus sesi Pengguna",
     summary: "Logout",
   },
 };
@@ -194,6 +198,7 @@ const postGoogleLoginSchema = {
   type: "json",
   body: t.Object({
     code: t.String({ description: "Google OAuth code" }),
+    mode: t.String({ description: "Mode Google Login" }),
   }),
   response: {
     200: t.Object(
@@ -234,6 +239,85 @@ const postGoogleLoginSchema = {
   },
 };
 
+const postResetForgottenPasswordSchema = {
+  type: "json",
+  body: t.Object({
+    email: t.String({
+      description: "Email pengguna untuk reset password",
+      example: "contoh@gmail.com",
+    })
+  }),
+  response: {
+    200: t.Object(
+      {
+        message: t.String({
+          description: "Pesan setelah berhasil mengubah password",
+          example: "Password berhasil diperbarui",
+        }),
+
+        password: t.String({
+          description: "Password baru yang dihasilkan",
+          example: "contohpasswordbaru123",
+        }),
+      },
+      { description: "Berhasil mengubah password" }
+    ),
+    400: t.Object(
+      {
+        message: t.String({
+          description: "Email tidak ditemukan atau tidak valid",
+          example: "Email tidak ditemukan. Gagal mengubah password.",
+        }),
+      },
+      { description: "Gagal mengubah password" }
+    ),
+  },
+  detail: {
+    tags: ["Auth"],
+    description: "Mengubah password pengguna yang sudah terautentikasi",
+    summary: "Forgot Password",
+  },
+}
+
+const postResetPasswordSchema = {
+  type: "json",
+  body: t.Object({
+    oldPassword: t.String({
+      description: "Password lama pengguna",
+      example: "contohpasswordlama123",
+    }),
+    newPassword: t.String({
+      description: "Password baru pengguna",
+      example: "contohpasswordbaru123",
+    }),
+  }),
+  response: {
+    200: t.Object(
+      {
+        message: t.String({
+          description: "Pesan setelah berhasil mengubah password",
+          example: "Password berhasil diperbarui",
+        }),
+      },
+      { description: "Berhasil mengubah password" }
+    ),
+    400: t.Object(
+      {
+        message: t.String({
+          description: "Pesan error jika password lama salah",
+          example: "Password lama salah. Gagal mengubah password.",
+        }),
+      },
+      { description: "Gagal mengubah password" }
+    ),
+  },
+  detail: {
+    tags: ["Auth"],
+    description: "Mengubah password pengguna yang sudah terautentikasi",
+    summary: "Reset Password",
+  },
+}
+
 export {
   postRegisterSchema,
   postLoginSchema,
@@ -241,4 +325,6 @@ export {
   getVerifyTokenSchema,
   getRefreshTokenSchema,
   postGoogleLoginSchema,
+  postResetForgottenPasswordSchema,
+  postResetPasswordSchema,
 };

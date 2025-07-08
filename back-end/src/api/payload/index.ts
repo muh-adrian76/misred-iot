@@ -13,8 +13,8 @@ export function payloadRoutes(payloadService: PayloadService) {
   .post(
       "/",
       // @ts-ignore
-      async ({ jwt, cookie: { auth }, body }) => {
-        await authorizeRequest(jwt, auth);
+      async ({ jwt, cookie, body }) => {
+        await authorizeRequest(jwt, cookie);
 
         const { device_id, ph, cod, tss, nh3n, flow } = body;
         const insertId = await payloadService.saveHttpPayload({
@@ -37,8 +37,8 @@ export function payloadRoutes(payloadService: PayloadService) {
   .get(
       "/all",
       // @ts-ignore
-      async ({ jwt, cookie: { auth } }) => {
-        await authorizeRequest(jwt, auth);
+      async ({ jwt, cookie }) => {
+        await authorizeRequest(jwt, cookie);
         const data = await payloadService.getAll();
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },
@@ -49,8 +49,8 @@ export function payloadRoutes(payloadService: PayloadService) {
   .get(
       "/:device_id",
       // @ts-ignore
-      async ({ jwt, cookie: { auth }, params }) => {
-        await authorizeRequest(jwt, auth);
+      async ({ jwt, cookie, params }) => {
+        await authorizeRequest(jwt, cookie);
         const data = await payloadService.getByDeviceId(params.device_id);
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },

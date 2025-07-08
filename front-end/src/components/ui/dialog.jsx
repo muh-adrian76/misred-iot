@@ -49,7 +49,7 @@ function DialogContent({
   className,
   children,
   description,
-  showCloseButton = true,
+  showCloseButton = false,
   ...props
 }) {
   const descriptionId = React.useId(); // generate unique id
@@ -96,7 +96,7 @@ function DialogHeader({
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("flex flex-col gap-2 text-center", className)}
       {...props} />
   );
 }
@@ -108,7 +108,7 @@ function DialogFooter({
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      className={cn("flex flex-col gap-2 sm:flex-row justify-center", className)}
       {...props} />
   );
 }

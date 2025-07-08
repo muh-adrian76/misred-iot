@@ -1,0 +1,106 @@
+## Default
+- Tidak Ada
+
+## Panjang, Jarak
+- Inci, in
+- Kaki, ft
+- Yard, yd
+- Mil, mi
+- Kaki Persegi, sq ft
+- Milimeter, mm
+- Sentimeter, cm
+- Meter, m
+- Meter Persegi, m²
+- Kilometer, km
+
+## Massa
+- Ons, oz
+- Pon, lb
+- Stone, st
+- Quarter, qrt
+- Hundredweight, cwt
+- Ton, t
+- Miligram, mg
+- Gram, g
+- Kilogram, kg
+
+## Durasi
+- Tahun, yr
+- Kuartal, qrt
+- Bulan, mo
+- Minggu, wk
+- Hari, d
+- Jam, hr
+- Menit, min
+- Detik, s
+- Milidetik, ms
+- Milidetik, msec
+
+## Volume
+- Pint, pt
+- Galon, gal
+- Yard Kubik, yd³
+- Liter, l
+- Mililiter, ml
+- Meter Kubik, m³
+
+## Suhu
+- Celsius, °C
+- Fahrenheit, °F
+- Kelvin, K
+
+## Kecepatan
+- Kilometer Per Jam, km/h
+- Milimeter Per Jam, mm/h
+- Inci Per Jam, in/h
+- Meter Kubik Per Jam, m3/h
+- Mil Per Jam, mi/h
+- Mil Per Jam, mph
+- Meter Per Detik, m/s
+
+## Volume Data
+- Kilo Bytes, kb
+- Mega Bytes, mb
+- Giga Bytes, gb
+
+## Listrik
+- Volt, V
+- Ampere, A
+- Miliampere, mA
+- Mikroampere, uA
+- Ohm, Ohm
+- Hertz, Hz
+- Watt, W
+- Watt Jam, Wh
+- Kilowatt, kW
+- Kilowatt Jam, kWh
+- Farad, F
+- Siemen, S
+- Henry, H
+
+## Lainnya
+- Persentase, %
+- RPM, rpm
+- Derajat, °
+- Gram Per Meter Persegi, g/m²
+- Mililiter Per Meter Persegi, ml/m²
+- Sentimeter Kubik Per Menit, ccm
+- Kaki Kubik Per Menit, cfm
+- Liter Per Meter Persegi, l/m²
+- Liter Per Detik, l/s
+- Desibel miliWatt, dBm
+- Aliran Volume, l/min
+- Pon Per Inci Persegi, lbf/in²
+- Pon Per Inci Persegi, psi
+- Mikrogram Per Meter Kubik, ug/m³
+- Miligram Per Meter Kubik, mg/m³
+- Parts Per Million, ppm
+- Parts Per Billion, ppb
+- Hectopascal, hPa
+- Lux, lx
+- Pascal, Pa
+- Kilopascal, kPa
+- Kilogram per Meter Kuadrat, kg/m²
+- Tekanan, bar
+- Indeks Kualitas Udara, AQI
+- Hari Derajat, DD

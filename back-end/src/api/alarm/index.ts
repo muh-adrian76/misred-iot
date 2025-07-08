@@ -18,7 +18,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/",
       //@ts-ignore
       async ({ jwt, cookie, body }) => {
-        await authorizeRequest(jwt, cookie.auth);
+        const decoded = await authorizeRequest(jwt, cookie);
         const { name, device_id, operator, threshold, sensor } = body;
         const insertId = await alarmService.createAlarm({ name, device_id, operator, threshold, sensor });
         return new Response(
@@ -37,7 +37,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/all",
       //@ts-ignore
       async ({ jwt, cookie }) => {
-        await authorizeRequest(jwt, cookie.auth);
+        await authorizeRequest(jwt, cookie);
         const data = await alarmService.getAllAlarms();
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },
@@ -49,7 +49,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/:device_id",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie.auth);
+        await authorizeRequest(jwt, cookie);
         const data = await alarmService.getAlarmsByDeviceId(params.device_id);
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },
@@ -61,7 +61,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/:id",
       //@ts-ignore
       async ({ jwt, cookie, params, body }) => {
-        await authorizeRequest(jwt, cookie.auth);
+        await authorizeRequest(jwt, cookie);
         const updated = await alarmService.updateAlarm(params.id, body);
         if (!updated) {
           return new Response("Gagal mengupdate data alarm.", { status: 400 });
@@ -82,7 +82,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/:id",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie.auth);
+        await authorizeRequest(jwt, cookie);
         const deleted = await alarmService.deleteAlarm(params.id);
         if (!deleted) {
           return new Response("Gagal menghapus data alarm.", { status: 400 });
