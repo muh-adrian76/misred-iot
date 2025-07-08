@@ -206,6 +206,43 @@ const putWidgetSchema = {
   },
 };
 
+const putWidgetLayoutSchema = {
+  type: "json",
+  body: t.Object({
+    layout: t.Object({
+      x: t.Number({ description: "Posisi X grid", example: 0 }),
+      y: t.Number({ description: "Posisi Y grid", example: 0 }),
+      w: t.Number({ description: "Lebar grid", example: 4 }),
+      h: t.Number({ description: "Tinggi grid", example: 4 }),
+    }),
+  }),
+  response: {
+    200: t.Object(
+      {
+        message: t.String({
+          description: "Pesan sukses setelah berhasil mengupdate layout widget",
+          example: "Berhasil mengupdate layout widget.",
+        }),
+      },
+      { description: "Layout widget berhasil diperbarui" }
+    ),
+    400: t.Object(
+      {
+        message: t.String({
+          description: "Pesan error jika gagal mengupdate layout widget",
+          example: "Gagal mengupdate layout widget.",
+        }),
+      },
+      { description: "Gagal mengupdate layout widget" }
+    ),
+  },
+  detail: {
+    tags: ["Widget"],
+    description: "Mengupdate hanya layout widget berdasarkan ID",
+    summary: "Update widget layout only",
+  },
+};
+
 const deleteWidgetSchema = {
   type: "json",
   response: {
@@ -240,5 +277,6 @@ export {
   getAllWidgetsSchema,
   getWidgetByDeviceIdSchema,
   putWidgetSchema,
+  putWidgetLayoutSchema,
   deleteWidgetSchema,
 };

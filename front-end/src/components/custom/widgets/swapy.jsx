@@ -26,20 +26,13 @@ export default function SwapyDragArea({
   layouts,
   setLayouts,
   onChartDrop,
+  onLayoutSave,
 }) {
   const handleAddWidget = (e) => {
     e.preventDefault();
     const chartType = e.dataTransfer.getData("chartType");
-    if (chartType) {
-      const id = `${chartType}-${Date.now()}`;
-      const defaultLayoutItem = {
-        i: id,
-        x: (items.length * 2) % 12,
-        y: Infinity,
-        w: 8,
-        h: 8,
-      };
-      if (onChartDrop) onChartDrop(chartType, defaultLayoutItem);
+    if (chartType && onChartDrop) {
+      onChartDrop(chartType);
     }
   };
 
@@ -60,6 +53,10 @@ export default function SwapyDragArea({
 
   const onLayoutChange = (layout, allLayouts) => {
     setLayouts(allLayouts);
+    if (onLayoutSave) {
+      // Kirim layout terbaru ke backend
+      onLayoutSave(layout);
+    }
   };
 
   return (
@@ -79,6 +76,7 @@ export default function SwapyDragArea({
         cols={{ lg: 12, md: 8, sm: 4 }}
         rowHeight={100}
         margin={[16, 16]}
+        isBounded={true}
         isResizable={true}
         isDraggable={true}
         draggableHandle=".drag-handle"

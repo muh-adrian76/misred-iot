@@ -11,6 +11,8 @@ export default function DashboardHeader(props) {
     activeTab,
     setActiveTab,
     isMobile,
+    isTablet,
+    isDesktop,
     isEditing,
     editDashboardValue,
     setEditDashboardValue,
@@ -77,7 +79,7 @@ export default function DashboardHeader(props) {
           {isMobile ? null : <span className="ml-1">Dashboard</span>}
         </Button>
       </div>
-      {isMobile ? (
+      {isTablet || isMobile ? (
         <div className="fixed left-1/2 bottom-3 -translate-x-1/2 flex gap-2 bg-background/80 backdrop-blur-md shadow-lg rounded-xl px-2 py-2 z-50 border max-w-full w-fit">
           <DashboardToolbar
             dashboardState={dashboards.length === 0}

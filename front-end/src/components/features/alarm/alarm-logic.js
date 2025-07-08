@@ -4,8 +4,8 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { useAuth } from "@/hooks/use-auth";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
-export function useAlarmLogic(initialAlarms = []) {
-  const [alarms, setAlarms] = useState(initialAlarms);
+export function useAlarmLogic() {
+  const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [addFormOpen, setAddFormOpen] = useState(false);
@@ -99,6 +99,7 @@ export function useAlarmLogic(initialAlarms = []) {
     handleEditAlarm,
     handleDeleteAlarm,
     isMobile,
+    isAuthenticated,
     selectedRows,
     setSelectedRows,
   };

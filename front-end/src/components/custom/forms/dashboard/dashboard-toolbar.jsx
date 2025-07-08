@@ -50,7 +50,8 @@ export default function DashboardToolbar({
           <Button
             className="cursor-pointer"
             variant="outline"
-            disabled={widgetState}
+            // disabled={widgetState}
+            disabled={true}
           >
             <span className="sr-only">Filter</span>
             <CalendarSearch className="w-5 h-5" />
@@ -59,7 +60,8 @@ export default function DashboardToolbar({
           <Button
             className="cursor-pointer"
             variant="outline"
-            disabled={widgetState}
+            // disabled={widgetState}
+            disabled={true}
           >
             <span className="sr-only">Export</span>
             <Download className="w-5 h-5" />

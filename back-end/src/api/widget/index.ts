@@ -7,6 +7,7 @@ import {
   getAllWidgetsSchema,
   getWidgetByDeviceIdSchema,
   postWidgetSchema,
+  putWidgetLayoutSchema,
   putWidgetSchema,
 } from "./elysiaSchema";
 
@@ -97,6 +98,27 @@ export function widgetRoutes(widgetService: WidgetService) {
           );
         },
         putWidgetSchema
+      )
+
+      // UPDATE Widget Layout
+      .put(
+        "/:id/layout",
+        //@ts-ignore
+        async ({ jwt, cookie, params, body }) => {
+          await authorizeRequest(jwt, cookie);
+          // body: { layout: {x, y, w, h} }
+          const updated = await widgetService.updateWidgetLayout(params.id, body.layout);
+          if (!updated) {
+            return new Response("Gagal mengupdate layout widget.", {
+              status: 400,
+            });
+          }
+          return new Response(
+            JSON.stringify({ message: "Berhasil mengupdate layout widget." }),
+            { status: 200 }
+          );
+        },
+        putWidgetLayoutSchema
       )
 
       // DELETE Widget

@@ -5,9 +5,9 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 import unitOptions from "./unit.json";
 
-export function useDatastreamLogic(initialDatastreams = []) {
+export function useDatastreamLogic() {
   // Datastream state
-  const [datastreams, setDatastreams] = useState(initialDatastreams);
+  const [datastreams, setDatastreams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

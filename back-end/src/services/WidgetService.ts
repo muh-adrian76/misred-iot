@@ -91,6 +91,19 @@ export class WidgetService {
     }
   }
 
+  async updateWidgetLayout(id: string, layout: any) {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        `UPDATE widgets SET layout = ? WHERE id = ?`,
+        [JSON.stringify(layout), id]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating widget layout:", error);
+      throw new Error("Failed to update widget layout");
+    }
+  }
+
   async deleteWidget(id: string) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(

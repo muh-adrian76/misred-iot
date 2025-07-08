@@ -13,6 +13,9 @@ import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
 import { dashboardRoutes } from "./api/dashboard";
 import { datastreamRoutes } from "./api/datastream";
+import { userWsApi } from "./api/ws/user-ws";
+import { deviceWsApi } from "./api/ws/device-ws";
+
 
 import { AuthService } from "./services/AuthService";
 import { UserService } from "./services/UserService";
@@ -66,6 +69,10 @@ class Server {
       .use(dashboardRoutes(this.dashboardService))
       .use(datastreamRoutes(this.datastreamService))
 
+      // Websocket
+      .use(userWsApi)
+      .use(deviceWsApi)
+
       // Plugin
       .use(
         cors({
@@ -113,7 +120,7 @@ class Server {
       })
       .listen(
         {
-          hostname: "127.0.0.1",
+          hostname: "0.0.0.0",
           port: Number(process.env.BACKEND_PORT),
         },
         () => {

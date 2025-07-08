@@ -5,8 +5,8 @@ import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 
-export function useDeviceLogic(initialDevices = []) {
-  const [devices, setDevices] = useState(initialDevices);
+export function useDeviceLogic() {
+  const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

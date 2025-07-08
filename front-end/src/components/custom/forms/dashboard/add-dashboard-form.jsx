@@ -21,6 +21,8 @@ export default function AddDashboardDialog({ open, setOpen, onCreateDashboard })
       setName("");
       setOpen(false);
     } catch {
+      errorToast("Gagal membuat dashboard. Silakan coba lagi.");
+    } finally {
       setLoading(false);
     }
   };

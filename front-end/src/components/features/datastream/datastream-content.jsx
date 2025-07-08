@@ -105,20 +105,30 @@ export default function DatastreamContent({
   if (!loading && datastreams.length === 0) {
     return (
       <motion.div
-        className="flex items-center justify-center h-100"
+        className="flex items-center justify-center h-full"
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 50 }}
         transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
+          <motion.img
+            key="alarm-image"
+            src="/alarm.svg"
+            alt="No Alarms"
+            className="w-72 h-auto -mb-5 mt-[-50px]"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          />
           <h2 className="text-xl font-semibold">Datastream masih kosong</h2>
             <Button
               onClick={() => setAddFormOpen(true)}
               className="gap-2 transition-all"
             >
               <Plus className="w-4 h-4" />
-              Buat datastream
+              Buat Datastream
             </Button>
         </div>
       </motion.div>
