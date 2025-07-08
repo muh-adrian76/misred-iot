@@ -127,7 +127,7 @@ export default function DeviceContent({
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <motion.img
             key="alarm-image"
-            src="/alarm.svg"
+            src="/device.svg"
             alt="No Alarms"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}

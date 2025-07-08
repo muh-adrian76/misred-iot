@@ -42,6 +42,30 @@ export function useDeviceLogic() {
     if (isAuthenticated) fetchDevices();
   }, [isAuthenticated, fetchDevices]);
 
+  // Update device state
+  useEffect(() => {
+    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user`);
+    ws.onopen = () => {
+      console.log("WebSocket connected!");
+    };
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "status_update") {
+        console.log("Status update received:", data);
+        setDevices((prev) =>
+          prev.map((dev) =>
+            String(dev.id) === String(data.device_id)
+              ? { ...dev, status: data.status }
+              : dev
+          )
+        );
+      }
+      // Bisa tambahkan handler untuk sensor_update, dsb
+    };
+
+    return () => ws.close();
+  }, []);
+
   // CRUD Handler
   const handleAddDevice = async (payload) => {
     try {

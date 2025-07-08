@@ -71,7 +71,7 @@ class Server {
 
       // Websocket
       .use(userWsApi)
-      .use(deviceWsApi)
+      .use(deviceWsApi(this.deviceService))
 
       // Plugin
       .use(

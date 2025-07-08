@@ -7,6 +7,7 @@ import {
   deleteDeviceSchema,
   getAllDevicesSchema,
   getDeviceByIdSchema,
+  getDevicebySecretSchema,
   postDeviceSchema,
   putDeviceSchema,
 } from "./elysiaSchema";
@@ -75,6 +76,25 @@ export function deviceRoutes(deviceService: DeviceService) {
           });
         },
         getDeviceByIdSchema
+      )
+
+      // Get device by secret/key
+      .get(
+        "/secret/:secret",
+        //@ts-ignore
+        async ({ params }) => {
+          const data = await deviceService.getDeviceBySecret(params.secret);
+          if (!data) {
+            return new Response(
+              JSON.stringify({ message: "Device tidak ditemukan" }),
+              { status: 404 }
+            );
+          }
+          return new Response(JSON.stringify({ result: data }), {
+            status: 200,
+          });
+        },
+        getDevicebySecretSchema
       )
 
       // Update device

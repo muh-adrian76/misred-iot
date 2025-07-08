@@ -18,7 +18,6 @@ const widgetComponents = {
   pie: PieChartWidget,
 };
 
-
 export default function DashboardContent(props) {
   const {
     dashboards,
@@ -49,7 +48,7 @@ export default function DashboardContent(props) {
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <motion.img
             key="alarm-image"
-            src="/alarm.svg"
+            src="/widget.svg"
             alt="No Alarms"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}
@@ -94,7 +93,7 @@ export default function DashboardContent(props) {
           <div className="flex flex-col items-center text-center gap-4">
             <motion.img
               key="alarm-image"
-              src="/alarm.svg"
+              src="/widget.svg"
               alt="No Alarms"
               className="w-72 h-auto -mb-5 mt-[-50px]"
               initial={{ opacity: 0, scale: 0 }}
@@ -177,7 +176,6 @@ export default function DashboardContent(props) {
                 layouts={{ lg: tabLayouts[activeTab] || [] }}
                 setLayouts={(layouts) => setLayoutsForTab(layouts.lg || [])}
                 onChartDrop={handleChartDrop}
-                onLayoutSave={handleLayoutSave}
               />
             </motion.div>
           </div>

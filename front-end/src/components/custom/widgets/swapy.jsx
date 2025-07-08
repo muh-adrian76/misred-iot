@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { WidthProvider, Responsive } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -28,6 +29,23 @@ export default function SwapyDragArea({
   onChartDrop,
   onLayoutSave,
 }) {
+  const gridRef = useRef();
+
+  // Handler saat drop dari luar grid
+  const handleDrop = (layout, layoutItem, event) => {
+    // Ambil chartType dari dataTransfer
+    const chartType = event.dataTransfer.getData("chartType");
+    if (chartType && onChartDrop) {
+      layoutItem.w = 4;
+      layoutItem.h = 4;
+      layoutItem.minW = 3;
+      layoutItem.minH = 3;
+      layoutItem.maxW = 12;
+      layoutItem.maxH = 8;
+      onChartDrop(chartType, layoutItem);
+    }
+  };
+
   const handleAddWidget = (e) => {
     e.preventDefault();
     const chartType = e.dataTransfer.getData("chartType");
@@ -51,12 +69,8 @@ export default function SwapyDragArea({
     }
   };
 
-  const onLayoutChange = (layout, allLayouts) => {
+  const onLayoutChange = (allLayouts) => {
     setLayouts(allLayouts);
-    if (onLayoutSave) {
-      // Kirim layout terbaru ke backend
-      onLayoutSave(layout);
-    }
   };
 
   return (
@@ -72,12 +86,14 @@ export default function SwapyDragArea({
                   bg-[size:110px_55px]"
         layouts={layouts}
         onLayoutChange={onLayoutChange}
+        onDrop={handleDrop}
         breakpoints={{ lg: 1024, md: 768, sm: 480 }}
         cols={{ lg: 12, md: 8, sm: 4 }}
         rowHeight={100}
         margin={[16, 16]}
         isBounded={true}
         isResizable={true}
+        isDroppable={true}
         isDraggable={true}
         draggableHandle=".drag-handle"
       >

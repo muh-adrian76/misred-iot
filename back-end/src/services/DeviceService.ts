@@ -63,6 +63,18 @@ export class DeviceService {
     }
   }
 
+  async getDeviceBySecret(secret: string) {
+    try {
+      const [rows] = await this.db.query("SELECT id FROM devices WHERE `key` = ?", [
+        secret,
+      ]);
+      return rows;
+    } catch (error) {
+      console.error("Error fetching device by secret:", error);
+      throw new Error("Failed to fetch device by secret");
+    }
+  }
+
   async updateDevice(
     id: string,
     userId: string,
