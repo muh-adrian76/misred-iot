@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `widgets` (
   `dashboard_id` INT NOT NULL,
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
-  `chart_type` VARCHAR(32) NOT NULL,
+  `type` VARCHAR(32) NOT NULL,
   `layout` JSON NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`dashboard_id`) REFERENCES `dashboards` (`id`) ON DELETE CASCADE,

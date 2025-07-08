@@ -112,7 +112,7 @@ export default function DatastreamContent({
         transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
-          <h2 className="text-xl font-semibold">Tidak ada datastream</h2>
+          <h2 className="text-xl font-semibold">Datastream masih kosong</h2>
             <Button
               onClick={() => setAddFormOpen(true)}
               className="gap-2 transition-all"

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 import { fetchFromBackend } from "@/lib/helper";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 
@@ -27,7 +27,7 @@ export function useDashboardLogic() {
   const [datastreams, setDatastreams] = useState([]);
 
   // Hooks
-  const isMobile = useIsMobile(890);
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const isAuthenticated = useAuth();
 
   // Fetch dashboards
@@ -59,12 +59,34 @@ export function useDashboardLogic() {
     }
   }, []);
 
+  // Fetch device
+  const fetchDevices = useCallback(async () => {
+    try {
+      const res = await fetchFromBackend("/device", { method: "GET" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setDevices(data.result || []);
+    } catch {}
+  }, []);
+
+  // Fetch datastream
+  const fetchDatastreams = useCallback(async () => {
+    try {
+      const res = await fetchFromBackend("/datastream", { method: "GET" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setDatastreams(data.result || []);
+    } catch {}
+  }, []);
+
   // Fetch dashboards hanya saat login
   useEffect(() => {
     if (isAuthenticated) {
       fetchDashboards();
+      fetchDevices();
+      fetchDatastreams();
     }
-  }, [isAuthenticated, fetchDashboards]);
+  }, [isAuthenticated, fetchDashboards, fetchDevices, fetchDatastreams]);
 
   // Fetch widget count hanya saat tab aktif berubah atau dashboards berubah
   useEffect(() => {

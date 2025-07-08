@@ -1,12 +1,12 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 const SidebarOpenContext = createContext();
 
 export function SidebarOpenProvider({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false); // default: terbuka
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   useEffect(() => {
     if (isMobile) setSidebarOpen(false);

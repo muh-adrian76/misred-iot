@@ -1,7 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import { useSidebarOpen } from "@/providers/sidebar-provider";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 import AppSidebar from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -32,7 +32,7 @@ const menu = [
 export default function UserLayoutClient({ children }) {
   const { sidebarOpen, setSidebarOpen } = useSidebarOpen();
   const pathname = usePathname();
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const activeMenu = menu.find((item) => pathname.startsWith(item.url)) || {
     title: "Menu",
   };

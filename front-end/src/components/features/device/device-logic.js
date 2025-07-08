@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/providers/user-provider";
 import { useAuth } from "@/hooks/use-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 
@@ -21,7 +21,7 @@ export function useDeviceLogic(initialDevices = []) {
   const [selectedRows, setSelectedRows] = useState([]);
 
   const isAuthenticated = useAuth();
-  const isMobile = useIsMobile(650);
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Fetch devices milik user
   const fetchDevices = useCallback(async () => {

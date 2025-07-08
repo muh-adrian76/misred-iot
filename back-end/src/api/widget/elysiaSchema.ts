@@ -18,7 +18,7 @@ const postWidgetSchema = {
       description: "ID datastream yang terkait dengan widget",
       example: 1,
     }),
-    chart_type: t.String({ example: "line" }),
+    type: t.String({ example: "line" }),
     layout: t.Optional(t.Any()),
   }),
   response: {
@@ -176,7 +176,7 @@ const putWidgetSchema = {
       description: "ID datastream yang terkait dengan widget",
       example: 1,
     }),
-    chart_type: t.String({ example: "line" }),
+    type: t.String({ example: "line" }),
     layout: t.Optional(t.Any()),
   }),
   response: {

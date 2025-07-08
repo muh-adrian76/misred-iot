@@ -10,7 +10,7 @@ import { Plus } from "lucide-react";
 
 const widgetList = [
   { key: "switch", label: "Switch", component: SwitchWidget, height: "h-20" },
-  { key: "slider", label: "Slider", component: SliderWidget, height: "h-20" },
+  // { key: "slider", label: "Slider", component: SliderWidget, height: "h-20" },
   {
     key: "line",
     label: "Line Chart",
@@ -24,7 +24,7 @@ const widgetList = [
     component: AreaChartWidget,
     height: "h-40",
   },
-  { key: "pie", label: "Pie Chart", component: PieChartWidget, height: "h-40" },
+  // { key: "pie", label: "Pie Chart", component: PieChartWidget, height: "h-40" },
 ];
 
 export function ScrollContent({ onChartDrag, isMobile }) {

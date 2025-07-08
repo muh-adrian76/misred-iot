@@ -10,6 +10,23 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, Check } from "lucide-react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandItem,
+  CommandEmpty,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+import { Link } from "next-view-transitions";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function AddWidgetDialog({
   open,
@@ -26,6 +43,11 @@ export default function AddWidgetDialog({
     datastream_id: "",
   });
   const [loading, setLoading] = useState(false);
+
+  // Popover state for device selection
+  const [openDevicePopover, setOpenDevicePopover] = useState(false);
+
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Reset form saat dialog dibuka
   useEffect(() => {
@@ -46,6 +68,7 @@ export default function AddWidgetDialog({
     setForm((prev) => ({
       ...prev,
       [name]: value,
+      ...(name === "device_id" ? { datastream_id: "" } : {}), // reset datastream jika device berubah
     }));
   };
 
@@ -67,10 +90,24 @@ export default function AddWidgetDialog({
     }
   };
 
+  // Filter datastreams sesuai device yang dipilih
+  const filteredDatastreams = form.device_id
+    ? datastreams.filter(
+        (ds) => String(ds.device_id) === String(form.device_id)
+      )
+    : [];
+
   const formContent = (
     <div className="flex flex-col gap-4 py-2">
       {/* Deskripsi */}
       <div className="flex flex-col gap-2">
+        {/* Dashboard ID */}
+        <Input
+          id="dashboard_id"
+          type="hidden"
+          value={form.dashboard_id}
+          required
+        />
         <Label htmlFor="description" className="text-left ml-1 font-medium">
           Nama
         </Label>
@@ -83,52 +120,101 @@ export default function AddWidgetDialog({
           required
         />
       </div>
-      {/* Dashboard ID */}
-      <Input
-        id="dashboard_id"
-        type="hidden"
-        value={form.dashboard_id}
-        required
-      />
       {/* Device */}
-      <div className="flex flex-col gap-2">
-        <Label className="text-left ml-1 font-medium">Device</Label>
-        <Select
-          value={form.device_id}
-          onValueChange={(value) => handleSelectChange("device_id", value)}
-          required
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Pilih Device" />
-          </SelectTrigger>
-          <SelectContent>
-            {devices.map((device) => (
-              <SelectItem key={device.id} value={String(device.id)}>
-                {device.description}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {/* Datastream */}
-      <div className="flex flex-col gap-2">
-        <Label className="text-left ml-1 font-medium">Datastream</Label>
-        <Select
-          value={form.datastream_id}
-          onValueChange={(value) => handleSelectChange("datastream_id", value)}
-          required
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Pilih Datastream" />
-          </SelectTrigger>
-          <SelectContent>
-            {datastreams.map((ds) => (
-              <SelectItem key={ds.id} value={String(ds.id, ds.pin)}>
-                {`${ds.description} (Pin ${ds.pin})`}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <Label className="text-left ml-1 font-medium">Device</Label>
+          <Popover open={openDevicePopover} onOpenChange={setOpenDevicePopover}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openDevicePopover}
+                className="justify-between w-full"
+              >
+                <span className="truncate">
+                  {devices.find((d) => d.id === form.device_id)?.description ||
+                    devices.find((d) => d.id === form.device_id)?.name ||
+                    "Pilih Device"}
+                </span>
+                <ChevronDown className="ml-2 h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full" align="start">
+              <Command>
+                <CommandInput placeholder="Cari device..." />
+                <CommandList>
+                  <CommandEmpty>
+                    <Link
+                      href="/devices"
+                      className="opacity-50 transition-all hover:opacity-100"
+                    >
+                      Buat device baru
+                    </Link>
+                  </CommandEmpty>
+                  {devices.map((dev) => (
+                    <CommandItem
+                      key={dev.id}
+                      value={dev.id}
+                      onSelect={() => {
+                        handleSelectChange("device_id", dev.id);
+                        setOpenDevicePopover(false);
+                      }}
+                    >
+                      <span className="truncate">
+                        {dev.description || dev.name}
+                      </span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          form.device_id === dev.id
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        {/* Datastream */}
+        <div className="flex flex-col gap-2">
+          <Label className="text-left ml-1 font-medium">Datastream</Label>
+          <Select
+            value={form.datastream_id}
+            onValueChange={(value) =>
+              handleSelectChange("datastream_id", value)
+            }
+            required
+            disabled={!form.device_id}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Pilih Datastream" />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredDatastreams.length === 0 ? (
+                <div className="px-2 py-2 text-sm text-center">
+                  {form.device_id
+                    ? <Link
+                      href="/datastreams"
+                      className="opacity-50 transition-all hover:opacity-100"
+                    >
+                      Buat datastream baru
+                    </Link>
+                    : "Pilih device terlebih dahulu"}
+                </div>
+              ) : (
+                filteredDatastreams.map((ds) => (
+                  <SelectItem key={ds.id} value={String(ds.id)}>
+                    {`${ds.description} (Pin ${ds.pin})`}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );

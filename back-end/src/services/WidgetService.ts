@@ -12,18 +12,18 @@ export class WidgetService {
     dashboard_id,
     device_id,
     datastream_id,
-    chart_type,
+    type,
     layout,
   }: any) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        `INSERT INTO widgets (description, dashboard_id, device_id, datastream_id, chart_type, layout) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO widgets (description, dashboard_id, device_id, datastream_id, type, layout) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           description,
           dashboard_id,
           device_id,
           datastream_id,
-          chart_type,
+          type,
           JSON.stringify(layout),
         ]
       );
@@ -67,19 +67,19 @@ export class WidgetService {
       dashboard_id,
       device_id,
       datastream_id,
-      chart_type,
+      type,
       layout,
     }: any
   ) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        `UPDATE widgets SET description = ?, dashboard_id = ?, device_id = ?, datastream_id = ?, chart_type = ?, layout = ? WHERE id = ?`,
+        `UPDATE widgets SET description = ?, dashboard_id = ?, device_id = ?, datastream_id = ?, type = ?, layout = ? WHERE id = ?`,
         [
           description,
           dashboard_id,
           device_id,
           datastream_id,
-          chart_type,
+          type,
           JSON.stringify(layout),
           id,
         ]

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 import unitOptions from "./unit.json";
@@ -25,7 +25,7 @@ export function useDatastreamLogic(initialDatastreams = []) {
   const [selectedRows, setSelectedRows] = useState([]);
 
   const isAuthenticated = useAuth();
-  const isMobile = useIsMobile(650);
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Fetch datastreams
   const fetchDatastreams = useCallback(async () => {

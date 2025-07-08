@@ -25,7 +25,7 @@ export function widgetRoutes(widgetService: WidgetService) {
             dashboard_id,
             device_id,
             datastream_id,
-            chart_type,
+            type,
             layout,
           } = body;
           const insertId = await widgetService.createWidget({
@@ -33,7 +33,7 @@ export function widgetRoutes(widgetService: WidgetService) {
             dashboard_id,
             device_id,
             datastream_id,
-            chart_type,
+            type,
             layout,
           });
           return new Response(

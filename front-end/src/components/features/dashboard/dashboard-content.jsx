@@ -1,17 +1,16 @@
 import SwapyDragArea from "@/components/custom/widgets/swapy";
 import WidgetBox from "@/components/custom/widgets/widget-box";
 import { motion } from "framer-motion";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function DashboardContent(props) {
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   const {
     dashboards,
     isLoadingWidget,
     activeTab,
     widgetCount,
-    setIsEditing,
     tabItems,
     setItemsForTab,
     tabLayouts,
@@ -65,7 +64,7 @@ export default function DashboardContent(props) {
           className="flex items-center justify-center h-100"
         >
           <div className="flex flex-col items-center text-center gap-4">
-            <h3 className="text-lg font-semibold mx-10">Tidak ada widget</h3>
+            <h3 className="text-lg font-semibold mx-10">Widget masih kosong</h3>
             <p>
               Aktifkan mode <i>Edit</i> terlebih dahulu.
             </p>

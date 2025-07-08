@@ -3,7 +3,7 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { GoogleIcon } from "../icons/google";
 import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "../other/toaster";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function GoogleButton({
   router,
@@ -12,7 +12,7 @@ export default function GoogleButton({
   setIsLoading,
   setUser,
 }) {
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Google login handler
   const googleLogin = useGoogleLogin({

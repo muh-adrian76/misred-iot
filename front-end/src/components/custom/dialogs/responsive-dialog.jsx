@@ -19,7 +19,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function ResponsiveDialog({
   open,
@@ -33,7 +33,7 @@ export default function ResponsiveDialog({
   cancelText,
   loading = false,
 }) {
-  const isMobile = useIsMobile();
+  const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   if (isMobile) {
     return (
