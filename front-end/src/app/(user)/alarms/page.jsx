@@ -1,4 +1,5 @@
 import AlarmLayout from "./_layout";
+
 export const metadata = {
   title: "Alarms - MiSREd-IoT",
   description:
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function Page() {
-  return <AlarmLayout />;
+  return (
+    <div className="px-8 py-2 no-scrollbar overflow-y-auto h-full">
+      <AlarmLayout />
+    </div>
+  )
 };

@@ -1,10 +1,9 @@
-// routes/alarm.ts
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { AlarmService } from "../../services/AlarmService";
 import {
   deleteAlarmSchema,
-  getAlarmByDeviceIdSchema,
+  getAlarmByWidgetIdSchema,
   getAllAlarmsSchema,
   postAlarmSchema,
   putAlarmSchema,
@@ -19,8 +18,15 @@ export function alarmRoutes(alarmService: AlarmService) {
       //@ts-ignore
       async ({ jwt, cookie, body }) => {
         const decoded = await authorizeRequest(jwt, cookie);
-        const { name, device_id, operator, threshold, sensor } = body;
-        const insertId = await alarmService.createAlarm({ name, device_id, operator, threshold, sensor });
+        const { description, widget_id, operator, threshold } = body;
+        const user_id = decoded.sub;
+        const insertId = await alarmService.createAlarm({
+          description,
+          user_id,
+          widget_id,
+          operator,
+          threshold,
+        });
         return new Response(
           JSON.stringify({
             message: "Berhasil menambah data alarm",
@@ -32,28 +38,28 @@ export function alarmRoutes(alarmService: AlarmService) {
       postAlarmSchema
     )
 
-    // 📄 READ Semua Alarm
+    // 📄 READ Semua Alarm milik user
     .get(
-      "/all",
+      "/",
       //@ts-ignore
       async ({ jwt, cookie }) => {
-        await authorizeRequest(jwt, cookie);
-        const data = await alarmService.getAllAlarms();
+        const decoded = await authorizeRequest(jwt, cookie);
+        const data = await alarmService.getAllAlarms(decoded.sub);
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },
       getAllAlarmsSchema
     )
 
-    // 📄 READ Alarm by Device ID
+    // 📄 READ Alarm by Widget ID
     .get(
-      "/:device_id",
+      "/widget/:widget_id",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie);
-        const data = await alarmService.getAlarmsByDeviceId(params.device_id);
+        const decoded = await authorizeRequest(jwt, cookie);
+        const data = await alarmService.getAlarmsByWidgetId(Number(params.widget_id), decoded.sub);
         return new Response(JSON.stringify({ result: data }), { status: 200 });
       },
-      getAlarmByDeviceIdSchema
+      getAlarmByWidgetIdSchema
     )
 
     // ✏️ UPDATE Alarm
@@ -61,8 +67,8 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/:id",
       //@ts-ignore
       async ({ jwt, cookie, params, body }) => {
-        await authorizeRequest(jwt, cookie);
-        const updated = await alarmService.updateAlarm(params.id, body);
+        const decoded = await authorizeRequest(jwt, cookie);
+        const updated = await alarmService.updateAlarm(params.id, decoded.sub, body);
         if (!updated) {
           return new Response("Gagal mengupdate data alarm.", { status: 400 });
         }
@@ -82,8 +88,8 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/:id",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie);
-        const deleted = await alarmService.deleteAlarm(params.id);
+        const decoded = await authorizeRequest(jwt, cookie);
+        const deleted = await alarmService.deleteAlarm(params.id, decoded.sub);
         if (!deleted) {
           return new Response("Gagal menghapus data alarm.", { status: 400 });
         }
