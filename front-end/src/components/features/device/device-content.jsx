@@ -49,27 +49,27 @@ export default function DeviceContent({
         </Badge>
       ),
     },
-    {
-      key: "key",
-      label: "Secret",
-      sortable: false,
-      render: (row) => (
-        <span className="flex items-center justify-center gap-2">
-          <span className="truncate max-w-[100px] inline-block">{row.key}</span>
-          <DescriptionTooltip content="Salin" side="right">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              onClick={() => handleCopy(row.key)}
-              className="p-1 opacity-50 hover:opacity-100"
-            >
-              <Copy className="w-4 h-4" />
-            </Button>
-          </DescriptionTooltip>
-        </span>
-      ),
-    },
+    // {
+    //   key: "key",
+    //   label: "Secret",
+    //   sortable: false,
+    //   render: (row) => (
+    //     <span className="flex items-center justify-center gap-2">
+    //       <span className="truncate max-w-[100px] inline-block">{row.key}</span>
+    //       <DescriptionTooltip content="Salin" side="right">
+    //         <Button
+    //           type="button"
+    //           size="icon"
+    //           variant="ghost"
+    //           onClick={() => handleCopy(row.key)}
+    //           className="p-1 opacity-50 hover:opacity-100"
+    //         >
+    //           <Copy className="w-4 h-4" />
+    //         </Button>
+    //       </DescriptionTooltip>
+    //     </span>
+    //   ),
+    // },
     { key: "board_type", label: "Tipe Board", filterable: true },
     {
       key: "protocol",
@@ -93,14 +93,14 @@ export default function DeviceContent({
         setEditFormOpen(true);
       },
     },
-    {
-      key: "connection",
-      label: "Koneksi",
-      icon: WifiCog,
-      className: "hover:text-foreground",
-      disabled: true,
-      // onClick: (row) => { ... },
-    },
+    // {
+    //   key: "connection",
+    //   label: "Koneksi",
+    //   icon: WifiCog,
+    //   className: "hover:text-foreground",
+    //   disabled: true,
+    //   // onClick: (row) => { ... },
+    // },
     {
       key: "delete",
       label: "Hapus",
@@ -126,9 +126,9 @@ export default function DeviceContent({
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <motion.img
-            key="alarm-image"
+            key="device-image"
             src="/device.svg"
-            alt="No Alarms"
+            alt="No Devices"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}

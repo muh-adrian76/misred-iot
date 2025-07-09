@@ -123,10 +123,11 @@ export function useDashboardLogic() {
                 typeof widget.layout === "string"
                   ? JSON.parse(widget.layout)
                   : widget.layout;
-              w = layoutObj.w || w;
-              h = layoutObj.h || h;
+              w = layoutObj.w ?? w;
+              h = layoutObj.h ?? h;
               x = layoutObj.x ?? x;
-              y = layoutObj.y ?? y;
+              // Perbaikan: y fallback ke 0 jika null/undefined
+              y = layoutObj.y != null ? layoutObj.y : 0;
             } catch {}
           }
           return {
@@ -171,16 +172,8 @@ export function useDashboardLogic() {
         if (newDashboard) {
           setActiveTab(newDashboard.description);
           fetchWidgetCount(newDashboard.id);
-          setTabLayouts((prev) => ({
-            ...prev,
-            [newDashboard.description]: [],
-          }));
         } else {
           setActiveTab(description);
-          setTabLayouts((prev) => ({
-            ...prev,
-            [description]: [],
-          }));
         }
       }, 100);
       return id;
@@ -237,52 +230,9 @@ export function useDashboardLogic() {
       setIsEditing(false);
       return;
     }
-    const layout = tabLayouts[activeTab] || [];
-    try {
-      await Promise.all(
-        layout.map((l) =>
-          fetchFromBackend(`/widget/${l.i}/layout`, {
-            method: "PUT",
-            body: JSON.stringify({
-              layout: {
-                x: l.x,
-                y: l.y,
-                w: l.w,
-                h: l.h,
-                minW: l.minW,
-                minH: l.minH,
-                maxW: l.maxW,
-                maxH: l.maxH,
-              },
-            }),
-          })
-        )
-      );
-      await handleEditDashboard(editDashboardValue);
-      successToast("Berhasil mengubah dashboard");
-    } catch (e) {
-      errorToast("Gagal menyimpan layout dashboard");
-    }
+    await handleEditDashboard(editDashboardValue);
     setIsEditing(false);
-  };
-
-  const handleLayoutSave = async (layout) => {
-    // layout: array of {i, x, y, w, h}
-    try {
-      // Kirim satu per satu, atau batch sesuai API Anda
-      await Promise.all(
-        layout.map((l) =>
-          fetchFromBackend(`/widget/${l.i}/layout`, {
-            method: "PUT",
-            body: JSON.stringify({
-              layout: { x: l.x, y: l.y, w: l.w, h: l.h },
-            }),
-          })
-        )
-      );
-    } catch (e) {
-      // Optional: tampilkan error
-    }
+    successToast("Berhasil mengubah dashboard");
   };
 
   const handleAddChart = async (tab, chartType, dashboardId) => {
@@ -334,23 +284,6 @@ export function useDashboardLogic() {
 
   // Handler untuk SwapyDragArea
   const handleChartDrop = (chartType, layoutItem) => {
-    const defaultW = 4; // Lebar grid (misal 4 kolom)
-    const defaultH = 4; // Tinggi grid (misal 4 baris)
-    const minW = 3;
-    const minH = 3;
-    const maxW = 12;
-    const maxH = 8;
-
-    const newLayoutItem = {
-      ...layoutItem,
-      w: defaultW,
-      h: defaultH,
-      minW,
-      minH,
-      maxW,
-      maxH,
-    };
-
     const dashboard = dashboards.find((d) => d.description === activeTab);
     setNewWidgetData({
       chartType,
@@ -366,23 +299,14 @@ export function useDashboardLogic() {
     setNewWidgetData(null);
 
     try {
-      const layoutObj = formData.layout
-        ? {
-            x: formData.layout.x,
-            y: formData.layout.y,
-            w: formData.layout.w,
-            h: formData.layout.h,
-          }
-        : null;
-
       const res = await fetchFromBackend("/widget", {
         method: "POST",
         body: JSON.stringify({
           description: formData.description,
-          dashboard_id: String(formData.dashboard_id),
-          device_id: String(formData.device_id),
-          datastream_id: String(formData.datastream_id),
-          type: formData.chartType,
+          dashboard_id: formData.dashboard_id,
+          device_id: formData.device_id,
+          datastream_id: formData.datastream_id,
+          chart_type: formData.chartType,
           layout: formData.layout,
         }),
       });
@@ -449,8 +373,6 @@ export function useDashboardLogic() {
     editDashboardValue,
     setEditDashboardValue,
     isMobile,
-    isTablet,
-    isDesktop,
     isAuthenticated,
     dashboards,
     setDashboards,
@@ -464,7 +386,6 @@ export function useDashboardLogic() {
     handleDeleteDashboard,
     handleSaveEditDashboard,
     handleChartDrop,
-    handleLayoutSave,
     handleWidgetFormSubmit,
     handleAddChart,
     setItemsForTab,

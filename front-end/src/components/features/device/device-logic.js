@@ -50,6 +50,7 @@ export function useDeviceLogic() {
     };
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log("WebSocket message received:", data);
       if (data.type === "status_update") {
         console.log("Status update received:", data);
         setDevices((prev) =>

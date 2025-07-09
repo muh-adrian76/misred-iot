@@ -113,9 +113,9 @@ export default function DatastreamContent({
       >
         <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
           <motion.img
-            key="alarm-image"
+            key="datastream-image"
             src="/datastream.svg"
-            alt="No Alarms"
+            alt="No Datastreams"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}

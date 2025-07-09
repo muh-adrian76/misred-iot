@@ -6,19 +6,19 @@ const postWidgetSchema = {
     description: t.String({
       example: "Grafik kekeruhan air",
     }),
-    dashboard_id: t.String({
+    dashboard_id: t.Union([t.String(), t.Number()], {
       description: "ID dashboard yang terkait dengan widget",
       example: 1,
     }),
-    device_id: t.String({
+    device_id: t.Union([t.String(), t.Number()], {
       description: "ID perangkat yang terkait dengan widget",
       example: 1,
     }),
-    datastream_id: t.String({
+    datastream_id: t.Union([t.String(), t.Number()], {
       description: "ID datastream yang terkait dengan widget",
       example: 1,
     }),
-    type: t.String({ example: "line" }),
+    type: t.Optional(t.String({ example: "line" })),
     layout: t.Optional(t.Any()),
   }),
   response: {
