@@ -51,7 +51,7 @@ function SidebarProvider({
   children,
   ...props
 }) {
-  const { isMobile, isTablet, isDesktop } = useBreakpoint();
+  const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint();
   const [openMobile, setOpenMobile] = React.useState(false);
 
   // This is the internal state of the sidebar.
@@ -75,8 +75,8 @@ function SidebarProvider({
 
   // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
-    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
-  }, [isMobile, setOpen, setOpenMobile]);
+    return isMobile || isMedium || isTablet ? setOpenMobile((open) => !open) : setOpen((open) => !open);
+  }, [isMobile, isMedium, isTablet, setOpen, setOpenMobile]);
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
@@ -104,11 +104,13 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      isMedium,
+      isTablet,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, isMedium, isTablet, openMobile, setOpenMobile, toggleSidebar]
   );
 
   return (
@@ -143,7 +145,7 @@ function Sidebar({
   children,
   ...props
 }) {
-  const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const { isMobile, isMedium, isTablet, state, openMobile, setOpenMobile } = useSidebar();
 
   if (collapsible === "none") {
     return (
@@ -160,7 +162,7 @@ function Sidebar({
     );
   }
 
-  if (isMobile) {
+  if (isMobile || isMedium || isTablet) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
         <SheetContent

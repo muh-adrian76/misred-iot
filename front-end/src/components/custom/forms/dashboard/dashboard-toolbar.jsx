@@ -8,9 +8,11 @@ export default function DashboardToolbar({
   widgetState,
   editState,
   setEditState,
+  cancelEdit,
   setOpenChartSheet,
   className,
   saveEdit,
+  hasUnsavedChanges,
 }) {
   return (
     <div className={cn("flex gap-2 sm:gap-3", className)}>
@@ -20,15 +22,18 @@ export default function DashboardToolbar({
             className="cursor-pointer"
             variant="outline"
             onClick={saveEdit}
+            disabled={!hasUnsavedChanges}
           >
             <span className="sr-only">Save</span>
             <SaveAll className="w-5 h-5" />
-            <span className="ml-1 inline">Simpan</span>
+            <span className="ml-1 inline">
+              {hasUnsavedChanges ? "Simpan" : "Tersimpan"}
+            </span>
           </Button>
           <Button
             className="cursor-pointer"
             variant="outline"
-            onClick={() => setEditState(false)}
+            onClick={cancelEdit}
           >
             <span className="sr-only">Cancel</span>
             <Undo2 className="w-5 h-5" />
@@ -40,7 +45,7 @@ export default function DashboardToolbar({
           <Button
             className="cursor-pointer"
             variant="outline"
-            onClick={() => setEditState(true)}
+            onClick={() => setEditState()}
             disabled={dashboardState}
           >
             <span className="sr-only">Edit</span>

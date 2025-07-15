@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import CheckboxButton from "../buttons/checkbox-button";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 import DataTableHead from "./data-table-component/DataTableHead";
 import DataTableRowActions from "./data-table-component/DataTableRowActions";
 import DataTablePagination from "./data-table-component/DataTablePagination";
@@ -173,7 +173,7 @@ export default function DataTable({
 
       {/* Table */}
       <div className="rounded-md bg-background overflow-x-auto relative">
-        <Table className="min-w-[600px] w-full text-center">
+        <Table className="lg:8/9 w-full text-center">
           <TableHeader className="bg-accent">
             <TableRow>
               <TableHead className="w-[25px] border-r">
@@ -223,7 +223,9 @@ export default function DataTable({
                   colSpan={columns.length + 1}
                   className="text-center text-muted-foreground bg-background"
                 >
-                  Memuat data...
+                  <TextShimmer className="text-sm" duration={1}>
+                    Memuat data...
+                  </TextShimmer>
                 </TableCell>
               </TableRow>
             ) : filteredData.length === 0 ? (

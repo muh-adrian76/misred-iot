@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* React Grid Layout CSS */
+@import "react-grid-layout/css/styles.css";
+@import "react-resizable/css/styles.css";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -195,8 +199,11 @@
   display: none;
 }
 
-@media (width >= 890px) {
-  .widget-box {
-    bottom: calc(var(--spacing) * 3) /* 0.75rem = 12px */;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

@@ -19,6 +19,11 @@ function Input({ className, type, onChange, noInfo, ...props }) {
   }, [noInfo]);
 
   const handleChange = (e) => {
+    if (type === "file") {
+      // Untuk file input, langsung panggil onChange tanpa validasi
+      onChange?.(e);
+      return;
+    }
     const value = e.target.value;
     const valid = safePattern.test(value);
     setIsValid(valid);
@@ -32,7 +37,7 @@ function Input({ className, type, onChange, noInfo, ...props }) {
         type={type}
         data-slot="input"
         className={cn(
-          "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:pr-4 file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
           isValid
             ? "border-gray-200 focus:border-gray-400 dark:border-gray-800 dark:focus:border-gray-600"
             : "border-red-500 focus:border-red-600 dark:border-red-700 dark:focus:border-red-800",
@@ -43,14 +48,16 @@ function Input({ className, type, onChange, noInfo, ...props }) {
         onBlur={() => setShowInfo(false)}
         {...props}
       />
-       <span
-      className={cn(
-        "px-1 text-sm text-balance text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs",
-        (!hideInfo && showInfo) ? "opacity-100 flex pt-2" : "absolute opacity-0 pointer-events-none"
-      )}
-    >
-      {type === "number" ? numberInput : textInput}
-    </span>
+      <span
+        className={cn(
+          "px-1 text-sm text-balance text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs",
+          !hideInfo && showInfo
+            ? "opacity-100 flex pt-2"
+            : "absolute opacity-0 pointer-events-none"
+        )}
+      >
+        {type === "number" ? numberInput : textInput}
+      </span>
     </div>
   );
 }

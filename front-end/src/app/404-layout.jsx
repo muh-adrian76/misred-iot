@@ -1,10 +1,15 @@
 "use client";
 import { Link } from "next-view-transitions";
 import { motion, AnimatePresence } from "framer-motion";
+import Head from "next/head";
 
 export default function NotFoundLayout() {
   return (
-    <AnimatePresence>
+    <>
+      <Head>
+        <link rel="preload" href="/404.svg" as="image" />
+      </Head>
+      <AnimatePresence>
         <motion.img
           key="404-image"
           src="/404.svg"
@@ -33,6 +38,7 @@ export default function NotFoundLayout() {
             Kembali ke halaman utama
           </Link>
         </motion.div>
-    </AnimatePresence>
+      </AnimatePresence>
+    </>
   );
 }

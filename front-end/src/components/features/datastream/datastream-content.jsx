@@ -123,13 +123,13 @@ export default function DatastreamContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Datastream masih kosong</h2>
-            <Button
-              onClick={() => setAddFormOpen(true)}
-              className="gap-2 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              Buat Datastream
-            </Button>
+          <Button
+            onClick={() => setAddFormOpen(true)}
+            className="gap-2 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Buat Datastream
+          </Button>
         </div>
       </motion.div>
     );

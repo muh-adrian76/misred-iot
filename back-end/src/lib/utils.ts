@@ -42,7 +42,7 @@ const apiTags = [
 ];
 
 // Konversi waktu dari string ke angka
-function cookieAgeConverter(input: string) {
+function ageConverter(input: string): number {
   const match = input.match(/^(\d+)([smhd])$/); // Regex untuk memisahkan angka dan satuan
   if (!match)
     throw new Error(
@@ -88,7 +88,7 @@ async function setAuthCookie(
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
     secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
-    maxAge: cookieAgeConverter(process.env.ACCESS_TOKEN_AGE!),
+    maxAge: ageConverter(process.env.ACCESS_TOKEN_AGE!),
   });
 
   // Set refresh token
@@ -98,7 +98,7 @@ async function setAuthCookie(
     sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
     secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
     path: "/",
-    maxAge: cookieAgeConverter(process.env.REFRESH_TOKEN_AGE!), // misal 7d
+    maxAge: ageConverter(process.env.REFRESH_TOKEN_AGE!), // misal 7d
   });
 }
 
@@ -177,7 +177,7 @@ async function authorizeRequest(jwt: any, cookie: any) {
       sameSite: process.env.USE_SECURE_COOKIE === "true" ? "none" : "lax",
       secure: process.env.USE_SECURE_COOKIE === "true" ? true : false,
       path: "/",
-      maxAge: cookieAgeConverter(process.env.ACCESS_TOKEN_AGE!),
+      maxAge: ageConverter(process.env.ACCESS_TOKEN_AGE!),
     });
 
     decoded = await jwt.verify(newAccessToken);
@@ -188,6 +188,25 @@ async function authorizeRequest(jwt: any, cookie: any) {
   }
 }
 
+// Fungsi dekripsi AES-128-CBC
+function decryptAES(
+  crypto: any,
+  encryptedBase64: string,
+  secretKeyHex: string
+) {
+  const encrypted = Buffer.from(encryptedBase64, "base64");
+  if (encrypted.length < 32) throw new Error("Data terenkripsi terlalu pendek");
+  const iv = encrypted.subarray(0, 16);
+  const ciphertext = encrypted.subarray(16);
+  const key = Buffer.from(secretKeyHex, "hex").subarray(0, 16);
+  const decipher = crypto.createDecipheriv("aes-128-cbc", key, iv);
+  decipher.setAutoPadding(true);
+  let decrypted = decipher.update(ciphertext);
+  let final = decipher.final();
+  decrypted = Buffer.concat([decrypted, final]);
+  return decrypted.toString("utf8");
+}
+
 export {
   subDomain,
   apiTags,
@@ -195,4 +214,6 @@ export {
   setAuthCookie,
   clearAuthCookie,
   renewToken,
+  decryptAES,
+  ageConverter,
 };

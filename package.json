@@ -6,6 +6,8 @@
     "pm2": "pm2",
     "pm2:frontend": "pm2 start npm --name misred-frontend -- run start --prefix ./front-end --watch",
     "pm2:frontend-dev": "pm2 start npm --name misred-frontend-dev -- run dev --prefix ./front-end",
+    "pm2:frontend-bun": "pm2 start bun --name misred-frontend -- run start --cwd front-end start-bun --watch",
+    "pm2:frontend-dev-bun": "pm2 start bun --name misred-frontend-dev -- run --cwd front-end dev-bun",
     "pm2:backend": "pm2 start bun --name misred-backend -- run --cwd back-end dev-bun --watch",
     "pm2:restart": "pm2 restart all",
     "pm2:stop": "pm2 stop all",

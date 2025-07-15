@@ -33,7 +33,8 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         //@ts-ignore
         async ({ jwt, cookie, body }) => {
           const decoded = await authorizeRequest(jwt, cookie);
-          const { description } = body;
+          //@ts-ignore
+          const { description, widget_count, layout } = body;
 
           if (!description || description.trim() === "") {
             return new Response(
@@ -44,7 +45,9 @@ export function dashboardRoutes(dashboardService: DashboardService) {
 
           const dashboardId = await dashboardService.createDashboard(
             decoded.sub,
-            description
+            description,
+            widget_count,
+            layout
           );
 
           if (!dashboardId) {
@@ -62,13 +65,14 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         postDashboardSchema
       )
 
-      // Update dashboard description
+      // Update dashboard description/layout
       .put(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body }) => {
           const decoded = await authorizeRequest(jwt, cookie);
-          const { description } = body;
+          //@ts-ignore
+          const { description, widget_count, layout } = body;
           if (!description || description.trim() === "") {
             return new Response(
               JSON.stringify({ message: "Nama dashboard tidak boleh kosong" }),
@@ -78,7 +82,9 @@ export function dashboardRoutes(dashboardService: DashboardService) {
           const updated = await dashboardService.updateDashboard(
             decoded.sub,
             params.id,
-            description
+            description,
+            widget_count,
+            layout
           );
           if (!updated) {
             return new Response("Dashboard gagal diubah", { status: 400 });

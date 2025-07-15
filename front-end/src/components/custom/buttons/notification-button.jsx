@@ -1,44 +1,68 @@
 "use client";
 
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Bell } from "lucide-react";
-import DescriptionTooltip from "../other/description-tooltip";
+import React from 'react';
+import { NotificationCenter } from "@/components/custom/other/notification-center";
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+
+// --- Simulated Backend API ---
+let masterNotifications = [ /* ... initial notifications ... */ ];
+let nextId = masterNotifications.length + 1;
+const fetchNotifications = async () => {
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return [...masterNotifications];
+};
+const markAsRead = async (id) => {
+  masterNotifications = masterNotifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+};
+const markAllAsRead = async () => {
+  masterNotifications = masterNotifications.map(n => ({ ...n, isRead: true }));
+};
+const deleteNotification = async (id) => {
+  masterNotifications = masterNotifications.filter(n => n.id !== id);
+};
+// --- End of Simulated API ---
+
+const queryClient = new QueryClient();
+
+// Separate the component that uses useQueryClient
+function NotificationContent() {
+  const qc = useQueryClient();
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const newNotification = {
+        id: String(nextId++),
+        title: 'Alarm Aplikasi MiSREd-IoT!',
+        message: 'This notification was added automatically.',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        priority: 'medium',
+      };
+      masterNotifications.unshift(newNotification);
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    }, 600000);
+    return () => clearInterval(interval);
+  }, [qc]);
+
+  return (
+      <NotificationCenter
+        variant="popover"
+        fetchNotifications={fetchNotifications}
+        onMarkAsRead={markAsRead}
+        onMarkAllAsRead={markAllAsRead}
+        onDeleteNotification={deleteNotification}
+        enableRealTimeUpdates={true}
+        updateInterval={15000}
+        enableBrowserNotifications={true}
+        className="rounded-full"
+      />
+  );
+}
 
 export default function NotificationButton() {
   return (
-    <DropdownMenu>
-      <DescriptionTooltip content="Notifikasi Terbaru">
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            disabled
-            className="relative rounded-full cursor-pointer"
-          >
-            <Bell className="w-5 h-5" />
-            {/* Notif */}
-            {/* <span className="absolute top-0 right-0 inline-block w-2 h-2 bg-red-500 rounded-full" /> */}
-            <span className="sr-only">Notifikasi</span>
-          </Button>
-        </DropdownMenuTrigger>
-      </DescriptionTooltip>
-      <DropdownMenuContent align="end" className="w-64">
-        <div className="px-3 py-2 font-medium">Notifikasi Terbaru</div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <span className="text-sm">Alarm pH tinggi di Device1</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <span className="text-sm">Alarm TSS rendah di Device2</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <QueryClientProvider client={queryClient}>
+      <NotificationContent />
+    </QueryClientProvider>
   );
 }

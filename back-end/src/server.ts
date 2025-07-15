@@ -1,9 +1,12 @@
 import { cors } from "@elysiajs/cors";
 import { jwt } from "@elysiajs/jwt";
 import { swagger } from "@elysiajs/swagger";
+import { staticPlugin } from "@elysiajs/static";
+import { existsSync, readdirSync, readFileSync } from "fs";
+import { join } from "path";
 import { Elysia } from "elysia";
 import { MySQLDatabase, MQTTClient } from "./lib/middleware";
-import { apiTags, subDomain } from "./lib/utils";
+import { apiTags, subDomain, ageConverter } from "./lib/utils";
 
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";
@@ -13,9 +16,8 @@ import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
 import { dashboardRoutes } from "./api/dashboard";
 import { datastreamRoutes } from "./api/datastream";
-import { userWsApi } from "./api/ws/user-ws";
-import { deviceWsApi } from "./api/ws/device-ws";
-
+import { broadcastToUsers, userWsRoutes } from "./api/ws/user-ws";
+import { deviceWsRoutes } from "./api/ws/device-ws";
 
 import { AuthService } from "./services/AuthService";
 import { UserService } from "./services/UserService";
@@ -25,6 +27,7 @@ import { WidgetService } from "./services/WidgetService";
 import { AlarmService } from "./services/AlarmService";
 import { DashboardService } from "./services/DashboardService";
 import { DatastreamService } from "./services/DatastreamService";
+import { MQTTService } from "./services/MiddlewareService";
 
 class Server {
   private app: Elysia;
@@ -39,6 +42,7 @@ class Server {
   private alarmService!: AlarmService;
   private dashboardService!: DashboardService;
   private datastreamService!: DatastreamService;
+  private mqttService!: MQTTService;
 
   constructor() {
     this.app = new Elysia();
@@ -47,16 +51,21 @@ class Server {
   async init() {
     this.db = MySQLDatabase.getInstance();
     this.mqttClient = MQTTClient.getInstance();
+    this.mqttService = new MQTTService(this.db);
+    this.mqttService.listen();
+
+    this.deviceService = new DeviceService(
+      this.db,
+      this.mqttService.subscribeTopic.bind(this.mqttService),
+      this.mqttService.unSubscribeTopic.bind(this.mqttService)
+    );
+    this.payloadService = new PayloadService(this.db, this.deviceService);
     this.authService = new AuthService(this.db);
     this.userService = new UserService(this.db);
-    this.deviceService = new DeviceService(this.db);
-    this.payloadService = new PayloadService(this.db);
     this.widgetService = new WidgetService(this.db);
     this.alarmService = new AlarmService(this.db);
     this.dashboardService = new DashboardService(this.db);
     this.datastreamService = new DatastreamService(this.db);
-
-    this.setupMQTT();
 
     this.app
       // API
@@ -70,13 +79,17 @@ class Server {
       .use(datastreamRoutes(this.datastreamService))
 
       // Websocket
-      .use(userWsApi)
-      .use(deviceWsApi(this.deviceService))
+      .use(userWsRoutes)
+      .use(deviceWsRoutes(this.deviceService))
 
       // Plugin
       .use(
         cors({
-          origin: [process.env.FRONTEND_URL!, subDomain(process.env.FRONTEND_URL!), process.env.FRONTEND_ADMIN_URL!],
+          origin: [
+            process.env.FRONTEND_URL!,
+            subDomain(process.env.FRONTEND_URL!),
+            process.env.FRONTEND_ADMIN_URL!,
+          ],
           preflight: true,
           credentials: true,
           methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -111,7 +124,27 @@ class Server {
           },
         })
       )
-
+      .use(
+        staticPlugin({
+          prefix: "/public",
+          assets: "./src/assets",
+        })
+      )
+      // Dokumentasi REST API
+      .get("/docs", async () => {
+        const res = await fetch(`${process.env.BACKEND_URL}/swagger`);
+        let html = await res.text();
+        html = html.replace(
+          "</head>",
+          `<link rel="icon" type="image/svg+xml" href="/public/web-logo.svg" /></head>`
+        );
+        return new Response(html, {
+          headers: {
+            "Content-Type": "text/html",
+          },
+        });
+      })
+      
       // Error handler
       .onError(({ error, code }) => {
         console.error("❌ Terjadi kesalahan:", error);
@@ -129,36 +162,21 @@ class Server {
           );
         }
       );
-  }
 
-  private setupMQTT() {
-    this.mqttClient.on("connect", () => {
-      console.log("✅ Berhasil terkoneksi ke MQTT broker");
-      const topics = ["device/data", "device_2/data"];
-      topics.forEach((topic) => {
-        this.mqttClient.subscribe(topic, (err) => {
-          if (!err) {
-            console.log(`✅ Berhasil subscribe topik: ${topic}`);
-          } else {
-            console.error(`❌ Gagal subscribe topik: ${topic}`, err);
-          }
-        });
-      });
-    });
-
-    this.mqttClient.on("message", async (topic, message) => {
+    // Refresh variabel secret semua device setiap 5 menit
+    setInterval(async () => {
       try {
-        const data = JSON.parse(message.toString());
-        console.log(`Menerima payload dari topik ${topic}:`, data);
-
-        await this.payloadService.saveMqttPayload(data);
-        console.log(
-          `Berhasil menyimpan data sensor pada topik ${topic} ke database.`
-        );
+        await this.deviceService.refreshAllDeviceSecrets();
+        console.log("🔄 Berhasil me-refresh secret dari semua device ");
+        broadcastToUsers({
+          type: "device_secret_refreshed",
+          message: "Secret perangkat telah diperbarui",
+        });
       } catch (error) {
-        console.error("❌ Gagal memproses pesan publisher:", error);
+        console.error("Gagal refresh secret:", error);
+        return;
       }
-    });
+    }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000);
   }
 }
 

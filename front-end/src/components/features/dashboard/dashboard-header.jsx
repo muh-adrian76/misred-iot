@@ -11,6 +11,7 @@ export default function DashboardHeader(props) {
     activeTab,
     setActiveTab,
     isMobile,
+    isMedium,
     isTablet,
     isDesktop,
     isEditing,
@@ -20,16 +21,21 @@ export default function DashboardHeader(props) {
     setDashboardToDelete,
     setOpenDeleteDialog,
     widgetCount,
-    setIsEditing,
     setOpenChartSheet,
     handleSaveEditDashboard,
+    
+    // New staging functions
+    startEditMode,
+    cancelEditMode,
+    saveAllLayoutChanges,
+    hasUnsavedChanges,
   } = props;
 
   return (
     <motion.div
       className={cn(
         "flex items-end sticky z-40 top-[64px] w-full rounded-2xl px-3.5 py-3 gap-3 bg-background",
-        isMobile ? "justify-center" : "justify-between"
+        isMobile || isMedium ? "justify-center" : "justify-between"
       )}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -39,14 +45,14 @@ export default function DashboardHeader(props) {
       <div className="flex items-center gap-3">
         <DashboardSelect
           options={dashboards.map((d) => ({
-            value: d.description,
+            value: d.id,
             label: d.description,
           }))}
           value={activeTab}
           onChange={setActiveTab}
           icon="Search"
           placeholder="Pilih dashboard"
-          className={isMobile ? "w-[348px]" : "w-[430px]"}
+          className={isMobile || isMedium ? "w-[348px]" : "w-[430px]"}
           editState={isEditing}
           editValue={editDashboardValue}
           onEditValueChange={setEditDashboardValue}
@@ -57,13 +63,13 @@ export default function DashboardHeader(props) {
         }
         />
         <Button
-          size={isMobile ? "icon" : "sm"}
+          size={isMobile || isMedium ? "icon" : "sm"}
           className="flex items-center p-3"
           onClick={
             isEditing
               ? () => {
                   const current = dashboards.find(
-                    (d) => d.description === activeTab
+                    (d) => d.id === activeTab
                   );
                   setDashboardToDelete(current);
                   setOpenDeleteDialog(true);
@@ -76,18 +82,20 @@ export default function DashboardHeader(props) {
           ) : (
             <Plus className="h-5 w-5" />
           )}
-          {isMobile ? null : <span className="ml-1">Dashboard</span>}
+          {isMobile || isMedium ? null : <span className="ml-1">Dashboard</span>}
         </Button>
       </div>
-      {isTablet || isMobile ? (
+      {!isDesktop ? (
         <div className="fixed left-1/2 bottom-3 -translate-x-1/2 flex gap-2 bg-background/80 backdrop-blur-md shadow-lg rounded-xl px-2 py-2 z-50 border max-w-full w-fit">
           <DashboardToolbar
             dashboardState={dashboards.length === 0}
             widgetState={widgetCount === 0}
             editState={isEditing}
-            setEditState={setIsEditing}
+            setEditState={startEditMode}
+            cancelEdit={cancelEditMode}
             setOpenChartSheet={setOpenChartSheet}
-            saveEdit={handleSaveEditDashboard}
+            saveEdit={saveAllLayoutChanges}
+            hasUnsavedChanges={hasUnsavedChanges}
           />
         </div>
       ) : (
@@ -96,9 +104,11 @@ export default function DashboardHeader(props) {
             dashboardState={dashboards.length === 0}
             widgetState={widgetCount === 0}
             editState={isEditing}
-            setEditState={setIsEditing}
+            setEditState={startEditMode}
+            cancelEdit={cancelEditMode}
             setOpenChartSheet={setOpenChartSheet}
-            saveEdit={handleSaveEditDashboard}
+            saveEdit={saveAllLayoutChanges}
+            hasUnsavedChanges={hasUnsavedChanges}
           />
         </div>
       )}

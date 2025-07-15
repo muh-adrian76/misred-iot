@@ -32,7 +32,7 @@ const chartConfig = {
 
 export function AreaChartWidget({ previewMode = false }) {
   return (
-    <ChartContainer config={chartConfig} className="h-full w-full">
+    <ChartContainer config={chartConfig} className="h-full w-full min-h-[150px] min-w-[150px]">
       <AreaChart
         width={undefined}
         height={undefined}

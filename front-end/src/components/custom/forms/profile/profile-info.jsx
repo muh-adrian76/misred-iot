@@ -100,7 +100,7 @@ export default function ProfileInfoSection({
             <p className="ml-2">{convertDate(user.created_at)}</p>
           </div>
           <div className="flex flex-col gap-2">
-            <p className="font-semibold">Terakhir Log In:</p>
+            <p className="font-semibold">Log In Terakhir:</p>
             <p className="ml-2">{convertDate(user.last_login)}</p>
           </div>
         </div>

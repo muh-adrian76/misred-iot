@@ -26,10 +26,34 @@ const postDeviceSchema = {
         example: "0",
       })
     ),
-    lora_profile: t.Optional(
+    dev_eui: t.Optional(
       t.String({
-        description: "Profil LoRa jika menggunakan LoRa",
+        description: "ID unik untuk perangkat LoRa",
         example: "LoRaProfile1",
+      })
+    ),
+    app_eui: t.Optional(
+      t.String({
+        description: "ID untuk Profil aplikasi chirpstack",
+        example: "LoRaProfile1",
+      })
+    ),
+    app_key: t.Optional(
+      t.String({
+        description: "Key untuk Profil aplikasi chirpstack",
+        example: "LoRaProfile1",
+      })
+    ),
+    firmware_version: t.Optional(
+      t.String({
+        description: "Versi firmware perangkat",
+        example: "1.0.0",
+      })
+    ),
+    firmware_url: t.Optional(
+      t.String({
+        description: "URL firmware perangkat",
+        example: "https://example.com/firmware.bin",
       })
     ),
   }),
@@ -43,10 +67,6 @@ const postDeviceSchema = {
         id: t.String({
           description: "ID perangkat yang baru terdaftar",
           example: "device-1",
-        }),
-        key: t.String({
-          description: "AES key untuk perangkat",
-          example: "1234567890abcdef1234567890abcdef",
         }),
       },
       { description: "Perangkat berhasil ditambahkan" }
@@ -99,14 +119,48 @@ const getAllDevicesSchema = {
               description: "Quality of Service untuk MQTT",
               example: "0",
             }),
-            lora_profile: t.String({
-              description: "Profil LoRa jika menggunakan LoRa",
-              example: "Profil LoRa 1",
-            }),
-            aes_key: t.String({
-              description: "Token refresh perangkat",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            }),
+            dev_eui: t.Optional(
+              t.String({
+                description: "ID unik untuk perangkat LoRa",
+                example: "LoRaProfile1",
+              })
+            ),
+            app_eui: t.Optional(
+              t.String({
+                description: "ID untuk Profil aplikasi chirpstack",
+                example: "LoRaProfile1",
+              })
+            ),
+            app_key: t.Optional(
+              t.String({
+                description: "Key untuk Profil aplikasi chirpstack",
+                example: "LoRaProfile1",
+              })
+            ),
+            old_secret: t.Optional(
+              t.String({
+                description: "Secret/Key lama perangkat",
+                example: "old-secret-key",
+              })
+            ),
+            new_secret: t.Optional(
+              t.String({
+                description: "Secret/Key baru perangkat",
+                example: "new-secret-key",
+              })
+            ),
+            firmware_version: t.Optional(
+              t.String({
+                description: "Versi firmware perangkat",
+                example: "1.0.0",
+              })
+            ),
+            firmware_url: t.Optional(
+              t.String({
+                description: "URL firmware perangkat",
+                example: "https://example.com/firmware.bin",
+              })
+            ),
           }),
           { description: "Daftar semua perangkat yang terdaftar" }
         ),
@@ -152,14 +206,48 @@ const getDeviceByIdSchema = {
               description: "Quality of Service untuk MQTT",
               example: "0",
             }),
-            lora_profile: t.String({
-              description: "Profil LoRa jika menggunakan LoRa",
-              example: "LoRaProfile1",
-            }),
-            aes_key: t.String({
-              description: "Token refresh perangkat",
-              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-            }),
+            dev_eui: t.Optional(
+              t.String({
+                description: "ID unik untuk perangkat LoRa",
+                example: "LoRaProfile1",
+              })
+            ),
+            app_eui: t.Optional(
+              t.String({
+                description: "ID untuk Profil aplikasi chirpstack",
+                example: "LoRaProfile1",
+              })
+            ),
+            app_key: t.Optional(
+              t.String({
+                description: "Key untuk Profil aplikasi chirpstack",
+                example: "LoRaProfile1",
+              })
+            ),
+            old_secret: t.Optional(
+              t.String({
+                description: "Secret/Key lama perangkat",
+                example: "old-secret-key",
+              })
+            ),
+            new_secret: t.Optional(
+              t.String({
+                description: "Secret/Key baru perangkat",
+                example: "new-secret-key",
+              })
+            ),
+            firmware_version: t.Optional(
+              t.String({
+                description: "Versi firmware perangkat",
+                example: "1.0.0",
+              })
+            ),
+            firmware_url: t.Optional(
+              t.String({
+                description: "URL firmware perangkat",
+                example: "https://example.com/firmware.bin",
+              })
+            ),
           }),
           { description: "Data perangkat yang ditemukan berdasarkan ID" }
         ),
@@ -183,23 +271,237 @@ const getDeviceByIdSchema = {
   },
 };
 
-const getDevicebySecretSchema = {
+const getSecretByDeviceSchema = {
   type: "json",
   params: t.Object({
-    secret: t.String({ description: "Device secret/key" }),
+    id: t.String({ description: "Device id", example: "1" }),
   }),
   response: {
     200: t.Object({
-      result: t.Any(),
+      result: t.Any({
+        description: "Secret/Key perangkat",
+        example: "u8jwdw2114"
+      }),
     }),
     404: t.Object({
-      message: t.String(),
+      message: t.String({
+        description: "Pesan error jika perangkat tidak ditemukan",
+        example: "Device tidak ditemukan",
+      }),
     }),
   },
   detail: {
     tags: ["Device"],
     description: "Get device by secret/key",
     summary: "Get device by secret",
+  },
+};
+
+const uploadFirmwareSchema = {
+  type: "json",
+  body: t.Object({
+    firmware_version: t.String({
+      description: "Versi firmware yang diupload",
+      example: "1.0.0",
+    }),
+    filename: t.String({
+      description: "Nama file firmware yang diupload",
+      example: "firmware_v1.0.0.bin",
+    }),
+    file_base64: t.String({
+      description: "File firmware dalam format base64",
+      example: "base64encodedstring...",
+    }),
+  }),
+  params: t.Object({
+    deviceId: t.String({
+      description: "ID perangkat",
+      example: "1",
+    }),
+  }),
+  response: {
+    200: t.Object({
+      message: t.String({
+        description: "Pesan sukses upload firmware",
+        example: "Firmware berhasil diupload",
+      }),
+      device_id: t.String({
+        description: "ID perangkat yang diupload firmware",
+        example: "device-1",
+      }),
+      firmware_version: t.String({
+        description: "Versi firmware yang diupload",
+        example: "1.0.0",
+      }),
+      filename: t.String({
+        description: "Nama file firmware yang diupload",
+        example: "firmware_v1.0.0.bin",
+      }),
+      updated_at: t.String({
+        description: "Tanggal dan waktu pembaruan firmware",
+        example: "2023-10-01T12:00:00Z",
+      }),
+      firmware_url: t.String({
+        description: "URL untuk mengakses firmware yang diupload",
+        example: "/device/firmware/device-1/firmware_v1.0.0.bin",
+      }),
+    }),
+    400: t.Object({
+      message: t.String({
+        description: "Pesan error jika file tidak valid",
+        example: "Hanya file .bin atau .hex yang diperbolehkan",
+      }),
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "Upload firmware file",
+    description: "Upload file firmware untuk device tertentu",
+  },
+};
+
+const getFirmwareVersionSchema = {
+  type: "json",
+  params: t.Object({
+    deviceId: t.String(),
+  }),
+  response: {
+    200: t.Object({
+      version: t.String({
+        description: "Versi firmware perangkat",
+        example: "1.0.0",
+      }),
+    }),
+    404: t.Object({
+      message: t.String({
+        description: "Pesan error jika perangkat tidak ditemukan",
+        example: "Perangkat tidak ditemukan.",
+      }),
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "Get firmware version",
+    description: "Mengambil versi firmware perangkat berdasarkan ID",
+  },
+};
+
+const pingSchema = {
+  response: {
+    200: t.Object({
+      status: t.String({ example: "ok" }),
+      timestamp: t.String({ example: "2025-07-13T21:05:55.000Z" }),
+      server: t.String({ example: "IoT Device Verification Server" }),
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "Ping server",
+    description: "Cek konektivitas server IoT Device Verification",
+  },
+};
+
+const getFirmwareListSchema = {
+  params: t.Object({
+    deviceId: t.String({
+      description: "ID perangkat",
+      example: "1",
+    }),
+  }),
+  response: {
+    200: t.Array(
+      t.Object({
+        name: t.String({
+          description: "Nama file firmware",
+          example: "firmware_v1.0.0.bin",
+        }),
+        url: t.String({
+          description: "URL untuk download firmware",
+          example: "/device/firmware/1/firmware_v1.0.0.bin",
+        }),
+      }),
+      { description: "Daftar file firmware untuk device tertentu" }
+    ),
+    404: t.String({
+      description: "Pesan error jika firmware tidak ditemukan",
+      example: "Firmware tidak ditemukan",
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "List firmware files",
+    description: "Mengambil daftar file firmware untuk device tertentu",
+  },
+};
+
+const downloadFirmwareFileSchema = {
+  params: t.Object({
+    deviceId: t.String({
+      description: "ID perangkat",
+      example: "1",
+    }),
+    filename: t.String({
+      description: "Nama file firmware",
+      example: "firmware_v1.0.0.bin",
+    }),
+  }),
+  response: {
+    200: t.Any({
+      description: "File firmware dalam bentuk binary/octet-stream",
+      example: "<binary data>",
+    }),
+    404: t.String({
+      description: "Pesan error jika firmware tidak ditemukan",
+      example: "Firmware tidak ditemukan",
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "Download firmware file",
+    description: "Download file firmware tertentu untuk device",
+  },
+};
+
+const renewSecretSchema = {
+  type: "json",
+  params: t.Object({
+    device_id: t.String({
+      description: "ID perangkat",
+      example: "device-1",
+    }),
+  }),
+  body: t.Object({
+    old_secret: t.String({
+      description: "Secret lama perangkat",
+      example: "oldsecretkey123",
+    }),
+  }),
+  response: {
+    200: t.Object({
+      message: t.String({
+        description: "Pesan sukses memperbarui secret",
+        example: "Berhasil memperbarui secret perangkat",
+      }),
+      device_id: t.String({
+        description: "ID perangkat",
+        example: "device-1",
+      }),
+      secret_key: t.String({
+        description: "Secret baru perangkat",
+        example: "newsecretkey456",
+      }),
+    }),
+    400: t.Object({
+      message: t.String({
+        description: "Pesan error jika gagal memperbarui secret",
+        example: "Secret lama tidak valid",
+      }),
+    }),
+  },
+  detail: {
+    tags: ["Device"],
+    summary: "Renew device secret",
+    description: "Memperbarui secret perangkat berdasarkan ID dan secret lama",
   },
 };
 
@@ -229,10 +531,34 @@ const putDeviceSchema = {
         example: "0",
       })
     ),
-    lora_profile: t.Optional(
+    dev_eui: t.Optional(
       t.String({
-        description: "Profil LoRa jika menggunakan LoRa",
-        example: "Profil LoRa 2",
+        description: "ID unik untuk perangkat LoRa",
+        example: "LoRaProfile1",
+      })
+    ),
+    app_eui: t.Optional(
+      t.String({
+        description: "ID untuk Profil aplikasi chirpstack",
+        example: "LoRaProfile1",
+      })
+    ),
+    app_key: t.Optional(
+      t.String({
+        description: "Key untuk Profil aplikasi chirpstack",
+        example: "LoRaProfile1",
+      })
+    ),
+    firmware_version: t.Optional(
+      t.String({
+        description: "Versi firmware perangkat",
+        example: "1.0.0",
+      })
+    ),
+    firmware_url: t.Optional(
+      t.String({
+        description: "URL firmware perangkat",
+        example: "https://example.com/firmware.bin",
       })
     ),
   }),
@@ -309,7 +635,13 @@ export {
   postDeviceSchema,
   getAllDevicesSchema,
   getDeviceByIdSchema,
-  getDevicebySecretSchema,
+  getSecretByDeviceSchema,
   putDeviceSchema,
   deleteDeviceSchema,
+  uploadFirmwareSchema,
+  getFirmwareVersionSchema,
+  pingSchema,
+  getFirmwareListSchema,
+  downloadFirmwareFileSchema,
+  renewSecretSchema,
 };

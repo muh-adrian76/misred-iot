@@ -1,4 +1,3 @@
-// routes/widget.ts
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { WidgetService } from "../../services/WidgetService";
@@ -7,7 +6,6 @@ import {
   getAllWidgetsSchema,
   getWidgetByDeviceIdSchema,
   postWidgetSchema,
-  putWidgetLayoutSchema,
   putWidgetSchema,
 } from "./elysiaSchema";
 
@@ -22,30 +20,28 @@ export function widgetRoutes(widgetService: WidgetService) {
         async ({ jwt, cookie, body }) => {
           await authorizeRequest(jwt, cookie);
           const {
-            description,
             dashboard_id,
-            device_id,
-            datastream_id,
             type,
-            layout,
+            description,
+            device_id,
+            datastream_id
           } = body;
+          if (!dashboard_id || !type || !description) {
+            return new Response(JSON.stringify({ message: "Input tidak valid" }), { status: 400 });
+          }
           const insertId = await widgetService.createWidget({
-            description,
             dashboard_id,
+            type,
+            description,
             device_id,
             datastream_id,
-            type,
-            layout,
           });
           return new Response(
-            JSON.stringify({
-              message: "Berhasil menambah data widget",
-              id: insertId,
-            }),
+            JSON.stringify({ id: insertId }),
             { status: 201 }
           );
         },
-        postWidgetSchema
+        postWidgetSchema // pastikan schema juga hanya field yang dibutuhkan
       )
 
       // READ Semua Widget by Dashboard ID
@@ -98,27 +94,6 @@ export function widgetRoutes(widgetService: WidgetService) {
           );
         },
         putWidgetSchema
-      )
-
-      // UPDATE Widget Layout
-      .put(
-        "/:id/layout",
-        //@ts-ignore
-        async ({ jwt, cookie, params, body }) => {
-          await authorizeRequest(jwt, cookie);
-          // body: { layout: {x, y, w, h} }
-          const updated = await widgetService.updateWidgetLayout(params.id, body.layout);
-          if (!updated) {
-            return new Response("Gagal mengupdate layout widget.", {
-              status: 400,
-            });
-          }
-          return new Response(
-            JSON.stringify({ message: "Berhasil mengupdate layout widget." }),
-            { status: 200 }
-          );
-        },
-        putWidgetLayoutSchema
       )
 
       // DELETE Widget

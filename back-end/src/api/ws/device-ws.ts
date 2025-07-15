@@ -8,7 +8,7 @@ function updateDeviceActivity(device_id: string, ws: any) {
   deviceClients.set(device_id, { ws, lastSeen: Date.now() });
 }
 
-export function deviceWsApi(deviceService: DeviceService) {
+export function deviceWsRoutes(deviceService: DeviceService) {
   return new Elysia({ prefix: "/ws" }).ws("/connect", {
     body: t.Object({
       type: t.String(),
@@ -24,12 +24,15 @@ export function deviceWsApi(deviceService: DeviceService) {
     async message(ws, data) {
       // Register device by secret
       if (data.type === "register" && data.secret) {
+        // @ts-ignore
         const deviceArr = await deviceService.getDeviceBySecret(data.secret);
         const device = Array.isArray(deviceArr) ? deviceArr[0] : deviceArr;
+        // @ts-ignore
         if (device && device.id) {
           ws.send({
             type: "registered",
             message: "device berhasil didaftarkan",
+            // @ts-ignore
             device_id: device.id, // return device_id dari database
           });
         } else {
@@ -70,19 +73,19 @@ export function deviceWsApi(deviceService: DeviceService) {
   });
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
-    if (now - lastSeen > 5000) {
-      deviceClients.delete(device_id);
-      broadcastToUsers({
-        type: "status_update",
-        device_id,
-        status: "offline",
-      });
-    }
-  }
-}, 1000);
+// setInterval(() => {
+//   const now = Date.now();
+//   for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
+//     if (now - lastSeen > 5000) {
+//       deviceClients.delete(device_id);
+//       broadcastToUsers({
+//         type: "status_update",
+//         device_id,
+//         status: "offline",
+//       });
+//     }
+//   }
+// }, 1000);
 
 export function sendToDevice(device_id: string, data: any) {
   const client = deviceClients.get(device_id);

@@ -18,8 +18,7 @@ const postWidgetSchema = {
       description: "ID datastream yang terkait dengan widget",
       example: 1,
     }),
-    type: t.Optional(t.String({ example: "line" })),
-    layout: t.Optional(t.Any()),
+    type: t.String({ example: "line" }),
   }),
   response: {
     201: t.Object(
@@ -59,26 +58,13 @@ const getAllWidgetsSchema = {
       {
         result: t.Array(
           t.Object({
-            id: t.Number({
-              description: "ID widget",
-              example: 1,
-            }),
-            description: t.String({
-              description: "Deskripsi widget",
-              example: "COD Widget",
-            }),
-            dashboard_id: t.String({
-              description: "ID dashboard terkait dengan widget",
-              example: 1,
-            }),
-            device_id: t.String({
-              description: "ID perangkat terkait dengan widget",
-              example: 1,
-            }),
-            datastream_id: t.String({
-              description: "ID datastream terkait dengan widget",
-              example: 1,
-            }),
+            id: t.Number({ description: "ID widget", example: 1 }),
+            description: t.String({ description: "Deskripsi widget", example: "COD Widget" }),
+            dashboard_id: t.Number({ description: "ID dashboard", example: 1 }),
+            device_id: t.Number({ description: "ID perangkat", example: 1 }),
+            datastream_id: t.Number({ description: "ID datastream", example: 1 }),
+            type: t.String({ description: "Tipe widget", example: "line" }),
+            widget_key: t.String({ description: "Widget key unik", example: "unique-widget-key" }),
           }),
           { description: "Daftar semua data widget" }
         ),
@@ -109,26 +95,13 @@ const getWidgetByDeviceIdSchema = {
       {
         result: t.Array(
           t.Object({
-            id: t.Number({
-              description: "ID widget",
-              example: 1,
-            }),
-            description: t.String({
-              description: "Deskripsi widget",
-              example: "COD Widget",
-            }),
-            dashboard_id: t.String({
-              description: "ID dashboard terkait dengan widget",
-              example: 1,
-            }),
-            device_id: t.String({
-              description: "ID perangkat terkait dengan widget",
-              example: 1,
-            }),
-            datastream_id: t.String({
-              description: "ID datastream terkait dengan widget",
-              example: 1,
-            }),
+            id: t.Number({ description: "ID widget", example: 1 }),
+            description: t.String({ description: "Deskripsi widget", example: "COD Widget" }),
+            dashboard_id: t.Number({ description: "ID dashboard", example: 1 }),
+            device_id: t.Number({ description: "ID perangkat", example: 1 }),
+            datastream_id: t.Number({ description: "ID datastream", example: 1 }),
+            type: t.String({ description: "Tipe widget", example: "line" }),
+            widget_key: t.String({ description: "Widget key unik", example: "unique-widget-key" }),
           }),
           { description: "Daftar widget berdasarkan device_id" }
         ),
@@ -164,20 +137,19 @@ const putWidgetSchema = {
       description: "Deskripsi widget yang akan diperbarui",
       example: "Flow Meter Widget",
     }),
-    dashboard_id: t.String({
+    dashboard_id: t.Number({
       description: "ID dashboard yang terkait dengan widget",
       example: 1,
     }),
-    device_id: t.String({
+    device_id: t.Number({
       description: "ID perangkat yang terkait dengan widget",
       example: 1,
     }),
-    datastream_id: t.String({
+    datastream_id: t.Number({
       description: "ID datastream yang terkait dengan widget",
       example: 1,
     }),
     type: t.String({ example: "line" }),
-    layout: t.Optional(t.Any()),
   }),
   response: {
     200: t.Object(
@@ -203,43 +175,6 @@ const putWidgetSchema = {
     tags: ["Widget"],
     description: "Mengupdate data widget berdasarkan ID",
     summary: "Update widget",
-  },
-};
-
-const putWidgetLayoutSchema = {
-  type: "json",
-  body: t.Object({
-    layout: t.Object({
-      x: t.Number({ description: "Posisi X grid", example: 0 }),
-      y: t.Number({ description: "Posisi Y grid", example: 0 }),
-      w: t.Number({ description: "Lebar grid", example: 4 }),
-      h: t.Number({ description: "Tinggi grid", example: 4 }),
-    }),
-  }),
-  response: {
-    200: t.Object(
-      {
-        message: t.String({
-          description: "Pesan sukses setelah berhasil mengupdate layout widget",
-          example: "Berhasil mengupdate layout widget.",
-        }),
-      },
-      { description: "Layout widget berhasil diperbarui" }
-    ),
-    400: t.Object(
-      {
-        message: t.String({
-          description: "Pesan error jika gagal mengupdate layout widget",
-          example: "Gagal mengupdate layout widget.",
-        }),
-      },
-      { description: "Gagal mengupdate layout widget" }
-    ),
-  },
-  detail: {
-    tags: ["Widget"],
-    description: "Mengupdate hanya layout widget berdasarkan ID",
-    summary: "Update widget layout only",
   },
 };
 
@@ -277,6 +212,5 @@ export {
   getAllWidgetsSchema,
   getWidgetByDeviceIdSchema,
   putWidgetSchema,
-  putWidgetLayoutSchema,
   deleteWidgetSchema,
 };

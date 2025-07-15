@@ -131,7 +131,7 @@ export default function AddDeviceForm({
             <Input
               id="mqttTopic"
               value={mqttTopic}
-              placeholder="Contoh: device/data"
+              placeholder="Contoh: data"
               onChange={(e) => setMqttTopic(e.target.value)}
               required
               className="w-full"

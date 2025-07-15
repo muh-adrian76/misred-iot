@@ -1,21 +1,26 @@
 import React from "react";
 import RGL, { WidthProvider } from "react-grid-layout";
+import { SwitchWidget } from "@/components/custom/widgets/widget-component/switch";
+import { SliderWidget } from "@/components/custom/widgets/widget-component/slider";
 import { AreaChartWidget } from "@/components/custom/widgets/widget-component/charts/area";
 import { BarChartWidget } from "@/components/custom/widgets/widget-component/charts/bar";
 import { LineChartWidget } from "@/components/custom/widgets/widget-component/charts/line";
-import { PieChartWidget } from "@/components/custom/widgets/widget-component/charts/pie";
+// import { PieChartWidget } from "@/components/custom/widgets/widget-component/charts/pie";
 
-import SwapyDragArea from "@/components/custom/widgets/swapy";
+import GridLayout from "@/components/custom/widgets/grid-layout";
 import WidgetBox from "@/components/custom/widgets/widget-box";
 import { motion } from "framer-motion";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 const ReactGridLayout = WidthProvider(RGL);
 
 const widgetComponents = {
+  slider: SliderWidget,
+  switch: SwitchWidget,
   area: AreaChartWidget,
   bar: BarChartWidget,
   line: LineChartWidget,
-  pie: PieChartWidget,
+  // pie: PieChartWidget,
 };
 
 export default function DashboardContent(props) {
@@ -30,11 +35,31 @@ export default function DashboardContent(props) {
     setLayoutsForTab,
     isEditing,
     isMobile,
+    isMedium,
     isTablet,
     isDesktop,
     handleChartDrop,
-    handleLayoutSave,
+    handleLayoutChange,
+    handleBreakpointChange,
+    handleAddChart,
+    currentBreakpoint,
+    layoutKey,
+    // Staging functions
+    stageWidgetRemoval,
+    removeWidgetFromDatabase,
+    handleEditWidget,
   } = props;
+
+  // Handler untuk menambah widget dari WidgetBox
+  const handleAddWidgetFromBox = (chartType) => {
+    // Panggil handleChartDrop untuk menampilkan form widget, bukan langsung tambah ke database
+    handleChartDrop(chartType, {
+      x: 0,
+      y: Infinity,
+      w: 3, // Default width
+      h: 4, // Default height
+    });
+  };
 
   if (dashboards.length === 0) {
     return (
@@ -75,7 +100,9 @@ export default function DashboardContent(props) {
         transition={{ duration: 0.5, delay: 0.5, ease: "easeInOut" }}
         className="flex items-center justify-center h-screen"
       >
-        <span className="text-muted-foreground">Memuat data widget...</span>
+        <TextShimmer className='text-sm' duration={1}>
+          Memuat data widget...
+        </TextShimmer>
       </motion.div>
     );
   }
@@ -110,54 +137,26 @@ export default function DashboardContent(props) {
       )}
 
       {/* Tampilkan isi widget jika ada dan tidak sedang edit */}
-      {activeTab && !isEditing && widgetCount && (
+      {activeTab && !isEditing && widgetCount > 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
-          className="flex items-center justify-center h-screen"
+          className="p-4"
         >
-          <div className="w-full">
-            <ReactGridLayout
-              className="layout"
-              rowHeight={100}
-              cols={12}
-              width={1200}
-              isDraggable={false}
-              isResizable={false}
-            >
-              {(tabItems[activeTab] || []).map((item, idx) => {
-                // Ambil layout dari tabLayouts
-                const layout = (tabLayouts[activeTab] || [])[idx] || {
-                  x: (idx * 3) % 12,
-                  y: Math.floor(idx / 4),
-                  w: 3,
-                  h: 2,
-                };
-                const WidgetComponent = widgetComponents[item.type];
-                return (
-                  <div
-                    key={item.id}
-                    data-grid={{
-                      x: layout.x,
-                      y: layout.y,
-                      w: layout.w,
-                      h: layout.h,
-                      static: true,
-                    }}
-                    className="bg-background border rounded shadow flex items-center justify-center"
-                  >
-                    {WidgetComponent ? (
-                      <WidgetComponent />
-                    ) : (
-                      <span>Tipe widget tidak ditemukan</span>
-                    )}
-                  </div>
-                );
-              })}
-            </ReactGridLayout>
-          </div>
+          <GridLayout
+            items={tabItems[activeTab] || []}
+            setItems={setItemsForTab}
+            layouts={tabLayouts[activeTab] || {}}
+            setLayouts={setLayoutsForTab}
+            onLayoutChange={handleLayoutChange}
+            onBreakpointChange={handleBreakpointChange}
+            isEditing={false}
+            stageWidgetRemoval={stageWidgetRemoval}
+            removeWidgetFromDatabase={removeWidgetFromDatabase}
+            handleEditWidget={handleEditWidget}
+          />
         </motion.div>
       )}
       {activeTab && isEditing && (
@@ -170,19 +169,26 @@ export default function DashboardContent(props) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
             >
-              <SwapyDragArea
+              <GridLayout
                 items={tabItems[activeTab] || []}
                 setItems={setItemsForTab}
-                layouts={{ lg: tabLayouts[activeTab] || [] }}
-                setLayouts={(layouts) => setLayoutsForTab(layouts.lg || [])}
+                layouts={tabLayouts[activeTab] || {}}
+                setLayouts={setLayoutsForTab}
                 onChartDrop={handleChartDrop}
+                onLayoutChange={handleLayoutChange}
+                onBreakpointChange={handleBreakpointChange}
+                isEditing={true}
+                stageWidgetRemoval={stageWidgetRemoval}
+                removeWidgetFromDatabase={removeWidgetFromDatabase}
+                handleEditWidget={handleEditWidget}
               />
             </motion.div>
           </div>
-          {/* WidgetBox di kanan */}
-          <div className="w-full lg:w-[325px]">
-            <WidgetBox isMobile={isMobile} />
-          </div>
+          <WidgetBox 
+            breakpoint={isMobile || isMedium || isTablet} 
+            onChartDrag={handleChartDrop}
+            onAddWidget={handleAddWidgetFromBox}
+          />
         </div>
       )}
     </>

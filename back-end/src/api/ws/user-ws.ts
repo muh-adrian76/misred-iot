@@ -3,7 +3,7 @@ import { sendToDevice } from "./device-ws"; // pastikan path benar
 
 const userClients = new Set<any>();
 
-export const userWsApi = new Elysia({ prefix: "/ws" })
+export const userWsRoutes = new Elysia({ prefix: "/ws" })
   .ws("/user", {
     body: t.Object({
       type: t.String(),
@@ -14,7 +14,6 @@ export const userWsApi = new Elysia({ prefix: "/ws" })
     }),
     open(ws) {
       userClients.add(ws);
-      ws.send({ type: "welcome", message: "User WebSocket connected!" });
     },
     message(ws, data) {
       // 1. Kirim perintah ke device

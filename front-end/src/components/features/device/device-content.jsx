@@ -8,12 +8,14 @@ import {
   PowerOff,
   Trash2,
   Plus,
+  FileBox,
 } from "lucide-react";
 import { successToast } from "@/components/custom/other/toaster";
 import DataTable from "@/components/custom/tables/data-table";
 import { AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
+import { convertDate } from "@/lib/helper";
 
 export default function DeviceContent({
   devices,
@@ -26,6 +28,8 @@ export default function DeviceContent({
   isMobile,
   selectedRows,
   setSelectedRows,
+  setSelectedDevice,
+  setUploadDialogOpen,
 }) {
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -49,27 +53,29 @@ export default function DeviceContent({
         </Badge>
       ),
     },
-    // {
-    //   key: "key",
-    //   label: "Secret",
-    //   sortable: false,
-    //   render: (row) => (
-    //     <span className="flex items-center justify-center gap-2">
-    //       <span className="truncate max-w-[100px] inline-block">{row.key}</span>
-    //       <DescriptionTooltip content="Salin" side="right">
-    //         <Button
-    //           type="button"
-    //           size="icon"
-    //           variant="ghost"
-    //           onClick={() => handleCopy(row.key)}
-    //           className="p-1 opacity-50 hover:opacity-100"
-    //         >
-    //           <Copy className="w-4 h-4" />
-    //         </Button>
-    //       </DescriptionTooltip>
-    //     </span>
-    //   ),
-    // },
+    {
+      key: "new_secret",
+      label: "JWT Secret",
+      sortable: false,
+      render: (row) => (
+        <span className="flex items-center justify-center gap-2">
+          <span className="truncate max-w-[100px] inline-block">
+            {row.new_secret}
+          </span>
+          <DescriptionTooltip content="Salin" side="right">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => handleCopy(row.new_secret)}
+              className="p-1 opacity-50 hover:opacity-100"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+          </DescriptionTooltip>
+        </span>
+      ),
+    },
     { key: "board_type", label: "Tipe Board", filterable: true },
     {
       key: "protocol",
@@ -78,7 +84,48 @@ export default function DeviceContent({
     },
     { key: "mqtt_topic", label: "Topik MQTT", sortable: true },
     { key: "mqtt_qos", label: "QoS MQTT", filterable: true },
-    { key: "lora_profile", label: "Profil Lora", sortable: true },
+    { key: "dev_eui", label: "LoRa UID", filterable: true },
+    {
+      key: "created_at",
+      label: "Dibuat",
+      sortable: true,
+      render: (row) => {
+        return <span className="text-xs">{convertDate(row.created_at)}</span>;
+      },
+    },
+    {
+      key: "updated_at",
+      label: "Update Terakhir",
+      sortable: true,
+      render: (row) => {
+        return <span className="text-xs">{convertDate(row.updated_at)}</span>;
+      },
+    },
+    { key: "firmware_version", label: "Versi Firmware", sortable: false },
+    {
+      key: "firmware_url",
+      label: "File Firmware",
+      sortable: false,
+      render: (row) => {
+        const label = row.firmware_url?.split("/").pop() || "-";
+        return row.firmware_url ? (
+          <DescriptionTooltip content="Download Firmware">
+            <span className="text-xs">
+              <a
+                href={`${process.env.NEXT_PUBLIC_BACKEND_URL}${row.firmware_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 text-blue-600 hover:text-blue-800"
+              >
+                {label}
+              </a>
+            </span>
+          </DescriptionTooltip>
+        ) : (
+          <span className="text-xs text-muted-foreground">{label}</span>
+        );
+      },
+    },
   ];
 
   const rowActions = [
@@ -101,6 +148,17 @@ export default function DeviceContent({
     //   disabled: true,
     //   // onClick: (row) => { ... },
     // },
+    {
+      key: "upload_firmware",
+      label: "Upload Firmware",
+      icon: FileBox,
+      className: "hover:text-foreground",
+      disabled: false,
+      onClick: (row) => {
+        setSelectedDevice(row);
+        setUploadDialogOpen(true);
+      },
+    },
     {
       key: "delete",
       label: "Hapus",

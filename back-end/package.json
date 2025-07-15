@@ -17,8 +17,10 @@
     "@chirpstack/chirpstack-api": "^4.11.1",
     "@elysiajs/cors": "^1.3.3",
     "@elysiajs/jwt": "^1.3.1",
+    "@elysiajs/static": "^1.3.0",
     "@elysiajs/swagger": "^1.3.0",
     "bcrypt": "^6.0.0",
+    "busboy": "^1.6.0",
     "concurrently": "^9.1.2",
     "crypto": "^1.0.1",
     "elysia": "^1.3.4",
@@ -26,6 +28,7 @@
     "google-auth-library": "^9.15.1",
     "mqtt": "^5.10.4",
     "mysql2": "^3.13.0",
+    "react-grid-layout": "^1.5.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

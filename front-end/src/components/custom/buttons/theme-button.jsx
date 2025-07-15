@@ -42,7 +42,7 @@ export default function ThemeButton() {
       <Button
         variant="outline"
         size="icon"
-        className="rounded-full cursor-pointer transition-all duration-500"
+        className="rounded-full hover:scale-105 cursor-pointer transition-all duration-500"
         onClick={handleThemeToggle}
       >
         <AnimatePresence mode="wait">

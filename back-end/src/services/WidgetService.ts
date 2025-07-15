@@ -13,18 +13,16 @@ export class WidgetService {
     device_id,
     datastream_id,
     type,
-    layout,
   }: any) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        `INSERT INTO widgets (description, dashboard_id, device_id, datastream_id, type, layout) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO widgets (description, dashboard_id, device_id, datastream_id, type) VALUES (?, ?, ?, ?, ?)`,
         [
           description,
           dashboard_id,
           device_id,
           datastream_id,
           type,
-          JSON.stringify(layout),
         ]
       );
       return result.insertId;
@@ -68,19 +66,17 @@ export class WidgetService {
       device_id,
       datastream_id,
       type,
-      layout,
     }: any
   ) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        `UPDATE widgets SET description = ?, dashboard_id = ?, device_id = ?, datastream_id = ?, type = ?, layout = ? WHERE id = ?`,
+        `UPDATE widgets SET description = ?, dashboard_id = ?, device_id = ?, datastream_id = ?, type = ? WHERE id = ?`,
         [
           description,
           dashboard_id,
           device_id,
           datastream_id,
           type,
-          JSON.stringify(layout),
           id,
         ]
       );
@@ -88,19 +84,6 @@ export class WidgetService {
     } catch (error) {
       console.error("Error updating widget:", error);
       throw new Error("Failed to update widget");
-    }
-  }
-
-  async updateWidgetLayout(id: string, layout: any) {
-    try {
-      const [result] = await this.db.query<ResultSetHeader>(
-        `UPDATE widgets SET layout = ? WHERE id = ?`,
-        [JSON.stringify(layout), id]
-      );
-      return result.affectedRows > 0;
-    } catch (error) {
-      console.error("Error updating widget layout:", error);
-      throw new Error("Failed to update widget layout");
     }
   }
 

@@ -1,23 +1,24 @@
-import { useState } from "react";
+"use client";
 import { cn } from "@/lib/utils";
+import { SlidingNumber } from "@/components/ui/sliding-number";
+import { useState } from "react";
 import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
 
 export function SliderWidget({ className, previewMode, ...props }) {
-  const [sliderValue, setSliderValue] = useState([50]);
+  const [value, setValue] = useState([50]);
 
   return (
-    <div className="flex w-2/3 gap-4">
+    <div className="flex w-full h-full items-center gap-4 px-4">
       <Slider
-        id="slider-widget"
-        value={sliderValue}
-        onValueChange={setSliderValue}
+        value={value}
+        onValueChange={setValue}
+        min={0}
         max={100}
-        step={1}
-        className={cn("w-[90%]", className)}
+        step={0.1}
+        className={cn("flex-1", className)}
         {...props}
       />
-      <Label htmlFor="slider-widget">{sliderValue[0]}</Label>
+      <SlidingNumber value={value[0]} />
     </div>
   );
 }

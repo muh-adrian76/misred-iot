@@ -70,7 +70,7 @@ void setup() {
   webSocket.setReconnectInterval(5000); // Auto reconnect
 
   lastHeartbeat = millis() - 10000;
-  lastSensorSend = millis() - 5000;
+  // lastSensorSend = millis() - 5000;
 }
 
 void loop() {

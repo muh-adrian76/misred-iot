@@ -1,6 +1,5 @@
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import { authorizeRequest, subDomain } from "../lib/utils";
 
@@ -34,17 +33,16 @@ export class AuthService {
       }
 
       // Jika email belum terdaftar, lanjutkan proses insert
-      const userId = uuidv4().slice(0, 8);
       const hashedPassword = await bcrypt.hash(password, 10);
       const name = email.split("@")[0];
 
       const [result] = await this.db.query<ResultSetHeader>(
-        "INSERT INTO users (id, email, password, name, created_at) VALUES (?, ?, ?, ?, NOW())",
-        [userId, email, hashedPassword, name]
+        "INSERT INTO users (email, password, name, created_at) VALUES (?, ?, ?, NOW())",
+        [email, hashedPassword, name]
       );
 
       if (result.affectedRows > 0) {
-        return { status: 201, message: "User berhasil terdaftar", id: userId };
+        return { status: 201, message: "User berhasil terdaftar", id: result.insertId };
       } else {
         return { status: 400, message: "Gagal menambahkan user." };
       }
@@ -205,7 +203,7 @@ export class AuthService {
       return { status: 400, message: "Email not found in Google token" };
     }
 
-    let userId: string;
+    let userId: number;
     let userName: string;
     let userPassword: string;
     let userCreatedAt: string;
@@ -239,11 +237,9 @@ export class AuthService {
           userId,
         ]);
       } else {
-        userId = uuidv4().slice(0, 8);
         const [result] = await this.db.query<ResultSetHeader>(
-          "INSERT INTO users (id, password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?)",
+          "INSERT INTO users (password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?)",
           [
-            userId,
             oauthPassword,
             payload.email,
             payload.name || payload.email.split("@")[0],
@@ -251,6 +247,7 @@ export class AuthService {
             serverTime,
           ]
         );
+        userId = result.insertId;
         userName = payload.name || payload.email.split("@")[0];
         userCreatedAt = serverTime.toISOString();
 

@@ -20,11 +20,11 @@ export class DashboardService {
     }
   }
 
-  async createDashboard(userId: string, description: string) {
+  async createDashboard(userId: string, description: string, widgetCount: number, layout?: any) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
-        "INSERT INTO dashboards (user_id, description) VALUES (?, ?)",
-        [userId, description]
+        "INSERT INTO dashboards (user_id, description, widget_count, layout) VALUES (?, ?, ?, ?)",
+        [userId, description, widgetCount, layout ? JSON.stringify(layout) : null]
       );
       return result.insertId;
     } catch (error) {
@@ -33,18 +33,18 @@ export class DashboardService {
     }
   }
 
-  async updateDashboard(userId: string, dashboardId: string, description: string) {
-  try {
-    const [result] = await this.db.query<ResultSetHeader>(
-      "UPDATE dashboards SET description = ? WHERE id = ? AND user_id = ?",
-      [description, dashboardId, userId]
-    );
-    return result.affectedRows > 0;
-  } catch (error) {
-    console.error("Error updating dashboard:", error);
-    throw new Error("Failed to update dashboard");
+  async updateDashboard(userId: string, dashboardId: string, description: string, widgetCount:number, layout?: any) {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "UPDATE dashboards SET description = ?, layout = ?, widget_count = ? WHERE id = ? AND user_id = ?",
+        [description, layout ? JSON.stringify(layout) : null, widgetCount, dashboardId, userId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating dashboard:", error);
+      throw new Error("Failed to update dashboard");
+    }
   }
-}
 
   async deleteDashboard(userId: string, dashboardId: string) {
     try {

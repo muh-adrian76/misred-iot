@@ -9,30 +9,38 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const widgetList = [
-  { key: "switch", label: "Switch", component: SwitchWidget, height: "h-20" },
-  // { key: "slider", label: "Slider", component: SliderWidget, height: "h-20" },
+  { key: "switch", label: "Switch", component: SwitchWidget, weight: "w-50" },
+  { key: "slider", label: "Slider", component: SliderWidget, weight: "w-50"  },
   {
     key: "line",
     label: "Line Chart",
     component: LineChartWidget,
-    height: "h-40",
   },
-  { key: "bar", label: "Bar Chart", component: BarChartWidget, height: "h-40" },
+  { key: "bar", label: "Bar Chart", component: BarChartWidget },
   {
     key: "area",
     label: "Area Chart",
     component: AreaChartWidget,
-    height: "h-40",
   },
   // { key: "pie", label: "Pie Chart", component: PieChartWidget, height: "h-40" },
 ];
 
-export function ScrollContent({ onChartDrag, isMobile }) {
-  // Drag event handler
+export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
+  // Drag event handle - hanya set data, jangan panggil callback
   const handleDragStart = (e, key) => {
-    e.dataTransfer.setData("chartType", key);
+    e.dataTransfer.setData("type", key);
     e.dataTransfer.effectAllowed = "move";
-    if (onChartDrag) onChartDrag(key);
+    // Jangan panggil onChartDrag di sini - biarkan drop yang handle
+  };
+
+  // Add widget directly (without drag) - ini untuk tombol +
+  const handleAddWidget = (e, key) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Panggil onChartDrop untuk menampilkan form widget
+    if (onChartDrag) {
+      onChartDrag(key, null); // null untuk layoutItem karena bukan dari drop
+    }
   };
 
   return (
@@ -41,11 +49,12 @@ export function ScrollContent({ onChartDrag, isMobile }) {
         <div
           key={w.key}
           draggable
+          unselectable="on"
           onDragStart={(e) => handleDragStart(e, w.key)}
-          className="rounded border bg-background shadow p-2 flex flex-col items-center justify-center cursor-move hover:bg-muted transition-all min-w-[180px] min-h-[120px] mb-2"
+          className="droppable-element rounded border bg-background shadow p-2 flex flex-col items-center justify-center cursor-grab hover:bg-muted transition-all min-w-[180px] min-h-[120px] mb-2"
           title={`Tarik ke kanvas untuk menambah ${w.label}`}
         >
-          <div className={cn("flex w-full items-center justify-between mb-2", isMobile ? "px-5" : "px-10")}>
+          <div className={cn("flex w-full items-center justify-between mb-2", mobileView ? "px-5" : "px-10")}>
             <span className="font-semibold">
               {w.label}
             </span>
@@ -53,13 +62,13 @@ export function ScrollContent({ onChartDrag, isMobile }) {
               size="xs"
               variant="outline"
               className="flex gap-2 items-center"
-              onClick={(e) => handleDragStart(e, w.key)}
+              onClick={(e) => handleAddWidget(e, w.key)}
             >
               <Plus className="w-5 h-5" />
             </Button>
           </div>
           <div
-            className={cn("w-full flex items-center justify-center", w.height)}
+            className={cn("flex items-center h-40 justify-center", w.weight ? w.weight : "w-full")}
           >
             <w.component previewMode />
           </div>

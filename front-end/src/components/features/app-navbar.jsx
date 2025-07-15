@@ -26,7 +26,7 @@ export default function AppNavbar({ page }) {
         exit={{ opacity: 0 }}
         transition={{ duration: 1, delay: 1, ease: "easeInOut" }}
       >
-        <SidebarTrigger className="min-xl:hidden" />
+        <SidebarTrigger className="min-lg:hidden" />
 
         {/* Lokasi */}
         <Breadcrumb>

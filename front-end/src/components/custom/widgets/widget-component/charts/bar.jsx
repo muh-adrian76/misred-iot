@@ -27,7 +27,7 @@ const chartConfig = {
 
 export function BarChartWidget({ previewMode = false }) {
   return (
-    <ChartContainer config={chartConfig} className="h-full w-full">
+    <ChartContainer config={chartConfig} className="h-full w-full min-h-[150px] min-w-[150px]">
       <BarChart
         data={chartData}
         width={undefined}

@@ -1,6 +1,7 @@
 import AddDeviceForm from "@/components/custom/forms/device/add-device-form";
 import EditDeviceForm from "@/components/custom/forms/device/edit-device-form";
 import DeleteDeviceForm from "@/components/custom/forms/device/delete-device-form";
+import UploadFirmwareForm from "@/components/custom/forms/device/upload-firmware-form";
 
 export default function DeviceDialogs({
   devices,
@@ -22,8 +23,11 @@ export default function DeviceDialogs({
   setDeleteChecked,
   setSelectedRows,
   boardOptions,
+  uploadDialogOpen,
+  setUploadDialogOpen,
+  selectedDevice,
+  updateDeviceFirmware,
 }) {
-
   return (
     <>
       <AddDeviceForm
@@ -51,6 +55,12 @@ export default function DeviceDialogs({
         deleteChecked={deleteChecked}
         setDeleteChecked={setDeleteChecked}
         setSelectedRows={setSelectedRows}
+      />
+      <UploadFirmwareForm
+        open={uploadDialogOpen}
+        setOpen={setUploadDialogOpen}
+        device={selectedDevice}
+        onUploaded={updateDeviceFirmware}
       />
     </>
   );

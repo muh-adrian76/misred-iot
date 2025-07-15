@@ -11,9 +11,22 @@ export default function DashboardLayout() {
 
   return (
     <>
-      <DashboardHeader {...logic} />
-      <div className="overflow-x-hidden h-screen">
-        <DashboardContent {...logic} />
+      <DashboardHeader 
+        {...logic}
+        startEditMode={logic.startEditMode}
+        cancelEditMode={logic.cancelEditMode}
+        saveAllLayoutChanges={logic.saveAllLayoutChanges}
+        hasUnsavedChanges={logic.hasUnsavedChanges}
+      />
+      <div className="overflow-x-hidden min-h-screen">
+        <DashboardContent 
+          {...logic}
+          handleLayoutChange={logic.handleLayoutChange}
+          handleBreakpointChange={logic.handleBreakpointChange}
+          handleAddChart={logic.handleAddChart}
+          currentBreakpoint={logic.currentBreakpoint}
+          layoutKey={logic.layoutKey}
+        />
       </div>
       <DashboardDialogs {...logic} />
     </>

@@ -33,7 +33,7 @@ const chartConfig = {
 
 export function LineChartWidget({ previewMode = false }) {
   return (
-    <ChartContainer config={chartConfig} className="h-full w-full">
+    <ChartContainer config={chartConfig} className="h-full w-full min-h-[150px] min-w-[150px]">
       <LineChart
         data={chartData}
         width={undefined}

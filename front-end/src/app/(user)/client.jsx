@@ -61,10 +61,10 @@ export default function UserLayoutClient({ children }) {
           />
         </div>
       )}
-      <SidebarInset>
-        <AppNavbar page={activeMenu.title} />
-        <div className="min-h-screen">{children}</div>
-      </SidebarInset>
+        <SidebarInset className="flex flex-col w-[80vw]">
+          <AppNavbar page={activeMenu.title} />
+          <div className="min-h-screen">{children}</div>
+        </SidebarInset>
     </SidebarProvider>
   );
 }

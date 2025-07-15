@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@/providers/user-provider";
 import { useAuth } from "@/hooks/use-auth";
+import { useWebSocket } from "@/providers/websocket-provider";
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
@@ -13,6 +14,8 @@ export function useDeviceLogic() {
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [deleteFormOpen, setDeleteFormOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState(null);
   const [openBoardPopover, setOpenBoardPopover] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
   const [editDevice, setEditDevice] = useState(null);
@@ -21,6 +24,7 @@ export function useDeviceLogic() {
   const [selectedRows, setSelectedRows] = useState([]);
 
   const isAuthenticated = useAuth();
+  const ws = useWebSocket();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Fetch devices milik user
@@ -44,13 +48,10 @@ export function useDeviceLogic() {
 
   // Update device state
   useEffect(() => {
-    const ws = new WebSocket(`${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user`);
-    ws.onopen = () => {
-      console.log("WebSocket connected!");
-    };
+    if (!ws) return;
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("WebSocket message received:", data);
+      // console.log("WebSocket message received:", data);
       if (data.type === "status_update") {
         console.log("Status update received:", data);
         setDevices((prev) =>
@@ -61,11 +62,12 @@ export function useDeviceLogic() {
           )
         );
       }
-      // Bisa tambahkan handler untuk sensor_update, dsb
+      if (data.type === "device_secret_refreshed") {
+        // console.log("Device secret refreshed:", data);
+        fetchDevices(); 
+      }
     };
-
-    return () => ws.close();
-  }, []);
+  }, [fetchDevices, ws]);
 
   // CRUD Handler
   const handleAddDevice = async (payload) => {
@@ -112,6 +114,21 @@ export function useDeviceLogic() {
     }
   };
 
+  const updateDeviceFirmware = ({ device_id, firmware_version, firmware_url, updated_at }) => {
+  setDevices((prev) =>
+    prev.map((dev) =>
+      dev.id === device_id
+        ? {
+            ...dev,
+            firmware_version,
+            firmware_url,
+            updated_at,
+          }
+        : dev
+    )
+  );
+};
+
   const boardOptions = [
     "ESP32",
     "ESP8266",
@@ -150,5 +167,10 @@ export function useDeviceLogic() {
     selectedRows,
     setSelectedRows,
     boardOptions,
+    uploadDialogOpen,
+    setUploadDialogOpen,
+    selectedDevice,
+    setSelectedDevice,
+    updateDeviceFirmware,
   };
 }

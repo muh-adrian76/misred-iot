@@ -2,15 +2,13 @@
 
 import { useUser, userType } from "@/providers/user-provider";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTransitionRouter as useRouter } from "next-view-transitions";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Settings2, User } from "lucide-react";
@@ -24,7 +22,7 @@ import { googleLogout } from "@react-oauth/google";
 
 export default function ProfileButton() {
   const [openProfileSheet, setOpenProfileSheet] = useState(false);
-  const [openDropdownProfile, setOpenDropdownProfile] = useState(false);
+  const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
   const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
 
   const router = useRouter();
@@ -32,34 +30,37 @@ export default function ProfileButton() {
 
   const handleLogout = async (e) => {
     e.preventDefault();
+    
+    // Clear user immediately
+    setUser(userType);
+    
+    // Call backend logout
     await fetchFromBackend("/auth/logout", {
       method: "POST",
     });
+    
+    // Google logout
     googleLogout?.();
+    
+    // Redirect to auth page
     router.push("/auth");
-    setTimeout(() => {
-      setUser(userType);
-    }, 2500);
   };
 
   return (
     <>
-      <DropdownMenu
-        open={openDropdownProfile}
-        onOpenChange={(open) => setOpenDropdownProfile(open)}
-      >
+      <Popover open={openPopoverProfile} onOpenChange={setOpenPopoverProfile}>
         <DescriptionTooltip content="Profil">
-          <DropdownMenuTrigger asChild>
+          <PopoverTrigger asChild>
             <Button
               size="icon"
-              className="relative rounded-full cursor-pointer bg-primary hover:bg-red-600  transition-all"
+              className="relative rounded-full hover:scale-105 cursor-pointer bg-primary hover:bg-red-600 transition-all duration-500"
             >
               <User className="w-5 h-5" />
               <span className="sr-only">Profile</span>
             </Button>
-          </DropdownMenuTrigger>
+          </PopoverTrigger>
         </DescriptionTooltip>
-        <DropdownMenuContent align="end" disablePortal>
+        <PopoverContent align="end" className="p-0 w-full">
           <div className="px-3 py-3 flex gap-4 items-center">
             <Avatar>
               <AvatarFallback className="bg-red-100 text-primary">
@@ -78,7 +79,7 @@ export default function ProfileButton() {
               <Settings2
                 className="w-5 h-5 hover:text-primary cursor-pointer transition-all duration-300"
                 onClick={() => {
-                  setOpenDropdownProfile(false);
+                  setOpenPopoverProfile(false);
                   setTimeout(() => {
                     setOpenProfileSheet(true);
                   }, 250);
@@ -86,24 +87,22 @@ export default function ProfileButton() {
               />
             </DescriptionTooltip>
           </div>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild inset="true">
-            <Button
-              variant="ghost"
-              className="w-full cursor-pointer justify-between gap-4 hover:bg-red-50 hover:text-primary transition-all"
-              onClick={() => {
-                setOpenDropdownProfile(false);
-                setTimeout(() => {
-                  setOpenLogoutDialog(true);
-                }, 250);
-              }}
-            >
-              Log Out
-              <LogOut className="w-5 h-5 hover:text-primary" />
-            </Button>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          <div className="border-t" />
+          <Button
+            variant="ghost"
+            size="default"
+            className="w-full cursor-pointer rounded-b-md justify-between gap-4 hover:bg-transparent hover:text-primary transition-all"
+            onClick={() => {
+              setTimeout(() => {
+                setOpenLogoutDialog(true);
+              }, 250);
+            }}
+          >
+            Log Out
+            <LogOut className="w-5 h-5 hover:text-primary" />
+          </Button>
+        </PopoverContent>
+      </Popover>
 
       {/* Pengaturan Profil */}
       <ProfileForm

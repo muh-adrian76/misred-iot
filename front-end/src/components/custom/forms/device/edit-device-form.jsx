@@ -57,7 +57,10 @@ export default function EditDeviceForm({
   const formContent = (
     <div className="grid gap-4 py-2">
       <div className="flex flex-col gap-2">
-        <Label htmlFor="nameEdit" className="text-left ml-1 font-medium max-sm:text-xs">
+        <Label
+          htmlFor="nameEdit"
+          className="text-left ml-1 font-medium max-sm:text-xs"
+        >
           Nama
         </Label>
         <Input
@@ -70,7 +73,9 @@ export default function EditDeviceForm({
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1 font-medium max-sm:text-xs">Tipe Board</Label>
+          <Label className="text-left ml-1 font-medium max-sm:text-xs">
+            Tipe Board
+          </Label>
           <Popover open={openBoardPopover} onOpenChange={setOpenBoardPopover}>
             <PopoverTrigger asChild>
               <Button
@@ -146,13 +151,21 @@ export default function EditDeviceForm({
               id="mqttTopicEdit"
               className="w-full"
               value={mqttTopic}
-              placeholder="Contoh: device/data"
-              onChange={(e) => setMqttTopic(e.target.value)}
+              placeholder="Contoh: data"
+              onChange={(e) => {
+                let value = e.target.value;
+                if (editDevice?.id && value.startsWith(editDevice.id + "/")) {
+                  value = value.slice((editDevice.id + "/").length);
+                }
+                setMqttTopic(value);
+              }}
               required
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label className="text-left ml-1 font-medium max-sm:text-xs">MQTT QoS</Label>
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">
+              MQTT QoS
+            </Label>
             <Select value={mqttQos} onValueChange={setMqttQos}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select QoS" />
