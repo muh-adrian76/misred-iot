@@ -14,9 +14,11 @@ import { deviceRoutes } from "./api/device";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
+import { alarmNotificationRoutes } from "./api/alarm/notifications";
 import { dashboardRoutes } from "./api/dashboard";
 import { datastreamRoutes } from "./api/datastream";
-import { broadcastToUsers, userWsRoutes } from "./api/ws/user-ws";
+import { otaaRoutes } from "./api/otaa";
+import { userWsRoutes, broadcastToUsers } from "./api/ws/user-ws";
 import { deviceWsRoutes } from "./api/ws/device-ws";
 
 import { AuthService } from "./services/AuthService";
@@ -25,8 +27,10 @@ import { DeviceService } from "./services/DeviceService";
 import { PayloadService } from "./services/PayloadService";
 import { WidgetService } from "./services/WidgetService";
 import { AlarmService } from "./services/AlarmService";
+import { AlarmNotificationService } from "./services/AlarmNotificationService";
 import { DashboardService } from "./services/DashboardService";
 import { DatastreamService } from "./services/DatastreamService";
+import { OtaaUpdateService } from "./services/OtaaUpdateService";
 import { MQTTService } from "./services/MiddlewareService";
 
 class Server {
@@ -40,8 +44,10 @@ class Server {
   private payloadService!: PayloadService;
   private widgetService!: WidgetService;
   private alarmService!: AlarmService;
+  private alarmNotificationService!: AlarmNotificationService;
   private dashboardService!: DashboardService;
   private datastreamService!: DatastreamService;
+  private otaaService!: OtaaUpdateService;
   private mqttService!: MQTTService;
 
   constructor() {
@@ -53,19 +59,29 @@ class Server {
     this.mqttClient = MQTTClient.getInstance();
     this.mqttService = new MQTTService(this.db);
     this.mqttService.listen();
+    this.otaaService = new OtaaUpdateService(this.db);
 
     this.deviceService = new DeviceService(
       this.db,
+      this.otaaService,
       this.mqttService.subscribeTopic.bind(this.mqttService),
       this.mqttService.unSubscribeTopic.bind(this.mqttService)
     );
-    this.payloadService = new PayloadService(this.db, this.deviceService);
+    
     this.authService = new AuthService(this.db);
     this.userService = new UserService(this.db);
     this.widgetService = new WidgetService(this.db);
     this.alarmService = new AlarmService(this.db);
+    this.alarmNotificationService = new AlarmNotificationService(this.db);
     this.dashboardService = new DashboardService(this.db);
     this.datastreamService = new DatastreamService(this.db);
+
+    // PayloadService dengan AlarmNotificationService
+    this.payloadService = new PayloadService(
+      this.db, 
+      this.deviceService, 
+      this.alarmNotificationService
+    );
 
     this.app
       // API
@@ -75,8 +91,10 @@ class Server {
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
       .use(alarmRoutes(this.alarmService))
+      .use(alarmNotificationRoutes(this.alarmService, this.alarmNotificationService))
       .use(dashboardRoutes(this.dashboardService))
       .use(datastreamRoutes(this.datastreamService))
+      .use(otaaRoutes(this.otaaService))
 
       // Websocket
       .use(userWsRoutes)

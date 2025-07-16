@@ -29,10 +29,12 @@ export default function DataTable({
   onAdd,
   onEdit,
   onDelete,
+  onUploadFirmware,
   noDataText = "Tidak ada data.",
   content,
   limit = 10,
   searchPlaceholder = "Cari...",
+  showUploadFirmware = false
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -158,8 +160,10 @@ export default function DataTable({
           setSearch={setSearch}
           searchPlaceholder={searchPlaceholder}
           onAdd={onAdd}
+          onUploadFirmware={onUploadFirmware}
           isMobile={isMobile}
           content={content}
+          showUploadFirmware={showUploadFirmware}
         />
       </motion.div>
 

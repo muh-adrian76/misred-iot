@@ -1,17 +1,21 @@
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { randomBytes } from "crypto";
+import { OtaaUpdateService } from "./OtaaUpdateService";
 
 export class DeviceService {
   private db: Pool;
+  private otaaService: OtaaUpdateService;
   private onSubscribeTopic?: (topic: string) => void;
   private onUnsubscribeTopic?: (topic: string) => void;
 
   constructor(
     db: Pool,
+    otaaService: OtaaUpdateService,
     onSubscribeTopic?: (topic: string) => void,
     onUnsubscribeTopic?: (topic: string) => void
   ) {
     this.db = db;
+    this.otaaService = otaaService;
     this.onSubscribeTopic = onSubscribeTopic;
     this.onUnsubscribeTopic = onUnsubscribeTopic;
   }
@@ -50,7 +54,8 @@ export class DeviceService {
 
       // Integrasi broker MQTT
       if (topic) {
-        const uniqueTopic = `${id}/${topic}`;
+        // const uniqueTopic = `${id}/${topic}`;
+        const uniqueTopic = topic;
         await this.db.query("UPDATE devices SET mqtt_topic = ? WHERE id = ?", [
           uniqueTopic,
           id,
@@ -123,14 +128,27 @@ export class DeviceService {
 
   async getFirmwareVersion(id: string) {
     try {
+      // Get device info dengan user_id
       const [rows]: any = await this.db.query(
-        "SELECT firmware_version FROM devices WHERE id = ?",
+        "SELECT board_type, firmware_version, user_id FROM devices WHERE id = ?",
         [id]
       );
+      
       if (rows.length === 0) {
         throw new Error("Device tidak valid");
       }
-      return rows[0].firmware_version;
+
+      const { board_type, firmware_version: currentVersion, user_id } = rows[0];
+
+      // Get latest firmware from OTAA system berdasarkan user_id
+      const latestFirmware = await this.otaaService.getFirmwareByBoardType(board_type, user_id);
+      
+      return {
+        firmware_version: latestFirmware?.firmware_version || currentVersion || "1.0.0",
+        current_version: currentVersion,
+        board_type: board_type,
+        user_id: user_id
+      };
     } catch (error) {
       console.error("Error getting firmware version:", error);
       throw new Error("Failed to get firmware version");
@@ -143,9 +161,10 @@ export class DeviceService {
     firmware_url: string
   ) {
     try {
+      // Update device's current firmware version when it gets updated
       await this.db.query(
-        "UPDATE devices SET firmware_version = ?, firmware_url = ? WHERE id = ?",
-        [firmware_version, firmware_url, id]
+        "UPDATE devices SET firmware_version = ? WHERE id = ?",
+        [firmware_version, id]
       );
       const [updatedTime]: any = await this.db.query(
         "SELECT updated_at FROM devices WHERE id = ?",
@@ -153,21 +172,99 @@ export class DeviceService {
       );
       return updatedTime[0]?.updated_at || new Date();
     } catch (error) {
-      console.error("Error updating firmware URL:", error);
-      throw new Error("Failed to update firmware URL");
+      console.error("Error updating firmware version:", error);
+      throw new Error("Failed to update firmware version");
+    }
+  }
+
+  async getFirmwareList(id: string) {
+    try {
+      // Get device board type dan user_id
+      const [rows]: any = await this.db.query(
+        "SELECT board_type, user_id FROM devices WHERE id = ?",
+        [id]
+      );
+      
+      if (rows.length === 0) {
+        throw new Error("Device tidak valid");
+      }
+
+      const { board_type, user_id } = rows[0];
+
+      // Get firmware from OTAA system berdasarkan user_id
+      const firmware = await this.otaaService.getFirmwareByBoardType(board_type, user_id);
+      
+      if (!firmware) {
+        return [];
+      }
+
+      // Extract filename from firmware_url
+      const filename = firmware.firmware_url.split('/').pop();
+      
+      return [{
+        name: filename,
+        url: `/device/firmware/${id}/${filename}`,
+        version: firmware.firmware_version
+      }];
+    } catch (error) {
+      console.error("Error getting firmware list:", error);
+      throw new Error("Failed to get firmware list");
+    }
+  }
+
+  async getFirmwareFile(id: string, filename: string) {
+    try {
+      // Get device board type dan user_id
+      const [rows]: any = await this.db.query(
+        "SELECT board_type, user_id FROM devices WHERE id = ?",
+        [id]
+      );
+      
+      if (rows.length === 0) {
+        throw new Error("Device tidak valid");
+      }
+
+      const { board_type, user_id } = rows[0];
+
+      // Get firmware from OTAA system berdasarkan user_id
+      const firmware = await this.otaaService.getFirmwareByBoardType(board_type, user_id);
+      
+      if (!firmware) {
+        throw new Error("Firmware tidak ditemukan");
+      }
+
+      // Convert firmware_url to actual file path
+      const filePath = firmware.firmware_url.replace('/public/', `${process.cwd()}/src/assets/`);
+      
+      return filePath;
+    } catch (error) {
+      console.error("Error getting firmware file:", error);
+      throw new Error("Failed to get firmware file");
     }
   }
 
   async getFirmwareUrl(id: string) {
     try {
+      // Get device info dengan user_id
       const [rows]: any = await this.db.query(
-        "SELECT firmware_url FROM devices WHERE id = ?",
+        "SELECT board_type, user_id FROM devices WHERE id = ?",
         [id]
       );
+      
       if (rows.length === 0) {
         throw new Error("Device tidak valid");
       }
-      return rows[0].firmware_url;
+
+      const { board_type, user_id } = rows[0];
+
+      // Get firmware from OTAA system berdasarkan user_id
+      const firmware = await this.otaaService.getFirmwareByBoardType(board_type, user_id);
+      
+      if (!firmware || !firmware.firmware_url) {
+        throw new Error("No firmware available for this board type");
+      }
+      
+      return firmware.firmware_url;
     } catch (error) {
       console.error("Error getting firmware URL:", error);
       throw new Error("Failed to get firmware URL");
@@ -222,11 +319,12 @@ export class DeviceService {
       if (mqtt_topic) {
         // Pastikan hanya satu id di depan
         let topic = mqtt_topic;
-        const prefix = `${id}/`;
-        if (topic.startsWith(prefix)) {
-          topic = topic.slice(prefix.length);
-        }
-        uniqueTopic = `${id}/${topic}`;
+        // const prefix = `${id}/`;
+        // if (topic.startsWith(prefix)) {
+        //   topic = topic.slice(prefix.length);
+        // }
+        // uniqueTopic = `${id}/${topic}`;
+        uniqueTopic = topic;
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
@@ -274,6 +372,23 @@ export class DeviceService {
     } catch (error) {
       console.error("Error deleting device:", error);
       throw new Error("Failed to delete device");
+    }
+  }
+
+  /**
+   * Update firmware version untuk device (dipanggil oleh ESP32 setelah OTA berhasil)
+   */
+  async updateDeviceFirmwareVersion(deviceId: string, firmwareVersion: string): Promise<boolean> {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "UPDATE devices SET firmware_version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [firmwareVersion, deviceId]
+      );
+      
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating device firmware version:", error);
+      throw new Error("Failed to update device firmware version");
     }
   }
 }

@@ -48,11 +48,11 @@ CREATE TABLE IF NOT EXISTS `dashboards` (
 
 CREATE TABLE IF NOT EXISTS `devices` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `description` varchar(255),
+  `description` varchar(255) NOT NULL,
   `board_type` varchar(255) DEFAULT NULL,
   `protocol` varchar(10) NOT NULL,
   `mqtt_topic` varchar(255) DEFAULT NULL,
-  `mqtt_qos` enum('0','1','2') DEFAULT '0',
+  -- `mqtt_qos` enum('0','1','2') DEFAULT '0',
   `dev_eui` varchar(255) DEFAULT NULL,
   `app_eui` varchar(255) DEFAULT NULL,
   `app_key` varchar(255) DEFAULT NULL,
@@ -61,7 +61,6 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `old_secret` varchar(255) DEFAULT NULL,
   `new_secret` varchar(255) NOT NULL,
   `firmware_version` varchar(50) DEFAULT NULL,
-  `firmware_url` varchar(255) DEFAULT NULL,
   `status` enum('offline','online') DEFAULT 'offline',
   `user_id` INT NOT NULL,
   PRIMARY KEY (`id`),
@@ -96,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `payloads` (
 
 CREATE TABLE IF NOT EXISTS `widgets` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `description` varchar(255),
+  `description` varchar(255) NOT NULL,
   `dashboard_id` INT NOT NULL,
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
@@ -109,15 +108,56 @@ CREATE TABLE IF NOT EXISTS `widgets` (
 
 CREATE TABLE IF NOT EXISTS `alarms` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `description` varchar(255),
+  `description` varchar(255) NOT NULL,
   `user_id` INT NOT NULL,
-  `widget_id` INT NOT NULL,
-  `operator` ENUM('=', '<', '>', '<=', '>=') NOT NULL,
-  `threshold` DECIMAL(10,3) DEFAULT NULL,
-  `last_sended` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `device_id` INT NOT NULL,
+  `datastream_id` INT NOT NULL,
+  `operator` ENUM('=', '<', '>', '<=', '>=', '!=') NOT NULL,
+  `threshold` DECIMAL(10,3) NOT NULL,
+  `is_active` BOOLEAN DEFAULT TRUE,
+  `cooldown_minutes` INT DEFAULT 5,
+  `notification_whatsapp` BOOLEAN DEFAULT TRUE,
+  `notification_browser` BOOLEAN DEFAULT TRUE,
+  `last_triggered` TIMESTAMP NULL DEFAULT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`widget_id`) REFERENCES `widgets` (`id`) ON DELETE CASCADE
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `otaa_updates` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `board_type` varchar(255) NOT NULL,
+  `firmware_version` varchar(50) NOT NULL,
+  `firmware_url` varchar(255) NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `user_id` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `alarm_notifications` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `alarm_id` INT NOT NULL,
+  `user_id` INT NOT NULL,
+  `device_id` INT NOT NULL,
+  `datastream_id` INT NOT NULL,
+  `sensor_value` DECIMAL(10,3) NOT NULL,
+  `threshold` DECIMAL(10,3) NOT NULL,
+  `operator` VARCHAR(5) NOT NULL,
+  `notification_type` ENUM('whatsapp', 'browser', 'both') NOT NULL,
+  `whatsapp_message_id` VARCHAR(255) NULL,
+  `error_message` TEXT NULL,
+  `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `sent_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

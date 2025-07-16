@@ -1,7 +1,9 @@
 import AddDeviceForm from "@/components/custom/forms/device/add-device-form";
 import EditDeviceForm from "@/components/custom/forms/device/edit-device-form";
 import DeleteDeviceForm from "@/components/custom/forms/device/delete-device-form";
-import UploadFirmwareForm from "@/components/custom/forms/device/upload-firmware-form";
+import UploadFirmwareForm from "@/components/custom/forms/otaa/otaa-form";
+import OtaaUploadFirmwareForm from "@/components/custom/forms/otaa/otaa-form";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 export default function DeviceDialogs({
   devices,
@@ -23,10 +25,6 @@ export default function DeviceDialogs({
   setDeleteChecked,
   setSelectedRows,
   boardOptions,
-  uploadDialogOpen,
-  setUploadDialogOpen,
-  selectedDevice,
-  updateDeviceFirmware,
 }) {
   return (
     <>
@@ -55,12 +53,6 @@ export default function DeviceDialogs({
         deleteChecked={deleteChecked}
         setDeleteChecked={setDeleteChecked}
         setSelectedRows={setSelectedRows}
-      />
-      <UploadFirmwareForm
-        open={uploadDialogOpen}
-        setOpen={setUploadDialogOpen}
-        device={selectedDevice}
-        onUploaded={updateDeviceFirmware}
       />
     </>
   );

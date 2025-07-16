@@ -57,7 +57,7 @@ export function deviceRoutes(deviceService: DeviceService) {
             board,
             protocol,
             mqtt_topic,
-            mqtt_qos,
+            // mqtt_qos,
             dev_eui,
             app_eui,
             app_key,
@@ -72,7 +72,7 @@ export function deviceRoutes(deviceService: DeviceService) {
             board,
             protocol,
             topic: mqtt_topic,
-            qos: mqtt_qos,
+            // qos: mqtt_qos,
             dev_eui,
             app_eui,
             app_key,
@@ -152,7 +152,7 @@ export function deviceRoutes(deviceService: DeviceService) {
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           await authorizeRequest(jwt, cookie);
-          const deviceId = params.id;
+          const deviceId = params.deviceId;
           //@ts-ignore
           const { filename, file_base64, firmware_version } = body;
           if (!file_base64 || !filename) {
@@ -216,7 +216,9 @@ export function deviceRoutes(deviceService: DeviceService) {
             JSON.stringify({
               message: "Versi firmware perangkat",
               device_id: params.deviceId,
-              firmware_version: version,
+              firmware_version: version.firmware_version, // Sesuaikan dengan ESP32
+              current_version: version.current_version,
+              board_type: version.board_type,
             }),
             { status: 200 }
           );
@@ -224,26 +226,58 @@ export function deviceRoutes(deviceService: DeviceService) {
         getFirmwareVersionSchema
       )
 
+      // ESP32 Report Firmware Version (untuk update setelah OTA)
+      .post(
+        "/firmware/report/:deviceId",
+        //@ts-ignore
+        async ({ params, body, set }) => {
+          try {
+            //@ts-ignore
+            const { firmware_version } = body;
+            const deviceId = params.deviceId;
+
+            if (!firmware_version) {
+              set.status = 400;
+              return {
+                success: false,
+                message: "firmware_version is required"
+              };
+            }
+
+            // Update firmware_version di database
+            await deviceService.updateDeviceFirmwareVersion(deviceId, firmware_version);
+
+            console.log(`✅ Device ${deviceId} reported firmware version: ${firmware_version}`);
+
+            return {
+              success: true,
+              message: "Firmware version updated successfully",
+              device_id: deviceId,
+              new_version: firmware_version
+            };
+          } catch (error) {
+            console.error("Error updating device firmware version:", error);
+            set.status = 500;
+            return {
+              success: false,
+              message: "Failed to update firmware version",
+              error: error instanceof Error ? error.message : "Unknown error"
+            };
+          }
+        }
+      )
+
       // Download Firmware Device
       .get(
         "/firmware/:deviceId/",
         async ({ params, set }) => {
-          const firmwareDir = join(
-            process.cwd(),
-            "src",
-            "assets",
-            "firmware",
-            params.deviceId
-          );
-          if (!existsSync(firmwareDir)) {
+          try {
+            const files = await deviceService.getFirmwareList(params.deviceId);
+            return files;
+          } catch (error) {
             set.status = 404;
             return "Firmware tidak ditemukan";
           }
-          const files = readdirSync(firmwareDir);
-          return files.map((file) => ({
-            name: file,
-            url: `/device/firmware/${params.deviceId}/${file}`,
-          }));
         },
         getFirmwareListSchema
       )
@@ -252,26 +286,49 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/firmware/:deviceId/:filename",
         //@ts-ignore
         async ({ params, set }) => {
-          const filePath = join(
-            process.cwd(),
-            "src",
-            "assets",
-            "firmware",
-            params.deviceId,
-            params.filename
-          );
-          console.log(filePath);
-          if (!existsSync(filePath)) {
+          try {
+            const filePath = await deviceService.getFirmwareFile(
+              params.deviceId,
+              params.filename
+            );
+
+            const file = Bun.file(filePath);
+            if (!(await file.exists())) {
+              set.status = 404;
+              return "Firmware tidak ditemukan";
+            }
+
+            return new Response(file, {
+              headers: {
+                "Content-Type": "application/octet-stream",
+                "Content-Disposition": `attachment; filename="${params.filename}"`,
+              },
+            });
+          } catch (error) {
             set.status = 404;
             return "Firmware tidak ditemukan";
           }
-          set.headers["Content-Type"] = "application/octet-stream";
-          set.headers[
-            "Content-Disposition"
-          ] = `attachment; filename="${params.filename}"`;
-          return readFileSync(filePath);
         },
         downloadFirmwareFileSchema
+      )
+
+      .post(
+        "/firmware/report/:deviceId",
+        async ({ params, body }) => {
+          try {
+            //@ts-ignore
+            const { firmware_version } = body;
+            await deviceService.updateDeviceFirmwareVersion(params.deviceId, firmware_version);
+            return { 
+              success: true, 
+              message: "Firmware version updated successfully",
+              device_id: params.deviceId,
+              new_version: firmware_version
+            };
+          } catch (error) {
+            return { success: false, message: "Failed to update firmware version" };
+          }
+        }
       )
 
       // Renew device secret

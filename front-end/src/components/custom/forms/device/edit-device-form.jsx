@@ -162,7 +162,7 @@ export default function EditDeviceForm({
               required
             />
           </div>
-          <div className="flex flex-col gap-2">
+          {/* <div className="flex flex-col gap-2">
             <Label className="text-left ml-1 font-medium max-sm:text-xs">
               MQTT QoS
             </Label>
@@ -176,7 +176,7 @@ export default function EditDeviceForm({
                 <SelectItem value="2">2</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
         </div>
       )}
       {protocol === "LoRaWAN" && (
@@ -207,7 +207,7 @@ export default function EditDeviceForm({
       board: boardType,
       protocol,
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined,
-      mqtt_qos: protocol === "MQTT" ? mqttQos : undefined,
+      // mqtt_qos: protocol === "MQTT" ? mqttQos : undefined,
       lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined,
     });
     setOpen(false);

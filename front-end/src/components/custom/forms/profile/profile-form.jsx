@@ -6,12 +6,10 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import {
-  Accordion,
-} from "@/components/ui/accordion";
 import ProfileInfoSection from "./profile-info";
 import ProfilePasswordSection from "./profile-password";
 import ProfileDeleteDialog from "./profile-delete";
+import { TransitionPanel } from "@/components/ui/transition-panel";
 
 export default function ProfileForm({ open, setOpen, user, setUser, router }) {
   const [username, setUsername] = useState(user?.name || "");
@@ -22,7 +20,47 @@ export default function ProfileForm({ open, setOpen, user, setUser, router }) {
   const [openDeleteAccountDialog, setOpenDeleteAccountDialog] = useState(false);
   const [deleteChecked, setDeleteChecked] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-
+  const [activeIndex, setActiveIndex] = useState(0);
+  const ITEMS = [
+    {
+      title: "Informasi Akun",
+      // subtitle: "Refining Visual Harmony",
+      content: (
+        <ProfileInfoSection
+          user={user}
+          username={username}
+          setUsername={setUsername}
+          phoneNumber={phoneNumber}
+          setPhoneNumber={setPhoneNumber}
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          setOpenDeleteAccountDialog={setOpenDeleteAccountDialog}
+          setUser={setUser}
+        />
+      ),
+    },
+    {
+      title: "Ganti Kata Sandi",
+      // subtitle: "Narrative and Expression",
+      content: (
+        <ProfilePasswordSection
+          user={user}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          oldPassword={oldPassword}
+          setOldPassword={setOldPassword}
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+        />
+      ),
+    },
+    // {
+    //   title: "Tab lain",
+    //   subtitle: "Keterangan",
+    //   content:
+    //     "Isi dengan apapun.",
+    // },
+  ];
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
@@ -31,29 +69,42 @@ export default function ProfileForm({ open, setOpen, user, setUser, router }) {
             <SheetTitle>Pengaturan Akun</SheetTitle>
           </SheetHeader>
           <SheetDescription className="hidden" />
-          <div className="p-4 space-y-6 my-auto">
-            <Accordion type="single" collapsible defaultValue="account-info">
-              <ProfileInfoSection
-                user={user}
-                username={username}
-                setUsername={setUsername}
-                phoneNumber={phoneNumber}
-                setPhoneNumber={setPhoneNumber}
-                isEditing={isEditing}
-                setIsEditing={setIsEditing}
-                setOpenDeleteAccountDialog={setOpenDeleteAccountDialog}
-                setUser={setUser}
-              />
-              <ProfilePasswordSection
-                user={user}
-                showPassword={showPassword}
-                setShowPassword={setShowPassword}
-                oldPassword={oldPassword}
-                setOldPassword={setOldPassword}
-                newPassword={newPassword}
-                setNewPassword={setNewPassword}
-              />
-            </Accordion>
+          <div className="flex flex-col w-full h-full py-6 px-0 items-center gap-4">
+            <div className="flex space-x-2">
+              {ITEMS.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveIndex(index)}
+                  className={`rounded-md px-3 py-1 text-sm font-medium ${
+                    activeIndex === index
+                      ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                      : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400"
+                  }`}
+                >
+                  {item.title}
+                </button>
+              ))}
+            </div>
+            <div className="overflow-hidden w-full h-full px-8">
+              <TransitionPanel
+                activeIndex={activeIndex}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                variants={{
+                  enter: { opacity: 0, y: -50, filter: "blur(4px)" },
+                  center: { opacity: 1, y: 0, filter: "blur(0px)" },
+                  exit: { opacity: 0, y: 50, filter: "blur(4px)" },
+                }}
+              >
+                {ITEMS.map((item, index) => (
+                  <div key={index} className="py-2">
+                    {/* <h3 className="mb-2 font-medium text-zinc-800 dark:text-zinc-100">
+                    {item.subtitle}
+                  </h3> */}
+                    {item.content}
+                  </div>
+                ))}
+              </TransitionPanel>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

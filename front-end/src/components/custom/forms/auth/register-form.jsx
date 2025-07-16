@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
-import { Eye, EyeOff } from "lucide-react";
+import { PasswordStrengthMeter } from "../../other/strength-meter";
 
 export default function RegisterForm({
   className,
@@ -141,35 +141,26 @@ export default function RegisterForm({
                       <Label htmlFor="password">Kata Sandi</Label>
                     </div>
                     <div>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          className="pr-10"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="********"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          autoComplete="current-password"
-                          minLength={8}
-                          noInfo
-                          required
-                        />
-                        <div className="absolute inset-y-0 right-0 flex items-center cursor-pointer pr-3">
-                          {showPassword ? (
-                            <Eye
-                              className="relative h-5 w-5"
-                              onClick={() => setShowPassword(false)}
-                            />
-                          ) : (
-                            <EyeOff
-                              className="relative h-5 w-5"
-                              onClick={() => setShowPassword(true)}
-                            />
-                          )}
-                        </div>
-                      </div>
+                      <PasswordStrengthMeter
+                        id="password"
+                        placeholder="Masukkan password baru"
+                        value={password}
+                        className="max-w-md"
+                        onChange={(e) => setPassword(e.target.value)}
+                        strengthLabels={{
+                          empty: "Kosong",
+                          weak: "Lemah",
+                          fair: "Cukup",
+                          good: "Bagus",
+                          strong: "Kuat",
+                        }}
+                        enableAutoGenerate={true}
+                        autoComplete="current-password"
+                        autoGenerateLength={10}
+                        required
+                      />
                       <span className="px-1 text-sm text-pretty opacity-100 flex pt-2 text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs">
-                        Karakter alfanumerik dibatasi hanya (@ / . - _)
+                        <i>Karakter alfanumerik dibatasi hanya (@ / . - _)</i>
                       </span>
                     </div>
                   </div>

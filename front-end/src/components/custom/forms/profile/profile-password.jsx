@@ -1,13 +1,9 @@
-import {
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, UserLock } from "lucide-react";
 import { successToast, errorToast } from "../../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
+import { PasswordStrengthMeter } from "@/components/custom/other/strength-meter";
 
 export default function ProfilePasswordSection({
   user,
@@ -54,45 +50,20 @@ export default function ProfilePasswordSection({
   };
 
   return (
-    <AccordionItem
-      value="reset-password"
-      className="bg-card px-4 shadow-2xs rounded-2xl mb-6"
-    >
-      <AccordionTrigger className="font-semibold">
-        Ganti Kata Sandi
-      </AccordionTrigger>
-      <AccordionContent>
-        <div className="space-y-4 p-2 text-muted-foreground">
-          <form action="#">
-            <div className="sr-only">
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                value={user.email}
-                readOnly
-              />
-            </div>
-            <div className="relative flex flex-col gap-3 mb-3">
-              <div className="flex gap-2 cursor-pointer hover:text-foreground">
-                {showPassword ? (
-                  <span
-                    onClick={() => setShowPassword(false)}
-                    className="flex gap-2"
-                  >
-                    Sembunyikan Kata Sandi
-                    <EyeOff className="relative h-5 w-5" />
-                  </span>
-                ) : (
-                  <span
-                    onClick={() => setShowPassword(true)}
-                    className="flex gap-2"
-                  >
-                    Tampilkan Kata Sandi
-                    <Eye className="relative h-5 w-5" />
-                  </span>
-                )}
-              </div>
+    <>
+      <div className="space-y-4 text-muted-foreground text-sm">
+        <form action="#">
+          <div className="sr-only">
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={user.email}
+              readOnly
+            />
+          </div>
+          <div className="relative flex flex-col gap-3 mb-3">
+            <div className="relative">
               <Input
                 id="old-password"
                 type={showPassword ? "text" : "password"}
@@ -100,29 +71,52 @@ export default function ProfilePasswordSection({
                 autoComplete="old-password"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
+                noInfo
                 required
               />
-              <Input
-                id="new-password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Masukkan password baru"
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
+              <div className="absolute inset-y-0 right-0 flex items-center cursor-pointer pr-3">
+                {showPassword ? (
+                  <Eye
+                    className="relative h-4 w-4"
+                    onClick={() => setShowPassword(false)}
+                  />
+                ) : (
+                  <EyeOff
+                    className="relative h-4 w-4"
+                    onClick={() => setShowPassword(true)}
+                  />
+                )}
+              </div>
             </div>
-          </form>
-          <Button
-            variant="outline"
-            onClick={handleSavePassword}
-            className="w-full cursor-pointer transition-all duration-500"
-          >
-            Simpan Perubahan
-            <UserLock className="h-5 w-5" />
-          </Button>
-        </div>
-      </AccordionContent>
-    </AccordionItem>
+            <PasswordStrengthMeter
+              id="new-password"
+              placeholder="Masukkan password baru"
+              value={newPassword}
+              className="max-w-md"
+              onChange={(e) => setNewPassword(e.target.value)}
+              strengthLabels={{
+                empty: "Kosong",
+                weak: "Lemah",
+                fair: "Cukup",
+                good: "Bagus",
+                strong: "Kuat",
+              }}
+              enableAutoGenerate={true}
+              autoGenerateLength={10}
+              autoComplete="new-password"
+              required
+            />
+          </div>
+        </form>
+        <Button
+          variant="outline"
+          onClick={handleSavePassword}
+          className="w-full cursor-pointer transition-all duration-500"
+        >
+          Simpan Perubahan
+          <UserLock className="h-5 w-5" />
+        </Button>
+      </div>
+    </>
   );
 }

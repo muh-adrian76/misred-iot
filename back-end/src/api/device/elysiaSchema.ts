@@ -20,12 +20,12 @@ const postDeviceSchema = {
         example: "device/data",
       })
     ),
-    mqtt_qos: t.Optional(
-      t.String({
-        description: "Quality of Service untuk MQTT",
-        example: "0",
-      })
-    ),
+    // mqtt_qos: t.Optional(
+    //   t.String({
+    //     description: "Quality of Service untuk MQTT",
+    //     example: "0",
+    //   })
+    // ),
     dev_eui: t.Optional(
       t.String({
         description: "ID unik untuk perangkat LoRa",
@@ -115,10 +115,10 @@ const getAllDevicesSchema = {
               description: "Topic untuk MQTT",
               example: "device/data",
             }),
-            mqtt_qos: t.String({
-              description: "Quality of Service untuk MQTT",
-              example: "0",
-            }),
+            // mqtt_qos: t.String({
+            //   description: "Quality of Service untuk MQTT",
+            //   example: "0",
+            // }),
             dev_eui: t.Optional(
               t.String({
                 description: "ID unik untuk perangkat LoRa",
@@ -202,10 +202,10 @@ const getDeviceByIdSchema = {
               description: "Topic untuk MQTT",
               example: "device/data",
             }),
-            mqtt_qos: t.String({
-              description: "Quality of Service untuk MQTT",
-              example: "0",
-            }),
+            // mqtt_qos: t.String({
+            //   description: "Quality of Service untuk MQTT",
+            //   example: "0",
+            // }),
             dev_eui: t.Optional(
               t.String({
                 description: "ID unik untuk perangkat LoRa",
@@ -525,12 +525,12 @@ const putDeviceSchema = {
         example: "device/data",
       })
     ),
-    mqtt_qos: t.Optional(
-      t.String({
-        description: "Quality of Service untuk MQTT",
-        example: "0",
-      })
-    ),
+    // mqtt_qos: t.Optional(
+    //   t.String({
+    //     description: "Quality of Service untuk MQTT",
+    //     example: "0",
+    //   })
+    // ),
     dev_eui: t.Optional(
       t.String({
         description: "ID unik untuk perangkat LoRa",

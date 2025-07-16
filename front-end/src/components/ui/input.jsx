@@ -5,7 +5,13 @@ import { cn } from "@/lib/utils";
 const textInput = "Karakter alfanumerik dibatasi hanya (@ / . - _)";
 const numberInput = "Hanya berisi angka";
 
-function Input({ className, type, onChange, noInfo, ...props }) {
+function Input({
+  className,
+  type,
+  onChange,
+  noInfo,
+  ...props
+}) {
   // Regex untuk karakter yang dianggap aman (alfanumerik, spasi, dan beberapa simbol)
   const safePattern = /^[a-zA-Z0-9 @/._-]*$/;
   const [isValid, setIsValid] = React.useState(true);
@@ -18,6 +24,31 @@ function Input({ className, type, onChange, noInfo, ...props }) {
     }
   }, [noInfo]);
 
+  const handleKeyDown = (e) => {
+    if (type === "file") return;
+    
+    // Izinkan key navigasi dan control
+    const allowedKeys = [
+      'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'Home', 'End', 'Tab', 'Enter', 'Escape', 'Shift', 'Control', 'Alt', 'Meta'
+    ];
+    
+    if (allowedKeys.includes(e.key)) return;
+    
+    // Cek apakah karakter yang akan diketik valid
+    const char = e.key;
+    const charPattern = /^[a-zA-Z0-9 @/._-]$/;
+    
+    if (!charPattern.test(char)) {
+      e.preventDefault(); // BLOKIR karakter sebelum masuk ke input
+      setIsValid(false);
+      
+      // Reset state setelah 1 detik
+      setTimeout(() => setIsValid(true), 1000);
+      return;
+    }
+  };
+
   const handleChange = (e) => {
     if (type === "file") {
       // Untuk file input, langsung panggil onChange tanpa validasi
@@ -27,7 +58,9 @@ function Input({ className, type, onChange, noInfo, ...props }) {
     const value = e.target.value;
     const valid = safePattern.test(value);
     setIsValid(valid);
-    if (!valid) return;
+    if (!valid) {
+      return;
+    }
     onChange?.(e);
   };
 
@@ -44,6 +77,7 @@ function Input({ className, type, onChange, noInfo, ...props }) {
           className
         )}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         onFocus={() => setShowInfo(true)}
         onBlur={() => setShowInfo(false)}
         {...props}

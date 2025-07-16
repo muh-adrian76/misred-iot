@@ -137,7 +137,7 @@ export default function AddDeviceForm({
               className="w-full"
             />
           </div>
-          <div className="flex flex-col gap-2">
+          {/* <div className="flex flex-col gap-2">
             <Label className="text-left ml-1 font-medium max-sm:text-xs">QoS MQTT</Label>
             <Select value={mqttQos} onValueChange={setMqttQos}>
               <SelectTrigger className="w-full">
@@ -149,7 +149,7 @@ export default function AddDeviceForm({
                 <SelectItem value="2">2</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div> */}
         </div>
       )}
 
@@ -179,7 +179,7 @@ export default function AddDeviceForm({
       board: boardType,
       protocol: protocol,
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined,
-      mqtt_qos: protocol === "MQTT" ? mqttQos : undefined,
+      // mqtt_qos: protocol === "MQTT" ? mqttQos : undefined,
       lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined,
     });
     setName("");

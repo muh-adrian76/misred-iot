@@ -53,7 +53,7 @@ function Toast(props) {
   return (
     <div
       className={`
-      flex justify-center items-center py-3 px-5 w-full md:min-w-[333px]
+      flex justify-center items-center py-3 px-5 w-full md:min-w-[350px]
       bg-white dark:bg-gray-900
       border border-gray-200 dark:border-gray-700
       rounded-lg ${config.shadowColor}

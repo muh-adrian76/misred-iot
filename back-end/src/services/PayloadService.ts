@@ -1,15 +1,22 @@
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { DeviceService } from "./DeviceService";
+import { AlarmNotificationService } from "./AlarmNotificationService";
 import { decryptAES } from "../lib/utils";
 import crypto from "crypto";
 
 export class PayloadService {
   private db: Pool;
   private deviceService: DeviceService;
+  private alarmNotificationService?: AlarmNotificationService;
 
-  constructor(db: Pool, deviceService: DeviceService) {
+  constructor(
+    db: Pool, 
+    deviceService: DeviceService, 
+    alarmNotificationService?: AlarmNotificationService
+  ) {
     this.db = db;
     this.deviceService = deviceService;
+    this.alarmNotificationService = alarmNotificationService;
   }
 
   // Fungsi verifikasi JWT dan dekripsi payload
@@ -50,9 +57,16 @@ export class PayloadService {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
         `INSERT INTO payloads (device_id, value, server_time)
-        VALUES (?, ?, ?, NOW())`,
+        VALUES (?, ?, NOW())`,
         [deviceId, JSON.stringify(decrypted)]
       );
+
+      // Check alarms setelah payload disimpan
+      if (this.alarmNotificationService) {
+        console.log(`🔍 Checking alarms for device ${deviceId} with data:`, decrypted);
+        await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
+      }
+
       return result.insertId;
     } catch (error) {
       console.error("Error saving HTTP payload:", error);

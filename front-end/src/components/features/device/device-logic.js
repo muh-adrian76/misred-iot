@@ -15,6 +15,7 @@ export function useDeviceLogic() {
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [deleteFormOpen, setDeleteFormOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadFirmwareSheetOpen, setUploadFirmwareSheetOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [openBoardPopover, setOpenBoardPopover] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState(null);
@@ -129,6 +130,13 @@ export function useDeviceLogic() {
   );
 };
 
+  const handleFirmwareUploaded = (data) => {
+    successToast("Firmware berhasil diupload!");
+    setUploadFirmwareSheetOpen(false);
+    // Refresh devices to get updated firmware info if needed
+    fetchDevices();
+  };
+
   const boardOptions = [
     "ESP32",
     "ESP8266",
@@ -169,8 +177,11 @@ export function useDeviceLogic() {
     boardOptions,
     uploadDialogOpen,
     setUploadDialogOpen,
+    uploadFirmwareSheetOpen,
+    setUploadFirmwareSheetOpen,
     selectedDevice,
     setSelectedDevice,
+    handleFirmwareUploaded,
     updateDeviceFirmware,
   };
 }

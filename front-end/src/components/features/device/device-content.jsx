@@ -16,6 +16,7 @@ import { AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
 import { convertDate } from "@/lib/helper";
+import OtaaForm from "@/components/custom/forms/otaa/otaa-form";
 
 export default function DeviceContent({
   devices,
@@ -28,8 +29,10 @@ export default function DeviceContent({
   isMobile,
   selectedRows,
   setSelectedRows,
-  setSelectedDevice,
-  setUploadDialogOpen,
+  boardOptions,
+  uploadFirmwareSheetOpen,
+  setUploadFirmwareSheetOpen,
+  handleFirmwareUploaded,
 }) {
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -83,7 +86,7 @@ export default function DeviceContent({
       filterable: true,
     },
     { key: "mqtt_topic", label: "Topik MQTT", sortable: true },
-    { key: "mqtt_qos", label: "QoS MQTT", filterable: true },
+    // { key: "mqtt_qos", label: "QoS MQTT", filterable: true },
     { key: "dev_eui", label: "LoRa UID", filterable: true },
     {
       key: "created_at",
@@ -102,30 +105,18 @@ export default function DeviceContent({
       },
     },
     { key: "firmware_version", label: "Versi Firmware", sortable: false },
-    {
-      key: "firmware_url",
-      label: "File Firmware",
-      sortable: false,
-      render: (row) => {
-        const label = row.firmware_url?.split("/").pop() || "-";
-        return row.firmware_url ? (
-          <DescriptionTooltip content="Download Firmware">
-            <span className="text-xs">
-              <a
-                href={`${process.env.NEXT_PUBLIC_BACKEND_URL}${row.firmware_url}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-2 text-blue-600 hover:text-blue-800"
-              >
-                {label}
-              </a>
-            </span>
-          </DescriptionTooltip>
-        ) : (
-          <span className="text-xs text-muted-foreground">{label}</span>
-        );
-      },
-    },
+    // {
+    //   key: "board_type",
+    //   label: "File Firmware (Board)",
+    //   sortable: false,
+    //   render: (row) => {
+    //     return (
+    //       <span className="text-xs text-muted-foreground">
+    //         Berdasarkan {row.board_type}
+    //       </span>
+    //     );
+    //   },
+    // },
   ];
 
   const rowActions = [
@@ -148,17 +139,6 @@ export default function DeviceContent({
     //   disabled: true,
     //   // onClick: (row) => { ... },
     // },
-    {
-      key: "upload_firmware",
-      label: "Upload Firmware",
-      icon: FileBox,
-      className: "hover:text-foreground",
-      disabled: false,
-      onClick: (row) => {
-        setSelectedDevice(row);
-        setUploadDialogOpen(true);
-      },
-    },
     {
       key: "delete",
       label: "Hapus",
@@ -207,35 +187,49 @@ export default function DeviceContent({
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <DataTable
-        content="Device"
-        columns={columns}
-        data={devices}
-        loading={loading}
-        isMobile={isMobile}
-        selectedRows={selectedRows}
-        setSelectedRows={setSelectedRows}
-        onAdd={() => setAddFormOpen(true)}
-        rowActions={rowActions}
-        onDelete={(selected) => {
-          if (Array.isArray(selected)) {
-            setDeviceToDelete(
-              selected.map((id) => devices.find((d) => d.id === id))
-            );
-          } else {
-            setDeviceToDelete(selected);
+    <>
+      {/* Section DataTable */}
+      <AnimatePresence mode="wait">
+        <DataTable
+          content="Device"
+          columns={columns}
+          data={devices}
+          loading={loading}
+          isMobile={isMobile}
+          selectedRows={selectedRows}
+          setSelectedRows={setSelectedRows}
+          onAdd={() => setAddFormOpen(true)}
+          onUploadFirmware={() => setUploadFirmwareSheetOpen(true)} 
+          showUploadFirmware={true}
+          rowActions={rowActions}
+          onDelete={(selected) => {
+            if (Array.isArray(selected)) {
+              setDeviceToDelete(
+                selected.map((id) => devices.find((d) => d.id === id))
+              );
+            } else {
+              setDeviceToDelete(selected);
+            }
+            setDeleteFormOpen(true);
+          }}
+          noDataText={
+            !devices || devices.length === 0
+              ? "Anda belum menambahkan device."
+              : "Tidak ada device yang cocok."
           }
-          setDeleteFormOpen(true);
-        }}
-        noDataText={
-          !devices || devices.length === 0
-            ? "Anda belum menambahkan device."
-            : "Tidak ada device yang cocok."
-        }
-        // limit={5}
-        searchPlaceholder="Cari device"
+          // limit={5}
+          searchPlaceholder="Cari device"
+        />
+      </AnimatePresence>
+
+      {/* Section OTAA */}
+      <OtaaForm
+        open={uploadFirmwareSheetOpen}
+        setOpen={setUploadFirmwareSheetOpen}
+        devices={devices}
+        boardOptions={boardOptions}
+        handleFirmwareUploaded={handleFirmwareUploaded}
       />
-    </AnimatePresence>
+    </>
   );
 }
