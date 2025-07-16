@@ -267,20 +267,6 @@ export class AlarmService {
   }
 
   // Legacy methods untuk backward compatibility
-  async createAlarmLegacy({ description, user_id, widget_id, operator, threshold }: any) {
-    try {
-      const [result] = await this.db.query<ResultSetHeader>(
-        `INSERT INTO alarms (description, user_id, widget_id, operator, threshold, last_sended)
-         VALUES (?, ?, ?, ?, ?, NOW())`,
-        [description, user_id, widget_id, operator, threshold]
-      );
-      return result.insertId;
-    } catch (error) {
-      console.error("Error creating alarm:", error);
-      throw new Error("Failed to create alarm");
-    }
-  }
-
   async getAllAlarms(user_id: string) {
     try {
       const [rows] = await this.db.query(
@@ -294,16 +280,4 @@ export class AlarmService {
     }
   }
 
-  async getAlarmsByWidgetId(widget_id: number, user_id: string) {
-    try {
-      const [rows] = await this.db.query(
-        "SELECT * FROM alarms WHERE widget_id = ? AND user_id = ?",
-        [widget_id, user_id]
-      );
-      return rows;
-    } catch (error) {
-      console.error("Error fetching alarms by widget ID:", error);
-      throw new Error("Failed to fetch alarms");
-    }
-  }
 }

@@ -22,10 +22,10 @@ export function useAlarmLogic() {
   const fetchAlarms = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchFromBackend("/alarm");
+      const res = await fetchFromBackend("/notifications/alarms");
       if (!res.ok) throw new Error("Gagal fetch alarm");
       const data = await res.json();
-      setAlarms(data.result || []);
+      setAlarms(data.alarms || []);
     } catch (e) {
       errorToast("Gagal mengambil data alarm");
     } finally {
@@ -40,7 +40,7 @@ export function useAlarmLogic() {
   // CRUD Handler
   const handleAddAlarm = async (payload) => {
     try {
-      const res = await fetchFromBackend("/alarm", {
+      const res = await fetchFromBackend("/notifications/alarms", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -55,7 +55,7 @@ export function useAlarmLogic() {
 
   const handleEditAlarm = async (id, payload) => {
     try {
-      const res = await fetchFromBackend(`/alarm/${id}`, {
+      const res = await fetchFromBackend(`/notifications/alarms/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -70,7 +70,7 @@ export function useAlarmLogic() {
 
   const handleDeleteAlarm = async (id) => {
     try {
-      const res = await fetchFromBackend(`/alarm/${id}`, {
+      const res = await fetchFromBackend(`/notifications/alarms/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Gagal hapus alarm");

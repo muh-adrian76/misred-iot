@@ -35,13 +35,24 @@ export function deviceRoutes(deviceService: DeviceService) {
       .get(
         "/ping",
         (): any => {
-          return new Response(
-            JSON.stringify({
-              status: "ok",
-              timestamp: new Date().toISOString(),
-              server: "IoT Device Verification Server",
-            })
-          );
+          try {
+            return new Response(
+              JSON.stringify({
+                status: "ok",
+                timestamp: new Date().toISOString(),
+                server: "IoT Device Verification Server",
+              })
+            );
+          } catch (error: any) {
+            console.error("Error in ping endpoint:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Server error",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         pingSchema
       )
@@ -51,44 +62,55 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/",
         //@ts-ignore
         async ({ jwt, cookie, body }) => {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const {
-            name,
-            board,
-            protocol,
-            mqtt_topic,
-            // mqtt_qos,
-            dev_eui,
-            app_eui,
-            app_key,
-            firmware_version,
-            firmware_url,
-          } = body;
-          const new_secret = randomBytes(16).toString("hex");
-          const user_id = decoded.sub;
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const {
+              name,
+              board,
+              protocol,
+              mqtt_topic,
+              // mqtt_qos,
+              dev_eui,
+              app_eui,
+              app_key,
+              firmware_version,
+              firmware_url,
+            } = body;
+            const new_secret = randomBytes(16).toString("hex");
+            const user_id = decoded.sub;
 
-          const insertId = await deviceService.createDevice({
-            name,
-            board,
-            protocol,
-            topic: mqtt_topic,
-            // qos: mqtt_qos,
-            dev_eui,
-            app_eui,
-            app_key,
-            new_secret,
-            firmware_version: firmware_version ?? null,
-            firmware_url: firmware_url ?? null,
-            user_id,
-          });
+            const insertId = await deviceService.createDevice({
+              name,
+              board,
+              protocol,
+              topic: mqtt_topic,
+              // qos: mqtt_qos,
+              dev_eui,
+              app_eui,
+              app_key,
+              new_secret,
+              firmware_version: firmware_version ?? null,
+              firmware_url: firmware_url ?? null,
+              user_id,
+            });
 
-          return new Response(
-            JSON.stringify({
-              message: "Perangkat berhasil terdaftar",
-              id: insertId,
-            }),
-            { status: 201 }
-          );
+            return new Response(
+              JSON.stringify({
+                message: "Perangkat berhasil terdaftar",
+                id: insertId,
+              }),
+              { status: 201 }
+            );
+          } catch (error: any) {
+            console.error("Error creating device:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to create device",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         postDeviceSchema
       )
@@ -98,11 +120,22 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/",
         //@ts-ignore
         async ({ jwt, cookie }) => {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const data = await deviceService.getAllUserDevices(decoded.sub);
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const data = await deviceService.getAllUserDevices(decoded.sub);
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching all devices:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch devices",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         getAllDevicesSchema
       )
@@ -112,17 +145,28 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params }) => {
-          await authorizeRequest(jwt, cookie);
-          const data = await deviceService.getDeviceById(params.id);
-          if (!datastreamRoutes) {
+          try {
+            await authorizeRequest(jwt, cookie);
+            const data = await deviceService.getDeviceById(params.id);
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+              return new Response(
+                JSON.stringify({ message: "Perangkat tidak ditemukan." }),
+                { status: 404 }
+              );
+            }
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching device by ID:", error);
             return new Response(
-              JSON.stringify({ message: "Perangkat tidak ditemukan." }),
-              { status: 404 }
+              JSON.stringify({ 
+                error: "Failed to fetch device",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
             );
           }
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
         },
         getDeviceByIdSchema
       )
@@ -132,16 +176,27 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/secret/:id",
         //@ts-ignore
         async ({ params }) => {
-          const data = await deviceService.getSecretByDevice(params.id);
-          if (!data) {
+          try {
+            const data = await deviceService.getSecretByDevice(params.id);
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+              return new Response(
+                JSON.stringify({ message: "Device tidak ditemukan" }),
+                { status: 404 }
+              );
+            }
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching device secret:", error);
             return new Response(
-              JSON.stringify({ message: "Device tidak ditemukan" }),
-              { status: 404 }
+              JSON.stringify({ 
+                error: "Failed to fetch device secret",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
             );
           }
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
         },
         getSecretByDeviceSchema
       )
@@ -151,55 +206,64 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/firmware/upload/:deviceId",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
-          await authorizeRequest(jwt, cookie);
-          const deviceId = params.deviceId;
-          //@ts-ignore
-          const { filename, file_base64, firmware_version } = body;
-          if (!file_base64 || !filename) {
-            set.status = 400;
-            return { message: "File firmware tidak ditemukan di request" };
-          }
-          // Validasi ekstensi file
-          const allowedExt = [".bin", ".hex"];
-          const ext = filename.slice(filename.lastIndexOf(".")).toLowerCase();
-          if (!allowedExt.includes(ext)) {
-            set.status = 400;
-            return { message: "Hanya file .bin atau .hex yang diperbolehkan" };
-          }
-          // Decode base64 ke buffer
-          const data = Buffer.from(file_base64, "base64");
-          const firmwareDir = join(
-            process.cwd(),
-            "src",
-            "assets",
-            "firmware",
-            deviceId
-          );
-          if (!existsSync(firmwareDir))
-            mkdirSync(firmwareDir, { recursive: true });
+          try {
+            await authorizeRequest(jwt, cookie);
+            const deviceId = params.deviceId;
+            //@ts-ignore
+            const { filename, file_base64, firmware_version } = body;
+            if (!file_base64 || !filename) {
+              set.status = 400;
+              return { message: "File firmware tidak ditemukan di request" };
+            }
+            // Validasi ekstensi file
+            const allowedExt = [".bin", ".hex"];
+            const ext = filename.slice(filename.lastIndexOf(".")).toLowerCase();
+            if (!allowedExt.includes(ext)) {
+              set.status = 400;
+              return { message: "Hanya file .bin atau .hex yang diperbolehkan" };
+            }
+            // Decode base64 ke buffer
+            const data = Buffer.from(file_base64, "base64");
+            const firmwareDir = join(
+              process.cwd(),
+              "src",
+              "assets",
+              "firmware",
+              deviceId
+            );
+            if (!existsSync(firmwareDir))
+              mkdirSync(firmwareDir, { recursive: true });
 
-          const firmwarePath = join(firmwareDir, filename);
-          writeFileSync(firmwarePath, data);
+            const firmwarePath = join(firmwareDir, filename);
+            writeFileSync(firmwarePath, data);
 
-          // Simpan path/URL ke DB (opsional)
-          const firmware_url = `/device/firmware/${deviceId}/${filename}`;
-          const updated_at = await deviceService.updateFirmwareUrl(
-            deviceId,
-            firmware_version,
-            firmware_url
-          );
-
-          return new Response(
-            JSON.stringify({
-              message: "Firmware berhasil diupload",
-              device_id: deviceId,
+            // Simpan path/URL ke DB (opsional)
+            const firmware_url = `/device/firmware/${deviceId}/${filename}`;
+            const updated_at = await deviceService.updateFirmwareUrl(
+              deviceId,
               firmware_version,
-              filename,
-              firmware_url,
-              updated_at,
-            }),
-            { status: 200 }
-          );
+              firmware_url
+            );
+
+            return new Response(
+              JSON.stringify({
+                message: "Firmware berhasil diupload",
+                device_id: deviceId,
+                firmware_version,
+                filename,
+                firmware_url,
+                updated_at,
+              }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error uploading firmware:", error);
+            set.status = 500;
+            return { 
+              error: "Failed to upload firmware",
+              message: error.message || "Internal server error"
+            };
+          }
         },
         uploadFirmwareSchema
       )
@@ -209,19 +273,30 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/firmware/version/:deviceId",
         //@ts-ignore
         async ({ params }) => {
-          const version = await deviceService.getFirmwareVersion(
-            params.deviceId
-          );
-          return new Response(
-            JSON.stringify({
-              message: "Versi firmware perangkat",
-              device_id: params.deviceId,
-              firmware_version: version.firmware_version, // Sesuaikan dengan ESP32
-              current_version: version.current_version,
-              board_type: version.board_type,
-            }),
-            { status: 200 }
-          );
+          try {
+            const version = await deviceService.getFirmwareVersion(
+              params.deviceId
+            );
+            return new Response(
+              JSON.stringify({
+                message: "Versi firmware perangkat",
+                device_id: params.deviceId,
+                firmware_version: version.firmware_version, // Sesuaikan dengan ESP32
+                current_version: version.current_version,
+                board_type: version.board_type,
+              }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error fetching firmware version:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch firmware version",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         getFirmwareVersionSchema
       )
@@ -336,6 +411,7 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/renew-secret/:device_id",
         //@ts-ignore
         async ({ params, body }: { params: any; body: any }) => {
+          try {
           const deviceID = params.device_id;
           const oldSecret = body.old_secret;
 
@@ -353,6 +429,15 @@ export function deviceRoutes(deviceService: DeviceService) {
             }),
             { status: 200 }
           );
+          } catch (error){
+            console.error(error);
+              return new Response(
+                JSON.stringify({
+                  message: "Gagal memperbarui secret perangkat"
+                }),
+                {status: 400}
+              )
+          }
         },
         renewSecretSchema
       )
@@ -362,22 +447,39 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body }) => {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const updated = await deviceService.updateDevice(
-            params.id,
-            decoded.sub,
-            body
-          );
-          if (!updated) {
-            return new Response("Perangkat gagal diupdate", { status: 400 });
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const updated = await deviceService.updateDevice(
+              params.id,
+              decoded.sub,
+              body
+            );
+            if (!updated) {
+              return new Response(
+                JSON.stringify({ 
+                  error: "Failed to update device",
+                  message: "Perangkat gagal diupdate"
+                }),
+                { status: 400, headers: { "Content-Type": "application/json" } }
+              );
+            }
+            return new Response(
+              JSON.stringify({
+                message: "Perangkat berhasil diupdate",
+                id: params.id,
+              }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error updating device:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to update device",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
           }
-          return new Response(
-            JSON.stringify({
-              message: "Perangkat berhasil diupdate",
-              id: params.id,
-            }),
-            { status: 200 }
-          );
         },
         putDeviceSchema
       )
@@ -387,18 +489,35 @@ export function deviceRoutes(deviceService: DeviceService) {
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params }) => {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const deleted = await deviceService.deleteDevice(
-            params.id,
-            decoded.sub
-          );
-          if (!deleted) {
-            return new Response("Perangkat gagal dihapus", { status: 400 });
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const deleted = await deviceService.deleteDevice(
+              params.id,
+              decoded.sub
+            );
+            if (!deleted) {
+              return new Response(
+                JSON.stringify({ 
+                  error: "Failed to delete device",
+                  message: "Perangkat gagal dihapus"
+                }),
+                { status: 400, headers: { "Content-Type": "application/json" } }
+              );
+            }
+            return new Response(
+              JSON.stringify({ message: "Perangkat berhasil dihapus" }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error deleting device:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to delete device",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
           }
-          return new Response(
-            JSON.stringify({ message: "Perangkat berhasil dihapus" }),
-            { status: 200 }
-          );
         },
         deleteDeviceSchema
       )

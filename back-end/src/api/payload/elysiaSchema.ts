@@ -3,8 +3,7 @@ import { t } from "elysia";
 const postPayloadHttpSchema = {
   type: "json",
   body: t.Object({
-    device_id: t.Number({ example: 1 }),
-    datastream_id: t.Number({ example: 1 }),
+    device_id: t.String({ example: 1 }),
     value: t.Any({ example: { ph: 7.2 } }),
   }),
   response: {
@@ -12,7 +11,6 @@ const postPayloadHttpSchema = {
       message: t.String({ example: "Berhasil menambah data sensor" }),
       id: t.Number({ example: 1 }),
       device_id: t.Number({ example: 1 }),
-      datastream_id: t.Number({ example: 1 }),
     }),
     400: t.Object({
       message: t.String({ example: "Input tidak valid." }),

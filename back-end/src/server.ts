@@ -13,7 +13,6 @@ import { userRoutes } from "./api/user";
 import { deviceRoutes } from "./api/device";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
-import { alarmRoutes } from "./api/alarm";
 import { alarmNotificationRoutes } from "./api/alarm/notifications";
 import { dashboardRoutes } from "./api/dashboard";
 import { datastreamRoutes } from "./api/datastream";
@@ -90,7 +89,6 @@ class Server {
       .use(deviceRoutes(this.deviceService))
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
-      .use(alarmRoutes(this.alarmService))
       .use(alarmNotificationRoutes(this.alarmService, this.alarmNotificationService))
       .use(dashboardRoutes(this.dashboardService))
       .use(datastreamRoutes(this.datastreamService))

@@ -18,36 +18,54 @@ export function payloadRoutes(payloadService: PayloadService) {
         "/http",
         //@ts-ignore
         async ({ jwt, headers, set }) => {
-          const deviceId = headers["x-device-id"];
-          const authHeader = headers["authorization"];
-          if (!deviceId || !authHeader) {
-            set.status = 400;
-            return { error: "Header tidak lengkap" };
-          }
-          const token = authHeader.split(" ")[1];
-          if (!token) {
-            set.status = 401;
-            return { error: "Format token tidak valid" };
-          }
-          const decrypted = await payloadService.verifyDeviceJWTAndDecrypt({
-            jwt,
-            deviceId,
-            token,
-          });
+          try {
+            const deviceId = headers["x-device-id"];
+            const authHeader = headers["authorization"];
+            
+            if (!deviceId || !authHeader) {
+              set.status = 400;
+              return { 
+                error: "Header tidak lengkap",
+                message: "x-device-id and authorization headers are required"
+              };
+            }
+            
+            const token = authHeader.split(" ")[1];
+            if (!token) {
+              set.status = 401;
+              return { 
+                error: "Format token tidak valid",
+                message: "Bearer token format required"
+              };
+            }
+            
+            const decrypted = await payloadService.verifyDeviceJWTAndDecrypt({
+              jwt,
+              deviceId,
+              token,
+            });
 
-          const insertId = await payloadService.saveHttpPayload({
-            deviceId,
-            decrypted,
-          });
+            const insertId = await payloadService.saveHttpPayload({
+              deviceId,
+              decrypted,
+            });
 
-          return new Response(
-            JSON.stringify({
-              message: "Berhasil menambah data sensor",
-              id: insertId,
-              device_id: deviceId,
-            }),
-            { status: 201 }
-          );
+            return new Response(
+              JSON.stringify({
+                message: "Berhasil menambah data sensor",
+                id: insertId,
+                device_id: deviceId,
+              }),
+              { status: 201 }
+            );
+          } catch (error: any) {
+            console.error("Error processing HTTP payload:", error);
+            set.status = 500;
+            return { 
+              error: "Failed to process payload",
+              message: error.message || "Internal server error"
+            };
+          }
         },
         postPayloadHttpSchema
       )
@@ -57,6 +75,15 @@ export function payloadRoutes(payloadService: PayloadService) {
         try {
           //@ts-ignore
           const { dev_eui, datastream_id, value } = body;
+          
+          if (!dev_eui || !datastream_id || value === undefined) {
+            set.status = 400;
+            return { 
+              error: "Missing required parameters",
+              message: "dev_eui, datastream_id, and value are required"
+            };
+          }
+          
           const insertId = await payloadService.saveLoraPayload(
             dev_eui,
             datastream_id,
@@ -68,8 +95,12 @@ export function payloadRoutes(payloadService: PayloadService) {
             id: insertId,
           };
         } catch (e: any) {
-          set.status = 404;
-          return { error: e.message || "internal_error" };
+          console.error("Error processing LoRa payload:", e);
+          set.status = e.message === "Device not found" ? 404 : 500;
+          return { 
+            error: "Failed to process LoRa payload",
+            message: e.message || "Internal server error"
+          };
         }
       },
       postPayloadLoraSchema
@@ -80,11 +111,22 @@ export function payloadRoutes(payloadService: PayloadService) {
         "/all",
         //@ts-ignore
         async ({ jwt, cookie }) => {
-          await authorizeRequest(jwt, cookie);
-          const data = await payloadService.getAll();
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
+          try {
+            await authorizeRequest(jwt, cookie);
+            const data = await payloadService.getAll();
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching all payloads:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch payloads",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         getAllPayloadsSchema
       )
@@ -94,11 +136,22 @@ export function payloadRoutes(payloadService: PayloadService) {
         "/:device_id",
         //@ts-ignore
         async ({ jwt, cookie, params }) => {
-          await authorizeRequest(jwt, cookie);
-          const data = await payloadService.getByDeviceId(params.device_id);
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
+          try {
+            await authorizeRequest(jwt, cookie);
+            const data = await payloadService.getByDeviceId(params.device_id);
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching payloads by device ID:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch payloads",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         getPayloadByDeviceIdSchema
       )
@@ -108,14 +161,25 @@ export function payloadRoutes(payloadService: PayloadService) {
         "/:device_id/:datastream_id",
         //@ts-ignore
         async ({ jwt, cookie, params }) => {
-          await authorizeRequest(jwt, cookie);
-          const data = await payloadService.getByDeviceAndDatastream(
-            params.device_id,
-            params.datastream_id
-          );
-          return new Response(JSON.stringify({ result: data }), {
-            status: 200,
-          });
+          try {
+            await authorizeRequest(jwt, cookie);
+            const data = await payloadService.getByDeviceAndDatastream(
+              params.device_id,
+              params.datastream_id
+            );
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching payloads by device and datastream:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch payloads",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
         },
         getPayloadByDeviceAndDatastreamSchema
       )

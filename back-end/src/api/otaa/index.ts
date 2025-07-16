@@ -91,7 +91,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
         } catch (error: any) {
           console.error("Error fetching firmwares:", error);
           return new Response(
-            JSON.stringify({ error: error.message || "Failed to fetch firmwares" }),
+            JSON.stringify({ 
+              error: "Failed to fetch firmwares",
+              message: error.message || "Failed to fetch firmwares"
+            }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -111,7 +114,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           
           if (!firmware) {
             return new Response(
-              JSON.stringify({ error: "No firmware found for this board type" }),
+              JSON.stringify({ 
+                error: "Firmware not found",
+                message: "No firmware found for this board type"
+              }),
               { status: 404, headers: { "Content-Type": "application/json" } }
             );
           }
@@ -120,7 +126,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
         } catch (error: any) {
           console.error("Error fetching firmware:", error);
           return new Response(
-            JSON.stringify({ error: error.message || "Failed to fetch firmware" }),
+            JSON.stringify({ 
+              error: "Failed to fetch firmware",
+              message: error.message || "Failed to fetch firmware"
+            }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -140,7 +149,13 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           const file = Bun.file(filePath);
           
           if (!(await file.exists())) {
-            return new Response("File not found", { status: 404 });
+            return new Response(
+              JSON.stringify({ 
+                error: "File not found",
+                message: "Firmware file does not exist"
+              }),
+              { status: 404, headers: { "Content-Type": "application/json" } }
+            );
           }
           
           return new Response(file, {
@@ -151,7 +166,13 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           });
         } catch (error: any) {
           console.error("Error downloading firmware:", error);
-          return new Response("Failed to download firmware", { status: 500 });
+          return new Response(
+            JSON.stringify({ 
+              error: "Failed to download firmware",
+              message: error.message || "Failed to download firmware"
+            }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+          );
         }
       }
     )
@@ -166,7 +187,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
         } catch (error: any) {
           console.error("Error checking firmware update:", error);
           return new Response(
-            JSON.stringify({ error: error.message || "Failed to check firmware update" }),
+            JSON.stringify({ 
+              error: "Failed to check firmware update",
+              message: error.message || "Failed to check firmware update"
+            }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
@@ -183,7 +207,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           
           if (!success) {
             return new Response(
-              JSON.stringify({ error: "Firmware not found or unauthorized" }),
+              JSON.stringify({ 
+                error: "Firmware not found or unauthorized",
+                message: "Firmware not found or unauthorized to delete"
+              }),
               { status: 404, headers: { "Content-Type": "application/json" } }
             );
           }
@@ -192,7 +219,10 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
         } catch (error: any) {
           console.error("Error deleting firmware:", error);
           return new Response(
-            JSON.stringify({ error: error.message || "Failed to delete firmware" }),
+            JSON.stringify({ 
+              error: "Failed to delete firmware",
+              message: error.message || "Failed to delete firmware"
+            }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }

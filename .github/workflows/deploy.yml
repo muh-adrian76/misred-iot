@@ -28,5 +28,10 @@ jobs:
             export BUN_INSTALL="$HOME/.bun"
             export PATH="$BUN_INSTALL/bin:$PATH"
             bun install
+            cd ./back-end
+            bun install
+            cd ../front-end
+            bun install
+            cd ../
             bun run build-bun
             bun run pm2:restart

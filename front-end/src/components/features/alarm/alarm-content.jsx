@@ -18,14 +18,39 @@ export default function AlarmContent({
 }) {
   const columns = [
     { key: "description", label: "Deskripsi", sortable: true },
-    { key: "widget_id", label: "Widget ID" },
-    { key: "operator", label: "Operator" },
-    { key: "threshold", label: "Threshold" },
+    { 
+      key: "device", 
+      label: "Device", 
+      render: (row) => `#${row.device_id} - ${row.device_description || 'Unknown'}`
+    },
+    { 
+      key: "datastream", 
+      label: "Sensor", 
+      render: (row) => `${row.datastream_description || 'Unknown'} (Pin ${row.datastream_pin || 'N/A'})`
+    },
+    { 
+      key: "condition", 
+      label: "Kondisi", 
+      render: (row) => `${row.operator} ${row.threshold} ${row.datastream_unit || ''}`
+    },
+    { 
+      key: "status", 
+      label: "Status", 
+      render: (row) => (
+        <span className={`px-2 py-1 rounded text-xs ${
+          row.is_active 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-gray-100 text-gray-800'
+        }`}>
+          {row.is_active ? 'Aktif' : 'Non-aktif'}
+        </span>
+      )
+    },
     {
-      key: "last_sended",
-      label: "Terakhir Kirim",
+      key: "last_triggered",
+      label: "Terakhir Dipicu",
       render: (row) =>
-        row.last_sended ? new Date(row.last_sended).toLocaleString() : "-",
+        row.last_triggered ? new Date(row.last_triggered).toLocaleString() : "-",
     },
   ];
 
