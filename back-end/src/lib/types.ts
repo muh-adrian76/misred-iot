@@ -57,3 +57,38 @@ export interface Types {
   user: any;
   error: any;
 }
+
+// Device Command types
+export type CommandStatus = "pending" | "sent" | "acknowledged" | "failed";
+
+export interface DeviceCommand {
+  id: number;
+  device_id: number;
+  datastream_id: number;
+  command_type: "set_value" | "toggle" | "reset";
+  value: number;
+  status: CommandStatus;
+  sent_at: string;
+  acknowledged_at?: string;
+  user_id: number;
+  
+  // Joined fields from datastreams
+  pin?: string;
+  datastream_type?: string;
+  datastream_name?: string;
+  
+  // Joined fields from users/devices
+  user_name?: string;
+  device_name?: string;
+}
+
+// WebSocket command payload
+export interface WSCommand {
+  command_id: string;
+  device_id: string;
+  datastream_id: string;
+  command_type: "set_value" | "toggle" | "reset";
+  value: number;
+  pin: string;
+  timestamp: number;
+}

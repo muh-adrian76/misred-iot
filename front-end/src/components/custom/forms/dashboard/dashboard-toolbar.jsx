@@ -1,7 +1,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Move, CalendarSearch, Download, SaveAll, Undo2 } from "lucide-react";
+import { Move, Download, SaveAll, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import DashboardTimeFilter from "@/components/features/dashboard/dashboard-time-filter";
 
 export default function DashboardToolbar({
   dashboardState,
@@ -13,6 +14,8 @@ export default function DashboardToolbar({
   className,
   saveEdit,
   hasUnsavedChanges,
+  currentTimeRange,
+  onTimeRangeChange,
 }) {
   return (
     <div className={cn("flex gap-2 sm:gap-3", className)}>
@@ -52,16 +55,11 @@ export default function DashboardToolbar({
             <Move className="w-5 h-5" />
             <span className="ml-1 inline">Edit</span>
           </Button>
-          <Button
-            className="cursor-pointer"
-            variant="outline"
-            // disabled={widgetState}
-            disabled={true}
-          >
-            <span className="sr-only">Filter</span>
-            <CalendarSearch className="w-5 h-5" />
-            <span className="ml-1 inline">Filter</span>
-          </Button>
+          <DashboardTimeFilter
+            currentTimeRange={currentTimeRange}
+            onTimeRangeChange={onTimeRangeChange}
+            disabled={widgetState}
+          />
           <Button
             className="cursor-pointer"
             variant="outline"

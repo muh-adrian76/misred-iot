@@ -87,7 +87,7 @@ export default function DeviceContent({
     },
     { key: "mqtt_topic", label: "Topik MQTT", sortable: true },
     // { key: "mqtt_qos", label: "QoS MQTT", filterable: true },
-    { key: "dev_eui", label: "LoRa UID", filterable: true },
+    // { key: "dev_eui", label: "LoRa UID", filterable: true },
     {
       key: "created_at",
       label: "Dibuat",

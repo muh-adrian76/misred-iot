@@ -133,7 +133,7 @@ export default function EditDeviceForm({
             <SelectContent>
               <SelectItem value="HTTP">HTTP</SelectItem>
               <SelectItem value="MQTT">MQTT</SelectItem>
-              <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
+              {/* <SelectItem value="LoRaWAN">LoRaWAN</SelectItem> */}
             </SelectContent>
           </Select>
         </div>

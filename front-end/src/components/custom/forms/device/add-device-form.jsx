@@ -115,7 +115,7 @@ export default function AddDeviceForm({
             <SelectContent>
               <SelectItem value="HTTP">HTTP</SelectItem>
               <SelectItem value="MQTT">MQTT</SelectItem>
-              <SelectItem value="LoRaWAN">LoRaWAN</SelectItem>
+              {/* <SelectItem value="LoRaWAN">LoRaWAN</SelectItem> */}
             </SelectContent>
           </Select>
         </div>

@@ -11,6 +11,7 @@ import {
   AlarmClockPlus,
   ChartNoAxesCombined,
   CircuitBoard,
+  Goal,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,7 +40,7 @@ const ToDoList = () => {
         const data = await res.json();
         // Backend returns { success: true, progress: [...], completed: boolean }
         setCompletedTasks(data.progress || []);
-        console.log("ToDoList: Fetched progress:", data.progress);
+        // console.log("ToDoList: Fetched progress:", data.progress);
       }
     } catch (error) {
       console.error("Error fetching onboarding progress:", error);
@@ -57,7 +58,7 @@ const ToDoList = () => {
   useEffect(() => {
     const handleTaskCompletion = async (event) => {
       const { taskId } = event.detail;
-      console.log("ToDoList: Received task completion event for task", taskId);
+      // console.log("ToDoList: Received task completion event for task", taskId);
 
       // Update backend first
       try {
@@ -83,12 +84,12 @@ const ToDoList = () => {
   }, [fetchProgress]); // Add fetchProgress dependency
 
   const updateProgress = async (taskId, completed) => {
-    console.log(
-      "ToDoList: Updating progress for task",
-      taskId,
-      "completed:",
-      completed
-    );
+    // console.log(
+    //   "ToDoList: Updating progress for task",
+    //   taskId,
+    //   "completed:",
+    //   completed
+    // );
     try {
       const response = await fetchFromBackend("/user/onboarding-progress", {
         method: "POST",
@@ -96,7 +97,7 @@ const ToDoList = () => {
       });
 
       if (response.ok) {
-        console.log("ToDoList: Progress updated successfully");
+        // console.log("ToDoList: Progress updated successfully");
       } else {
         console.error("ToDoList: Failed to update progress");
       }
@@ -109,7 +110,7 @@ const ToDoList = () => {
     {
       id: 1,
       title: "Buat Device",
-      description: "Buat device pertama Anda untuk mulai mengumpulkan data.",
+      description: "untuk mulai mengumpulkan data",
       icon: <Cpu className="w-5 h-5 text-gray-500" />,
       url: "/devices",
     },
@@ -117,14 +118,14 @@ const ToDoList = () => {
       id: 2,
       title: "Buat Datastream",
       description:
-        "Siapkan datastream untuk mengelola aliran data dari device.",
+        "untuk mengelola aliran data dari device",
       icon: <CircuitBoard className="w-5 h-5 text-gray-500" />,
       url: "/datastreams",
     },
     {
       id: 3,
       title: "Buat Dashboard",
-      description: "Buat dashboard untuk memvisualisasikan data Anda.",
+      description: "untuk memvisualisasikan data",
       icon: <LucideLayoutDashboard className="w-5 h-5 text-gray-500" />,
       url: "/dashboards",
     },
@@ -132,14 +133,14 @@ const ToDoList = () => {
       id: 4,
       title: "Buat Widget",
       description:
-        "Tambahkan widget ke dashboard untuk tampilan yang lebih interaktif.",
+        "untuk tampilan yang lebih interaktif",
       icon: <ChartNoAxesCombined className="w-5 h-5 text-gray-500" />,
       url: "/dashboards",
     },
     {
       id: 5,
       title: "Buat Alarm",
-      description: "Siapkan alarm untuk notifikasi otomatis.",
+      description: "untuk notifikasi otomatis",
       icon: <AlarmClockPlus className="w-5 h-5 text-gray-500" />,
       url: "/alarms",
     },
@@ -158,7 +159,7 @@ const ToDoList = () => {
 
   // Don't show if loading
   if (loading) {
-    console.log("ToDoList: Still loading...");
+    // console.log("ToDoList: Still loading...");
     return null;
   }
 
@@ -173,7 +174,7 @@ const ToDoList = () => {
 
   // Don't show if all tasks are completed
   if (completionPercentage === 100) {
-    console.log("ToDoList: All tasks completed, hiding");
+    // console.log("ToDoList: All tasks completed, hiding");
     return null;
   }
 
@@ -218,7 +219,7 @@ const ToDoList = () => {
             />
           ) : (
             <span
-              className={`${size === "small" ? "text-xs" : "text-xs"} font-semibold text-gray-700`}
+              className={`${size === "small" ? "text-xs" : "text-xs"} font-semibold text-white`}
             >
               {Math.round(percentage)}%
             </span>
@@ -273,12 +274,12 @@ const ToDoList = () => {
         <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-red-500 to-red-600 text-white">
           <div className="flex items-center space-x-2 sm:space-x-3">
             <div className="bg-white/20 p-1.5 sm:p-2 rounded-full">
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Goal className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold">Mulai Sekarang!</h2>
+              <h2 className="text-base sm:text-md font-bold">Tutorial Pengguna Baru!</h2>
               <p className="text-red-100 text-xs sm:text-sm">
-                {completedTasks.length}/{tasks.length} tugas selesai
+                {completedTasks.length}/{tasks.length} langkah sudah selesai
               </p>
             </div>
           </div>

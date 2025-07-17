@@ -11,6 +11,7 @@ import { apiTags, subDomain, ageConverter } from "./lib/utils";
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";
 import { deviceRoutes } from "./api/device";
+import { deviceCommandRoutes } from "./api/device-command/device-command";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
@@ -88,6 +89,7 @@ class Server {
       .use(authRoutes(this.authService))
       .use(userRoutes(this.userService))
       .use(deviceRoutes(this.deviceService))
+      .use(deviceCommandRoutes(this.db))
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
       .use(alarmRoutes(this.alarmService))

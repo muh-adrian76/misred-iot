@@ -10,7 +10,7 @@ import { join } from "path";
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { DeviceService } from "../../services/DeviceService";
-import { chirpstackService } from "../../lib/middleware";
+// import { chirpstackService } from "../../lib/middleware";
 import {
   deleteDeviceSchema,
   getAllDevicesSchema,

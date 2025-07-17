@@ -391,4 +391,17 @@ export class DeviceService {
       throw new Error("Failed to update device firmware version");
     }
   }
+
+  async updateDeviceStatus(deviceId: string, status: "online" | "offline") {
+    try {
+      await this.db.query(
+        "UPDATE devices SET status = ?, last_seen = NOW() WHERE id = ?",
+        [status, deviceId]
+      );
+      return true;
+    } catch (error) {
+      console.error("Error updating device status:", error);
+      throw error;
+    }
+  }
 }
