@@ -14,18 +14,35 @@ const getDashboardDescription = (id, dashboards) => {
 
 // Widget constraints helper
 const getWidgetConstraints = (widgetType) => {
-  const constraints = {
-    line: { minW: 3, minH: 4, maxW: 12, maxH: 8 },
-    bar: { minW: 3, minH: 4, maxW: 12, maxH: 8 },
-    pie: { minW: 3, minH: 4, maxW: 6, maxH: 6 },
-    gauge: { minW: 2, minH: 3, maxW: 4, maxH: 4 },
-    number: { minW: 2, minH: 2, maxW: 4, maxH: 3 },
-    switch: { minW: 2, minH: 1, maxW: 3, maxH: 1, h: 1 },
-    button: { minW: 2, minH: 1, maxW: 3, maxH: 1, h: 1 },
-    slider: { minW: 3, minH: 1, maxW: 6, maxH: 1, h: 1 },
-  };
+  const chartTypes = ['area', 'bar', 'line', 'pie'];
+  const controlTypes = ['switch', 'slider'];
   
-  return constraints[widgetType] || { minW: 2, minH: 2, maxW: 12, maxH: 8 };
+  if (chartTypes.includes(widgetType)) {
+    return {
+      minW: 6,    // Minimum 6 columns for charts
+      minH: 6,    // Minimum 6 rows for charts  
+      maxW: 12,   // Maximum full width
+      maxH: 12,   // Maximum height
+      isResizable: true
+    };
+  } else if (controlTypes.includes(widgetType)) {
+    return {
+      minW: 3,    // Minimum 3 columns for controls
+      minH: 3,    // Minimum 3 rows for controls
+      maxW: 6,    // Maximum 6 columns for controls
+      maxH: 4,    // Maximum 4 rows for controls
+      isResizable: true
+    };
+  }
+  
+  // Default constraints
+  return {
+    minW: 4,
+    minH: 4,
+    maxW: 12,
+    maxH: 10,
+    isResizable: true
+  };
 };
 
 export function useDashboardLogic() {
@@ -48,6 +65,7 @@ export function useDashboardLogic() {
   const [devices, setDevices] = useState([]);
   const [datastreams, setDatastreams] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
 
   // Dashboard provider
   const {
@@ -66,6 +84,20 @@ export function useDashboardLogic() {
   const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint();
   const { user } = useUser();
   const isAuthenticated = user && user.id;
+
+  // Debug logging
+  // useEffect(() => {
+  //   console.log('Dashboard Logic State:', {
+  //     isAuthenticated,
+  //     user: user?.id,
+  //     dashboardsCount: dashboards.length,
+  //     activeTab,
+  //     widgetCount,
+  //     isLoadingWidget,
+  //     currentTabItems: activeTab ? Object.keys(tabItems[activeTab] || {}).length : 0,
+  //     currentTabLayouts: activeTab ? Object.keys(tabLayouts[activeTab] || {}).length : 0
+  //   });
+  // }, [isAuthenticated, user, dashboards.length, activeTab, widgetCount, isLoadingWidget, tabItems, tabLayouts]);
 
   // Monitor edit value changes for dashboard name
   useEffect(() => {
@@ -180,19 +212,19 @@ export function useDashboardLogic() {
 
   // Sync dashboard data to provider state (this is the key fix for tab switching)
   useEffect(() => {
-    console.log('Dashboard sync effect triggered:', { 
-      dashboardsLength: dashboards.length, 
-      widgetsKeys: Object.keys(widgets), 
-      activeTab 
-    });
+    // console.log('Dashboard sync effect triggered:', { 
+    //   dashboardsLength: dashboards.length, 
+    //   widgetsKeys: Object.keys(widgets), 
+    //   activeTab 
+    // });
     
     if (dashboards.length > 0) {
       const items = {};
-      const layouts = {};
+      let layouts = {}; // Use let instead of const to allow reassignment safety check
       
       dashboards.forEach((dashboard) => {
         const dashboardWidgets = widgets[dashboard.id] || [];
-        console.log(`Dashboard ${dashboard.id} (${dashboard.description}):`, dashboardWidgets.length, 'widgets');
+        // console.log(`Dashboard ${dashboard.id} (${dashboard.description}):`, dashboardWidgets.length, 'widgets');
         
         // Use dashboard ID as key for items
         items[dashboard.id] = dashboardWidgets;
@@ -202,9 +234,24 @@ export function useDashboardLogic() {
         
         if (dashboard.layout) {
           try {
-            dashboardLayouts = typeof dashboard.layout === "string" 
+            // First parse - might still be a string if double-encoded
+            let parsedLayout = typeof dashboard.layout === "string" 
               ? JSON.parse(dashboard.layout) 
               : dashboard.layout;
+            
+            // Check if it's still a string after first parse (double-encoded case)
+            if (typeof parsedLayout === 'string') {
+              // console.log('Layout is double-encoded, parsing again');
+              parsedLayout = JSON.parse(parsedLayout);
+            }
+            
+            // Final validation - ensure it's an object
+            if (typeof parsedLayout === 'object' && parsedLayout !== null) {
+              dashboardLayouts = parsedLayout;
+            } else {
+              console.warn('Dashboard layout is not a valid object after parsing, resetting to empty');
+              dashboardLayouts = {};
+            }
           } catch (e) {
             console.warn('Failed to parse dashboard layout:', e);
             dashboardLayouts = {};
@@ -216,8 +263,19 @@ export function useDashboardLogic() {
         const defaultWidths = { lg: 3, md: 4, sm: 6, xs: 12, xxs: 12 };
         
         breakpoints.forEach(bp => {
-          if (!dashboardLayouts[bp]) {
-            dashboardLayouts[bp] = [];
+          // Ensure this breakpoint exists and is an array
+          if (!dashboardLayouts[bp] || !Array.isArray(dashboardLayouts[bp])) {
+            // If it's a string, try to parse it
+            if (typeof dashboardLayouts[bp] === 'string') {
+              try {
+                dashboardLayouts[bp] = JSON.parse(dashboardLayouts[bp]);
+              } catch (e) {
+                console.warn(`Failed to parse layout for breakpoint ${bp}:`, e);
+                dashboardLayouts[bp] = [];
+              }
+            } else {
+              dashboardLayouts[bp] = [];
+            }
           }
           
           // Add missing widgets to layout (only if there are widgets)
@@ -225,8 +283,8 @@ export function useDashboardLogic() {
             const existingLayout = dashboardLayouts[bp].find(item => item.i === widget.id.toString());
             if (!existingLayout) {
               const constraints = getWidgetConstraints(widget.type);
-              const w = Math.max(constraints.minW, defaultWidths[bp]);
-              const h = constraints.h || 4;
+              const w = Math.max(constraints.minW, defaultWidths[bp] || constraints.minW);
+              const h = Math.max(constraints.minH, 4);
               const cols = 12;
               const x = (idx * w) % cols;
               const y = Math.floor(idx / (cols / w)) * h;
@@ -241,18 +299,20 @@ export function useDashboardLogic() {
                 minH: constraints.minH,
                 maxW: constraints.maxW,
                 maxH: constraints.maxH,
+                isResizable: constraints.isResizable
               });
             } else {
-              // Apply current constraints
+              // Apply current constraints and ensure minimum dimensions
               const constraints = getWidgetConstraints(widget.type);
               existingLayout.minW = constraints.minW;
               existingLayout.minH = constraints.minH;
               existingLayout.maxW = constraints.maxW;
               existingLayout.maxH = constraints.maxH;
+              existingLayout.isResizable = constraints.isResizable;
               
-              if (constraints.h) {
-                existingLayout.h = constraints.h;
-              }
+              // Ensure current dimensions meet minimum requirements
+              existingLayout.w = Math.max(constraints.minW, existingLayout.w || constraints.minW);
+              existingLayout.h = Math.max(constraints.minH, existingLayout.h || constraints.minH);
             }
           });
           
@@ -261,6 +321,18 @@ export function useDashboardLogic() {
             dashboardWidgets.some(widget => widget.id.toString() === layoutItem.i)
           );
         });
+        
+        console.log(`Dashboard ${dashboard.id} processed layouts:`, {
+          type: typeof dashboardLayouts,
+          breakpoints: Object.keys(dashboardLayouts),
+          structure: dashboardLayouts
+        });
+        
+        // Ensure layouts is an object before assignment
+        if (typeof layouts !== 'object' || layouts === null) {
+          console.error('Layouts object is not valid, resetting');
+          layouts = {};
+        }
         
         layouts[dashboard.id] = dashboardLayouts;
       });
@@ -277,7 +349,7 @@ export function useDashboardLogic() {
         updateActiveTab(newActiveTab);
       }
     } else {
-      console.log('No dashboards, clearing active tab');
+      // console.log('No dashboards, clearing active tab');
       updateActiveTab("");
     }
   }, [dashboards, widgets, activeTab, setAllTabItems, setAllTabLayouts, updateActiveTab]);
@@ -396,7 +468,7 @@ export function useDashboardLogic() {
       
       // Find and save all staged widgets first
       const stagedWidgets = currentItems.filter(widget => widget.isStaged);
-      console.log('Found staged widgets to save:', stagedWidgets);
+      // console.log('Found staged widgets to save:', stagedWidgets);
       
       // Track widget ID mapping for layout updates
       const widgetIdMapping = {};
@@ -480,8 +552,8 @@ export function useDashboardLogic() {
       // Refresh data to get latest state
       await fetchDashboards();
       
-      successToast(`Dashboard berhasil disimpan${widgetCreatedCount > 0 ? ` dengan ${widgetCreatedCount} widget baru` : ''}`);
-      
+      // Console simpan widget
+      // successToast(`Dashboard berhasil disimpan${widgetCreatedCount > 0 ? ` dengan ${widgetCreatedCount} widget baru` : ''}`);
     } catch (error) {
       console.error('Error saving dashboard:', error);
       errorToast("Gagal menyimpan dashboard");
@@ -555,6 +627,159 @@ export function useDashboardLogic() {
   };
 
   // Widget form handlers
+  const handleChartDrop = (chartType, layoutItem) => {
+    // When a chart is dropped, show the widget form with the chart type and layout data
+    setNewWidgetData({
+      chartType,
+      layoutItem
+    });
+    setShowWidgetForm(true);
+  };
+
+  const handleAddChart = (chartType) => {
+    // Add chart without specific layout - will be placed automatically
+    setNewWidgetData({
+      chartType,
+      layoutItem: null
+    });
+    setShowWidgetForm(true);
+  };
+
+  const handleEditWidget = (widget) => {
+    // Open edit form for existing widget
+    setEditWidgetData(widget);
+    setShowEditWidgetForm(true);
+  };
+
+  const stageWidgetRemoval = (widgetId) => {
+    // console.log('=== STAGE WIDGET REMOVAL ===');
+    // console.log('Widget ID to remove:', widgetId);
+    
+    // Mark widget for removal (staging mode)
+    const dashboardId = activeTab;
+    const currentItems = tabItems[dashboardId] || [];
+    
+    // console.log('Current items before staging removal:', currentItems.map(item => ({
+    //   id: item.id,
+    //   description: item.description,
+    //   isStaged: item.isStaged,
+    //   stagedForRemoval: item.stagedForRemoval
+    // })));
+    
+    const updatedItems = currentItems.map(item => {
+      if (item.id === widgetId) {
+        // console.log(`Marking widget ${widgetId} for removal:`, {
+        //   before: { isStaged: item.isStaged, stagedForRemoval: item.stagedForRemoval },
+        //   after: { isStaged: item.isStaged || false, stagedForRemoval: true } // Don't change isStaged, only set stagedForRemoval
+        // });
+        // Only mark for removal, don't change isStaged status
+        return { ...item, stagedForRemoval: true };
+      }
+      return item;
+    });
+    
+    // console.log('Updated items after staging removal:', updatedItems.map(item => ({
+    //   id: item.id,
+    //   description: item.description,
+    //   isStaged: item.isStaged,
+    //   stagedForRemoval: item.stagedForRemoval
+    // })));
+    
+    updateTabItems(dashboardId, updatedItems);
+    setHasUnsavedChanges(true);
+    // console.log('Widget staged for removal successfully');
+  };
+
+  const removeWidgetFromDatabase = async (widgetId) => {
+    // Remove widget directly from database (non-editing mode)
+    try {
+      const res = await fetchFromBackend(`/widget/${widgetId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete widget");
+
+      // Refresh dashboard data
+      await fetchDashboards();
+      
+      successToast("Widget berhasil dihapus");
+    } catch (error) {
+      console.error("Error removing widget:", error);
+      errorToast("Gagal menghapus widget");
+    }
+  };
+
+  const handleWidgetFormSubmit = async (formData) => {
+    // Handle new widget form submission
+    await stageWidgetAddition(formData);
+  };
+
+  const handleEditWidgetFormSubmit = async (formData) => {
+    // Handle edit widget form submission - stage changes instead of immediate save
+    try {
+      // console.log('Staging widget edit with data:', formData);
+      
+      // Validate required fields
+      if (!formData.id) {
+        throw new Error('Widget ID is required');
+      }
+      
+      if (!formData.description?.trim()) {
+        throw new Error('Widget description is required');
+      }
+      
+      if (!formData.device_id) {
+        throw new Error('Device ID is required');
+      }
+      
+      if (!formData.datastream_id) {
+        throw new Error('Datastream ID is required');
+      }
+
+      // Stage the widget changes in local state
+      const dashboardId = activeTab;
+      const currentItems = tabItems[dashboardId] || [];
+      const currentWidget = currentItems.find(item => item.id === formData.id);
+      
+      if (!currentWidget) {
+        throw new Error('Widget not found in current dashboard');
+      }
+      
+      // Update local state with staged changes
+      const updatedItems = currentItems.map(item => 
+        item.id === formData.id 
+          ? { 
+              ...item,
+              description: formData.description.trim(),
+              device_id: parseInt(formData.device_id),
+              datastream_id: parseInt(formData.datastream_id),
+              // Mark as having staged edits
+              hasEditedChanges: true,
+              originalData: {
+                description: item.description,
+                device_id: item.device_id,
+                datastream_id: item.datastream_id
+              }
+            }
+          : item
+      );
+      
+      updateTabItems(dashboardId, updatedItems);
+      setHasUnsavedChanges(true);
+      
+      setShowEditWidgetForm(false);
+      setEditWidgetData(null);
+
+      // Toast staging widget sebelum simpan
+      // successToast("Perubahan widget disimpan. Klik 'Simpan' untuk menyimpan ke database.");
+      
+      // console.log('Widget changes staged successfully');
+    } catch (error) {
+      console.error("Error staging widget edit:", error);
+      errorToast(`Gagal menyimpan perubahan widget: ${error.message}`);
+    }
+  };
+
   const stageWidgetAddition = async (formData) => {
     const tempId = Date.now().toString();
     const dashboardId = activeTab;
@@ -573,9 +798,19 @@ export function useDashboardLogic() {
     const updatedItems = [...currentItems, stagedWidget];
     updateTabItems(dashboardId, updatedItems);
     
-    // Add to layout if position provided
+    // Add to layout - either with provided position or auto-positioned
     if (newWidgetData?.layoutItem) {
       await stageLayoutUpdate(tempId, newWidgetData.layoutItem, formData.chartType);
+    } else {
+      // Auto-position widget with proper constraints
+      const constraints = getWidgetConstraints(formData.chartType);
+      const autoLayoutItem = {
+        x: 0,
+        y: Infinity, // Place at bottom
+        w: constraints.minW,
+        h: constraints.minH
+      };
+      await stageLayoutUpdate(tempId, autoLayoutItem, formData.chartType);
     }
     
     setHasUnsavedChanges(true);
@@ -591,6 +826,17 @@ export function useDashboardLogic() {
     const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
     const updatedLayouts = { ...currentLayouts };
     
+    // Ensure dimensions meet minimum requirements
+    const finalWidth = Math.max(constraints.minW, layoutItem.w || constraints.minW);
+    const finalHeight = Math.max(constraints.minH, layoutItem.h || constraints.minH);
+    
+    // console.log('Staging layout update:', {
+    //   widgetType,
+    //   constraints,
+    //   originalLayout: layoutItem,
+    //   finalDimensions: { w: finalWidth, h: finalHeight }
+    // });
+    
     breakpoints.forEach(bp => {
       if (!updatedLayouts[bp]) {
         updatedLayouts[bp] = [];
@@ -598,14 +844,15 @@ export function useDashboardLogic() {
       
       updatedLayouts[bp].push({
         i: widgetId.toString(),
-        x: layoutItem.x,
-        y: layoutItem.y,
-        w: layoutItem.w,
-        h: layoutItem.h,
+        x: layoutItem.x || 0,
+        y: layoutItem.y || 0,
+        w: finalWidth,
+        h: finalHeight,
         minW: constraints.minW,
         minH: constraints.minH,
         maxW: constraints.maxW,
         maxH: constraints.maxH,
+        isResizable: constraints.isResizable
       });
     });
     
@@ -629,8 +876,38 @@ export function useDashboardLogic() {
   const handleLayoutChange = useCallback(async (layout, allLayouts) => {
     if (!activeTab) return;
     
-    console.log('Layout changed, updating state...');
-    updateTabLayouts(activeTab, allLayouts);
+    // console.log('Layout changed, updating state...');
+    
+    // Validate and fix layout items to prevent NaN values
+    const validatedLayout = layout.map(item => ({
+      ...item,
+      x: Number.isFinite(item.x) ? item.x : 0,
+      y: Number.isFinite(item.y) ? item.y : 0,
+      w: Number.isFinite(item.w) && item.w > 0 ? item.w : 6,
+      h: Number.isFinite(item.h) && item.h > 0 ? item.h : 4,
+      minW: Number.isFinite(item.minW) && item.minW > 0 ? item.minW : 3,
+      minH: Number.isFinite(item.minH) && item.minH > 0 ? item.minH : 3,
+      maxW: Number.isFinite(item.maxW) && item.maxW > 0 ? item.maxW : 12,
+      maxH: Number.isFinite(item.maxH) && item.maxH > 0 ? item.maxH : 12,
+    }));
+
+    // Also validate allLayouts
+    const validatedAllLayouts = {};
+    Object.keys(allLayouts).forEach(breakpoint => {
+      validatedAllLayouts[breakpoint] = allLayouts[breakpoint].map(item => ({
+        ...item,
+        x: Number.isFinite(item.x) ? item.x : 0,
+        y: Number.isFinite(item.y) ? item.y : 0,
+        w: Number.isFinite(item.w) && item.w > 0 ? item.w : 6,
+        h: Number.isFinite(item.h) && item.h > 0 ? item.h : 4,
+        minW: Number.isFinite(item.minW) && item.minW > 0 ? item.minW : 3,
+        minH: Number.isFinite(item.minH) && item.minH > 0 ? item.minH : 3,
+        maxW: Number.isFinite(item.maxW) && item.maxW > 0 ? item.maxW : 12,
+        maxH: Number.isFinite(item.maxH) && item.maxH > 0 ? item.maxH : 12,
+      }));
+    });
+    
+    updateTabLayouts(activeTab, validatedAllLayouts);
     setHasUnsavedChanges(true);
   }, [activeTab, updateTabLayouts]);
 
@@ -642,15 +919,34 @@ export function useDashboardLogic() {
     setEditDashboardValue(currentDescription);
   }, [activeTab, dashboards]);
 
-  const cancelEditMode = useCallback(() => {
-    setIsEditing(false);
-    setHasUnsavedChanges(false);
-    setEditDashboardValue("");
-  }, []);
+  const cancelEditMode = useCallback(async () => {
+    try {
+      // Reset to original state by re-fetching from database
+      await fetchDashboards();
+      
+      // Reset edit state
+      setIsEditing(false);
+      setHasUnsavedChanges(false);
+      setEditDashboardValue("");
+      
+      // Clear any localStorage dashboard data to force refresh
+      clearDashboardData();
+      
+      // console.log('Edit mode cancelled, data reset to original state');
+    } catch (error) {
+      console.error('Error cancelling edit mode:', error);
+      // Fallback: just reset UI state
+      setIsEditing(false);
+      setHasUnsavedChanges(false);
+      setEditDashboardValue("");
+    }
+  }, [fetchDashboards, clearDashboardData]);
 
   // Main save function for all changes
   const saveAllLayoutChanges = useCallback(async () => {
     try {
+      // console.log('=== SAVE ALL LAYOUT CHANGES DEBUG ===');
+      
       // Save the current dashboard with any name changes and layout updates
       const dashboard = dashboards.find((d) => d.id === activeTab);
       if (!dashboard) {
@@ -666,15 +962,100 @@ export function useDashboardLogic() {
       const dashboardId = activeTab;
       const currentItems = tabItems[dashboardId] || [];
       
-      // Find and save all staged widgets first
-      const stagedWidgets = currentItems.filter(widget => widget.isStaged);
-      console.log('Found staged widgets to save:', stagedWidgets);
+      // console.log('Current items before categorization:', currentItems.map(item => ({
+      //   id: item.id,
+      //   description: item.description,
+      //   isStaged: item.isStaged,
+      //   stagedForRemoval: item.stagedForRemoval
+      // })));
       
-      // Track widget ID mapping for layout updates
+      // Separate widgets into different categories
+      const widgetsToAdd = currentItems.filter(widget => widget.isStaged && !widget.stagedForRemoval);
+      const widgetsToRemove = currentItems.filter(widget => widget.stagedForRemoval);
+      const widgetsToEdit = currentItems.filter(widget => widget.hasEditedChanges && !widget.stagedForRemoval);
+      const existingWidgets = currentItems.filter(widget => !widget.isStaged && !widget.stagedForRemoval && !widget.hasEditedChanges);
+      
+      // console.log('Widget categorization:', {
+      //   widgetsToAdd: widgetsToAdd.map(w => ({ id: w.id, description: w.description })),
+      //   widgetsToRemove: widgetsToRemove.map(w => ({ id: w.id, description: w.description, isStaged: w.isStaged })),
+      //   widgetsToEdit: widgetsToEdit.map(w => ({ id: w.id, description: w.description, hasEditedChanges: w.hasEditedChanges })),
+      //   existingWidgets: existingWidgets.map(w => ({ id: w.id, description: w.description })),
+      //   total: currentItems.length
+      // });
+      
+      // First: Remove widgets marked for removal
+      for (const widget of widgetsToRemove) {
+        try {
+          // console.log(`Processing widget for removal:`, {
+          //   id: widget.id,
+          //   isStaged: widget.isStaged,
+          //   description: widget.description
+          // });
+          
+          // Only delete if it's not a staged widget (has real database ID)
+          if (!widget.isStaged) {
+            // console.log(`Deleting widget ${widget.id} from database...`);
+            const res = await fetchFromBackend(`/widget/${widget.id}`, {
+              method: "DELETE",
+            });
+            
+            if (!res.ok) {
+              const errorText = await res.text();
+              throw new Error(`Failed to delete widget ${widget.id}: ${res.status} - ${errorText}`);
+            }
+            // console.log(`Widget ${widget.id} deleted successfully from database`);
+          } else {
+            // console.log(`Widget ${widget.id} is staged, skipping database deletion`);
+          }
+        } catch (error) {
+          console.error('Error deleting widget:', widget.id, error);
+          throw error;
+        }
+      }
+      
+      // Second: Update edited widgets
+      let widgetEditedCount = 0;
+      
+      for (const editedWidget of widgetsToEdit) {
+        try {
+          // console.log(`Processing widget for update:`, {
+          //   id: editedWidget.id,
+          //   description: editedWidget.description,
+          //   hasEditedChanges: editedWidget.hasEditedChanges
+          // });
+          
+          const updatePayload = {
+            description: editedWidget.description,
+            dashboard_id: parseInt(editedWidget.dashboard_id || dashboardId),
+            device_id: parseInt(editedWidget.device_id),
+            datastream_id: parseInt(editedWidget.datastream_id),
+            type: editedWidget.type,
+          };
+          
+          // console.log(`Updating widget ${editedWidget.id} in database...`, updatePayload);
+          const res = await fetchFromBackend(`/widget/${editedWidget.id}`, {
+            method: "PUT",
+            body: JSON.stringify(updatePayload),
+          });
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`Failed to update widget ${editedWidget.id}: ${res.status} - ${errorText}`);
+          }
+          
+          widgetEditedCount++;
+          // console.log(`Widget ${editedWidget.id} updated successfully in database`);
+        } catch (error) {
+          console.error('Error updating widget:', editedWidget.id, error);
+          throw error;
+        }
+      }
+      
+      // Third: Add new staged widgets
       const widgetIdMapping = {};
-      let widgetCreatedCount = 0; // Track how many widgets we created
+      let widgetCreatedCount = 0;
       
-      for (const stagedWidget of stagedWidgets) {
+      for (const stagedWidget of widgetsToAdd) {
         try {
           const widgetPayload = {
             description: stagedWidget.description,
@@ -695,7 +1076,16 @@ export function useDashboardLogic() {
           }
           
           const newWidget = await res.json();
-          widgetIdMapping[stagedWidget.id] = newWidget.result.id;
+          // console.log('Response for widget creation:', newWidget);
+          
+          // Safety check untuk response structure
+          const widgetId = newWidget?.result?.id || newWidget?.id || newWidget?.data?.id;
+          if (!widgetId) {
+            console.error('Invalid widget response structure:', newWidget);
+            throw new Error('Widget ID not found in response');
+          }
+          
+          widgetIdMapping[stagedWidget.id] = widgetId;
           widgetCreatedCount++;
           
           // Trigger onboarding task completion for each widget created
@@ -707,31 +1097,91 @@ export function useDashboardLogic() {
         }
       }
       
-      // Update layout with real widget IDs
+      // Update layout: remove deleted widgets and update IDs for new widgets
       let finalLayoutData = tabLayouts[dashboardId] || {};
       
-      if (Object.keys(widgetIdMapping).length > 0) {
-        const updatedLayouts = { ...finalLayoutData };
-        
-        Object.keys(updatedLayouts).forEach(breakpoint => {
-          if (updatedLayouts[breakpoint]) {
-            updatedLayouts[breakpoint] = updatedLayouts[breakpoint].map(layoutItem => {
-              const realId = widgetIdMapping[layoutItem.i];
-              if (realId) {
-                return { ...layoutItem, i: realId.toString() };
-              }
-              return layoutItem;
-            });
+      // console.log('Layout data before processing:', {
+      //   type: typeof finalLayoutData,
+      //   keys: Object.keys(finalLayoutData),
+      //   structure: finalLayoutData
+      // });
+      
+      // Ensure finalLayoutData is an object, not a string
+      if (typeof finalLayoutData === 'string') {
+        try {
+          // console.log('Layout data is string, parsing...');
+          finalLayoutData = JSON.parse(finalLayoutData);
+          
+          // Check if it's still a string (double-encoded)
+          if (typeof finalLayoutData === 'string') {
+            // console.log('Layout data is double-encoded, parsing again...');
+            finalLayoutData = JSON.parse(finalLayoutData);
           }
-        });
-        
-        finalLayoutData = updatedLayouts;
-        updateTabLayouts(dashboardId, updatedLayouts);
+        } catch (e) {
+          console.warn('Failed to parse layout data:', e);
+          finalLayoutData = {};
+        }
       }
       
-      // Calculate final widget count
-      const existingWidgetCount = currentItems.filter(item => !item.isStaged).length;
-      const finalWidgetCount = existingWidgetCount + Object.keys(widgetIdMapping).length;
+      // Final validation
+      if (typeof finalLayoutData !== 'object' || finalLayoutData === null) {
+        console.warn('Layout data is not valid object, resetting to empty');
+        finalLayoutData = {};
+      }
+      
+      // Process layouts for all breakpoints
+      const updatedLayouts = { ...finalLayoutData };
+      const removedWidgetIds = widgetsToRemove.map(w => w.id.toString());
+      
+      // console.log('Removing widget IDs from layout:', removedWidgetIds);
+      
+      Object.keys(updatedLayouts).forEach(breakpoint => {
+        if (updatedLayouts[breakpoint] && Array.isArray(updatedLayouts[breakpoint])) {
+          const originalCount = updatedLayouts[breakpoint].length;
+          
+          // Remove layouts for deleted widgets
+          updatedLayouts[breakpoint] = updatedLayouts[breakpoint].filter(layoutItem => {
+            const shouldKeep = !removedWidgetIds.includes(layoutItem.i);
+            if (!shouldKeep) {
+              // console.log(`Removing layout item for widget ${layoutItem.i} from breakpoint ${breakpoint}`);
+            }
+            return shouldKeep;
+          });
+          
+          const afterRemovalCount = updatedLayouts[breakpoint].length;
+          // console.log(`Breakpoint ${breakpoint}: ${originalCount} -> ${afterRemovalCount} items`);
+          
+          // Update IDs for new widgets
+          updatedLayouts[breakpoint] = updatedLayouts[breakpoint].map(layoutItem => {
+            const realId = widgetIdMapping[layoutItem.i];
+            if (realId) {
+              // console.log(`Updating layout ID: ${layoutItem.i} -> ${realId}`);
+              return { ...layoutItem, i: realId.toString() };
+            }
+            return layoutItem;
+          });
+        } else {
+          console.warn(`Invalid layout structure for breakpoint ${breakpoint}:`, updatedLayouts[breakpoint]);
+        }
+      });
+      
+      finalLayoutData = updatedLayouts;
+      // console.log('Final layout data after processing:', {
+      //   structure: finalLayoutData,
+      //   breakpointCounts: Object.keys(finalLayoutData).map(bp => ({
+      //     breakpoint: bp,
+      //     count: finalLayoutData[bp]?.length || 0
+      //   }))
+      // });
+      
+      // Calculate final widget count (existing + edited + new - removed)
+      const finalWidgetCount = existingWidgets.length + widgetEditedCount + widgetCreatedCount;
+      
+      // console.log('Saving dashboard with:', {
+      //   description: finalDescription,
+      //   widget_count: finalWidgetCount,
+      //   layout_string_length: JSON.stringify(finalLayoutData).length
+      // });
       
       // Save dashboard with layout
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
@@ -749,15 +1199,62 @@ export function useDashboardLogic() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
+      // console.log('Dashboard saved successfully to database');
+      
+      // Clean up local state: remove widgets marked for removal and clean edit flags
+      const cleanedItems = existingWidgets.concat(
+        // Clean edited widgets - remove edit flags
+        widgetsToEdit.map(editedWidget => {
+          const { hasEditedChanges, originalData, ...cleanWidget } = editedWidget;
+          return cleanWidget;
+        }),
+        // Process new widgets with real IDs
+        widgetsToAdd.map(stagedWidget => {
+          const realId = widgetIdMapping[stagedWidget.id];
+          if (realId) {
+            return { ...stagedWidget, id: realId, isStaged: false };
+          }
+          return stagedWidget;
+        })
+      );
+      
+      // console.log('Cleaned items for local state:', cleanedItems.map(item => ({
+      //   id: item.id,
+      //   description: item.description,
+      //   isStaged: item.isStaged || false,
+      //   hasEditedChanges: item.hasEditedChanges || false
+      // })));
+      
+      // Update local state with cleaned data
+      // console.log('Updating local state...');
+      updateTabItems(dashboardId, cleanedItems);
+      updateTabLayouts(dashboardId, finalLayoutData);
+      
+      // console.log('Local state updated successfully');
+      
       // Refresh data to get latest state
+      // console.log('Refreshing dashboard data from server...');
       await fetchDashboards();
       
-      successToast(`Dashboard berhasil disimpan${widgetCreatedCount > 0 ? ` dengan ${widgetCreatedCount} widget baru` : ''}`);
+      // console.log('=== SAVE COMPLETED SUCCESSFULLY ===');
       
+      // Toast spesifik
+      // const actions = [];
+      // if (widgetCreatedCount > 0) actions.push(`${widgetCreatedCount} widget baru`);
+      // if (widgetEditedCount > 0) actions.push(`${widgetEditedCount} widget diupdate`);
+      // if (widgetsToRemove.length > 0) actions.push(`${widgetsToRemove.length} widget dihapus`);
+      
+      // const message = actions.length > 0 
+      //   ? `Dashboard berhasil disimpan dengan ${actions.join(', ')}`
+      //   : 'Dashboard berhasil disimpan';
+      
+      // successToast(message);
+      
+      successToast('Dashboard berhasil disimpan');
       setIsEditing(false);
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('Error saving all changes:', error);
+      console.error('=== ERROR IN SAVE OPERATION ===', error);
       errorToast("Gagal menyimpan dashboard");
     }
   }, [activeTab, dashboards, editDashboardValue, tabItems, tabLayouts, updateTabLayouts, fetchDashboards]);
@@ -768,7 +1265,7 @@ export function useDashboardLogic() {
     dashboards,
     activeTab,
     activeDashboardDescription: getDashboardDescription(activeTab, dashboards),
-    setActiveTab: updateActiveTab,
+    setActiveTab: updateActiveTab, // This should trigger tab switching correctly
     openChartSheet,
     setOpenChartSheet,
     showWidgetForm,
@@ -783,6 +1280,9 @@ export function useDashboardLogic() {
     setTabItems: setItemsForTab,
     tabLayouts,
     setTabLayouts: setLayoutsForTab,
+    // Current items and layouts for active dashboard
+    currentItems: activeTab ? (tabItems[activeTab] || []).filter(item => !item.stagedForRemoval) : [],
+    currentLayouts: activeTab ? (tabLayouts[activeTab] || {}) : {},
     openDashboardDialog,
     setOpenDashboardDialog,
     widgetCount,
@@ -801,6 +1301,8 @@ export function useDashboardLogic() {
     datastreams,
     hasUnsavedChanges,
     setHasUnsavedChanges,
+    isAuthenticated, // Add this missing property!
+    layoutKey,
     
     // Functions
     handleAddDashboard,
@@ -809,6 +1311,13 @@ export function useDashboardLogic() {
     handleSaveEditDashboard,
     saveLayoutToDB,
     addWidget,
+    handleChartDrop,
+    handleAddChart,
+    handleEditWidget,
+    stageWidgetRemoval,
+    removeWidgetFromDatabase,
+    handleWidgetFormSubmit,
+    handleEditWidgetFormSubmit,
     stageWidgetAddition,
     stageLayoutUpdate,
     handleBreakpointChange,

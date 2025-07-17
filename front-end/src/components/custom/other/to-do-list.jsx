@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Check,
   ChevronRight,
@@ -16,6 +16,7 @@ import { fetchFromBackend } from "@/lib/helper";
 import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/providers/user-provider";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "next-view-transitions";
 
 const ToDoList = () => {
   const [completedTasks, setCompletedTasks] = useState([]);
@@ -24,31 +25,33 @@ const ToDoList = () => {
   const isAuthenticated = useAuth();
   const { user } = useUser();
 
+  // Function to fetch progress data
+  const fetchProgress = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fetchFromBackend("/user/onboarding-progress");
+      if (res.ok) {
+        const data = await res.json();
+        // Backend returns { success: true, progress: [...], completed: boolean }
+        setCompletedTasks(data.progress || []);
+        console.log("ToDoList: Fetched progress:", data.progress);
+      }
+    } catch (error) {
+      console.error("Error fetching onboarding progress:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
   // Fetch onboarding progress from API
   useEffect(() => {
-    const fetchProgress = async () => {
-      if (!isAuthenticated || !user?.id) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const res = await fetchFromBackend("/user/onboarding-progress");
-        if (res.ok) {
-          const data = await res.json();
-          setCompletedTasks(data.progress || []);
-          console.log("ToDoList: Fetched progress:", data.progress);
-        }
-      } catch (error) {
-        console.error("Error fetching onboarding progress:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProgress();
-  }, [isAuthenticated, user?.id]);
+  }, [fetchProgress]);
 
   // Listen for task completion events
   useEffect(() => {
@@ -56,16 +59,17 @@ const ToDoList = () => {
       const { taskId } = event.detail;
       console.log("ToDoList: Received task completion event for task", taskId);
 
-      if (!completedTasks.includes(taskId)) {
-        console.log("ToDoList: Task not completed yet, updating...");
-        setCompletedTasks((prev) => {
-          const newTasks = [...prev, taskId];
-          console.log("ToDoList: New completed tasks:", newTasks);
-          return newTasks;
-        });
+      // Update backend first
+      try {
         await updateProgress(taskId, true);
-      } else {
-        console.log("ToDoList: Task already completed");
+        
+        // Refresh data from backend to ensure consistency
+        await fetchProgress();
+        
+      } catch (error) {
+        console.error("ToDoList: Error updating progress:", error);
+        // On error, still try to refresh from backend
+        await fetchProgress();
       }
     };
 
@@ -76,7 +80,7 @@ const ToDoList = () => {
         handleTaskCompletion
       );
     };
-  }, [completedTasks]);
+  }, [fetchProgress]); // Add fetchProgress dependency
 
   const updateProgress = async (taskId, completed) => {
     console.log(
@@ -107,6 +111,7 @@ const ToDoList = () => {
       title: "Buat Device",
       description: "Buat device pertama Anda untuk mulai mengumpulkan data.",
       icon: <Cpu className="w-5 h-5 text-gray-500" />,
+      url: "/devices",
     },
     {
       id: 2,
@@ -114,12 +119,14 @@ const ToDoList = () => {
       description:
         "Siapkan datastream untuk mengelola aliran data dari device.",
       icon: <CircuitBoard className="w-5 h-5 text-gray-500" />,
+      url: "/datastreams",
     },
     {
       id: 3,
       title: "Buat Dashboard",
       description: "Buat dashboard untuk memvisualisasikan data Anda.",
       icon: <LucideLayoutDashboard className="w-5 h-5 text-gray-500" />,
+      url: "/dashboards",
     },
     {
       id: 4,
@@ -127,12 +134,14 @@ const ToDoList = () => {
       description:
         "Tambahkan widget ke dashboard untuk tampilan yang lebih interaktif.",
       icon: <ChartNoAxesCombined className="w-5 h-5 text-gray-500" />,
+      url: "/dashboards",
     },
     {
       id: 5,
       title: "Buat Alarm",
       description: "Siapkan alarm untuk notifikasi otomatis.",
       icon: <AlarmClockPlus className="w-5 h-5 text-gray-500" />,
+      url: "/alarms",
     },
   ];
 
@@ -312,17 +321,21 @@ const ToDoList = () => {
             {tasks.map((task, index) => {
               const isCompleted = completedTasks.includes(task.id);
               return (
-                <div
+                <Link
                   key={task.id}
-                  className={`group relative flex items-center p-3 sm:p-4 rounded-xl border transition-all duration-300 ${
-                    isCompleted
-                      ? "bg-gradient-to-r from-red-50 to-red-100 border-red-200 shadow-md"
-                      : "bg-white border-gray-200"
-                  }`}
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                  }}
+                  href={task.url}
+                  className="block"
                 >
+                  <div
+                    className={`group relative flex items-center p-3 sm:p-4 rounded-xl border transition-all duration-300 cursor-pointer hover:shadow-lg ${
+                      isCompleted
+                        ? "bg-gradient-to-r from-red-50 to-red-100 border-red-200 shadow-md"
+                        : "bg-white border-gray-200 hover:border-red-300 hover:bg-red-50"
+                    }`}
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                    }}
+                  >
                   {/* Task Number/Check */}
                   <div className="flex-shrink-0 mr-3 sm:mr-4">
                     <div
@@ -374,6 +387,7 @@ const ToDoList = () => {
                     )}
                   </div>
                 </div>
+                </Link>
               );
             })}
           </div>

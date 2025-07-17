@@ -20,10 +20,38 @@ export function DashboardProvider({ children }) {
       const stored = localStorage.getItem("dashboard-data");
       if (stored) {
         const parsed = JSON.parse(stored);
-        setDashboardData(parsed);
+        // console.log('Loaded dashboard data from localStorage:', parsed);
+        
+        // Validate the structure
+        if (parsed && typeof parsed === 'object' && 
+            parsed.tabItems && typeof parsed.tabItems === 'object' &&
+            parsed.tabLayouts && typeof parsed.tabLayouts === 'object') {
+          
+          // Additional validation for tabLayouts - ensure no nested strings
+          const validatedData = {
+            ...parsed,
+            tabLayouts: {}
+          };
+          
+          Object.keys(parsed.tabLayouts).forEach(dashboardId => {
+            const layout = parsed.tabLayouts[dashboardId];
+            if (typeof layout === 'object' && layout !== null) {
+              validatedData.tabLayouts[dashboardId] = layout;
+            } else {
+              console.warn(`Skipping invalid layout for dashboard ${dashboardId}:`, layout);
+              validatedData.tabLayouts[dashboardId] = {};
+            }
+          });
+          
+          setDashboardData(validatedData);
+        } else {
+          console.warn('Invalid localStorage data structure, clearing');
+          localStorage.removeItem("dashboard-data");
+        }
       }
     } catch (error) {
       console.warn("Failed to load dashboard data from localStorage:", error);
+      localStorage.removeItem("dashboard-data");
     } finally {
       setIsInitialized(true);
     }
@@ -39,6 +67,7 @@ export function DashboardProvider({ children }) {
                        dashboardData.activeTab;
         
         if (hasData) {
+          // console.log('Saving dashboard data to localStorage:', dashboardData);
           localStorage.setItem("dashboard-data", JSON.stringify(dashboardData));
         } else {
           // Remove from localStorage if no data
@@ -51,13 +80,26 @@ export function DashboardProvider({ children }) {
   }, [dashboardData.tabItems, dashboardData.tabLayouts, dashboardData.activeTab, isInitialized]);
 
   const updateTabItems = useCallback((dashboardId, items) => {
+    // console.log('DashboardProvider.updateTabItems called:', {
+    //   dashboardId,
+    //   itemCount: items.length,
+    //   items: items.map(item => ({
+    //     id: item.id,
+    //     description: item.description,
+    //     isStaged: item.isStaged,
+    //     stagedForRemoval: item.stagedForRemoval
+    //   }))
+    // });
+    
     setDashboardData(prev => {
       // Check if the items are actually different
       const currentItems = prev.tabItems[dashboardId];
       if (JSON.stringify(currentItems) === JSON.stringify(items)) {
+        // console.log('DashboardProvider.updateTabItems: No change detected, skipping update');
         return prev; // No change, don't trigger re-render
       }
       
+      // console.log('DashboardProvider.updateTabItems: Changes detected, updating state');
       return {
         ...prev,
         tabItems: {
@@ -69,6 +111,14 @@ export function DashboardProvider({ children }) {
   }, []);
 
   const updateTabLayouts = useCallback((dashboardId, layouts) => {
+    // console.log('updateTabLayouts called:', { dashboardId, layouts, type: typeof layouts });
+    
+    // Validate layouts parameter
+    if (typeof layouts !== 'object' || layouts === null) {
+      console.warn('Invalid layouts provided to updateTabLayouts:', layouts);
+      return;
+    }
+    
     setDashboardData(prev => {
       // Check if the layouts are actually different
       const currentLayouts = prev.tabLayouts[dashboardId];
@@ -87,17 +137,20 @@ export function DashboardProvider({ children }) {
   }, []);
 
   const updateActiveTab = useCallback((dashboardId) => {
+    // console.log('DashboardProvider: Updating active tab from', dashboardData.activeTab, 'to', dashboardId);
     setDashboardData(prev => {
       if (prev.activeTab === dashboardId) {
+        // console.log('DashboardProvider: No change in active tab, skipping update');
         return prev; // No change, don't trigger re-render
       }
       
+      // console.log('DashboardProvider: Active tab changed, updating state');
       return {
         ...prev,
         activeTab: dashboardId
       };
     });
-  }, []);
+  }, [dashboardData.activeTab]);
 
   const setAllTabItems = useCallback((items) => {
     setDashboardData(prev => {
@@ -114,15 +167,35 @@ export function DashboardProvider({ children }) {
   }, []);
 
   const setAllTabLayouts = useCallback((layouts) => {
+    // console.log('setAllTabLayouts called with:', { layouts, type: typeof layouts });
+    
+    // Ensure layouts is a valid object
+    if (typeof layouts !== 'object' || layouts === null) {
+      console.warn('Invalid layouts provided to setAllTabLayouts:', layouts);
+      return;
+    }
+    
+    // Validate each dashboard layout
+    const validatedLayouts = {};
+    Object.keys(layouts).forEach(dashboardId => {
+      const dashboardLayout = layouts[dashboardId];
+      if (typeof dashboardLayout === 'object' && dashboardLayout !== null) {
+        validatedLayouts[dashboardId] = dashboardLayout;
+      } else {
+        console.warn(`Invalid layout for dashboard ${dashboardId}:`, dashboardLayout);
+        validatedLayouts[dashboardId] = {};
+      }
+    });
+    
     setDashboardData(prev => {
       // Check if the layouts are actually different
-      if (JSON.stringify(prev.tabLayouts) === JSON.stringify(layouts)) {
+      if (JSON.stringify(prev.tabLayouts) === JSON.stringify(validatedLayouts)) {
         return prev; // No change, don't trigger re-render
       }
       
       return {
         ...prev,
-        tabLayouts: layouts
+        tabLayouts: validatedLayouts
       };
     });
   }, []);
@@ -130,6 +203,7 @@ export function DashboardProvider({ children }) {
   const clearDashboardData = useCallback(() => {
     // Remove from localStorage first
     localStorage.removeItem("dashboard-data");
+    // console.log('Cleared dashboard data from localStorage');
     
     // Then clear the state - this should only trigger if state is not already empty
     setDashboardData(prev => {

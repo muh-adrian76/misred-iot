@@ -9,11 +9,17 @@ export const onboardingTasks = {
 
 export const completeOnboardingTask = async (taskId) => {
   // Dispatch custom event untuk notify to-do-list
-  window.dispatchEvent(new CustomEvent('onboarding-task-completed', {
+  const event = new CustomEvent('onboarding-task-completed', {
     detail: { taskId }
-  }));
+  });
   
-  console.log(`Onboarding task ${taskId} completed event dispatched`);
+  console.log(`🎯 Dispatching onboarding task ${taskId} completion event`);
+  window.dispatchEvent(event);
+  
+  // Add a small delay to ensure event is processed
+  setTimeout(() => {
+    console.log(`✅ Onboarding task ${taskId} event dispatched successfully`);
+  }, 100);
 };
 
 export const markDeviceCreated = () => {

@@ -85,8 +85,10 @@ export default function DashboardSelect({
                       value={option.value}
                       className="hover:font-semibold"
                       onSelect={(currentValue) => {
+                        console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
                         if (currentValue !== value) {
-                          onChange(currentValue);
+                          console.log('DashboardSelect: Calling onChange with:', option.value);
+                          onChange(option.value); // Use option.value instead of currentValue
                         }
                         setOpen(false);
                       }}

@@ -57,8 +57,8 @@ export default function EditWidgetDialog({
         id: widgetData.id || "",
         description: widgetData.description || "",
         dashboard_id: widgetData.dashboard_id || "",
-        device_id: widgetData.device_id || "",
-        datastream_id: widgetData.datastream_id || "",
+        device_id: widgetData.device_id?.toString() || "", // Convert to string for form
+        datastream_id: widgetData.datastream_id?.toString() || "", // Convert to string for form
       });
     }
   }, [open, widgetData]);
@@ -69,7 +69,7 @@ export default function EditWidgetDialog({
   };
 
   const handleDeviceSelect = (deviceId) => {
-    setForm((prev) => ({ ...prev, device_id: deviceId, datastream_id: "" }));
+    setForm((prev) => ({ ...prev, device_id: deviceId.toString(), datastream_id: "" }));
     setOpenDevicePopover(false);
   };
 
@@ -107,7 +107,7 @@ export default function EditWidgetDialog({
 
   // Filter datastreams based on selected device
   const filteredDatastreams = datastreams.filter(
-    (ds) => ds.device_id === form.device_id
+    (ds) => ds.device_id === parseInt(form.device_id)
   );
 
   const formContent = (
@@ -155,8 +155,8 @@ export default function EditWidgetDialog({
                 className="justify-between w-full"
               >
                 <span className="truncate">
-                  {devices.find((d) => d.id === form.device_id)?.description ||
-                    devices.find((d) => d.id === form.device_id)?.name ||
+                  {devices.find((d) => d.id === parseInt(form.device_id))?.description ||
+                    devices.find((d) => d.id === parseInt(form.device_id))?.name ||
                     "Pilih Device"}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" />
@@ -183,7 +183,7 @@ export default function EditWidgetDialog({
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          form.device_id === device.id
+                          parseInt(form.device_id) === device.id
                             ? "opacity-100"
                             : "opacity-0"
                         )}
@@ -235,7 +235,7 @@ export default function EditWidgetDialog({
                 </div>
               ) : (
                 filteredDatastreams.map((datastream) => (
-                  <SelectItem key={datastream.id} value={datastream.id}>
+                  <SelectItem key={datastream.id} value={datastream.id.toString()}>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium">
                         {`${datastream.description} (Pin ${datastream.pin})`}

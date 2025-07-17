@@ -47,19 +47,18 @@ const getWidgetConstraints = (widgetType) => {
   
   if (chartTypes.includes(widgetType)) {
     return {
-      minW: 6,
-      minH: 6,
-      maxW: 12,
-      maxH: 12,
+      minW: 6,    // Minimum 6 columns for charts
+      minH: 6,    // Minimum 6 rows for charts  
+      maxW: 12,   // Maximum full width
+      maxH: 12,   // Maximum height
       isResizable: true
     };
   } else if (controlTypes.includes(widgetType)) {
     return {
-      h: 3,        
-      minW: 2,     
-      minH: 3,     
-      maxW: 12,    
-      maxH: 3,     
+      minW: 3,    // Minimum 3 columns for controls
+      minH: 3,    // Minimum 3 rows for controls
+      maxW: 6,    // Maximum 6 columns for controls
+      maxH: 4,    // Maximum 4 rows for controls
       isResizable: true
     };
   }
@@ -95,7 +94,30 @@ export default function GridLayout({
   const handleLayoutChange = (layout, allLayouts) => {
     console.log('Layout changed:', { layout, allLayouts, currentBreakpoint });
     if (onLayoutChange) {
-      onLayoutChange(layout, allLayouts);
+      // Apply constraints to the new layout
+      const constrainedLayout = layout.map((item) => {
+        const widget = items.find(w => w.id.toString() === item.i);
+        if (!widget) return item;
+        
+        const constraints = getWidgetConstraints(widget.type);
+        return {
+          ...item,
+          w: Math.max(constraints.minW, Math.min(constraints.maxW, item.w)),
+          h: Math.max(constraints.minH, Math.min(constraints.maxH, item.h)),
+          minW: constraints.minW,
+          minH: constraints.minH,
+          maxW: constraints.maxW,
+          maxH: constraints.maxH,
+          isResizable: isEditing && constraints.isResizable,
+          isDraggable: isEditing,
+          static: !isEditing,
+        };
+      });
+      
+      onLayoutChange(constrainedLayout, {
+        ...allLayouts,
+        [currentBreakpoint]: constrainedLayout
+      });
     }
   };
 
@@ -132,14 +154,18 @@ export default function GridLayout({
       // Pastikan posisi tidak undefined atau NaN
       const validatedLayoutItem = {
         ...layoutItem,
-        x: Math.max(0, layoutItem.x || 0),
-        y: Math.max(0, layoutItem.y || 0),
-        w: layoutItem.w || bootstrapWidths[currentBreakpoint] || 4,
-        h: constraints.h || layoutItem.h || 4,
+        x: Math.max(0, Math.round(layoutItem.x || 0)),
+        y: Math.max(0, Math.round(layoutItem.y || 0)),
+        w: Math.max(constraints.minW, Math.round(layoutItem.w || bootstrapWidths[currentBreakpoint] || constraints.minW)),
+        h: Math.max(constraints.minH, Math.round(layoutItem.h || constraints.minH || 4)),
         minW: constraints.minW,
         minH: constraints.minH,
         maxW: constraints.maxW,
         maxH: constraints.maxH,
+        isResizable: constraints.isResizable,
+        // Ensure proper positioning
+        isDraggable: true,
+        static: false
       };
       
       console.log('Validated layout item:', validatedLayoutItem);
@@ -158,11 +184,19 @@ export default function GridLayout({
     e.preventDefault();
     const chartType = e.dataTransfer.getData("type");
     if (chartType && onChartDrop) {
+      const constraints = getWidgetConstraints(chartType);
       onChartDrop(chartType, {
         x: 0,
         y: Infinity,
-        w: bootstrapWidths[currentBreakpoint],
-        h: 4,
+        w: constraints.minW,
+        h: constraints.minH,
+        minW: constraints.minW,
+        minH: constraints.minH,
+        maxW: constraints.maxW,
+        maxH: constraints.maxH,
+        isResizable: constraints.isResizable,
+        isDraggable: true,
+        static: false,
         resizeHandles: availableHandles,
       });
     }
@@ -234,8 +268,15 @@ export default function GridLayout({
         resizeHandles={availableHandles}
         droppingItem={{
           i: "__dropping-elem__",
-          w: bootstrapWidths[currentBreakpoint],
-          h: 4,
+          w: 6,  // Default width for dropping items
+          h: 6,  // Default height for dropping items
+          minW: 3,
+          minH: 3,
+          maxW: 12,
+          maxH: 12,
+          isResizable: true,
+          isDraggable: true,
+          static: false,
         }}
         draggableHandle=".drag-handle"
         preventCollision={true}
@@ -288,19 +329,36 @@ export default function GridLayout({
             minH: widgetConstraints.minH,
             maxW: widgetConstraints.maxW,
             maxH: widgetConstraints.maxH,
-            // For control widgets, set fixed height
-            h: widgetConstraints.h || layoutItem.h,
+            // Ensure current dimensions meet minimum requirements and are valid numbers
+            w: Math.max(widgetConstraints.minW, Number.isFinite(layoutItem.w) ? layoutItem.w : widgetConstraints.minW),
+            h: Math.max(widgetConstraints.minH, Number.isFinite(layoutItem.h) ? layoutItem.h : widgetConstraints.minH),
+            // Ensure position values are valid numbers
+            x: Number.isFinite(layoutItem.x) ? layoutItem.x : 0,
+            y: Number.isFinite(layoutItem.y) ? layoutItem.y : 0,
+            isResizable: isEditing && widgetConstraints.isResizable // Only resizable in edit mode
           };
 
+          // Debug logging untuk constraint
+          console.log(`Widget ${widget.type} (${widget.id}):`, {
+            original: layoutItem,
+            constraints: widgetConstraints,
+            final: constrainedLayoutItem,
+            isEditing,
+            isResizable: constrainedLayoutItem.isResizable
+          });
+
           return (
-            <div key={layoutItem.i} className="relative group">
+            <div 
+              key={layoutItem.i} 
+              className="relative group"
+              data-grid={constrainedLayoutItem}
+            >
               <div
                 className={`h-full w-full bg-white dark:bg-gray-800 rounded-sm shadow-sm flex flex-col overflow-hidden relative group ${
                   isEditing
                     ? "border-2 border-dashed border-red-300"
                     : "border border-gray-200 dark:border-gray-600"
                 }`}
-                data-grid={constrainedLayoutItem}
               >
                 {isEditing && (
                   <>

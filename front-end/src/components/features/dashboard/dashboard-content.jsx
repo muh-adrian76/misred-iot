@@ -14,6 +14,8 @@ export default function DashboardContent(props) {
     setItemsForTab,
     tabLayouts,
     setLayoutsForTab,
+    currentItems,
+    currentLayouts,
     isEditing,
     isMobile,
     isMedium,
@@ -31,18 +33,37 @@ export default function DashboardContent(props) {
     handleEditWidget,
   } = props;
 
+  // Debug logging untuk troubleshooting
+  console.log('DashboardContent render:', {
+    dashboardsLength: dashboards?.length,
+    isLoadingWidget,
+    activeTab,
+    widgetCount,
+    isEditing,
+    tabItemsKeys: Object.keys(tabItems || {}),
+    tabLayoutsKeys: Object.keys(tabLayouts || {})
+  });
+
   // Handler untuk menambah widget dari WidgetBox
   const handleAddWidgetFromBox = (chartType) => {
+    console.log('Adding widget from widget box:', chartType);
     // Panggil handleChartDrop untuk menampilkan form widget, bukan langsung tambah ke database
-    handleChartDrop(chartType, {
-      x: 0,
-      y: Infinity,
-      w: 3, // Default width
-      h: 4, // Default height
-    });
+    if (handleChartDrop) {
+      handleChartDrop(chartType, {
+        x: 0,
+        y: Infinity,
+        w: 6, // Default width yang lebih besar
+        h: 4, // Default height
+      });
+    }
   };
 
-  if (dashboards.length === 0) {
+  // Fallback untuk props yang mungkin undefined
+  const safeDashboards = dashboards || [];
+  const safeTabItems = tabItems || {};
+  const safeTabLayouts = tabLayouts || {};
+
+  if (safeDashboards.length === 0) {
     return (
       <motion.div
         className="flex items-center justify-center h-screen"
@@ -88,6 +109,36 @@ export default function DashboardContent(props) {
     );
   }
 
+  // Jika tidak ada activeTab tapi ada dashboard, tampilkan pesan untuk memilih dashboard
+  if (!activeTab && safeDashboards.length > 0) {
+    return (
+      <motion.div
+        className="flex items-center justify-center h-screen"
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 50 }}
+        transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
+      >
+        <div className="flex flex-col items-center text-sm text-center gap-4 w-xl max-w-md">
+          <motion.img
+            key="dashboard-image"
+            src="/widget.svg"
+            alt="Select Dashboard"
+            className="w-72 h-auto -mb-5 mt-[-50px]"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          />
+          <h2 className="text-xl font-semibold">Pilih Dashboard</h2>
+          <span className="text-muted-foreground text-balance">
+            Pilih salah satu dashboard dari tab di atas untuk mulai memantau atau mengendalikan perangkat IoT Anda.
+          </span>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <>
       {activeTab && !isEditing && widgetCount === 0 && (
@@ -127,9 +178,9 @@ export default function DashboardContent(props) {
           className="p-4"
         >
           <GridLayout
-            items={tabItems[activeTab] || []}
+            items={currentItems}
             setItems={setItemsForTab}
-            layouts={tabLayouts[activeTab] || {}}
+            layouts={currentLayouts}
             setLayouts={setLayoutsForTab}
             onLayoutChange={handleLayoutChange}
             onBreakpointChange={handleBreakpointChange}
@@ -151,9 +202,9 @@ export default function DashboardContent(props) {
               transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
             >
               <GridLayout
-                items={tabItems[activeTab] || []}
+                items={currentItems}
                 setItems={setItemsForTab}
-                layouts={tabLayouts[activeTab] || {}}
+                layouts={currentLayouts}
                 setLayouts={setLayoutsForTab}
                 onChartDrop={handleChartDrop}
                 onLayoutChange={handleLayoutChange}

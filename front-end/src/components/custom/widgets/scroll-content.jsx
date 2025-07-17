@@ -37,9 +37,13 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
   const handleAddWidget = (e, key) => {
     e.preventDefault();
     e.stopPropagation();
-    // Panggil onChartDrop untuk menampilkan form widget
-    if (onChartDrag) {
-      onChartDrag(key, null); // null untuk layoutItem karena bukan dari drop
+    console.log('Add widget button clicked:', key);
+    // Panggil onAddWidget yang diteruskan dari parent
+    if (onAddWidget) {
+      onAddWidget(key);
+    } else if (onChartDrag) {
+      // Fallback ke onChartDrag jika onAddWidget tidak tersedia
+      onChartDrag(key, null);
     }
   };
 
