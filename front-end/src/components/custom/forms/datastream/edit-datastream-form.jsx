@@ -293,6 +293,7 @@ export default function EditDatastreamForm({
             onChange={(e) => setDefaultValue(e.target.value)}
             className="w-full"
             placeholder="Data"
+            noInfo
           />
         </div>
       ) : (
@@ -311,6 +312,7 @@ export default function EditDatastreamForm({
               onChange={(e) => setDefaultValue(String(e.target.value))}
               className="w-full"
               placeholder="0"
+              noInfo
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -327,6 +329,7 @@ export default function EditDatastreamForm({
               onChange={(e) => setMinValue(e.target.value)}
               className="w-full"
               placeholder="0"
+              noInfo
             />
           </div>
           <div className="flex flex-col gap-2">
@@ -343,6 +346,7 @@ export default function EditDatastreamForm({
               onChange={(e) => setMaxValue(e.target.value)}
               className="w-full"
               placeholder="1"
+              noInfo
             />
           </div>
         </div>

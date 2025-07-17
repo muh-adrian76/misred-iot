@@ -82,7 +82,7 @@ export default function AddWidgetDialog({
         layout: initialData?.layoutItem,
       });
       setOpen(false);
-      successToast("Widget berhasil ditambahkan");
+      // successToast("Widget berhasil ditambahkan");
     } catch (error) {
       errorToast("Gagal menambahkan widget");
     } finally {

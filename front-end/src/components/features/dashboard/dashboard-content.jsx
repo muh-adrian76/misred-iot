@@ -1,27 +1,8 @@
 import React from "react";
-import RGL, { WidthProvider } from "react-grid-layout";
-import { SwitchWidget } from "@/components/custom/widgets/widget-component/switch";
-import { SliderWidget } from "@/components/custom/widgets/widget-component/slider";
-import { AreaChartWidget } from "@/components/custom/widgets/widget-component/charts/area";
-import { BarChartWidget } from "@/components/custom/widgets/widget-component/charts/bar";
-import { LineChartWidget } from "@/components/custom/widgets/widget-component/charts/line";
-// import { PieChartWidget } from "@/components/custom/widgets/widget-component/charts/pie";
-
 import GridLayout from "@/components/custom/widgets/grid-layout";
 import WidgetBox from "@/components/custom/widgets/widget-box";
 import { motion } from "framer-motion";
 import { TextShimmer } from "@/components/ui/text-shimmer";
-
-const ReactGridLayout = WidthProvider(RGL);
-
-const widgetComponents = {
-  slider: SliderWidget,
-  switch: SwitchWidget,
-  area: AreaChartWidget,
-  bar: BarChartWidget,
-  line: LineChartWidget,
-  // pie: PieChartWidget,
-};
 
 export default function DashboardContent(props) {
   const {

@@ -6,18 +6,19 @@ export interface AlarmData {
   user_id: number;
   device_id: number;
   datastream_id: number;
-  operator: string;
-  threshold: number;
+  conditions: Array<{
+    operator: string;
+    threshold: number;
+  }>;
   is_active: boolean;
   cooldown_minutes: number;
-  notification_whatsapp: boolean;
-  notification_browser: boolean;
   last_triggered: string | null;
   device_description: string;
   datastream_description: string;
   datastream_pin: string;
   user_phone: string;
   user_name: string;
+  user_whatsapp_enabled: boolean;
 }
 
 export interface NotificationResult {
@@ -96,11 +97,10 @@ export class AlarmNotificationService {
       const query = `
         SELECT 
           a.id, a.description, a.user_id, a.device_id, a.datastream_id,
-          a.operator, a.threshold, a.is_active, a.cooldown_minutes,
-          a.notification_whatsapp, a.notification_browser, a.last_triggered,
+          a.is_active, a.cooldown_minutes, a.last_triggered,
           d.description as device_description,
           ds.description as datastream_description, ds.pin as datastream_pin,
-          u.phone as user_phone, u.name as user_name
+          u.phone as user_phone, u.name as user_name, u.whatsapp_notifications_enabled as user_whatsapp_enabled
         FROM alarms a
         JOIN devices d ON a.device_id = d.id
         JOIN datastreams ds ON a.datastream_id = ds.id
@@ -109,7 +109,21 @@ export class AlarmNotificationService {
       `;
 
       const [rows] = await this.db.query(query, [deviceId]);
-      return rows as AlarmData[];
+      const alarms = rows as AlarmData[];
+
+      // Get conditions for each alarm
+      for (const alarm of alarms) {
+        const conditionsQuery = `
+          SELECT operator, threshold 
+          FROM alarm_conditions 
+          WHERE alarm_id = ? 
+          ORDER BY id
+        `;
+        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
+        alarm.conditions = conditions as Array<{ operator: string; threshold: number; }>;
+      }
+
+      return alarms;
     } catch (error) {
       console.error("Error getting active alarms:", error);
       return [];
@@ -135,11 +149,18 @@ export class AlarmNotificationService {
         return sensorValue <= threshold;
       case "=":
         return Math.abs(sensorValue - threshold) < 0.001; // floating point comparison
-      case "!=":
-        return Math.abs(sensorValue - threshold) >= 0.001;
       default:
         return false;
     }
+  }
+
+  /**
+   * Evaluasi semua conditions alarm (ALL conditions must be met)
+   */
+  evaluateAllConditions(alarm: AlarmData, sensorValue: number): boolean {
+    return alarm.conditions.every(condition => 
+      this.evaluateCondition(sensorValue, condition.operator, condition.threshold)
+    );
   }
 
   /**
@@ -159,17 +180,15 @@ export class AlarmNotificationService {
    * Generate pesan notifikasi
    */
   generateAlarmMessage(alarm: AlarmData, sensorValue: number): string {
-    const conditionText = this.getConditionText(
-      alarm.operator,
-      alarm.threshold,
-      sensorValue
-    );
+    const conditionsText = alarm.conditions
+      .map(condition => this.getConditionText(condition.operator, condition.threshold, sensorValue))
+      .join(' AND ');
 
     return `🚨 PERINGATAN BAHAYA!
 
             📱 Device: #${alarm.device_id} - ${alarm.device_description}
             🔍 Sensor: #${alarm.datastream_id} - ${alarm.datastream_description}
-            ⚠️ Kondisi: ${conditionText}
+            ⚠️ Kondisi: ${conditionsText}
 
             Waktu: ${new Date().toLocaleString("id-ID", {
                 timeZone: "Asia/Jakarta",
@@ -197,7 +216,6 @@ export class AlarmNotificationService {
       ">=": "di atas atau sama dengan",
       "<=": "di bawah atau sama dengan",
       "=": "sama dengan",
-      "!=": "tidak sama dengan",
     };
 
     const operatorText =
@@ -214,8 +232,7 @@ export class AlarmNotificationService {
     deviceId: number,
     datastreamId: number,
     sensorValue: number,
-    threshold: number,
-    operator: string,
+    conditions: Array<{ operator: string; threshold: number; }>,
     notificationType: "whatsapp" | "browser" | "both",
     whatsappMessageId?: string,
     errorMessage?: string
@@ -227,13 +244,17 @@ export class AlarmNotificationService {
         ? "sent"
         : "pending";
 
+      const conditionsText = conditions
+        .map(c => `${c.operator} ${c.threshold}`)
+        .join(' AND ');
+
       const query = `
         INSERT INTO alarm_notifications (
           alarm_id, user_id, device_id, datastream_id,
-          sensor_value, threshold, operator, notification_type,
+          sensor_value, conditions_text, notification_type,
           whatsapp_message_id, error_message,
           triggered_at, sent_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       `;
 
       const [result] = await this.db.query(query, [
@@ -242,8 +263,7 @@ export class AlarmNotificationService {
         deviceId,
         datastreamId,
         sensorValue,
-        threshold,
-        operator,
+        conditionsText,
         notificationType,
         whatsappStatus,
         whatsappMessageId,
@@ -285,8 +305,8 @@ export class AlarmNotificationService {
       let whatsappMessageId: string | undefined;
       let errorMessage: string | undefined;
 
-      // Kirim WhatsApp jika diaktifkan
-      if (alarm.notification_whatsapp && alarm.user_phone) {
+      // Kirim WhatsApp jika diaktifkan oleh user dan ada nomor telepon
+      if (alarm.user_whatsapp_enabled && alarm.user_phone) {
         const whatsappResult = await this.sendWhatsAppNotification(
           alarm.user_phone,
           message
@@ -304,9 +324,9 @@ export class AlarmNotificationService {
           );
         }
 
-        notificationType = alarm.notification_browser ? "both" : "whatsapp";
-      } else if (alarm.notification_browser) {
-        notificationType = "browser";
+        notificationType = "both"; // Browser always enabled + WhatsApp
+      } else {
+        notificationType = "browser"; // Browser notification only
       }
 
       // Log notifikasi ke database
@@ -316,8 +336,7 @@ export class AlarmNotificationService {
         alarm.device_id,
         alarm.datastream_id,
         sensorValue,
-        alarm.threshold,
-        alarm.operator,
+        alarm.conditions,
         notificationType,
         whatsappMessageId,
         errorMessage
@@ -366,17 +385,11 @@ export class AlarmNotificationService {
         }
 
         console.log(
-          `🔍 Checking alarm "${alarm.description}": ${sensorValue} ${alarm.operator} ${alarm.threshold}`
+          `🔍 Checking alarm "${alarm.description}": value=${sensorValue}, conditions=[${alarm.conditions.map(c => `${c.operator} ${c.threshold}`).join(', ')}]`
         );
 
-        // Evaluasi kondisi alarm
-        if (
-          this.evaluateCondition(
-            Number(sensorValue),
-            alarm.operator,
-            alarm.threshold
-          )
-        ) {
+        // Evaluasi kondisi alarm - semua conditions harus terpenuhi
+        if (this.evaluateAllConditions(alarm, Number(sensorValue))) {
           console.log(`🚨 Alarm condition met for "${alarm.description}"`);
 
           // Cek cooldown

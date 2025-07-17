@@ -25,7 +25,7 @@ export class DeviceService {
     board,
     protocol,
     topic,
-    qos,
+    // qos,
     dev_eui,
     app_eui,
     app_key,
@@ -35,14 +35,14 @@ export class DeviceService {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
         `INSERT INTO devices 
-      (description, board_type, protocol, mqtt_topic, mqtt_qos, dev_eui, app_eui, app_key, new_secret, user_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (description, board_type, protocol, mqtt_topic, dev_eui, app_eui, app_key, new_secret, user_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           name,
           board,
           protocol,
           topic ?? null,
-          qos ?? null,
+          // qos ?? null,
           dev_eui ?? null,
           app_eui ?? null,
           app_key ?? null,
@@ -300,7 +300,7 @@ export class DeviceService {
       board,
       protocol,
       mqtt_topic,
-      mqtt_qos,
+      // mqtt_qos,
       dev_eui,
       app_eui,
       app_key,
@@ -328,14 +328,14 @@ export class DeviceService {
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
-        `UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, mqtt_qos = ?, dev_eui = ?, app_eui = ?, app_key = ?, firmware_version = ?
+        `UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, dev_eui = ?, app_eui = ?, app_key = ?, firmware_version = ?
       WHERE id = ? AND user_id = ?`,
         [
           name,
           board,
           protocol,
           uniqueTopic ?? null,
-          mqtt_qos ?? null,
+          // mqtt_qos ?? null,
           dev_eui ?? null,
           app_eui ?? null,
           app_key ?? null,

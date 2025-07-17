@@ -34,7 +34,8 @@ export default function DataTable({
   content,
   limit = 10,
   searchPlaceholder = "Cari...",
-  showUploadFirmware = false
+  showUploadFirmware = false,
+  showNotificationInfo = false
 }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -164,6 +165,7 @@ export default function DataTable({
           isMobile={isMobile}
           content={content}
           showUploadFirmware={showUploadFirmware}
+          showNotificationInfo={showNotificationInfo}
         />
       </motion.div>
 

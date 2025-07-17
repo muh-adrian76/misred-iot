@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
+import { markDatastreamCreated } from "@/lib/onboarding-utils";
 import unitOptions from "./unit.json";
 
 export function useDatastreamLogic() {
@@ -81,6 +82,9 @@ export function useDatastreamLogic() {
       successToast("Datastream berhasil ditambahkan!");
       await fetchDatastreams();
       setAddFormOpen(false);
+      
+      // Trigger onboarding task completion
+      markDatastreamCreated();
     } catch {
       errorToast("Gagal tambah datastream!");
     }

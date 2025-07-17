@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   `phone` varchar(15) DEFAULT NULL,
   `otp` int DEFAULT NULL,
   `refresh_token` varchar(255),
+  `whatsapp_notif` BOOLEAN DEFAULT FALSE,
+  `onboarding_completed` BOOLEAN DEFAULT FALSE,
+  `onboarding_progress` JSON DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -112,12 +115,8 @@ CREATE TABLE IF NOT EXISTS `alarms` (
   `user_id` INT NOT NULL,
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
-  `operator` ENUM('=', '<', '>', '<=', '>=', '!=') NOT NULL,
-  `threshold` DECIMAL(10,3) NOT NULL,
   `is_active` BOOLEAN DEFAULT TRUE,
   `cooldown_minutes` INT DEFAULT 5,
-  `notification_whatsapp` BOOLEAN DEFAULT TRUE,
-  `notification_browser` BOOLEAN DEFAULT TRUE,
   `last_triggered` TIMESTAMP NULL DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -125,6 +124,16 @@ CREATE TABLE IF NOT EXISTS `alarms` (
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `alarm_conditions` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `alarm_id` INT NOT NULL,
+  `operator` ENUM('=', '<', '>', '<=', '>=') NOT NULL,
+  `threshold` DECIMAL(10,3) NOT NULL,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `otaa_updates` (
@@ -146,8 +155,7 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
   `sensor_value` DECIMAL(10,3) NOT NULL,
-  `threshold` DECIMAL(10,3) NOT NULL,
-  `operator` VARCHAR(5) NOT NULL,
+  `conditions_text` VARCHAR(500) NOT NULL,
   `notification_type` ENUM('whatsapp', 'browser', 'both') NOT NULL,
   `whatsapp_message_id` VARCHAR(255) NULL,
   `error_message` TEXT NULL,

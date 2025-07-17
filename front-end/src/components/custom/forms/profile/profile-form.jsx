@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -14,6 +14,7 @@ import { TransitionPanel } from "@/components/ui/transition-panel";
 export default function ProfileForm({ open, setOpen, user, setUser, router }) {
   const [username, setUsername] = useState(user?.name || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
+  const [whatsappNotif, setWhatsappNotif] = useState(user?.whatsapp_notif || false);
   const [showPassword, setShowPassword] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -21,6 +22,16 @@ export default function ProfileForm({ open, setOpen, user, setUser, router }) {
   const [deleteChecked, setDeleteChecked] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  
+  // Update state ketika user data berubah
+  useEffect(() => {
+    if (user) {
+      setUsername(user?.name || "");
+      setPhoneNumber(user?.phone || "");
+      setWhatsappNotif(user?.whatsapp_notif || false);
+    }
+  }, [user]);
+  
   const ITEMS = [
     {
       title: "Informasi Akun",
@@ -32,6 +43,8 @@ export default function ProfileForm({ open, setOpen, user, setUser, router }) {
           setUsername={setUsername}
           phoneNumber={phoneNumber}
           setPhoneNumber={setPhoneNumber}
+          whatsappNotif={whatsappNotif}
+          setWhatsappNotif={setWhatsappNotif}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           setOpenDeleteAccountDialog={setOpenDeleteAccountDialog}

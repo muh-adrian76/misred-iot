@@ -44,10 +44,10 @@ export function userRoutes(userService: UserService) {
       // @ts-ignore
       async ({ jwt, cookie, body }) => {
         const decoded = await authorizeRequest(jwt, cookie);
-        const { name, phone } = body;
+        const { name, phone, whatsapp_notif } = body;
         const phoneNumber = phone ?? "";
 
-        const updatedUser = await userService.updateUser(decoded.sub, name, phoneNumber);
+        const updatedUser = await userService.updateUser(decoded.sub, name, phoneNumber, whatsapp_notif);
         if (!updatedUser) {
           return new Response("User gagal diperbarui", { status: 400 });
         }
@@ -71,5 +71,97 @@ export function userRoutes(userService: UserService) {
         };
       },
       deleteUserSchema
+    )
+
+    // Get WhatsApp notification status
+    .get(
+      "/whatsapp-notifications",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        const enabled = await userService.getWhatsAppNotificationStatus(decoded.sub);
+        return {
+          success: true,
+          whatsapp_notifications_enabled: enabled
+        };
+      }
+    )
+
+    // Update WhatsApp notification status
+    .put(
+      "/whatsapp-notifications",
+      // @ts-ignore
+      async ({ jwt, cookie, body }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        const { enabled } = body as any;
+        const success = await userService.updateWhatsAppNotifications(decoded.sub, enabled);
+        
+        if (!success) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Failed to update WhatsApp notification settings"
+          }), { status: 400 });
+        }
+
+        return {
+          success: true,
+          message: "WhatsApp notification settings updated successfully"
+        };
+      }
+    )
+
+    // Get onboarding progress
+    .get(
+      "/onboarding-progress",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        const progress = await userService.getOnboardingProgress(decoded.sub);
+        return {
+          success: true,
+          ...progress
+        };
+      }
+    )
+
+    // Get onboarding progress by user ID
+    .get(
+      "/onboarding-progress/:userId",
+      // @ts-ignore
+      async ({ jwt, cookie, params }) => {
+        await authorizeRequest(jwt, cookie);
+        const progress = await userService.getOnboardingProgress(params.userId);
+        return {
+          success: true,
+          data: {
+            completedTasks: progress.progress,
+            isCompleted: progress.completed
+          }
+        };
+      }
+    )
+
+    // Update onboarding progress
+    .post(
+      "/onboarding-progress",
+      // @ts-ignore
+      async ({ jwt, cookie, body }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        const { taskId, completed } = body as { taskId: number; completed: boolean };
+        
+        const success = await userService.updateOnboardingProgress(decoded.sub, taskId, completed);
+        
+        if (!success) {
+          return new Response(JSON.stringify({
+            success: false,
+            message: "Failed to update onboarding progress"
+          }), { status: 400 });
+        }
+
+        return {
+          success: true,
+          message: "Onboarding progress updated successfully"
+        };
+      }
     );
 }

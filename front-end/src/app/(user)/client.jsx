@@ -1,11 +1,17 @@
 "use client";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useSidebarOpen } from "@/providers/sidebar-provider";
 import { useBreakpoint } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/providers/user-provider";
 import AppSidebar from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
+import ToDoList from "@/components/custom/other/to-do-list";
+import OnboardingDebug from "@/components/custom/other/onboarding-debug";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { LayoutDashboard, Cpu, Siren, CircuitBoard } from "lucide-react";
+import { fetchFromBackend } from "@/lib/helper";
 import localFont from "next/font/local";
 
 const logoFont = localFont({
@@ -31,11 +37,54 @@ const menu = [
 
 export default function UserLayoutClient({ children }) {
   const { sidebarOpen, setSidebarOpen } = useSidebarOpen();
+  const isAuthenticated = useAuth();
+  const { user } = useUser();
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+  
   const activeMenu = menu.find((item) => pathname.startsWith(item.url)) || {
     title: "Menu",
   };
+
+  // Check onboarding status
+  useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (!isAuthenticated || !user?.id) {
+        setIsCheckingOnboarding(false);
+        return;
+      }
+      
+      try {
+        const response = await fetchFromBackend(`/user/onboarding-progress/${user.id}`);
+        if (response.ok) {
+          const responseData = await response.json();
+          const completedTasks = responseData.data?.completedTasks || [];
+          
+          // Check if all tasks are completed (tasks 1-5)
+          const allTasksCompleted = [1, 2, 3, 4, 5].every(taskId => 
+            completedTasks.includes(taskId)
+          );
+          
+          console.log('Onboarding check:', { 
+            userId: user.id, 
+            completedTasks, 
+            allTasksCompleted,
+            shouldShow: !allTasksCompleted 
+          });
+          setShowOnboarding(!allTasksCompleted);
+        }
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+        setShowOnboarding(true); // Show onboarding by default on error
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
+    };
+
+    checkOnboardingStatus();
+  }, [isAuthenticated, user?.id]);
 
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -63,7 +112,18 @@ export default function UserLayoutClient({ children }) {
       )}
         <SidebarInset className="flex flex-col w-[80vw]">
           <AppNavbar page={activeMenu.title} />
-          <div className="min-h-screen">{children}</div>
+          <div className="min-h-screen relative">
+            {/* Debug component - temporary */}
+            {/* <OnboardingDebug /> */}
+            
+            {/* Show onboarding to-do list for new users */}
+            {!isCheckingOnboarding && showOnboarding && (
+              <div className="fixed top-4 right-4 z-50">
+                <ToDoList onComplete={() => setShowOnboarding(false)} />
+              </div>
+            )}
+            {children}
+          </div>
         </SidebarInset>
     </SidebarProvider>
   );

@@ -5,21 +5,21 @@ export interface CreateAlarmData {
   user_id: number;
   device_id: number;
   datastream_id: number;
-  operator: '=' | '<' | '>' | '<=' | '>=' | '!=';
-  threshold: number;
+  conditions: Array<{
+    operator: '=' | '<' | '>' | '<=' | '>=';
+    threshold: number;
+  }>;
   cooldown_minutes?: number;
-  notification_whatsapp?: boolean;
-  notification_browser?: boolean;
 }
 
 export interface UpdateAlarmData {
   description?: string;
-  operator?: '=' | '<' | '>' | '<=' | '>=' | '!=';
-  threshold?: number;
+  conditions?: Array<{
+    operator: '=' | '<' | '>' | '<=' | '>=';
+    threshold: number;
+  }>;
   is_active?: boolean;
   cooldown_minutes?: number;
-  notification_whatsapp?: boolean;
-  notification_browser?: boolean;
 }
 
 export class AlarmService {
@@ -34,12 +34,14 @@ export class AlarmService {
    */
   async createAlarm(data: CreateAlarmData): Promise<number> {
     try {
+      // Start transaction
+      await this.db.query('START TRANSACTION');
+      
       const query = `
         INSERT INTO alarms (
           description, user_id, device_id, datastream_id,
-          operator, threshold, cooldown_minutes,
-          notification_whatsapp, notification_browser
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          cooldown_minutes
+        ) VALUES (?, ?, ?, ?, ?)
       `;
 
       const [result] = await this.db.query(query, [
@@ -47,15 +49,28 @@ export class AlarmService {
         data.user_id,
         data.device_id,
         data.datastream_id,
-        data.operator,
-        data.threshold,
-        data.cooldown_minutes || 5,
-        data.notification_whatsapp !== false,
-        data.notification_browser !== false
+        data.cooldown_minutes || 5
       ]);
 
-      return (result as any).insertId;
+      const alarmId = (result as any).insertId;
+
+      // Insert conditions
+      for (const condition of data.conditions) {
+        const conditionQuery = `
+          INSERT INTO alarm_conditions (alarm_id, operator, threshold) 
+          VALUES (?, ?, ?)
+        `;
+        await this.db.query(conditionQuery, [
+          alarmId,
+          condition.operator,
+          condition.threshold
+        ]);
+      }
+
+      await this.db.query('COMMIT');
+      return alarmId;
     } catch (error) {
+      await this.db.query('ROLLBACK');
       console.error("Error creating alarm:", error);
       throw error;
     }
@@ -81,7 +96,40 @@ export class AlarmService {
       `;
 
       const [rows] = await this.db.query(query, [userId]);
-      return rows as any[];
+      const alarms = rows as any[];
+
+      // Get conditions for each alarm and format data properly
+      for (const alarm of alarms) {
+        const conditionsQuery = `
+          SELECT operator, threshold 
+          FROM alarm_conditions 
+          WHERE alarm_id = ? 
+          ORDER BY id
+        `;
+        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
+        
+        // Convert threshold from string to number
+        alarm.conditions = (conditions as any[]).map(condition => ({
+          operator: condition.operator,
+          threshold: Number(condition.threshold)
+        }));
+
+        // Convert boolean fields from tinyint to actual boolean
+        alarm.is_active = Boolean(alarm.is_active);
+        
+        // Ensure dates are strings in ISO format
+        if (alarm.created_at) {
+          alarm.created_at = new Date(alarm.created_at).toISOString();
+        }
+        if (alarm.updated_at) {
+          alarm.updated_at = new Date(alarm.updated_at).toISOString();
+        }
+        if (alarm.last_triggered) {
+          alarm.last_triggered = new Date(alarm.last_triggered).toISOString();
+        }
+      }
+
+      return alarms;
     } catch (error) {
       console.error("Error getting alarms by user:", error);
       return [];
@@ -109,7 +157,42 @@ export class AlarmService {
       const [rows] = await this.db.query(query, [alarmId, userId]);
       const result = rows as any[];
       
-      return result.length > 0 ? result[0] : null;
+      if (result.length === 0) {
+        return null;
+      }
+
+      const alarm = result[0];
+
+      // Get conditions for this alarm
+      const conditionsQuery = `
+        SELECT operator, threshold 
+        FROM alarm_conditions 
+        WHERE alarm_id = ? 
+        ORDER BY id
+      `;
+      const [conditions] = await this.db.query(conditionsQuery, [alarmId]);
+      
+      // Convert threshold from string to number
+      alarm.conditions = (conditions as any[]).map(condition => ({
+        operator: condition.operator,
+        threshold: Number(condition.threshold)
+      }));
+
+      // Convert boolean fields from tinyint to actual boolean
+      alarm.is_active = Boolean(alarm.is_active);
+      
+      // Ensure dates are strings in ISO format
+      if (alarm.created_at) {
+        alarm.created_at = new Date(alarm.created_at).toISOString();
+      }
+      if (alarm.updated_at) {
+        alarm.updated_at = new Date(alarm.updated_at).toISOString();
+      }
+      if (alarm.last_triggered) {
+        alarm.last_triggered = new Date(alarm.last_triggered).toISOString();
+      }
+
+      return alarm;
     } catch (error) {
       console.error("Error getting alarm by ID:", error);
       return null;
@@ -121,6 +204,8 @@ export class AlarmService {
    */
   async updateAlarm(alarmId: number, userId: number, data: UpdateAlarmData): Promise<boolean> {
     try {
+      await this.db.query('START TRANSACTION');
+
       const updates: string[] = [];
       const values: any[] = [];
 
@@ -128,14 +213,6 @@ export class AlarmService {
       if (data.description !== undefined) {
         updates.push('description = ?');
         values.push(data.description);
-      }
-      if (data.operator !== undefined) {
-        updates.push('operator = ?');
-        values.push(data.operator);
-      }
-      if (data.threshold !== undefined) {
-        updates.push('threshold = ?');
-        values.push(data.threshold);
       }
       if (data.is_active !== undefined) {
         updates.push('is_active = ?');
@@ -145,31 +222,49 @@ export class AlarmService {
         updates.push('cooldown_minutes = ?');
         values.push(data.cooldown_minutes);
       }
-      if (data.notification_whatsapp !== undefined) {
-        updates.push('notification_whatsapp = ?');
-        values.push(data.notification_whatsapp);
+
+      // Update alarm table if there are changes
+      if (updates.length > 0) {
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(alarmId, userId);
+
+        const query = `
+          UPDATE alarms 
+          SET ${updates.join(', ')}
+          WHERE id = ? AND user_id = ?
+        `;
+
+        const [result] = await this.db.query(query, values);
+        
+        if ((result as any).affectedRows === 0) {
+          await this.db.query('ROLLBACK');
+          return false;
+        }
       }
-      if (data.notification_browser !== undefined) {
-        updates.push('notification_browser = ?');
-        values.push(data.notification_browser);
+
+      // Update conditions if provided
+      if (data.conditions !== undefined) {
+        // Delete existing conditions
+        await this.db.query('DELETE FROM alarm_conditions WHERE alarm_id = ?', [alarmId]);
+        
+        // Insert new conditions
+        for (const condition of data.conditions) {
+          const conditionQuery = `
+            INSERT INTO alarm_conditions (alarm_id, operator, threshold) 
+            VALUES (?, ?, ?)
+          `;
+          await this.db.query(conditionQuery, [
+            alarmId,
+            condition.operator,
+            condition.threshold
+          ]);
+        }
       }
 
-      if (updates.length === 0) {
-        return false;
-      }
-
-      updates.push('updated_at = CURRENT_TIMESTAMP');
-      values.push(alarmId, userId);
-
-      const query = `
-        UPDATE alarms 
-        SET ${updates.join(', ')}
-        WHERE id = ? AND user_id = ?
-      `;
-
-      const [result] = await this.db.query(query, values);
-      return (result as any).affectedRows > 0;
+      await this.db.query('COMMIT');
+      return true;
     } catch (error) {
+      await this.db.query('ROLLBACK');
       console.error("Error updating alarm:", error);
       throw error;
     }
@@ -229,7 +324,21 @@ export class AlarmService {
       `;
 
       const [rows] = await this.db.query(query, [deviceId, userId]);
-      return rows as any[];
+      const alarms = rows as any[];
+
+      // Get conditions for each alarm
+      for (const alarm of alarms) {
+        const conditionsQuery = `
+          SELECT operator, threshold 
+          FROM alarm_conditions 
+          WHERE alarm_id = ? 
+          ORDER BY id
+        `;
+        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
+        alarm.conditions = conditions;
+      }
+
+      return alarms;
     } catch (error) {
       console.error("Error getting alarms by device:", error);
       return [];
@@ -246,12 +355,24 @@ export class AlarmService {
       errors.push("Description is required");
     }
 
-    if ('threshold' in data && (data.threshold === undefined || isNaN(data.threshold))) {
-      errors.push("Threshold must be a valid number");
-    }
-
-    if ('operator' in data && data.operator && !['=', '<', '>', '<=', '>=', '!='].includes(data.operator)) {
-      errors.push("Invalid operator");
+    if ('conditions' in data && data.conditions) {
+      if (!Array.isArray(data.conditions) || data.conditions.length === 0) {
+        errors.push("At least one condition is required");
+      } else if (data.conditions.length > 5) {
+        errors.push("Maximum 5 conditions allowed");
+      } else {
+        for (let i = 0; i < data.conditions.length; i++) {
+          const condition = data.conditions[i];
+          
+          if (!condition.operator || !['=', '<', '>', '<=', '>='].includes(condition.operator)) {
+            errors.push(`Invalid operator in condition ${i + 1}`);
+          }
+          
+          if (condition.threshold === undefined || condition.threshold === null || isNaN(condition.threshold)) {
+            errors.push(`Invalid threshold in condition ${i + 1}`);
+          }
+        }
+      }
     }
 
     if ('cooldown_minutes' in data && data.cooldown_minutes !== undefined) {
@@ -266,14 +387,53 @@ export class AlarmService {
     };
   }
 
-  // Legacy methods untuk backward compatibility
+  // Get alarms with complete data including conditions
   async getAllAlarms(user_id: string) {
     try {
-      const [rows] = await this.db.query(
-        "SELECT * FROM alarms WHERE user_id = ?",
-        [user_id]
-      );
-      return rows;
+      const [rows] = await this.db.query(`
+        SELECT 
+          a.*,
+          d.description as device_description,
+          ds.description as datastream_description,
+          ds.pin as datastream_pin,
+          ds.unit as datastream_unit
+        FROM alarms a
+        LEFT JOIN devices d ON a.device_id = d.id
+        LEFT JOIN datastreams ds ON a.datastream_id = ds.id
+        WHERE a.user_id = ?
+        ORDER BY a.created_at DESC
+      `, [user_id]);
+
+      // Get conditions for each alarm and format data properly
+      const alarms = rows as any[];
+      for (const alarm of alarms) {
+        const [conditionRows] = await this.db.query(
+          "SELECT operator, threshold FROM alarm_conditions WHERE alarm_id = ?",
+          [alarm.id]
+        );
+        
+        // Convert threshold from string to number
+        alarm.conditions = (conditionRows as any[]).map(condition => ({
+          operator: condition.operator,
+          threshold: Number(condition.threshold)
+        }));
+        
+        // Convert boolean fields from tinyint to actual boolean
+        alarm.is_active = Boolean(alarm.is_active);
+        
+        // Ensure dates are strings in ISO format
+        if (alarm.created_at) {
+          alarm.created_at = new Date(alarm.created_at).toISOString();
+        }
+        if (alarm.updated_at) {
+          alarm.updated_at = new Date(alarm.updated_at).toISOString();
+        }
+        if (alarm.last_triggered) {
+          alarm.last_triggered = new Date(alarm.last_triggered).toISOString();
+        }
+      }
+
+      return alarms;
     } catch (error) {
       console.error("Error fetching all alarms:", error);
       throw new Error("Failed to fetch alarms");

@@ -5,6 +5,7 @@ import { useWebSocket } from "@/providers/websocket-provider";
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
+import { markDeviceCreated } from "@/lib/onboarding-utils";
 
 export function useDeviceLogic() {
   const [devices, setDevices] = useState([]);
@@ -81,6 +82,9 @@ export function useDeviceLogic() {
       successToast("Device berhasil ditambahkan!");
       fetchDevices();
       setAddFormOpen(false);
+      
+      // Trigger onboarding task completion
+      markDeviceCreated();
     } catch {
       errorToast("Gagal tambah device!");
     }

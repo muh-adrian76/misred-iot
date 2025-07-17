@@ -3,6 +3,7 @@ import { fetchFromBackend } from "@/lib/helper";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { useAuth } from "@/hooks/use-auth";
 import { useBreakpoint } from "@/hooks/use-mobile";
+import { markAlarmCreated } from "@/lib/onboarding-utils";
 
 export function useAlarmLogic() {
   const [alarms, setAlarms] = useState([]);
@@ -22,7 +23,7 @@ export function useAlarmLogic() {
   const fetchAlarms = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchFromBackend("/notifications/alarms");
+      const res = await fetchFromBackend("/alarm");
       if (!res.ok) throw new Error("Gagal fetch alarm");
       const data = await res.json();
       setAlarms(data.alarms || []);
@@ -40,7 +41,7 @@ export function useAlarmLogic() {
   // CRUD Handler
   const handleAddAlarm = async (payload) => {
     try {
-      const res = await fetchFromBackend("/notifications/alarms", {
+      const res = await fetchFromBackend("/alarm", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -48,6 +49,9 @@ export function useAlarmLogic() {
       successToast("Alarm berhasil ditambahkan!");
       fetchAlarms();
       setAddFormOpen(false);
+      
+      // Trigger onboarding task completion
+      markAlarmCreated();
     } catch {
       errorToast("Gagal tambah alarm!");
     }
@@ -55,7 +59,7 @@ export function useAlarmLogic() {
 
   const handleEditAlarm = async (id, payload) => {
     try {
-      const res = await fetchFromBackend(`/notifications/alarms/${id}`, {
+      const res = await fetchFromBackend(`/alarm/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -70,7 +74,7 @@ export function useAlarmLogic() {
 
   const handleDeleteAlarm = async (id) => {
     try {
-      const res = await fetchFromBackend(`/notifications/alarms/${id}`, {
+      const res = await fetchFromBackend(`/alarm/${id}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Gagal hapus alarm");

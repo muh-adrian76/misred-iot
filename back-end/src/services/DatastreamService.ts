@@ -25,6 +25,19 @@ export class DatastreamService {
     }
   }
 
+  async getDatastreamsByDeviceId(deviceId: string, userId: string) {
+    try {
+      const [rows] = await this.db.query(
+        "SELECT * FROM datastreams WHERE device_id = ? AND user_id = ?",
+        [deviceId, userId]
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error fetching datastreams by device ID:", error);
+      throw new Error("Failed to fetch datastreams");
+    }
+  }
+
   async createDatastream({
     userId,
     deviceId,

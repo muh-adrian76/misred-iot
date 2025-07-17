@@ -7,6 +7,9 @@ type User = {
   created_at: Date | string;
   last_login: Date | string | null;
   phone: string | null;
+  whatsapp_notif: boolean;
+  onboarding_completed: boolean;
+  onboarding_progress: any;
 };
 
 export class UserService {
@@ -19,7 +22,7 @@ export class UserService {
   async getAllUsers() {
     try {
       const [rows] = await this.db.query(
-        "SELECT id, name, email, created_at, last_login, phone FROM users"
+        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress FROM users"
       );
       return rows;
     } catch (error) {
@@ -31,7 +34,7 @@ export class UserService {
   async getUserById(id: string) {
     try {
       const [rows] = await this.db.query(
-        "SELECT id, name, email, created_at, last_login, phone FROM users WHERE id = ?",
+        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress FROM users WHERE id = ?",
         [id]
       );
       const user = Array.isArray(rows) ? (rows[0] as User) : null;
@@ -43,6 +46,18 @@ export class UserService {
         if (user.last_login instanceof Date) {
           user.last_login = user.last_login.toISOString();
         }
+        // Convert tinyint to boolean
+        user.whatsapp_notif = Boolean(user.whatsapp_notif);
+        user.onboarding_completed = Boolean(user.onboarding_completed);
+        
+        // Parse JSON onboarding_progress
+        if (user.onboarding_progress && typeof user.onboarding_progress === 'string') {
+          try {
+            user.onboarding_progress = JSON.parse(user.onboarding_progress);
+          } catch (e) {
+            user.onboarding_progress = [];
+          }
+        }
       }
       return user;
     } catch (error) {
@@ -51,12 +66,20 @@ export class UserService {
     }
   }
 
-  async updateUser(id: string, name: string, phone: string | null) {
+  async updateUser(id: string, name: string, phone: string | null, whatsapp_notif?: boolean) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
-        "UPDATE users SET name=?, phone=? WHERE id=?",
-        [name, phone, id]
-      );
+      let query = "UPDATE users SET name=?, phone=?";
+      let params: any[] = [name, phone];
+      
+      if (whatsapp_notif !== undefined) {
+        query += ", whatsapp_notif=?";
+        params.push(whatsapp_notif);
+      }
+      
+      query += " WHERE id=?";
+      params.push(id);
+      
+      const [result] = await this.db.query<ResultSetHeader>(query, params);
       if (result.affectedRows > 0) {
         const updatedUser = await this.getUserById(id);
         return updatedUser;
@@ -78,6 +101,110 @@ export class UserService {
     } catch (error) {
       console.error("Error deleting user:", error);
       throw new Error("Failed to delete user");
+    }
+  }
+
+  async updateWhatsAppNotifications(userId: string, enabled: boolean) {
+    try {
+      const [result] = await this.db.query<ResultSetHeader>(
+        "UPDATE users SET whatsapp_notif = ? WHERE id = ?",
+        [enabled, userId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating WhatsApp notifications:", error);
+      throw new Error("Failed to update WhatsApp notifications");
+    }
+  }
+
+  async getWhatsAppNotificationStatus(userId: string): Promise<boolean> {
+    try {
+      const [rows] = await this.db.query(
+        "SELECT whatsapp_notif FROM users WHERE id = ?",
+        [userId]
+      );
+      const result = Array.isArray(rows) ? (rows[0] as any) : null;
+      return result ? Boolean(result.whatsapp_notif) : false;
+    } catch (error) {
+      console.error("Error getting WhatsApp notification status:", error);
+      return false;
+    }
+  }
+
+  // Onboarding progress methods
+  async updateOnboardingProgress(userId: string, taskId: number, completed: boolean = true) {
+    try {
+      // Get current progress
+      const [rows] = await this.db.query(
+        "SELECT onboarding_progress FROM users WHERE id = ?",
+        [userId]
+      );
+      
+      const result = Array.isArray(rows) ? (rows[0] as any) : null;
+      let progress = [];
+      
+      if (result && result.onboarding_progress) {
+        try {
+          progress = typeof result.onboarding_progress === 'string' 
+            ? JSON.parse(result.onboarding_progress) 
+            : result.onboarding_progress;
+        } catch (e) {
+          progress = [];
+        }
+      }
+      
+      // Update progress
+      if (completed && !progress.includes(taskId)) {
+        progress.push(taskId);
+      } else if (!completed) {
+        progress = progress.filter((id: number) => id !== taskId);
+      }
+      
+      // Check if all tasks are completed (tasks 1-5)
+      const allTasks = [1, 2, 3, 4, 5];
+      const isAllCompleted = allTasks.every(task => progress.includes(task));
+      
+      // Update database
+      const [updateResult] = await this.db.query<ResultSetHeader>(
+        "UPDATE users SET onboarding_progress = ?, onboarding_completed = ? WHERE id = ?",
+        [JSON.stringify(progress), isAllCompleted, userId]
+      );
+      
+      return updateResult.affectedRows > 0;
+    } catch (error) {
+      console.error("Error updating onboarding progress:", error);
+      throw new Error("Failed to update onboarding progress");
+    }
+  }
+
+  async getOnboardingProgress(userId: string) {
+    try {
+      const [rows] = await this.db.query(
+        "SELECT onboarding_progress, onboarding_completed FROM users WHERE id = ?",
+        [userId]
+      );
+      
+      const result = Array.isArray(rows) ? (rows[0] as any) : null;
+      if (!result) return { progress: [], completed: false };
+      
+      let progress = [];
+      if (result.onboarding_progress) {
+        try {
+          progress = typeof result.onboarding_progress === 'string' 
+            ? JSON.parse(result.onboarding_progress) 
+            : result.onboarding_progress;
+        } catch (e) {
+          progress = [];
+        }
+      }
+      
+      return {
+        progress,
+        completed: Boolean(result.onboarding_completed)
+      };
+    } catch (error) {
+      console.error("Error getting onboarding progress:", error);
+      return { progress: [], completed: false };
     }
   }
 }

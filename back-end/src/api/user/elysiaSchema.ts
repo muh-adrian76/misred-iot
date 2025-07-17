@@ -114,6 +114,12 @@ const putUserSchema = {
         example: "083117228331",
       })
     ),
+    whatsapp_notif: t.Optional(
+      t.Boolean({
+        description: "Status notifikasi WhatsApp",
+        example: true,
+      })
+    ),
   }),
   response: {
     200: t.Object(

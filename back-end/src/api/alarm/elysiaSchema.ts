@@ -1,23 +1,25 @@
 import { t } from "elysia";
 
+// Condition Schema for multiple conditions
+const conditionSchema = t.Object({
+  operator: t.Union([
+    t.Literal('='),
+    t.Literal('<'),
+    t.Literal('>'),
+    t.Literal('<='),
+    t.Literal('>=')
+  ]),
+  threshold: t.Number()
+});
+
 // Create Alarm Schema
 export const createAlarmSchema = {
   body: t.Object({
     description: t.String({ minLength: 1, maxLength: 255 }),
     device_id: t.Number({ minimum: 1 }),
     datastream_id: t.Number({ minimum: 1 }),
-    operator: t.Union([
-      t.Literal('='),
-      t.Literal('<'),
-      t.Literal('>'),
-      t.Literal('<='),
-      t.Literal('>='),
-      t.Literal('!=')
-    ]),
-    threshold: t.Number(),
-    cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 })), // max 24 hours
-    notification_whatsapp: t.Optional(t.Boolean()),
-    notification_browser: t.Optional(t.Boolean())
+    conditions: t.Array(conditionSchema, { minItems: 1, maxItems: 5 }), // Allow 1-5 conditions
+    cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 })) // max 24 hours
   }),
   response: {
     200: t.Object({
@@ -55,12 +57,9 @@ export const getAlarmsSchema = {
         description: t.String(),
         device_id: t.Number(),
         datastream_id: t.Number(),
-        operator: t.String(),
-        threshold: t.Number(),
+        conditions: t.Array(conditionSchema),
         is_active: t.Boolean(),
         cooldown_minutes: t.Number(),
-        notification_whatsapp: t.Boolean(),
-        notification_browser: t.Boolean(),
         last_triggered: t.Union([t.String(), t.Null()]),
         created_at: t.String(),
         updated_at: t.String(),
@@ -95,12 +94,9 @@ export const getAlarmByIdSchema = {
         description: t.String(),
         device_id: t.Number(),
         datastream_id: t.Number(),
-        operator: t.String(),
-        threshold: t.Number(),
+        conditions: t.Array(conditionSchema),
         is_active: t.Boolean(),
         cooldown_minutes: t.Number(),
-        notification_whatsapp: t.Boolean(),
-        notification_browser: t.Boolean(),
         last_triggered: t.Union([t.String(), t.Null()]),
         created_at: t.String(),
         updated_at: t.String(),
@@ -133,19 +129,9 @@ export const updateAlarmSchema = {
   }),
   body: t.Object({
     description: t.Optional(t.String({ minLength: 1, maxLength: 255 })),
-    operator: t.Optional(t.Union([
-      t.Literal('='),
-      t.Literal('<'),
-      t.Literal('>'),
-      t.Literal('<='),
-      t.Literal('>='),
-      t.Literal('!=')
-    ])),
-    threshold: t.Optional(t.Number()),
+    conditions: t.Optional(t.Array(conditionSchema, { minItems: 1, maxItems: 5 })),
     is_active: t.Optional(t.Boolean()),
-    cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 })),
-    notification_whatsapp: t.Optional(t.Boolean()),
-    notification_browser: t.Optional(t.Boolean())
+    cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 }))
   }),
   response: {
     200: t.Object({

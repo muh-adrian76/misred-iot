@@ -2,11 +2,12 @@ import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { AlarmService } from "../../services/AlarmService";
 import {
+  createAlarmSchema,
+  getAlarmsSchema,
+  getAlarmByIdSchema,
+  updateAlarmSchema,
   deleteAlarmSchema,
-  getAlarmByWidgetIdSchema,
-  getAllAlarmsSchema,
-  postAlarmSchema,
-  putAlarmSchema,
+  toggleAlarmStatusSchema,
 } from "./elysiaSchema";
 
 export function alarmRoutes(alarmService: AlarmService) {
@@ -18,24 +19,38 @@ export function alarmRoutes(alarmService: AlarmService) {
       //@ts-ignore
       async ({ jwt, cookie, body }) => {
         const decoded = await authorizeRequest(jwt, cookie);
-        const { description, widget_id, operator, threshold } = body;
+        const { description, device_id, datastream_id, conditions, cooldown_minutes } = body;
         const user_id = decoded.sub;
-        const insertId = await alarmService.createAlarm({
-          description,
-          user_id,
-          widget_id,
-          operator,
-          threshold,
-        });
-        return new Response(
-          JSON.stringify({
-            message: "Berhasil menambah data alarm",
-            id: insertId,
-          }),
-          { status: 201 }
-        );
+        
+        try {
+          const insertId = await alarmService.createAlarm({
+            description,
+            user_id: Number(user_id),
+            device_id,
+            datastream_id,
+            conditions,
+            cooldown_minutes,
+          });
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Berhasil menambah data alarm",
+              alarm_id: insertId,
+            }),
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error creating alarm:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal menambah data alarm",
+            }),
+            { status: 400 }
+          );
+        }
       },
-      postAlarmSchema
+      createAlarmSchema
     )
 
     // 📄 READ Semua Alarm milik user
@@ -43,61 +58,187 @@ export function alarmRoutes(alarmService: AlarmService) {
       "/",
       //@ts-ignore
       async ({ jwt, cookie }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const data = await alarmService.getAllAlarms(decoded.sub);
-        return new Response(JSON.stringify({ result: data }), { status: 200 });
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const data = await alarmService.getAllAlarms(decoded.sub);
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              alarms: data 
+            }), 
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error fetching alarms:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal mengambil data alarm",
+            }),
+            { status: 400 }
+          );
+        }
       },
-      getAllAlarmsSchema
+      getAlarmsSchema
     )
 
-    // 📄 READ Alarm by Widget ID
+    // 📄 READ Alarm by ID
     .get(
-      "/widget/:widget_id",
+      "/:alarmId",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const data = await alarmService.getAlarmsByWidgetId(Number(params.widget_id), decoded.sub);
-        return new Response(JSON.stringify({ result: data }), { status: 200 });
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const data = await alarmService.getAlarmById(Number(params.alarmId), Number(decoded.sub));
+          
+          if (!data) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Alarm tidak ditemukan",
+              }),
+              { status: 404 }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              alarm: data 
+            }), 
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error fetching alarm:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal mengambil data alarm",
+            }),
+            { status: 400 }
+          );
+        }
       },
-      getAlarmByWidgetIdSchema
+      getAlarmByIdSchema
     )
 
     // ✏️ UPDATE Alarm
     .put(
-      "/:id",
+      "/:alarmId",
       //@ts-ignore
       async ({ jwt, cookie, params, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const updated = await alarmService.updateAlarm(params.id, decoded.sub, body);
-        if (!updated) {
-          return new Response("Gagal mengupdate data alarm.", { status: 400 });
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const updated = await alarmService.updateAlarm(Number(params.alarmId), Number(decoded.sub), body);
+          
+          if (!updated) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Alarm tidak ditemukan atau gagal mengupdate",
+              }),
+              { status: 404 }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Berhasil mengupdate data alarm.",
+            }),
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error updating alarm:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal mengupdate data alarm",
+            }),
+            { status: 400 }
+          );
         }
-        return new Response(
-          JSON.stringify({
-            message: "Berhasil mengupdate data alarm.",
-            id: params.id,
-          }),
-          { status: 200 }
-        );
       },
-      putAlarmSchema
+      updateAlarmSchema
     )
 
     // ❌ DELETE Alarm
     .delete(
-      "/:id",
+      "/:alarmId",
       //@ts-ignore
       async ({ jwt, cookie, params }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const deleted = await alarmService.deleteAlarm(params.id, decoded.sub);
-        if (!deleted) {
-          return new Response("Gagal menghapus data alarm.", { status: 400 });
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const deleted = await alarmService.deleteAlarm(Number(params.alarmId), Number(decoded.sub));
+          
+          if (!deleted) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Alarm tidak ditemukan atau gagal menghapus",
+              }),
+              { status: 404 }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              success: true,
+              message: "Berhasil menghapus data alarm." 
+            }),
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error deleting alarm:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal menghapus data alarm",
+            }),
+            { status: 400 }
+          );
         }
-        return new Response(
-          JSON.stringify({ message: "Berhasil menghapus data alarm." }),
-          { status: 200 }
-        );
       },
       deleteAlarmSchema
+    )
+
+    // 🔄 TOGGLE Alarm Status
+    .patch(
+      "/:alarmId/toggle",
+      //@ts-ignore
+      async ({ jwt, cookie, params }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const updated = await alarmService.toggleAlarmStatus(Number(params.alarmId), Number(decoded.sub));
+          
+          if (!updated) {
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Alarm tidak ditemukan atau gagal mengupdate status",
+              }),
+              { status: 404 }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Berhasil mengubah status alarm.",
+            }),
+            { status: 200 }
+          );
+        } catch (error) {
+          console.error("Error toggling alarm status:", error);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: "Gagal mengubah status alarm",
+            }),
+            { status: 400 }
+          );
+        }
+      },
+      toggleAlarmStatusSchema
     );
 }

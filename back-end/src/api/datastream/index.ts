@@ -27,6 +27,22 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         getAllDatastreamsSchema
       )
 
+      // Get datastreams by device ID
+      .get(
+        "/device/:deviceId",
+        //@ts-ignore
+        async ({ jwt, cookie, params }) => {
+          const user = await authorizeRequest(jwt, cookie);
+          const datastreams = await datastreamService.getDatastreamsByDeviceId(
+            params.deviceId,
+            user.sub
+          );
+          return new Response(JSON.stringify({ result: datastreams }), {
+            status: 200,
+          });
+        }
+      )
+
       // Create a new datastream
       .post(
         "/",
