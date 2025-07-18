@@ -120,6 +120,7 @@ export function authRoutes(authService: AuthService) {
               await setAuthCookie(
                 cookie,
                 jwt,
+                //@ts-ignore
                 result.user.id,
                 result.refreshToken
               );

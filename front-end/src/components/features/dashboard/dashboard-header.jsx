@@ -86,7 +86,7 @@ export default function DashboardHeader(props) {
         </Button>
       </div>
       {!isDesktop ? (
-        <div className="fixed left-1/2 bottom-3 -translate-x-1/2 flex gap-2 bg-background/80 backdrop-blur-md shadow-lg rounded-xl px-2 py-2 z-50 border max-w-full w-fit">
+        <div className="fixed left-1/2 bottom-3 -translate-x-1/2 flex gap-2 bg-background/80 backdrop-blur-md shadow-lg rounded-xl px-2 py-2 z-50 sm:border max-w-full w-fit">
           <DashboardToolbar
             dashboardState={dashboards.length === 0}
             widgetState={widgetCount === 0}

@@ -148,11 +148,6 @@ const ToDoList = () => {
 
   const completionPercentage = (completedTasks.length / tasks.length) * 100;
 
-  // Remove manual toggle task function - tasks can only be completed by actual actions
-  // const toggleTask = async (taskId) => {
-  //   // This is disabled - tasks are auto-completed when user performs actions
-  // };
-
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
   };

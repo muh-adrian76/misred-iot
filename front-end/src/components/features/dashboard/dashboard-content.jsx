@@ -34,19 +34,23 @@ export default function DashboardContent(props) {
   } = props;
 
   // Debug logging untuk troubleshooting
-  console.log('DashboardContent render:', {
-    dashboardsLength: dashboards?.length,
-    isLoadingWidget,
-    activeTab,
-    widgetCount,
-    isEditing,
-    tabItemsKeys: Object.keys(tabItems || {}),
-    tabLayoutsKeys: Object.keys(tabLayouts || {})
-  });
+  // console.log('DashboardContent render:', {
+  //   dashboardsLength: dashboards?.length,
+  //   isLoadingWidget,
+  //   activeTab,
+  //   widgetCount,
+  //   isEditing,
+  //   tabItemsKeys: Object.keys(tabItems || {}),
+  //   tabLayoutsKeys: Object.keys(tabLayouts || {}),
+  //   currentItemsLength: currentItems?.length,
+  //   currentLayoutsKeys: currentLayouts ? Object.keys(currentLayouts) : [],
+  //   currentItemsData: currentItems?.map(item => ({ id: item.id, description: item.description })),
+  //   currentLayoutsSample: currentLayouts?.lg?.slice(0, 3) // Show first 3 layout items for lg breakpoint
+  // });
 
   // Handler untuk menambah widget dari WidgetBox
   const handleAddWidgetFromBox = (chartType) => {
-    console.log('Adding widget from widget box:', chartType);
+    // console.log('Adding widget from widget box:', chartType);
     // Panggil handleChartDrop untuk menampilkan form widget, bukan langsung tambah ke database
     if (handleChartDrop) {
       handleChartDrop(chartType, {

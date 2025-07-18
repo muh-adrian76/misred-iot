@@ -1,4 +1,4 @@
-// Bootstrap widths for responsive grid
+// Bootstrap widths for responsive grid (optimized for better responsiveness)
 export const bootstrapWidths = { lg: 3, md: 4, sm: 6, xs: 12, xxs: 12 };
 
 // Grid columns for different breakpoints
@@ -18,9 +18,9 @@ export function generateInitialLayouts(count) {
     layoutPerBreakpoint[bp] = Array.from({ length: count }).map((_, i) => ({
       i: i.toString(),
       x: (i * width) % columns,
-      y: Math.floor(i / (columns / width)) * 4,
+      y: Math.floor(i / (columns / width)) * 6, // Use height of 6 to match widget constraints
       w: width,
-      h: 4,
+      h: 6, // Default height of 6 rows to match minimum chart height
       resizeHandles: availableHandles
     }));
   }
@@ -39,7 +39,7 @@ export function generateWidgetLayout(widgetId, position = {}) {
       x: position.x || 0,
       y: position.y || Infinity,
       w: bootstrapWidths[bp],
-      h: position.h || 4,
+      h: position.h || 6, // Default height of 6 rows
       resizeHandles: availableHandles
     };
   }
@@ -72,6 +72,6 @@ export function findAvailablePosition(existingLayouts, breakpoint = 'lg') {
     x: 0, 
     y: Math.max(0, ...existingItems.map(item => item.y + item.h)), 
     w: width, 
-    h: 4 
+    h: 6  // Default height of 6 rows
   };
 }

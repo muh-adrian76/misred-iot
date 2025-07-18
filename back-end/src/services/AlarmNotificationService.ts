@@ -353,6 +353,201 @@ export class AlarmNotificationService {
   }
 
   /**
+   * Check alarms untuk normalized sensor data (untuk sistem testing baru)
+   */
+  async checkNormalizedAlarms(
+    deviceId: number,
+    sensorType: string,
+    sensorValue: number
+  ): Promise<void> {
+    try {
+      console.log(`🔍 Checking normalized alarms for device ${deviceId}, sensor: ${sensorType}`);
+
+      // Check alarm thresholds dari tabel alarm_thresholds
+      const [thresholds]: any = await this.db.query(
+        `SELECT * FROM alarm_thresholds WHERE device_id = ? AND sensor_type = ?`,
+        [deviceId, sensorType]
+      );
+
+      if (thresholds.length === 0) {
+        console.log(`ℹ️ No alarm thresholds for device ${deviceId}, sensor ${sensorType}`);
+        return;
+      }
+
+      for (const threshold of thresholds) {
+        const isOutOfRange = sensorValue < threshold.min_value || sensorValue > threshold.max_value;
+        
+        if (isOutOfRange) {
+          console.log(`🚨 Alarm threshold exceeded for ${sensorType}: ${sensorValue} (Range: ${threshold.min_value}-${threshold.max_value})`);
+          
+          // Get user info for notification
+          const [users]: any = await this.db.query(
+            `SELECT u.id, u.name, u.phone, u.whatsapp_notif as whatsapp_notifications_enabled
+             FROM users u 
+             JOIN devices d ON u.id = d.user_id 
+             WHERE d.id = ?`,
+            [deviceId]
+          );
+          
+          if (users.length > 0) {
+            const user = users[0];
+            
+            // Check cooldown (simplified for normalized alarms)
+            const cooldownKey = `${deviceId}_${sensorType}`;
+            const lastTriggered = await this.getLastTriggeredTime(cooldownKey);
+            
+            if (this.isInCooldownNormalized(lastTriggered, 5)) { // 5 minutes cooldown
+              console.log(`⏰ Alarm for ${sensorType} still in cooldown`);
+              continue;
+            }
+            
+            // Generate alarm message for normalized sensor
+            const message = this.generateNormalizedAlarmMessage(
+              deviceId, sensorType, sensorValue, threshold.min_value, threshold.max_value
+            );
+            
+            // Send notification
+            let whatsappMessageId: string | undefined;
+            let errorMessage: string | undefined;
+            
+            if (user.whatsapp_notifications_enabled && user.phone) {
+              const whatsappResult = await this.sendWhatsAppNotification(user.phone, message);
+              
+              if (whatsappResult.success) {
+                whatsappMessageId = whatsappResult.whatsapp_message_id;
+                console.log(`✅ WhatsApp sent for ${sensorType} alarm: ${whatsappMessageId}`);
+              } else {
+                errorMessage = whatsappResult.error_message;
+                console.error(`❌ WhatsApp failed for ${sensorType} alarm: ${errorMessage}`);
+              }
+            }
+            
+            // Log notification (simplified for normalized system)
+            await this.logNormalizedNotification(
+              deviceId, sensorType, sensorValue, threshold,
+              user.id, whatsappMessageId, errorMessage
+            );
+            
+            // Update last triggered time
+            await this.updateLastTriggeredTime(cooldownKey);
+            
+            console.log(`✅ Alarm notification sent for ${sensorType}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error checking normalized alarms for ${sensorType}:`, error);
+    }
+  }
+  
+  /**
+   * Generate alarm message untuk normalized sensor data
+   */
+  private generateNormalizedAlarmMessage(
+    deviceId: number, 
+    sensorType: string, 
+    sensorValue: number, 
+    minValue: number, 
+    maxValue: number
+  ): string {
+    const sensorNames: Record<string, string> = {
+      'phValue': 'pH',
+      'flowMilliLitres': 'Flow Rate',
+      'COD_val': 'COD Level',
+      'CODTemp_val': 'Temperature',
+      'NH3N_val': 'NH3N Level',
+      'NTU': 'Turbidity'
+    };
+    
+    const sensorName = sensorNames[sensorType] || sensorType;
+    const condition = sensorValue < minValue ? 'di bawah' : 'di atas';
+    const threshold = sensorValue < minValue ? minValue : maxValue;
+    
+    return `🚨 PERINGATAN SENSOR!
+
+📱 Device: #${deviceId}
+🔍 Sensor: ${sensorName}
+⚠️ Nilai ${condition} batas normal: ${sensorValue} (Batas: ${minValue}-${maxValue})
+
+Waktu: ${new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "long", 
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })}
+
+Silakan segera periksa perangkat Anda!`;
+  }
+  
+  /**
+   * Log notification untuk normalized sensor system
+   */
+  private async logNormalizedNotification(
+    deviceId: number,
+    sensorType: string,
+    sensorValue: number,
+    threshold: any,
+    userId: number,
+    whatsappMessageId?: string,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      // Insert ke tabel alarm_notifications (simplified)
+      const conditionsText = `${sensorType}: ${sensorValue} (Range: ${threshold.min_value}-${threshold.max_value})`;
+      
+      const query = `
+        INSERT INTO alarm_notifications (
+          alarm_id, user_id, device_id, datastream_id,
+          sensor_value, conditions_text, notification_type,
+          whatsapp_message_id, error_message,
+          triggered_at, sent_at
+        ) VALUES (0, ?, ?, 0, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `;
+      
+      await this.db.query(query, [
+        userId,
+        deviceId,
+        sensorValue,
+        conditionsText,
+        'both',
+        whatsappMessageId,
+        errorMessage
+      ]);
+    } catch (error) {
+      console.error("Error logging normalized notification:", error);
+    }
+  }
+  
+  /**
+   * Simple cooldown check for normalized alarms
+   */
+  private isInCooldownNormalized(lastTriggered: Date | null, cooldownMinutes: number): boolean {
+    if (!lastTriggered) return false;
+    
+    const now = new Date();
+    const diffMinutes = (now.getTime() - lastTriggered.getTime()) / (1000 * 60);
+    return diffMinutes < cooldownMinutes;
+  }
+  
+  /**
+   * Get last triggered time (simplified cache)
+   */
+  private lastTriggeredCache: Record<string, Date> = {};
+  
+  private async getLastTriggeredTime(key: string): Promise<Date | null> {
+    return this.lastTriggeredCache[key] || null;
+  }
+  
+  /**
+   * Update last triggered time (simplified cache)
+   */
+  private async updateLastTriggeredTime(key: string): Promise<void> {
+    this.lastTriggeredCache[key] = new Date();
+  }
+
+  /**
    * Check alarms untuk payload sensor data yang masuk
    */
   async checkAlarms(

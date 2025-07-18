@@ -2,24 +2,34 @@ import { t } from "elysia";
 
 const postPayloadHttpSchema = {
   type: "json",
-  body: t.Object({
-    device_id: t.String({ example: 1 }),
-    value: t.Any({ example: { ph: 7.2 } }),
+  // Tidak ada body validation karena data ada di JWT token
+  headers: t.Object({
+    "x-device-id": t.String({ description: "Device ID in header" }),
+    "authorization": t.String({ description: "Bearer JWT token with sensor data" })
   }),
   response: {
     201: t.Object({
       message: t.String({ example: "Berhasil menambah data sensor" }),
       id: t.Number({ example: 1 }),
-      device_id: t.Number({ example: 1 }),
+      device_id: t.String({ example: "1" }),
     }),
     400: t.Object({
-      message: t.String({ example: "Input tidak valid." }),
+      error: t.String({ example: "Header tidak lengkap" }),
+      message: t.String({ example: "x-device-id and authorization headers are required" }),
+    }),
+    401: t.Object({
+      error: t.String({ example: "Format token tidak valid" }),
+      message: t.String({ example: "Bearer token format required" }),
+    }),
+    500: t.Object({
+      error: t.String({ example: "Failed to process payload" }),
+      message: t.String({ example: "Internal server error" }),
     }),
   },
   detail: {
     tags: ["Payload"],
-    description: "Menambah data sensor baru",
-    summary: "Create sensor data",
+    description: "Menambah data sensor baru via HTTP dengan JWT token - data sensor ada di dalam JWT token, bukan di body",
+    summary: "Create sensor data via JWT",
   },
 };
 

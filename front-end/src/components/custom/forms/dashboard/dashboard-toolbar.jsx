@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Move, Download, SaveAll, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import DashboardTimeFilter from "@/components/features/dashboard/dashboard-time-filter";
+import DashboardTimeFilter from "@/components/custom/other/time-filter";
 
 export default function DashboardToolbar({
   dashboardState,
@@ -28,7 +28,7 @@ export default function DashboardToolbar({
             disabled={!hasUnsavedChanges}
           >
             <span className="sr-only">Save</span>
-            <SaveAll className="w-5 h-5" />
+            <SaveAll className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="ml-1 inline">
               {hasUnsavedChanges ? "Simpan" : "Tersimpan"}
             </span>
@@ -39,7 +39,7 @@ export default function DashboardToolbar({
             onClick={cancelEdit}
           >
             <span className="sr-only">Cancel</span>
-            <Undo2 className="w-5 h-5" />
+            <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="ml-1 inline">Batalkan</span>
           </Button>
         </>
@@ -52,7 +52,7 @@ export default function DashboardToolbar({
             disabled={dashboardState}
           >
             <span className="sr-only">Edit</span>
-            <Move className="w-5 h-5" />
+            <Move className="w-4 h-4 sm:w-5 sm:h-5" />
             <span className="ml-1 inline">Edit</span>
           </Button>
           <DashboardTimeFilter
@@ -66,9 +66,9 @@ export default function DashboardToolbar({
             // disabled={widgetState}
             disabled={true}
           >
-            <span className="sr-only">Export</span>
-            <Download className="w-5 h-5" />
-            <span className="ml-1 inline">Export</span>
+            <span className="sr-only">Ekspor</span>
+            <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="ml-1 inline ">Ekspor</span>
           </Button>
         </>
       )}

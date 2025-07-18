@@ -67,12 +67,12 @@ export default function UserLayoutClient({ children }) {
             completedTasks.includes(taskId)
           );
           
-          console.log('Onboarding check:', { 
-            userId: user.id, 
-            completedTasks, 
-            allTasksCompleted,
-            shouldShow: !allTasksCompleted 
-          });
+          // console.log('Onboarding check:', { 
+          //   userId: user.id, 
+          //   completedTasks, 
+          //   allTasksCompleted,
+          //   shouldShow: !allTasksCompleted 
+          // });
           setShowOnboarding(!allTasksCompleted);
         }
       } catch (error) {

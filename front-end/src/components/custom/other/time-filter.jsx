@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/popover";
 import { CalendarSearch, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBreakpoint } from "@/hooks/use-mobile";
 
 const timeRangeOptions = [
   { value: "1h", label: "1 Jam Terakhir", description: "Data dalam 1 jam terakhir" },
@@ -24,6 +25,7 @@ export default function DashboardTimeFilter({
   disabled = false 
 }) {
   const [open, setOpen] = useState(false);
+  const { isMobile, isMedium } = useBreakpoint();
 
   const currentOption = timeRangeOptions.find(option => option.value === currentTimeRange);
 
@@ -52,7 +54,7 @@ export default function DashboardTimeFilter({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0" align={isMobile || isMedium ? "center" : "end"}>
         <div className="p-4">
           <h4 className="font-medium mb-3">Rentang Waktu Data</h4>
           <div className="space-y-1">
@@ -72,7 +74,7 @@ export default function DashboardTimeFilter({
                   </div>
                 </div>
                 {currentTimeRange === option.value && (
-                  <Check className="w-4 h-4 text-primary" />
+                  <Check className="w-5 h-5" />
                 )}
               </div>
             ))}

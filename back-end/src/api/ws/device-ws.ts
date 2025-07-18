@@ -13,6 +13,9 @@ function updateDeviceActivity(device_id: string, ws: any) {
 export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
   const deviceCommandService = new DeviceCommandService(db);
   
+  // Start heartbeat checker
+  startHeartbeatChecker(deviceService);
+  
   return new Elysia({ prefix: "/ws" }).ws("/connect", {
     body: t.Object({
       type: t.String(),
@@ -188,31 +191,32 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
 
 
 // Heartbeat checker untuk auto-offline detection
-// setInterval(async () => {
-//   const now = Date.now();
-//   for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
-//     // Jika tidak ada heartbeat selama 30 detik, set offline
-//     if (now - lastSeen > 30000) {
-//       deviceClients.delete(device_id);
-      
-//       try {
-//         // Update database status
-//         const deviceService = new DeviceService(/* db instance */);
-//         await deviceService.updateDeviceStatus(device_id, "offline");
+export function startHeartbeatChecker(deviceService: DeviceService) {
+  return setInterval(async () => {
+    const now = Date.now();
+    for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
+      // Jika tidak ada heartbeat selama 30 detik, set offline
+      if (now - lastSeen > 30000) {
+        deviceClients.delete(device_id);
         
-//         // Broadcast offline status
-//         broadcastToUsers({
-//           type: "status_update",
-//           device_id: parseInt(device_id),
-//           status: "offline",
-//           last_seen: new Date(lastSeen).toISOString(),
-//         });
-//       } catch (error) {
-//         console.error("Error updating offline status:", error);
-//       }
-//     }
-//   }
-// }, 10000); // Cek setiap 10 detik
+        try {
+          // Update database status
+          await deviceService.updateDeviceStatus(device_id, "offline");
+          
+          // Broadcast offline status
+          broadcastToUsers({
+            type: "status_update",
+            device_id: parseInt(device_id),
+            status: "offline",
+            last_seen: new Date(lastSeen).toISOString(),
+          });
+        } catch (error) {
+          console.error("Error updating offline status:", error);
+        }
+      }
+    }
+  }, 10000); // Cek setiap 10 detik
+}
 
 export function sendToDevice(device_id: string, data: any) {
   const client = deviceClients.get(device_id);

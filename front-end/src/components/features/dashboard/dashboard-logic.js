@@ -19,18 +19,18 @@ const getWidgetConstraints = (widgetType) => {
   
   if (chartTypes.includes(widgetType)) {
     return {
-      minW: 6,    // Minimum 6 columns for charts
-      minH: 6,    // Minimum 6 rows for charts  
-      maxW: 12,   // Maximum full width
-      maxH: 12,   // Maximum height
+      minW: 6,    
+      minH: 6,    
+      maxW: 12,   
+      maxH: 12,   
       isResizable: true
     };
   } else if (controlTypes.includes(widgetType)) {
     return {
-      minW: 3,    // Minimum 3 columns for controls
-      minH: 3,    // Minimum 3 rows for controls
-      maxW: 6,    // Maximum 6 columns for controls
-      maxH: 4,    // Maximum 4 rows for controls
+      minW: 3,   
+      minH: 3,   
+      maxW: 6,   
+      maxH: 3,    
       isResizable: true
     };
   }
@@ -224,7 +224,12 @@ export function useDashboardLogic() {
       
       dashboards.forEach((dashboard) => {
         const dashboardWidgets = widgets[dashboard.id] || [];
-        // console.log(`Dashboard ${dashboard.id} (${dashboard.description}):`, dashboardWidgets.length, 'widgets');
+        // console.log(`Dashboard ${dashboard.id} (${dashboard.description}):`, {
+        //   widgetCount: dashboardWidgets.length,
+        //   layoutRaw: dashboard.layout,
+        //   layoutType: typeof dashboard.layout,
+        //   widgetIds: dashboardWidgets.map(w => ({ id: w.id, idType: typeof w.id, description: w.description }))
+        // });
         
         // Use dashboard ID as key for items
         items[dashboard.id] = dashboardWidgets;
@@ -234,20 +239,26 @@ export function useDashboardLogic() {
         
         if (dashboard.layout) {
           try {
+            // console.log(`Parsing layout for dashboard ${dashboard.id}:`, dashboard.layout);
+            
             // First parse - might still be a string if double-encoded
             let parsedLayout = typeof dashboard.layout === "string" 
               ? JSON.parse(dashboard.layout) 
               : dashboard.layout;
             
+            // console.log(`After first parse:`, { type: typeof parsedLayout, value: parsedLayout });
+            
             // Check if it's still a string after first parse (double-encoded case)
             if (typeof parsedLayout === 'string') {
               // console.log('Layout is double-encoded, parsing again');
               parsedLayout = JSON.parse(parsedLayout);
+              // console.log(`After second parse:`, { type: typeof parsedLayout, value: parsedLayout });
             }
             
             // Final validation - ensure it's an object
             if (typeof parsedLayout === 'object' && parsedLayout !== null) {
               dashboardLayouts = parsedLayout;
+              // console.log(`Dashboard ${dashboard.id} layouts parsed successfully:`, Object.keys(dashboardLayouts));
             } else {
               console.warn('Dashboard layout is not a valid object after parsing, resetting to empty');
               dashboardLayouts = {};
@@ -256,6 +267,8 @@ export function useDashboardLogic() {
             console.warn('Failed to parse dashboard layout:', e);
             dashboardLayouts = {};
           }
+        } else {
+          // console.log(`Dashboard ${dashboard.id} has no layout data`);
         }
         
         // Ensure all breakpoints exist and generate missing layouts
@@ -265,6 +278,7 @@ export function useDashboardLogic() {
         breakpoints.forEach(bp => {
           // Ensure this breakpoint exists and is an array
           if (!dashboardLayouts[bp] || !Array.isArray(dashboardLayouts[bp])) {
+            // console.log(`Creating empty layout array for breakpoint ${bp} on dashboard ${dashboard.id}`);
             // If it's a string, try to parse it
             if (typeof dashboardLayouts[bp] === 'string') {
               try {
@@ -278,10 +292,17 @@ export function useDashboardLogic() {
             }
           }
           
+          // console.log(`Dashboard ${dashboard.id} ${bp} layout before processing:`, {
+          //   length: dashboardLayouts[bp].length,
+          //   items: dashboardLayouts[bp].map(item => ({ i: item.i, x: item.x, y: item.y, w: item.w, h: item.h }))
+          // });
+          
           // Add missing widgets to layout (only if there are widgets)
           dashboardWidgets.forEach((widget, idx) => {
-            const existingLayout = dashboardLayouts[bp].find(item => item.i === widget.id.toString());
+            const widgetIdString = widget.id.toString();
+            const existingLayout = dashboardLayouts[bp].find(item => item.i === widgetIdString);
             if (!existingLayout) {
+              // console.log(`Widget ${widget.id} (string: ${widgetIdString}) not found in ${bp} layout, creating new layout item`);
               const constraints = getWidgetConstraints(widget.type);
               const w = Math.max(constraints.minW, defaultWidths[bp] || constraints.minW);
               const h = Math.max(constraints.minH, 4);
@@ -290,7 +311,7 @@ export function useDashboardLogic() {
               const y = Math.floor(idx / (cols / w)) * h;
               
               dashboardLayouts[bp].push({
-                i: widget.id.toString(),
+                i: widgetIdString,
                 x,
                 y,
                 w,
@@ -302,8 +323,16 @@ export function useDashboardLogic() {
                 isResizable: constraints.isResizable
               });
             } else {
+              // console.log(`Widget ${widget.id} (string: ${widgetIdString}) found in ${bp} layout, updating constraints`);
               // Apply current constraints and ensure minimum dimensions
               const constraints = getWidgetConstraints(widget.type);
+              
+              // Fix null/undefined values in existing layout
+              existingLayout.x = Number.isFinite(existingLayout.x) ? existingLayout.x : 0;
+              existingLayout.y = Number.isFinite(existingLayout.y) ? existingLayout.y : 0;
+              existingLayout.w = Number.isFinite(existingLayout.w) ? existingLayout.w : constraints.minW;
+              existingLayout.h = Number.isFinite(existingLayout.h) ? existingLayout.h : constraints.minH;
+              
               existingLayout.minW = constraints.minW;
               existingLayout.minH = constraints.minH;
               existingLayout.maxW = constraints.maxW;
@@ -311,22 +340,41 @@ export function useDashboardLogic() {
               existingLayout.isResizable = constraints.isResizable;
               
               // Ensure current dimensions meet minimum requirements
-              existingLayout.w = Math.max(constraints.minW, existingLayout.w || constraints.minW);
-              existingLayout.h = Math.max(constraints.minH, existingLayout.h || constraints.minH);
+              existingLayout.w = Math.max(constraints.minW, existingLayout.w);
+              existingLayout.h = Math.max(constraints.minH, existingLayout.h);
+              
+              // console.log(`Updated layout for widget ${widget.id}:`, existingLayout);
             }
           });
           
           // Remove layouts for non-existent widgets
-          dashboardLayouts[bp] = dashboardLayouts[bp].filter(layoutItem => 
-            dashboardWidgets.some(widget => widget.id.toString() === layoutItem.i)
-          );
+          const initialLength = dashboardLayouts[bp].length;
+          dashboardLayouts[bp] = dashboardLayouts[bp].filter(layoutItem => {
+            const widgetExists = dashboardWidgets.some(widget => {
+              const widgetIdString = widget.id.toString();
+              const layoutIdString = layoutItem.i.toString();
+              return widgetIdString === layoutIdString;
+            });
+            if (!widgetExists) {
+              // console.log(`Removing layout item for widget ${layoutItem.i} - widget not found in:`, 
+              //   dashboardWidgets.map(w => ({ id: w.id, idString: w.id.toString(), type: typeof w.id })));
+            }
+            return widgetExists;
+          });
+          
+          // console.log(`Dashboard ${dashboard.id} ${bp} layout after processing:`, {
+          //   initialLength,
+          //   finalLength: dashboardLayouts[bp].length,
+          //   removedCount: initialLength - dashboardLayouts[bp].length,
+          //   items: dashboardLayouts[bp].map(item => ({ i: item.i, x: item.x, y: item.y, w: item.w, h: item.h }))
+          // });
         });
         
-        console.log(`Dashboard ${dashboard.id} processed layouts:`, {
-          type: typeof dashboardLayouts,
-          breakpoints: Object.keys(dashboardLayouts),
-          structure: dashboardLayouts
-        });
+        // console.log(`Dashboard ${dashboard.id} processed layouts:`, {
+        //   type: typeof dashboardLayouts,
+        //   breakpoints: Object.keys(dashboardLayouts),
+        //   structure: dashboardLayouts
+        // });
         
         // Ensure layouts is an object before assignment
         if (typeof layouts !== 'object' || layouts === null) {
@@ -340,12 +388,12 @@ export function useDashboardLogic() {
       setAllTabItems(items);
       setAllTabLayouts(layouts);
       
-      console.log('Setting tab items and layouts:', { items, layouts });
+      // console.log('Setting tab items and layouts:', { items, layouts });
       
       // Set active tab to first dashboard if current activeTab doesn't exist
       if (!dashboards.some(d => d.id === activeTab)) {
         const newActiveTab = dashboards[0]?.id || "";
-        console.log('Setting new active tab:', newActiveTab);
+        // console.log('Setting new active tab:', newActiveTab);
         updateActiveTab(newActiveTab);
       }
     } else {
@@ -592,7 +640,7 @@ export function useDashboardLogic() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      console.log('Layout saved successfully');
+      // console.log('Layout saved successfully');
     } catch (error) {
       console.error('Error saving layout:', error);
       errorToast("Gagal menyimpan layout");
@@ -876,7 +924,17 @@ export function useDashboardLogic() {
   const handleLayoutChange = useCallback(async (layout, allLayouts) => {
     if (!activeTab) return;
     
-    // console.log('Layout changed, updating state...');
+    // console.log('=== DASHBOARD LOGIC LAYOUT CHANGE ===');
+    // console.log('Active tab:', activeTab);
+    // console.log('Layout items received:', layout.length);
+    // console.log('All layouts keys:', Object.keys(allLayouts));
+    // console.log('Layout details:', layout.map(item => ({ 
+    //   i: item.i, 
+    //   x: item.x, 
+    //   y: item.y, 
+    //   w: item.w, 
+    //   h: item.h 
+    // })));
     
     // Validate and fix layout items to prevent NaN values
     const validatedLayout = layout.map(item => ({
@@ -906,6 +964,10 @@ export function useDashboardLogic() {
         maxH: Number.isFinite(item.maxH) && item.maxH > 0 ? item.maxH : 12,
       }));
     });
+    
+    // console.log('Updating tab layouts for:', activeTab);
+    // console.log('Validated layouts:', validatedAllLayouts);
+    // console.log('=====================================');
     
     updateTabLayouts(activeTab, validatedAllLayouts);
     setHasUnsavedChanges(true);

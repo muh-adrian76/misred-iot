@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS `dashboards` (
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+ALTER TABLE `dashboards` ADD COLUMN `time_range` ENUM('1h', '6h', '12h', '24h', '7d', '30d') DEFAULT '24h';
 
 CREATE TABLE IF NOT EXISTS `devices` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -90,10 +91,13 @@ CREATE TABLE IF NOT EXISTS `datastreams` (
 CREATE TABLE IF NOT EXISTS `payloads` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `device_id` INT NOT NULL,
-  `value` JSON NOT NULL,
+  `datastream_id` INT NOT NULL,
+  `value` DECIMAL(10,3) NOT NULL,
+  `raw_data` JSON NULL, -- Menyimpan data mentah untuk debugging
   `server_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `widgets` (
@@ -167,6 +171,104 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `device_commands` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `device_id` INT NOT NULL,
+  `datastream_id` INT NOT NULL,
+  `command_type` ENUM('set_value', 'toggle', 'reset') NOT NULL,
+  `value` DECIMAL(10,3) NOT NULL,
+  `status` ENUM('pending', 'sent', 'acknowledged', 'failed') DEFAULT 'pending',
+  `sent_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `acknowledged_at` TIMESTAMP NULL DEFAULT NULL,
+  `user_id` INT NOT NULL,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Tabel untuk menyimpan raw payload dari device (backup dan debugging)
+CREATE TABLE IF NOT EXISTS `raw_payloads` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `device_id` INT NOT NULL,
+  `raw_data` JSON NOT NULL,
+  `parsed_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- TESTING
+INSERT IGNORE INTO devices (id, description, board_type, protocol, new_secret, user_id, status) VALUES
+(1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online'),
+(2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online');
+
+INSERT IGNORE INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
+(1, 'pH Sensor', 'A0', 'sensor', 'pH', '7.0', 0.0, 14.0, '2', 1, 1),
+(2, 'Flow Sensor', 'A1', 'sensor', 'L/min', '25.0', 0.0, 100.0, '2', 1, 1),
+(3, 'COD Sensor', 'A2', 'sensor', 'mg/L', '50.0', 0.0, 200.0, '1', 1, 1),
+(4, 'Temperature Sensor', 'A3', 'sensor', '°C', '25.0', -10.0, 60.0, '1', 1, 1),
+(5, 'NH3N Sensor', 'A4', 'sensor', 'mg/L', '2.0', 0.0, 20.0, '2', 1, 1),
+(6, 'Turbidity Sensor', 'A5', 'sensor', 'NTU', '10.0', 0.0, 100.0, '1', 1, 1);
+
+CREATE INDEX idx_payloads_device_time ON payloads(device_id, server_time);
+CREATE INDEX idx_payloads_datastream_time ON payloads(datastream_id, server_time);
+CREATE INDEX idx_payloads_device_datastream_time ON payloads(device_id, datastream_id, server_time);
+CREATE INDEX idx_device_commands_status ON device_commands(status, sent_at);
+
+-- View untuk dashboard sensor data yang sudah dinormalisasi
+CREATE VIEW dashboard_sensor_data AS
+SELECT 
+    p.id,
+    p.device_id,
+    p.datastream_id,
+    p.value,
+    p.server_time,
+    d.description as device_name,
+    d.status as device_status,
+    ds.description as sensor_name,
+    ds.pin as sensor_pin,
+    ds.unit as sensor_unit,
+    ds.type as data_type,
+    ds.min_value,
+    ds.max_value,
+    ds.decimal_value,
+    u.name as user_name,
+    u.id as user_id
+FROM payloads p
+LEFT JOIN devices d ON p.device_id = d.id
+LEFT JOIN datastreams ds ON p.datastream_id = ds.id
+LEFT JOIN users u ON d.user_id = u.id;
+
+-- View untuk data widget yang menggabungkan widget config dengan data terbaru
+CREATE VIEW widget_data AS
+SELECT 
+    w.id as widget_id,
+    w.description as widget_description,
+    w.type as widget_type,
+    w.dashboard_id,
+    w.device_id,
+    w.datastream_id,
+    d.description as device_name,
+    d.status as device_status,
+    ds.description as sensor_name,
+    ds.pin as sensor_pin,
+    ds.unit as sensor_unit,
+    ds.type as data_type,
+    ds.min_value,
+    ds.max_value,
+    ds.decimal_value,
+    (SELECT p.value FROM payloads p 
+     WHERE p.device_id = w.device_id 
+     AND p.datastream_id = w.datastream_id 
+     ORDER BY p.server_time DESC LIMIT 1) as latest_value,
+    (SELECT p.server_time FROM payloads p 
+     WHERE p.device_id = w.device_id 
+     AND p.datastream_id = w.datastream_id 
+     ORDER BY p.server_time DESC LIMIT 1) as latest_time
+FROM widgets w
+LEFT JOIN devices d ON w.device_id = d.id
+LEFT JOIN datastreams ds ON w.datastream_id = ds.id;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

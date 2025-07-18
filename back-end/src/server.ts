@@ -11,7 +11,7 @@ import { apiTags, subDomain, ageConverter } from "./lib/utils";
 import { authRoutes } from "./api/auth";
 import { userRoutes } from "./api/user";
 import { deviceRoutes } from "./api/device";
-import { deviceCommandRoutes } from "./api/device-command/device-command";
+import { deviceCommandRoutes } from "./api/device-command";
 import { payloadRoutes } from "./api/payload";
 import { widgetRoutes } from "./api/widget";
 import { alarmRoutes } from "./api/alarm";
@@ -58,17 +58,8 @@ class Server {
   async init() {
     this.db = MySQLDatabase.getInstance();
     this.mqttClient = MQTTClient.getInstance();
-    this.mqttService = new MQTTService(this.db);
-    this.mqttService.listen();
-    this.otaaService = new OtaaUpdateService(this.db);
-
-    this.deviceService = new DeviceService(
-      this.db,
-      this.otaaService,
-      this.mqttService.subscribeTopic.bind(this.mqttService),
-      this.mqttService.unSubscribeTopic.bind(this.mqttService)
-    );
     
+    // Init services yang tidak butuh dependencies dulu
     this.authService = new AuthService(this.db);
     this.userService = new UserService(this.db);
     this.widgetService = new WidgetService(this.db);
@@ -76,13 +67,41 @@ class Server {
     this.alarmNotificationService = new AlarmNotificationService(this.db);
     this.dashboardService = new DashboardService(this.db);
     this.datastreamService = new DatastreamService(this.db);
+    this.otaaService = new OtaaUpdateService(this.db);
 
-    // PayloadService dengan AlarmNotificationService
+    // Init MQTT service dengan alarm notification
+    this.mqttService = new MQTTService(this.db, this.alarmNotificationService);
+
+    // Init device service dengan MQTT callbacks
+    this.deviceService = new DeviceService(
+      this.db,
+      this.otaaService,
+      this.mqttService.subscribeTopic.bind(this.mqttService),
+      this.mqttService.unSubscribeTopic.bind(this.mqttService)
+    );
+
+    // Set device service ke MQTT service (untuk JWT verification)
+    this.mqttService.setDeviceService(this.deviceService);
+
+    // Init payload service dengan dependencies
     this.payloadService = new PayloadService(
       this.db, 
       this.deviceService, 
       this.alarmNotificationService
     );
+
+    // Create JWT instance
+    const jwtInstance = jwt({
+      name: "jwt",
+      secret: process.env.JWT_SECRET!,
+      exp: process.env.ACCESS_TOKEN_AGE,
+    });
+
+    // Set JWT instance ke MQTT service
+    this.mqttService.setJWTInstance(jwtInstance);
+
+    // Start MQTT listener
+    this.mqttService.listen();
 
     this.app
       // API
@@ -100,7 +119,7 @@ class Server {
 
       // Websocket
       .use(userWsRoutes)
-      .use(deviceWsRoutes(this.deviceService))
+      .use(deviceWsRoutes(this.deviceService, this.db))
 
       // Plugin
       .use(
@@ -116,13 +135,7 @@ class Server {
           allowedHeaders: ["Content-Type", "Authorization"],
         })
       )
-      .use(
-        jwt({
-          name: "jwt",
-          secret: process.env.JWT_SECRET!,
-          exp: process.env.ACCESS_TOKEN_AGE,
-        })
-      )
+      .use(jwtInstance)
       .use(
         swagger({
           documentation: {

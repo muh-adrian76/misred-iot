@@ -50,14 +50,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               decrypted,
             });
 
-            return new Response(
-              JSON.stringify({
-                message: "Berhasil menambah data sensor",
-                id: insertId,
-                device_id: deviceId,
-              }),
-              { status: 201 }
-            );
+            return {
+              message: "Berhasil menambah data sensor",
+              id: insertId,
+              device_id: deviceId,
+            };
           } catch (error: any) {
             console.error("Error processing HTTP payload:", error);
             set.status = 500;
@@ -127,8 +124,8 @@ export function payloadRoutes(payloadService: PayloadService) {
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
           }
-        },
-        getAllPayloadsSchema
+        }
+        // getAllPayloadsSchema
       )
 
       // READ Payload by Device ID
@@ -182,6 +179,63 @@ export function payloadRoutes(payloadService: PayloadService) {
           }
         },
         getPayloadByDeviceAndDatastreamSchema
+      )
+
+      // GET Widget Data (menggunakan view widget_data)
+      .get(
+        "/widget/:widget_id",
+        //@ts-ignore
+        async ({ jwt, cookie, params }) => {
+          try {
+            await authorizeRequest(jwt, cookie);
+            const data = await payloadService.getWidgetData(params.widget_id);
+            return new Response(JSON.stringify({ result: data }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching widget data:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch widget data",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        }
+      )
+
+      // GET Time Series Data untuk Chart
+      .get(
+        "/timeseries/:device_id/:datastream_id",
+        //@ts-ignore
+        async ({ jwt, cookie, params, query }) => {
+          try {
+            await authorizeRequest(jwt, cookie);
+            const timeRange = query.range || '24h'; // Default 24 jam
+            const data = await payloadService.getTimeSeriesData(
+              params.device_id,
+              params.datastream_id,
+              timeRange
+            );
+            return new Response(JSON.stringify({ 
+              result: data,
+              timeRange: timeRange,
+              count: Array.isArray(data) ? data.length : 0
+            }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error fetching time series data:", error);
+            return new Response(
+              JSON.stringify({ 
+                error: "Failed to fetch time series data",
+                message: error.message || "Internal server error"
+              }),
+              { status: 500, headers: { "Content-Type": "application/json" } }
+            );
+          }
+        }
       )
   );
 }
