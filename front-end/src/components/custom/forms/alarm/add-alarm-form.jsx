@@ -33,7 +33,7 @@ export default function AddAlarmForm({ open, setOpen, handleAddAlarm }) {
   const [deviceId, setDeviceId] = useState("");
   const [datastreamId, setDatastreamId] = useState("");
   const [conditions, setConditions] = useState([]);
-  const [cooldownMinutes, setCooldownMinutes] = useState(5);
+  const [cooldownMinutes, setCooldownMinutes] = useState(1);
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
 
@@ -176,7 +176,7 @@ export default function AddAlarmForm({ open, setOpen, handleAddAlarm }) {
                       }}
                     >
                       <span className="truncate">
-                        #{d.id} - {d.description}
+                        {d.description}
                       </span>
                       <Check
                         className={cn(
@@ -263,7 +263,6 @@ export default function AddAlarmForm({ open, setOpen, handleAddAlarm }) {
             onChange={(e) => setCooldownMinutes(parseInt(e.target.value))}
             type="number"
             min="1"
-            max="1440"
             noInfo
           />
         </div>
@@ -333,7 +332,7 @@ export default function AddAlarmForm({ open, setOpen, handleAddAlarm }) {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeCondition(index)}
-                    className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                    className="h-4 w-4 p-0 hover:opacity-100 opacity-50"
                   >
                     <X className="h-3 w-3" />
                   </Button>

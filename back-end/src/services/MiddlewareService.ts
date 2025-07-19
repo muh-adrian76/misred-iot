@@ -9,9 +9,9 @@ import crypto from "crypto";
 export class MQTTService {
   private mqttClient: ReturnType<typeof MQTTClient.getInstance>;
   private db: Pool;
-  private deviceService!: DeviceService; // Akan di-set dari luar
+  private deviceService!: DeviceService;
   private alarmNotificationService?: AlarmNotificationService;
-  private jwtInstance: any; // JWT instance dari Elysia
+  private jwtInstance: any;
 
   constructor(db: Pool, alarmNotificationService?: AlarmNotificationService) {
     this.db = db;
@@ -82,32 +82,95 @@ export class MQTTService {
     }
 
     // Ambil secret dari database
-    const device = await this.deviceService.getDeviceById(device_id);
+    const devices = await this.deviceService.getDeviceById(device_id);
     //@ts-ignore
-    const secret = device.new_secret;
-    if (!secret) throw new Error("Device tidak terdaftar");
-
-    // Verifikasi JWT dengan CustomJWT format
-    const decoded = jwt.verify(token, secret, {
-      algorithms: ["HS256"],
-    });
-    if (typeof decoded !== "object" || !decoded.encryptedData)
-      throw new Error("Payload tidak valid");
-
-    // Karena CustomJWT mengirim data langsung sebagai "encryptedData"
-    // kita akan parse langsung tanpa dekripsi AES tambahan
-    let decrypted;
-    try {
-      // Coba parse sebagai JSON langsung (untuk CustomJWT)
-      decrypted = JSON.parse(decoded.encryptedData);
-      console.log("📦 MQTT CustomJWT payload parsed successfully");
-    } catch (parseError) {
-      // Fallback ke AES decryption untuk backward compatibility
-      console.log("🔄 MQTT Falling back to AES decryption");
-      decrypted = decryptAES(crypto, decoded.encryptedData, secret);
+    if (!devices || devices.length === 0) {
+      throw new Error("Device tidak terdaftar");
     }
     
-    return decrypted;
+    //@ts-ignore
+    const device = devices[0]; // getDeviceById returns array
+    const secret = device.new_secret;
+    if (!secret) throw new Error("Device secret tidak valid");
+
+    // Manual JWT verification with device-specific secret (same as PayloadService)
+    try {
+      console.log("🔍 MQTT: Starting JWT verification...");
+      console.log("🔑 MQTT: Device secret:", secret);
+      console.log("🎫 MQTT: Token:", token);
+      
+      const [header, payload, signature] = token.split('.');
+      
+      if (!header || !payload || !signature) {
+        throw new Error("Invalid JWT format");
+      }
+      
+      console.log("📋 MQTT: JWT parts:", { header, payload, signature });
+      
+      // Verify signature
+      const data = `${header}.${payload}`;
+      const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
+      
+      console.log("🔍 MQTT: Expected signature:", expectedSignature);
+      console.log("🔍 MQTT: Received signature:", signature);
+      
+      if (signature !== expectedSignature) {
+        throw new Error("JWT signature verification failed");
+      }
+      
+      // Decode payload
+      let decodedPayload;
+      try {
+        decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
+      } catch (decodeError) {
+        throw new Error("Failed to decode JWT payload");
+      }
+      
+      // Check expiration
+      if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+        throw new Error("JWT token expired");
+      }
+      
+      if (!decodedPayload.encryptedData) {
+        throw new Error("Missing encryptedData in JWT payload");
+      }
+      
+      console.log("✅ MQTT: JWT verified successfully with device secret");
+      console.log("📦 MQTT: Encrypted data:", decodedPayload.encryptedData);
+      
+      // Karena CustomJWT mengirim data langsung sebagai "encryptedData"
+      // kita akan parse langsung tanpa dekripsi AES tambahan
+      let decrypted;
+      try {
+        // Coba parse sebagai JSON langsung (untuk CustomJWT)
+        decrypted = JSON.parse(decodedPayload.encryptedData);
+        console.log("📦 MQTT CustomJWT payload parsed successfully");
+      } catch (parseError) {
+        // Fallback ke AES decryption untuk backward compatibility
+        console.log("🔄 MQTT Falling back to AES decryption");
+        console.log("🔐 MQTT Encrypted data to decrypt:", decodedPayload.encryptedData);
+        console.log("🔑 MQTT Secret for decryption:", secret);
+        
+        try {
+          decrypted = decryptAES(crypto, decodedPayload.encryptedData, secret);
+          console.log("✅ MQTT AES decryption successful:", decrypted);
+          
+          // Parse JSON after AES decryption
+          decrypted = JSON.parse(decrypted);
+          console.log("📦 MQTT Parsed decrypted JSON:", decrypted);
+        } catch (aesError) {
+          console.error("❌ MQTT AES decryption failed:", aesError);
+          throw new Error(`AES decryption failed: ${aesError instanceof Error ? aesError.message : String(aesError)}`);
+        }
+      }
+      
+      return decrypted;
+      
+    } catch (error) {
+      console.error("MQTT JWT verification failed:", error);
+      // Return more specific error for debugging
+      throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async saveMqttPayload(data: any) {
@@ -172,10 +235,13 @@ export class MQTTService {
       
       // Parse setiap pin di raw data
       for (const [pin, value] of Object.entries(rawData)) {
+        console.log(`🔍 MQTT Processing pin: ${pin}, value: ${value}, type: ${typeof value}`);
+        
         if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
           
           // Cari datastream yang cocok dengan pin
           const datastream = datastreams.find((ds: any) => ds.pin === pin);
+          
           if (datastream) {
             try {
               // Insert ke tabel payloads yang sudah ada
@@ -189,8 +255,7 @@ export class MQTTService {
                   JSON.stringify({ 
                     raw_payload_id: rawPayloadId, 
                     pin, 
-                    original_value: value, 
-                    protocol: 'mqtt' 
+                    value, 
                   })
                 ]
               );
@@ -204,9 +269,12 @@ export class MQTTService {
           } else {
             console.warn(`⚠️ MQTT: No datastream found for pin ${pin}`);
           }
+        } else {
+          console.log(`⚠️ MQTT: Skipping pin ${pin} (not number or excluded): ${value}`);
         }
       }
       
+      console.log(`✅ MQTT parseAndNormalizePayload completed. Inserted ${insertedIds.length} records`);
       return insertedIds;
       
     } catch (error) {

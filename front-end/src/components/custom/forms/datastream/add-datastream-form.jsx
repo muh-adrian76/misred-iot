@@ -48,6 +48,7 @@ export default function AddDatastreamForm({
 
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [decimalValue, setdecimalValue] = useState("0.0");
+  const [booleanValue, setBooleanValue] = useState("0");
 
   const formContent = (
     <div className="grid gap-4 py-2">
@@ -130,7 +131,7 @@ export default function AddDatastreamForm({
         {/* PIN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium max-sm:text-xs ml-1">
-            Pin
+            Virtual Pin
           </Label>
           <Select
             value={pin}
@@ -148,8 +149,8 @@ export default function AddDatastreamForm({
                     ? usedPins[deviceId]
                     : new Set();
                 const availablePins = [];
-                for (let p = 0; p < 256 && availablePins.length < 6; p++) {
-                  if (!used.has(String(p))) {
+                for (let p = 0; p < 256 && availablePins.length < 32; p++) {
+                  if (!used.has(`V${String(p)}`)) {
                     availablePins.push(p);
                   }
                 }
@@ -160,7 +161,7 @@ export default function AddDatastreamForm({
                 ) : (
                   availablePins.map((p) => (
                     <SelectItem key={p} value={String(p)}>
-                      {String(p)}
+                      {`V${String(p)}`}
                     </SelectItem>
                   ))
                 );
@@ -181,13 +182,14 @@ export default function AddDatastreamForm({
               <SelectItem value="integer">Integer</SelectItem>
               <SelectItem value="string">String</SelectItem>
               <SelectItem value="double">Double</SelectItem>
+              <SelectItem value="boolean">Boolean</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       {/* SATUAN & FORMAT DESIMAL */}
-      <div className={cn("grid gap-4", type === "double" ? "grid-cols-2" : "")}>
+      <div className={cn("grid gap-4", type === "double" || type === "boolean" ? "grid-cols-2" : "")}>
         {/* SATUAN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -217,6 +219,22 @@ export default function AddDatastreamForm({
             </SelectContent>
           </Select>
         </div>
+        {type === "boolean" && (
+          <div className="flex flex-col gap-2">
+            <Label className="text-left font-medium max-sm:text-xs ml-1">
+              Nilai Default
+            </Label>
+            <Select value={booleanValue} onValueChange={setBooleanValue} required>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Nilai Default" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">False</SelectItem>
+                <SelectItem value="1">True</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {/* FORMAT DESIMAL */}
         {type === "double" && (
           <div className="flex flex-col gap-2">
@@ -239,7 +257,7 @@ export default function AddDatastreamForm({
         )}
       </div>
 
-      {type === "string" ? (
+      {type === "boolean" ? null :  type === "string" ? (
         <div className="flex flex-col gap-2">
           <Label
             htmlFor="defaultValue"
@@ -327,6 +345,7 @@ export default function AddDatastreamForm({
       minValue,
       maxValue,
       decimalValue,
+      booleanValue
     });
     setDescription("");
     setPin("");

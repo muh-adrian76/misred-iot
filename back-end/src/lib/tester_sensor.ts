@@ -45,12 +45,12 @@ let MQTT_DEVICE = {
 
 // Realistic sensor ranges
 const SENSOR_RANGES = {
-  A0: { min: 6.5, max: 8.5 },   // pH
-  A1: { min: 10.0, max: 50.0 }, // Flow L/min
-  A2: { min: 20.0, max: 80.0 }, // COD mg/L
-  A3: { min: 20.0, max: 35.0 }, // Temperature °C
-  A4: { min: 0.1, max: 5.0 },   // NH3N mg/L
-  A5: { min: 1.0, max: 20.0 }   // NTU
+  V0: { min: 6.5, max: 8.5 },   // pH
+  V1: { min: 10.0, max: 50.0 }, // Flow L/min
+  V2: { min: 20.0, max: 80.0 }, // COD mg/L
+  V3: { min: 20.0, max: 35.0 }, // Temperature °C
+  V4: { min: 0.1, max: 5.0 },   // NH3N mg/L
+  V5: { min: 1.0, max: 20.0 }   // NTU
 };
 
 /**

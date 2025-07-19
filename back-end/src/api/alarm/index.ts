@@ -7,7 +7,6 @@ import {
   getAlarmByIdSchema,
   updateAlarmSchema,
   deleteAlarmSchema,
-  toggleAlarmStatusSchema,
 } from "./elysiaSchema";
 
 export function alarmRoutes(alarmService: AlarmService) {
@@ -201,44 +200,4 @@ export function alarmRoutes(alarmService: AlarmService) {
       },
       deleteAlarmSchema
     )
-
-    // 🔄 TOGGLE Alarm Status
-    .patch(
-      "/:alarmId/toggle",
-      //@ts-ignore
-      async ({ jwt, cookie, params }) => {
-        try {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const updated = await alarmService.toggleAlarmStatus(Number(params.alarmId), Number(decoded.sub));
-          
-          if (!updated) {
-            return new Response(
-              JSON.stringify({
-                success: false,
-                message: "Alarm tidak ditemukan atau gagal mengupdate status",
-              }),
-              { status: 404 }
-            );
-          }
-          
-          return new Response(
-            JSON.stringify({
-              success: true,
-              message: "Berhasil mengubah status alarm.",
-            }),
-            { status: 200 }
-          );
-        } catch (error) {
-          console.error("Error toggling alarm status:", error);
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: "Gagal mengubah status alarm",
-            }),
-            { status: 400 }
-          );
-        }
-      },
-      toggleAlarmStatusSchema
-    );
 }

@@ -112,7 +112,7 @@ class Server {
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
       .use(alarmRoutes(this.alarmService))
-      .use(alarmNotificationRoutes(this.alarmService, this.alarmNotificationService))
+      .use(alarmNotificationRoutes(this.alarmNotificationService))
       .use(dashboardRoutes(this.dashboardService))
       .use(datastreamRoutes(this.datastreamService))
       .use(otaaRoutes(this.otaaService))

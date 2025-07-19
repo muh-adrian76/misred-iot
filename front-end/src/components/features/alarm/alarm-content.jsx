@@ -80,6 +80,12 @@ export default function AlarmContent({
       ),
     },
     {
+      key: "cooldown",
+      label: "Waktu Tunggu",
+      sortable: true,
+      render: (row) => `${row.cooldown_minutes} menit`,
+    },
+    {
       key: "last_triggered",
       label: "Terakhir Dipicu",
       render: (row) =>

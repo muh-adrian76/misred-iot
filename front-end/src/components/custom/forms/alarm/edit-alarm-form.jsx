@@ -38,7 +38,7 @@ export default function EditAlarmForm({
   const [deviceId, setDeviceId] = useState("");
   const [datastreamId, setDatastreamId] = useState("");
   const [conditions, setConditions] = useState([]);
-  const [cooldownMinutes, setCooldownMinutes] = useState(5);
+  const [cooldownMinutes, setCooldownMinutes] = useState(1);
   const [isActive, setIsActive] = useState(true);
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
@@ -130,7 +130,7 @@ export default function EditAlarmForm({
         setConditions([]);
       }
 
-      setCooldownMinutes(editAlarm.cooldown_minutes || 5);
+      setCooldownMinutes(editAlarm.cooldown_minutes || 1);
       setNewConditionOperator(">");
       setNewConditionThreshold("");
     }
@@ -216,7 +216,7 @@ export default function EditAlarmForm({
                       }}
                     >
                       <span className="truncate">
-                        #{d.id} - {d.description}
+                        {d.description}
                       </span>
                       <Check
                         className={cn(
@@ -302,7 +302,8 @@ export default function EditAlarmForm({
             onChange={(e) => setCooldownMinutes(parseInt(e.target.value))}
             type="number"
             min="1"
-            max="1440"
+            placeholder="1"
+            noInfo
           />
         </div>
       </div>
@@ -368,7 +369,7 @@ export default function EditAlarmForm({
                     variant="ghost"
                     size="sm"
                     onClick={() => removeCondition(index)}
-                    className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                    className="h-4 w-4 p-0 hover:opacity-100 opacity-50"
                   >
                     <X className="h-3 w-3" />
                   </Button>

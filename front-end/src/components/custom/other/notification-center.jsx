@@ -93,7 +93,7 @@ const NotificationItem = ({
       className={cn(
         "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm",
         !notification.isRead &&
-          "border-l-4 border-l-blue-500 bg-blue-50/30 dark:bg-blue-950/10 dark:border-l-blue-400",
+          "border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 dark:border-l-green-400",
         notification.isRead && "border-border hover:border-muted-foreground/20",
         onClick && "cursor-pointer"
       )}
@@ -119,7 +119,7 @@ const NotificationItem = ({
                 {notification.title}
               </h4>
               {!notification.isRead && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
                   New
                 </span>
               )}
@@ -141,7 +141,7 @@ const NotificationItem = ({
                 {formatTimeAgo(notification.createdAt)}
               </span>
 
-              {notification.priority && (
+              {/* {notification.priority && (
                 <Badge
                   variant={
                     notification.priority === "high"
@@ -154,7 +154,7 @@ const NotificationItem = ({
                 >
                   {notification.priority}
                 </Badge>
-              )}
+              )} */}
             </div>
           </div>
 
@@ -219,10 +219,10 @@ export function NotificationCenter({
   enableRealTimeUpdates = false,
   updateInterval = 30000,
   enableBrowserNotifications = false,
-
+  align = "end",
   emptyState = {
-    title: "No notifications",
-    description: "New notifications will appear here.",
+    title: "Tidak ada alarm yang terpicu.",
+    description: "Alarm yang terpicu akan otomatis ditampilkan disini.",
   },
 }) {
   const [filter, setFilter] = useState("all");
@@ -347,11 +347,11 @@ export function NotificationCenter({
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <BellRing className="h-16 w-16 text-muted-foreground/40 mb-4" />
           <h3 className="font-semibold text-lg text-foreground mb-2">
-            {filter === "unread" ? "All caught up!" : emptyState.title}
+            {filter === "unread" ? "Semua alarm telah dibaca." : emptyState.title}
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm">
             {filter === "unread"
-              ? "You have no unread notifications. Great job staying on top of things!"
+              ? "Segera cek perangkat Anda!"
               : emptyState.description}
           </p>
         </div>
@@ -396,20 +396,20 @@ export function NotificationCenter({
           </PopoverTrigger>
         </DescriptionTooltip>
         <PopoverContent
-          className="w-80 p-0 shadow-xl border-border/50"
+          className="w-80 p-0 max-sm:mr-7 shadow-xl border-border/50"
           side="bottom"
-          align="end"
+          align={align}
           sideOffset={8}
         >
           <div className="p-4 border-b bg-muted/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <h4 className="font-semibold text-lg text-foreground">
-                  Notifications
+                  Pesan Notifikasi
                 </h4>
                 {unreadCount > 0 && (
                   <Badge variant="secondary" className="text-xs px-2 py-1">
-                    {unreadCount} new
+                    {unreadCount} baru
                   </Badge>
                 )}
               </div>
@@ -437,7 +437,7 @@ export function NotificationCenter({
                     }
                   >
                     <Filter className="mr-1.5 h-3 w-3" />
-                    {filter === "all" ? "Unread" : "All"}
+                    {filter === "all" ? "Belum dibaca" : "Semua"}
                   </Button>
                 )}
 

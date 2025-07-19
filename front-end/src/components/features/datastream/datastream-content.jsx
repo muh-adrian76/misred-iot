@@ -30,7 +30,7 @@ export default function DatastreamContent({
         return dev?.description || dev?.name || row.device_id;
       },
     },
-    { key: "pin", label: "Pin (0-255)", sortable: true },
+    { key: "pin", label: "Virtual Pin", sortable: true },
     {
       key: "type",
       label: "Tipe Data",

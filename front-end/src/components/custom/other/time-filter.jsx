@@ -20,7 +20,7 @@ const timeRangeOptions = [
 ];
 
 export default function DashboardTimeFilter({ 
-  currentTimeRange = "24h", 
+  currentTimeRange = "30d", 
   onTimeRangeChange,
   disabled = false 
 }) {
@@ -47,9 +47,9 @@ export default function DashboardTimeFilter({
         >
           <div className="flex items-center gap-2">
             <CalendarSearch className="w-4 h-4" />
-            <span className="hidden sm:inline">Filter</span>
+            <span className="inline">Filter</span>
             <span className="text-xs text-muted-foreground">
-              ({currentOption?.label || "24 Jam Terakhir"})
+              {isMobile || isMedium ? ("(" + currentOption?.value + ")" || "(24h)") : "(" + (currentOption?.description || "24 Jam Terakhir") + ")"}
             </span>
           </div>
         </Button>

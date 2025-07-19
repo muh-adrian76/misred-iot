@@ -1,0 +1,65 @@
+2025/07/19-18:03:10.185 5244 Reusing MANIFEST C:\Users\suloyo\Downloads\misred-iot\back-end\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/07/19-18:03:10.186 5244 Recovering log #1975
+2025/07/19-18:03:10.241 5244 Reusing old log C:\Users\suloyo\Downloads\misred-iot\back-end\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/001975.log 
+2025/07/19-18:03:13.238 3c18 Level-0 table #1991: started
+2025/07/19-18:03:13.248 3c18 Level-0 table #1991: 132548 bytes OK
+2025/07/19-18:03:13.250 3c18 Delete type=0 #1975
+2025/07/19-18:03:13.253 3c18 Manual compaction at level-0 from '\x00\xd2\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\xd3\x00\x00\x00' @ 0 : 0; will stop at '\x00\xd2\x00\x00\x05' @ 5057983 : 1
+2025/07/19-18:03:13.253 3c18 Compacting 1@0 + 1@1 files
+2025/07/19-18:03:13.272 3c18 Generated table #1992@0: 6276 keys, 81437 bytes
+2025/07/19-18:03:13.276 3c18 Generated table #1993@0: 2 keys, 201 bytes
+2025/07/19-18:03:13.276 3c18 Compacted 1@0 + 1@1 files => 81638 bytes
+2025/07/19-18:03:13.276 3c18 compacted to: files[ 0 2 14 0 0 0 0 ]
+2025/07/19-18:03:13.277 3c18 Delete type=2 #1991
+2025/07/19-18:03:13.277 3c18 Manual compaction at level-0 from '\x00\xd2\x00\x00\x05' @ 5057983 : 1 .. '\x00\xd3\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/07/19-18:03:18.263 4190 Compacting 1@1 + 4@2 files
+2025/07/19-18:03:18.404 4190 Generated table #1994@1: 90154 keys, 2242393 bytes
+2025/07/19-18:03:18.566 4190 Generated table #1995@1: 96384 keys, 2248843 bytes
+2025/07/19-18:03:18.736 4190 Generated table #1996@1: 101479 keys, 2253118 bytes
+2025/07/19-18:03:18.839 4190 Generated table #1997@1: 47620 keys, 2170663 bytes
+2025/07/19-18:03:18.839 4190 Compacted 1@1 + 4@2 files => 8915017 bytes
+2025/07/19-18:03:18.840 4190 compacted to: files[ 0 1 14 0 0 0 0 ]
+2025/07/19-18:03:18.840 4190 Delete type=2 #1978
+2025/07/19-18:03:18.840 4190 Delete type=2 #1979
+2025/07/19-18:03:18.840 4190 Delete type=2 #1980
+2025/07/19-18:03:18.840 4190 Delete type=2 #1981
+2025/07/19-18:03:18.840 4190 Delete type=2 #1982
+2025/07/19-18:03:18.840 4190 Delete type=2 #1992
+2025/07/19-18:05:10.641 467c Level-0 table #1999: started
+2025/07/19-18:05:10.688 467c Level-0 table #1999: 1091783 bytes OK
+2025/07/19-18:05:10.689 467c Delete type=0 #1990
+2025/07/19-18:05:10.742 4190 Compacting 1@0 + 1@1 files
+2025/07/19-18:05:10.818 4190 Generated table #2000@0: 27253 keys, 514236 bytes
+2025/07/19-18:05:10.830 4190 Generated table #2001@0: 10 keys, 350 bytes
+2025/07/19-18:05:10.830 4190 Compacted 1@0 + 1@1 files => 514586 bytes
+2025/07/19-18:05:10.831 4190 compacted to: files[ 0 2 14 0 0 0 0 ]
+2025/07/19-18:05:10.831 4190 Delete type=2 #1993
+2025/07/19-18:05:10.831 4190 Delete type=2 #1999
+2025/07/19-18:05:11.325 467c Compacting 1@1 + 13@2 files
+2025/07/19-18:05:11.480 467c Generated table #2002@1: 89836 keys, 2240684 bytes
+2025/07/19-18:05:11.620 467c Generated table #2003@1: 96201 keys, 2248452 bytes
+2025/07/19-18:05:11.768 467c Generated table #2004@1: 101479 keys, 2253880 bytes
+2025/07/19-18:05:11.868 467c Generated table #2005@1: 52463 keys, 2242958 bytes
+2025/07/19-18:05:11.990 467c Generated table #2006@1: 40175 keys, 2229043 bytes
+2025/07/19-18:05:12.104 467c Generated table #2007@1: 22380 keys, 2183627 bytes
+2025/07/19-18:05:12.151 467c Generated table #2008@1: 3160 keys, 2158650 bytes
+2025/07/19-18:05:12.265 467c Generated table #2009@1: 29408 keys, 2241298 bytes
+2025/07/19-18:05:12.343 467c Generated table #2010@1: 27079 keys, 2169421 bytes
+2025/07/19-18:05:12.509 467c Generated table #2011@1: 102879 keys, 2255557 bytes
+2025/07/19-18:05:12.541 467c Generated table #2012@1: 16866 keys, 374123 bytes
+2025/07/19-18:05:12.541 467c Compacted 1@1 + 13@2 files => 22597693 bytes
+2025/07/19-18:05:12.542 467c compacted to: files[ 0 1 12 0 0 0 0 ]
+2025/07/19-18:05:12.542 467c Delete type=2 #1943
+2025/07/19-18:05:12.542 467c Delete type=2 #1959
+2025/07/19-18:05:12.542 467c Delete type=2 #1974
+2025/07/19-18:05:12.542 467c Delete type=2 #1983
+2025/07/19-18:05:12.542 467c Delete type=2 #1984
+2025/07/19-18:05:12.542 467c Delete type=2 #1985
+2025/07/19-18:05:12.543 467c Delete type=2 #1986
+2025/07/19-18:05:12.543 467c Delete type=2 #1987
+2025/07/19-18:05:12.543 467c Delete type=2 #1988
+2025/07/19-18:05:12.543 467c Delete type=2 #1994
+2025/07/19-18:05:12.543 467c Delete type=2 #1995
+2025/07/19-18:05:12.543 467c Delete type=2 #1996
+2025/07/19-18:05:12.543 467c Delete type=2 #1997
+2025/07/19-18:05:12.543 467c Delete type=2 #2000

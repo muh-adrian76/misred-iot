@@ -1,4 +1,7 @@
 import { Pool } from "mysql2/promise";
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import qrcode from 'qrcode-terminal';
+import { broadcastToUsers } from '../api/ws/user-ws';
 
 export interface AlarmData {
   id: number;
@@ -6,19 +9,22 @@ export interface AlarmData {
   user_id: number;
   device_id: number;
   datastream_id: number;
-  conditions: Array<{
-    operator: string;
-    threshold: number;
-  }>;
   is_active: boolean;
   cooldown_minutes: number;
-  last_triggered: string | null;
-  device_description: string;
-  datastream_description: string;
-  datastream_pin: string;
-  user_phone: string;
-  user_name: string;
-  user_whatsapp_enabled: boolean;
+  last_triggered?: Date;
+  created_at: Date;
+  updated_at: Date;
+  
+  // Fields from joined tables
+  field_name: string;        // dari datastreams.pin
+  data_type: string;         // dari datastreams.type
+  datastream_description: string; // dari datastreams.description
+  device_description: string; // dari devices.description
+  whatsapp_number: string;   // dari users.phone
+  user_name: string;         // dari users.name
+  user_email: string;        // dari users.email
+  condition_operator: string; // dari alarm_conditions.operator
+  condition_value: string;   // dari alarm_conditions.threshold
 }
 
 export interface NotificationResult {
@@ -27,61 +33,240 @@ export interface NotificationResult {
   error_message?: string;
 }
 
+export interface AlarmLog {
+  id?: number;
+  alarm_id: number;
+  user_id: number;
+  device_id: number;
+  datastream_id: number;
+  sensor_value: number;
+  conditions_text: string;
+  notification_type: "browser" | "all";
+  whatsapp_message_id?: string;
+  error_message?: string;
+  triggered_at: Date;
+}
+
 export class AlarmNotificationService {
-  private db: Pool;
-  private wahaBaseUrl = "http://localhost:8100";
+  public db: Pool; // Changed to public for API access
+  private lastNotificationTime: number = 0;
+  private minNotificationInterval = 500; // delay 500ms
+  
+  // WhatsApp Web client properties
+  private whatsAppClient!: Client;
+  private isWhatsAppReady: boolean = false;
+  private isWhatsAppInitializing: boolean = false;
 
   constructor(database: Pool) {
     this.db = database;
+    // Initialize WhatsApp Web client
+    this.initializeWhatsAppClient();
   }
 
   /**
-   * Kirim notifikasi WhatsApp via WAHA
+   * Initialize WhatsApp Web client with LocalAuth
+   */
+  private initializeWhatsAppClient(): void {
+    // Create client with LocalAuth for persistent sessions
+    this.whatsAppClient = new Client({
+      authStrategy: new LocalAuth({
+        dataPath: '.wwebjs_auth' // Session storage path
+      }),
+      puppeteer: {
+        // Headless environment flags for VPS
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu'
+        ],
+        headless: true // Force headless mode
+      }
+    });
+
+    this.setupWhatsAppEventHandlers();
+    
+    // Start initialization asynchronously
+    this.startWhatsAppInitialization().catch(error => {
+      console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
+    });
+  }
+
+  /**
+   * Setup event handlers for WhatsApp client
+   */
+  private setupWhatsAppEventHandlers(): void {
+    // Client ready event
+    this.whatsAppClient.on('ready', () => {
+      console.log('✅ WhatsApp Web client sudah aktif!');
+      this.isWhatsAppReady = true;
+      this.isWhatsAppInitializing = false;
+    });
+
+    // QR Code event - display QR for initial setup
+    this.whatsAppClient.on('qr', (qr) => {
+      console.log('📱 WhatsApp Web QR Code:');
+      console.log('Scan QR code ini dengan aplikasi WhatsApp anda');
+      console.log('═'.repeat(50));
+      qrcode.generate(qr, { small: true });
+      console.log('═'.repeat(50));
+    });
+
+    // Authentication success
+    this.whatsAppClient.on('authenticated', () => {
+      console.log('✅ WhatsApp Web berhasil terkoneksi!');
+    });
+
+    // Authentication failure
+    this.whatsAppClient.on('auth_failure', (msg) => {
+      console.error('❌ Koneksi WhatsApp Web gagal:', msg);
+      this.isWhatsAppReady = false;
+      this.isWhatsAppInitializing = false;
+    });
+
+    // Disconnected event
+    this.whatsAppClient.on('disconnected', (reason) => {
+      console.log('⚠️ WhatsApp Web disconnected:', reason);
+      this.isWhatsAppReady = false;
+    });
+
+    // Error event
+    this.whatsAppClient.on('error', (error) => {
+      console.error('❌ WhatsApp Web error:', error);
+    });
+
+    // Message sent acknowledgment
+    this.whatsAppClient.on('message_ack', (message, ack) => {
+      console.log(`📧 Message ${message.id.id} status: ${ack}`);
+    });
+  }
+
+  /**
+   * Start WhatsApp client initialization
+   */
+  private async startWhatsAppInitialization(): Promise<void> {
+    if (this.isWhatsAppInitializing || this.isWhatsAppReady) {
+      // console.log('⚠️ WhatsApp client already initialized or initializing');
+      return;
+    }
+
+    try {
+      console.log('🚀Menginisialisasi WhatsApp Web client...');
+      this.isWhatsAppInitializing = true;
+      await this.whatsAppClient.initialize();
+    } catch (error) {
+      console.error('❌ Gagal menginisialisasi WhatsApp client:', error);
+      this.isWhatsAppInitializing = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Wait for WhatsApp client to be ready
+   */
+  private async waitForWhatsAppReady(timeoutMs: number = 60000): Promise<boolean> {
+    const startTime = Date.now();
+    
+    while (!this.isWhatsAppReady && (Date.now() - startTime) < timeoutMs) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    return this.isWhatsAppReady;
+  }
+
+  /**
+   * Format phone number untuk Indonesia
+   */
+  private formatPhoneNumber(phone: string): string {
+    // Remove all non-numeric characters
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Handle Indonesia format
+    if (cleaned.startsWith('0')) {
+      return '62' + cleaned.substring(1);
+    } else if (cleaned.startsWith('62')) {
+      return cleaned;
+    } else {
+      return '62' + cleaned;
+    }
+  }
+
+  /**
+   * Kirim notifikasi WhatsApp via WhatsApp-web.js
    */
   async sendWhatsAppNotification(
     phone: string,
-    message: string
+    message: string,
+    retryCount: number = 0
   ): Promise<NotificationResult> {
     try {
       if (!phone || phone === "") {
         throw new Error("Phone number is required");
       }
 
-      // Format phone number untuk Indonesia
-      const formattedPhone = phone.startsWith("62")
-        ? phone
-        : `62${phone.replace(/^0/, "")}`;
-      const chatId = `${formattedPhone}@c.us`;
-
-      console.log(`📱 Sending WhatsApp to: ${chatId}`);
-
-      const response = await fetch(`${this.wahaBaseUrl}/api/sendText`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          chatId: chatId,
-          text: message,
-          session: "default",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `WAHA API error: ${response.status} ${response.statusText}`
-        );
+      // Global rate limiting untuk mencegah spam
+      const now = Date.now();
+      const timeSinceLastNotification = now - this.lastNotificationTime;
+      
+      if (timeSinceLastNotification < this.minNotificationInterval) {
+        const waitTime = this.minNotificationInterval - timeSinceLastNotification;
+        // console.log(`⏳ Global rate limit: waiting ${waitTime}ms before sending`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
 
-      const result = await response.json();
+      // console.log(`📱 Sending WhatsApp to: ${phone} (Attempt ${retryCount + 1})`);
+      // console.log(`📝 Message preview: ${message.substring(0, 100)}...`);
 
+      // Check if WhatsApp Web is ready
+      if (!this.isWhatsAppReady) {
+        // console.log('⚠️ WhatsApp Web not ready, attempting to initialize...');
+        await this.startWhatsAppInitialization();
+        
+        // Wait for ready
+        const isReady = await this.waitForWhatsAppReady(30000);
+        if (!isReady) {
+          throw new Error('WhatsApp Web belum aktif. Tolong scan ulang QR Code.');
+        }
+      }
+
+      const formattedPhone = this.formatPhoneNumber(phone);
+      const chatId = `${formattedPhone}@c.us`;
+
+      // console.log(`📱 Formatted WhatsApp ID: ${chatId}`);
+
+      // Check if number is registered
+      const isRegistered = await this.whatsAppClient.isRegisteredUser(chatId);
+      if (!isRegistered) {
+        throw new Error(`Phone number ${phone} is not registered on WhatsApp`);
+      }
+
+      // Send message via WhatsApp Web
+      const sentMessage = await this.whatsAppClient.sendMessage(chatId, message);
+
+      // Update last notification time on success
+      this.lastNotificationTime = Date.now();
+
+      // console.log(`✅ WhatsApp sent successfully! Message ID: ${sentMessage.id.id}`);
+      
       return {
         success: true,
-        whatsapp_message_id: result.id || result.messageId || null,
+        whatsapp_message_id: sentMessage.id.id,
       };
+
     } catch (error) {
       console.error("❌ WhatsApp notification failed:", error);
+      
+      // Retry logic for WhatsApp Web errors
+      if (retryCount < 2) {
+        const delay = Math.pow(2, retryCount) * 2000; // 2s, 4s
+        // console.log(`⏳ Retrying WhatsApp send in ${delay}ms (attempt ${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.sendWhatsAppNotification(phone, message, retryCount + 1);
+      }
+
       return {
         success: false,
         error_message: error instanceof Error ? error.message : "Unknown error",
@@ -90,590 +275,376 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Get active alarms untuk device tertentu
+   * Kirim notifikasi browser via WebSocket
    */
-  async getActiveAlarms(deviceId: number): Promise<AlarmData[]> {
+  async sendBrowserNotification(
+    alarm: AlarmData,
+    sensorValue: number,
+    triggeredAt: Date = new Date()
+  ): Promise<NotificationResult> {
     try {
-      const query = `
+      const notificationPayload = {
+        type: "alarm_notification",
+        data: {
+          id: `alarm_${alarm.id}_${Date.now()}`,
+          title: `🚨 Peringatan Sensor Alarm`,
+          message: `${alarm.description} - ${alarm.datastream_description}(${alarm.field_name}): ${sensorValue} (${alarm.condition_operator} ${alarm.condition_value}) pada ${alarm.device_description}`,
+          isRead: false,
+          createdAt: triggeredAt.toISOString(),
+          priority: "high",
+          alarm_id: alarm.id,
+          device_id: alarm.device_id,
+          datastream_id: alarm.datastream_id,
+          sensor_value: sensorValue,
+          user_id: alarm.user_id,
+          device_description: alarm.device_description,
+          datastream_description: alarm.datastream_description,
+          condition_text: `${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}`,
+          user_email: alarm.user_email
+        }
+      };
+
+      // Broadcast ke semua user yang sedang online via WebSocket
+      broadcastToUsers(notificationPayload);
+      
+      console.log(`📱 Browser notification sent for alarm ${alarm.id}`);
+      
+      return {
+        success: true,
+        whatsapp_message_id: `browser_${alarm.id}_${Date.now()}`, // Using this field for tracking
+      };
+
+    } catch (error) {
+      console.error("❌ Browser notification failed:", error);
+      return {
+        success: false,
+        error_message: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Cek alarm berdasarkan data device yang masuk
+   */
+  async checkAlarms(deviceId: number, receivedData: any): Promise<void> {
+    try {
+      // console.log(`🔍 Checking alarms for device ${deviceId} with data:`, receivedData);
+
+      // Query untuk mendapatkan alarm yang aktif untuk device ini
+      const [alarmRows] = await this.db.execute(`
         SELECT 
           a.id, a.description, a.user_id, a.device_id, a.datastream_id,
           a.is_active, a.cooldown_minutes, a.last_triggered,
-          d.description as device_description,
-          ds.description as datastream_description, ds.pin as datastream_pin,
-          u.phone as user_phone, u.name as user_name, u.whatsapp_notifications_enabled as user_whatsapp_enabled
+          ds.pin as field_name, ds.type as data_type, ds.description as datastream_description,
+          dev.description as device_description,
+          u.phone as whatsapp_number, u.name as user_name, u.email as user_email,
+          ac.operator as condition_operator, ac.threshold as condition_value
         FROM alarms a
-        JOIN devices d ON a.device_id = d.id
-        JOIN datastreams ds ON a.datastream_id = ds.id
+        JOIN datastreams ds ON a.datastream_id = ds.id  
+        JOIN devices dev ON a.device_id = dev.id
         JOIN users u ON a.user_id = u.id
+        JOIN alarm_conditions ac ON a.id = ac.alarm_id
         WHERE a.device_id = ? AND a.is_active = 1
-      `;
+      `, [deviceId]);
 
-      const [rows] = await this.db.query(query, [deviceId]);
-      const alarms = rows as AlarmData[];
-
-      // Get conditions for each alarm
-      for (const alarm of alarms) {
-        const conditionsQuery = `
-          SELECT operator, threshold 
-          FROM alarm_conditions 
-          WHERE alarm_id = ? 
-          ORDER BY id
-        `;
-        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
-        alarm.conditions = conditions as Array<{ operator: string; threshold: number; }>;
-      }
-
-      return alarms;
-    } catch (error) {
-      console.error("Error getting active alarms:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Evaluasi kondisi alarm
-   */
-  evaluateCondition(
-    sensorValue: number,
-    operator: string,
-    threshold: number
-  ): boolean {
-    switch (operator) {
-      case ">":
-        return sensorValue > threshold;
-      case "<":
-        return sensorValue < threshold;
-      case ">=":
-        return sensorValue >= threshold;
-      case "<=":
-        return sensorValue <= threshold;
-      case "=":
-        return Math.abs(sensorValue - threshold) < 0.001; // floating point comparison
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * Evaluasi semua conditions alarm (ALL conditions must be met)
-   */
-  evaluateAllConditions(alarm: AlarmData, sensorValue: number): boolean {
-    return alarm.conditions.every(condition => 
-      this.evaluateCondition(sensorValue, condition.operator, condition.threshold)
-    );
-  }
-
-  /**
-   * Cek apakah alarm masih dalam cooldown period
-   */
-  isInCooldown(alarm: AlarmData): boolean {
-    if (!alarm.last_triggered) return false;
-
-    const lastTriggered = new Date(alarm.last_triggered);
-    const now = new Date();
-    const diffMinutes = (now.getTime() - lastTriggered.getTime()) / (1000 * 60);
-
-    return diffMinutes < alarm.cooldown_minutes;
-  }
-
-  /**
-   * Generate pesan notifikasi
-   */
-  generateAlarmMessage(alarm: AlarmData, sensorValue: number): string {
-    const conditionsText = alarm.conditions
-      .map(condition => this.getConditionText(condition.operator, condition.threshold, sensorValue))
-      .join(' AND ');
-
-    return `🚨 PERINGATAN BAHAYA!
-
-            📱 Device: #${alarm.device_id} - ${alarm.device_description}
-            🔍 Sensor: #${alarm.datastream_id} - ${alarm.datastream_description}
-            ⚠️ Kondisi: ${conditionsText}
-
-            Waktu: ${new Date().toLocaleString("id-ID", {
-                timeZone: "Asia/Jakarta",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-                })}
-
-            Silakan segera periksa perangkat Anda!`;
-  }
-
-  /**
-   * Get condition text untuk pesan
-   */
-  private getConditionText(
-    operator: string,
-    threshold: number,
-    sensorValue: number
-  ): string {
-    const operatorTexts = {
-      ">": "di atas",
-      "<": "di bawah",
-      ">=": "di atas atau sama dengan",
-      "<=": "di bawah atau sama dengan",
-      "=": "sama dengan",
-    };
-
-    const operatorText =
-      operatorTexts[operator as keyof typeof operatorTexts] || operator;
-    return `Nilai sensor ${operatorText} ambang batas (${sensorValue} ${operator} ${threshold})`;
-  }
-
-  /**
-   * Log notifikasi ke database
-   */
-  async logNotification(
-    alarmId: number,
-    userId: number,
-    deviceId: number,
-    datastreamId: number,
-    sensorValue: number,
-    conditions: Array<{ operator: string; threshold: number; }>,
-    notificationType: "whatsapp" | "browser" | "both",
-    whatsappMessageId?: string,
-    errorMessage?: string
-  ): Promise<number> {
-    try {
-      const whatsappStatus = errorMessage
-        ? "failed"
-        : whatsappMessageId
-        ? "sent"
-        : "pending";
-
-      const conditionsText = conditions
-        .map(c => `${c.operator} ${c.threshold}`)
-        .join(' AND ');
-
-      const query = `
-        INSERT INTO alarm_notifications (
-          alarm_id, user_id, device_id, datastream_id,
-          sensor_value, conditions_text, notification_type,
-          whatsapp_message_id, error_message,
-          triggered_at, sent_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `;
-
-      const [result] = await this.db.query(query, [
-        alarmId,
-        userId,
-        deviceId,
-        datastreamId,
-        sensorValue,
-        conditionsText,
-        notificationType,
-        whatsappStatus,
-        whatsappMessageId,
-        errorMessage,
-      ]);
-
-      return (result as any).insertId;
-    } catch (error) {
-      console.error("Error logging notification:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Update last_triggered timestamp untuk alarm
-   */
-  async updateAlarmLastTriggered(alarmId: number): Promise<void> {
-    try {
-      await this.db.query(
-        "UPDATE alarms SET last_triggered = CURRENT_TIMESTAMP WHERE id = ?",
-        [alarmId]
-      );
-    } catch (error) {
-      console.error("Error updating alarm last triggered:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Trigger notifikasi untuk alarm tertentu
-   */
-  async triggerNotification(
-    alarm: AlarmData,
-    sensorValue: number
-  ): Promise<boolean> {
-    try {
-      const message = this.generateAlarmMessage(alarm, sensorValue);
-      let notificationType: "whatsapp" | "browser" | "both" = "both";
-      let whatsappMessageId: string | undefined;
-      let errorMessage: string | undefined;
-
-      // Kirim WhatsApp jika diaktifkan oleh user dan ada nomor telepon
-      if (alarm.user_whatsapp_enabled && alarm.user_phone) {
-        const whatsappResult = await this.sendWhatsAppNotification(
-          alarm.user_phone,
-          message
-        );
-
-        if (whatsappResult.success) {
-          whatsappMessageId = whatsappResult.whatsapp_message_id;
-          console.log(
-            `✅ WhatsApp sent to user ${alarm.user_name}: ${whatsappMessageId}`
-          );
-        } else {
-          errorMessage = whatsappResult.error_message;
-          console.error(
-            `❌ WhatsApp failed for user ${alarm.user_name}: ${errorMessage}`
-          );
-        }
-
-        notificationType = "both"; // Browser always enabled + WhatsApp
-      } else {
-        notificationType = "browser"; // Browser notification only
-      }
-
-      // Log notifikasi ke database
-      await this.logNotification(
-        alarm.id,
-        alarm.user_id,
-        alarm.device_id,
-        alarm.datastream_id,
-        sensorValue,
-        alarm.conditions,
-        notificationType,
-        whatsappMessageId,
-        errorMessage
-      );
-
-      // Update last triggered
-      await this.updateAlarmLastTriggered(alarm.id);
-
-      return true;
-    } catch (error) {
-      console.error("Error triggering notification:", error);
-      return false;
-    }
-  }
-
-  /**
-   * Check alarms untuk normalized sensor data (untuk sistem testing baru)
-   */
-  async checkNormalizedAlarms(
-    deviceId: number,
-    sensorType: string,
-    sensorValue: number
-  ): Promise<void> {
-    try {
-      console.log(`🔍 Checking normalized alarms for device ${deviceId}, sensor: ${sensorType}`);
-
-      // Check alarm thresholds dari tabel alarm_thresholds
-      const [thresholds]: any = await this.db.query(
-        `SELECT * FROM alarm_thresholds WHERE device_id = ? AND sensor_type = ?`,
-        [deviceId, sensorType]
-      );
-
-      if (thresholds.length === 0) {
-        console.log(`ℹ️ No alarm thresholds for device ${deviceId}, sensor ${sensorType}`);
-        return;
-      }
-
-      for (const threshold of thresholds) {
-        const isOutOfRange = sensorValue < threshold.min_value || sensorValue > threshold.max_value;
-        
-        if (isOutOfRange) {
-          console.log(`🚨 Alarm threshold exceeded for ${sensorType}: ${sensorValue} (Range: ${threshold.min_value}-${threshold.max_value})`);
-          
-          // Get user info for notification
-          const [users]: any = await this.db.query(
-            `SELECT u.id, u.name, u.phone, u.whatsapp_notif as whatsapp_notifications_enabled
-             FROM users u 
-             JOIN devices d ON u.id = d.user_id 
-             WHERE d.id = ?`,
-            [deviceId]
-          );
-          
-          if (users.length > 0) {
-            const user = users[0];
-            
-            // Check cooldown (simplified for normalized alarms)
-            const cooldownKey = `${deviceId}_${sensorType}`;
-            const lastTriggered = await this.getLastTriggeredTime(cooldownKey);
-            
-            if (this.isInCooldownNormalized(lastTriggered, 5)) { // 5 minutes cooldown
-              console.log(`⏰ Alarm for ${sensorType} still in cooldown`);
-              continue;
-            }
-            
-            // Generate alarm message for normalized sensor
-            const message = this.generateNormalizedAlarmMessage(
-              deviceId, sensorType, sensorValue, threshold.min_value, threshold.max_value
-            );
-            
-            // Send notification
-            let whatsappMessageId: string | undefined;
-            let errorMessage: string | undefined;
-            
-            if (user.whatsapp_notifications_enabled && user.phone) {
-              const whatsappResult = await this.sendWhatsAppNotification(user.phone, message);
-              
-              if (whatsappResult.success) {
-                whatsappMessageId = whatsappResult.whatsapp_message_id;
-                console.log(`✅ WhatsApp sent for ${sensorType} alarm: ${whatsappMessageId}`);
-              } else {
-                errorMessage = whatsappResult.error_message;
-                console.error(`❌ WhatsApp failed for ${sensorType} alarm: ${errorMessage}`);
-              }
-            }
-            
-            // Log notification (simplified for normalized system)
-            await this.logNormalizedNotification(
-              deviceId, sensorType, sensorValue, threshold,
-              user.id, whatsappMessageId, errorMessage
-            );
-            
-            // Update last triggered time
-            await this.updateLastTriggeredTime(cooldownKey);
-            
-            console.log(`✅ Alarm notification sent for ${sensorType}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error(`Error checking normalized alarms for ${sensorType}:`, error);
-    }
-  }
-  
-  /**
-   * Generate alarm message untuk normalized sensor data
-   */
-  private generateNormalizedAlarmMessage(
-    deviceId: number, 
-    sensorType: string, 
-    sensorValue: number, 
-    minValue: number, 
-    maxValue: number
-  ): string {
-    const sensorNames: Record<string, string> = {
-      'phValue': 'pH',
-      'flowMilliLitres': 'Flow Rate',
-      'COD_val': 'COD Level',
-      'CODTemp_val': 'Temperature',
-      'NH3N_val': 'NH3N Level',
-      'NTU': 'Turbidity'
-    };
-    
-    const sensorName = sensorNames[sensorType] || sensorType;
-    const condition = sensorValue < minValue ? 'di bawah' : 'di atas';
-    const threshold = sensorValue < minValue ? minValue : maxValue;
-    
-    return `🚨 PERINGATAN SENSOR!
-
-📱 Device: #${deviceId}
-🔍 Sensor: ${sensorName}
-⚠️ Nilai ${condition} batas normal: ${sensorValue} (Batas: ${minValue}-${maxValue})
-
-Waktu: ${new Date().toLocaleString("id-ID", {
-      timeZone: "Asia/Jakarta",
-      year: "numeric",
-      month: "long", 
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })}
-
-Silakan segera periksa perangkat Anda!`;
-  }
-  
-  /**
-   * Log notification untuk normalized sensor system
-   */
-  private async logNormalizedNotification(
-    deviceId: number,
-    sensorType: string,
-    sensorValue: number,
-    threshold: any,
-    userId: number,
-    whatsappMessageId?: string,
-    errorMessage?: string
-  ): Promise<void> {
-    try {
-      // Insert ke tabel alarm_notifications (simplified)
-      const conditionsText = `${sensorType}: ${sensorValue} (Range: ${threshold.min_value}-${threshold.max_value})`;
-      
-      const query = `
-        INSERT INTO alarm_notifications (
-          alarm_id, user_id, device_id, datastream_id,
-          sensor_value, conditions_text, notification_type,
-          whatsapp_message_id, error_message,
-          triggered_at, sent_at
-        ) VALUES (0, ?, ?, 0, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      `;
-      
-      await this.db.query(query, [
-        userId,
-        deviceId,
-        sensorValue,
-        conditionsText,
-        'both',
-        whatsappMessageId,
-        errorMessage
-      ]);
-    } catch (error) {
-      console.error("Error logging normalized notification:", error);
-    }
-  }
-  
-  /**
-   * Simple cooldown check for normalized alarms
-   */
-  private isInCooldownNormalized(lastTriggered: Date | null, cooldownMinutes: number): boolean {
-    if (!lastTriggered) return false;
-    
-    const now = new Date();
-    const diffMinutes = (now.getTime() - lastTriggered.getTime()) / (1000 * 60);
-    return diffMinutes < cooldownMinutes;
-  }
-  
-  /**
-   * Get last triggered time (simplified cache)
-   */
-  private lastTriggeredCache: Record<string, Date> = {};
-  
-  private async getLastTriggeredTime(key: string): Promise<Date | null> {
-    return this.lastTriggeredCache[key] || null;
-  }
-  
-  /**
-   * Update last triggered time (simplified cache)
-   */
-  private async updateLastTriggeredTime(key: string): Promise<void> {
-    this.lastTriggeredCache[key] = new Date();
-  }
-
-  /**
-   * Check alarms untuk payload sensor data yang masuk
-   */
-  async checkAlarms(
-    deviceId: number,
-    sensorData: Record<string, any>
-  ): Promise<void> {
-    try {
-      console.log(`🔍 Checking alarms for device ${deviceId}`);
-
-      const alarms = await this.getActiveAlarms(deviceId);
+      const alarms = alarmRows as any[];
+      // console.log(`📋 Found ${alarms.length} active alarms for device ${deviceId}`);
 
       if (alarms.length === 0) {
-        console.log(`ℹ️ No active alarms for device ${deviceId}`);
+        // console.log(`ℹ️ No active alarms configured for device ${deviceId}`);
         return;
       }
 
-      console.log(
-        `📋 Found ${alarms.length} active alarms for device ${deviceId}`
-      );
-
+      // Loop melalui setiap alarm
       for (const alarm of alarms) {
-        // Get sensor value berdasarkan datastream pin
-        const sensorValue = sensorData[alarm.datastream_pin];
+        try {
+          // console.log(`🔍 Processing alarm ${alarm.id}: ${alarm.description}`);
+          // console.log(`📊 Checking field: ${alarm.field_name} (${alarm.condition_operator} ${alarm.condition_value})`);
 
-        if (sensorValue === undefined || sensorValue === null) {
-          console.log(
-            `⚠️ Sensor value not found for pin ${alarm.datastream_pin}`
-          );
-          continue;
-        }
+          // Check cooldown period per alarm (berbeda untuk setiap sensor)
+          if (alarm.last_triggered) {
+            const lastTriggeredTime = new Date(alarm.last_triggered);
+            const cooldownMinutes = alarm.cooldown_minutes || 1; // Default 1 menit
+            const cooldownMs = cooldownMinutes * 60 * 1000;
+            const timeSinceLastTrigger = Date.now() - lastTriggeredTime.getTime();
+            
+            if (timeSinceLastTrigger < cooldownMs) {
+              const remainingCooldownSeconds = Math.ceil((cooldownMs - timeSinceLastTrigger) / 1000);
+              const remainingMinutes = Math.floor(remainingCooldownSeconds / 60);
+              const remainingSeconds = remainingCooldownSeconds % 60;
+              
+              console.log(`⏳ Alarm ${alarm.id} masih cooldown. Waktu cooldown yang tersisa: ${remainingCooldownSeconds}s (${cooldownMinutes}m total)`);
+              
+              // Kirim pesan cooldown untuk pengujian
+              if (alarm.whatsapp_number) {
+                const cooldownMessage = `⏳ Ini pesan untuk pengujian COOLDOWN. Sensor ${alarm.datastream_description}(${alarm.datastream_id}) pada ${alarm.device_description} masih dalam waktu tunggu ${cooldownMinutes} menit.\n\n` +
+                                       `Sisa waktu cooldown: ${remainingMinutes} menit ${remainingSeconds} detik\n` +
+                                       `Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
+                
+                await this.sendWhatsAppNotification(alarm.whatsapp_number, cooldownMessage);
+              }
+              
+              continue; // Skip this alarm, still in cooldown
+            }
+          }
 
-        console.log(
-          `🔍 Checking alarm "${alarm.description}": value=${sensorValue}, conditions=[${alarm.conditions.map(c => `${c.operator} ${c.threshold}`).join(', ')}]`
-        );
+          // Ambil nilai dari data yang diterima berdasarkan field_name
+          const fieldValue = receivedData[alarm.field_name];
+          // console.log(`📈 Current value: ${fieldValue} (type: ${typeof fieldValue})`);
 
-        // Evaluasi kondisi alarm - semua conditions harus terpenuhi
-        if (this.evaluateAllConditions(alarm, Number(sensorValue))) {
-          console.log(`🚨 Alarm condition met for "${alarm.description}"`);
-
-          // Cek cooldown
-          if (this.isInCooldown(alarm)) {
-            console.log(`⏰ Alarm "${alarm.description}" still in cooldown`);
+          if (fieldValue === undefined || fieldValue === null) {
+            // console.log(`⚠️ Field '${alarm.field_name}' not found in received data`);
             continue;
           }
 
-          // Trigger notifikasi
-          const success = await this.triggerNotification(
-            alarm,
-            Number(sensorValue)
-          );
+          // Convert nilai ke number untuk perbandingan numerik
+          const numericValue = parseFloat(fieldValue);
+          const thresholdValue = parseFloat(alarm.condition_value);
 
-          if (success) {
-            console.log(
-              `✅ Notification triggered for alarm "${alarm.description}"`
-            );
-          } else {
-            console.log(
-              `❌ Failed to trigger notification for alarm "${alarm.description}"`
-            );
+          // console.log(`🔢 Numeric comparison: ${numericValue} ${alarm.condition_operator} ${thresholdValue}`);
+
+          // Evaluasi kondisi alarm
+          let conditionMet = false;
+          switch (alarm.condition_operator) {
+            case '>':
+              conditionMet = numericValue > thresholdValue;
+              break;
+            case '<':
+              conditionMet = numericValue < thresholdValue;
+              break;
+            case '>=':
+              conditionMet = numericValue >= thresholdValue;
+              break;
+            case '<=':
+              conditionMet = numericValue <= thresholdValue;
+              break;
+            case '==':
+              conditionMet = numericValue === thresholdValue;
+              break;
+            case '!=':
+              conditionMet = numericValue !== thresholdValue;
+              break;
+            default:
+              // console.log(`❌ Unknown operator: ${alarm.condition_operator}`);
+              continue;
           }
+
+          // console.log(`🎯 Condition result: ${conditionMet}`);
+
+          if (conditionMet) {
+            // console.log(`🚨 ALARM TRIGGERED! ${alarm.description}`);
+            
+            // Update last_triggered timestamp untuk cooldown
+            const currentTime = new Date();
+            await this.db.execute(
+              `UPDATE alarms SET last_triggered = ? WHERE id = ?`,
+              [currentTime, alarm.id]
+            );
+            // console.log(`⏰ Updated last_triggered for alarm ${alarm.id} to ${currentTime.toISOString()}`);
+            
+            // Log alarm ke tabel alarm_notifications
+            const conditionsText = `${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}`;
+            const alarmLog: AlarmLog = {
+              alarm_id: alarm.id,
+              user_id: alarm.user_id,
+              device_id: alarm.device_id,
+              datastream_id: alarm.datastream_id,
+              sensor_value: numericValue,
+              conditions_text: conditionsText,
+              notification_type: "all",
+              triggered_at: new Date()
+            };
+
+            const [logResult] = await this.db.execute(
+              `INSERT INTO alarm_notifications (alarm_id, user_id, device_id, datastream_id, sensor_value, conditions_text, notification_type, triggered_at) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [alarmLog.alarm_id, alarmLog.user_id, alarmLog.device_id, alarmLog.datastream_id, 
+               alarmLog.sensor_value, alarmLog.conditions_text, alarmLog.notification_type, alarmLog.triggered_at]
+            );
+
+            const logId = (logResult as any).insertId;
+            // console.log(`📝 Alarm notification logged with ID: ${logId}`);
+
+            // Kirim notifikasi WhatsApp jika user memiliki nomor WhatsApp
+            if (alarm.whatsapp_number) {
+              // console.log(`📱 Sending WhatsApp notification to: ${alarm.whatsapp_number}`);
+
+              // Format pesan alarm dengan data yang relevan
+              const message = `🚨 PERINGATAN SENSOR ALARM 🚨\n\n` +
+                             `📍 Alarm: ${alarm.description}\n` +
+                             `⚙ Perangkat: ${alarm.device_description}\n` +
+                             `📊 Sensor: ${alarm.datastream_description}(${alarm.field_name})\n` +
+                             `📈 Nilai Saat Ini: ${numericValue}\n` +
+                             `⚠️ Kondisi: ${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}\n` +
+                             `👤 Akun: ${alarm.user_email}\n` +
+                             `🕐 Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n\n` +
+                             `Mohon segera melakukan pengecekan!`;
+
+              // console.log(`📝 Formatted message: ${message}`);
+
+              const notificationResult = await this.sendWhatsAppNotification(
+                alarm.whatsapp_number,
+                message
+              );
+
+              // Update log dengan hasil notifikasi  
+              const updateStatus = notificationResult.success ? "sent" : "failed";
+              await this.db.execute(
+                `UPDATE alarm_notifications SET 
+                  notification_type = ?, 
+                  whatsapp_message_id = ?, 
+                  error_message = ?
+                WHERE id = ?`,
+                [
+                  updateStatus,
+                  notificationResult.whatsapp_message_id || null,
+                  notificationResult.error_message || null,
+                  logId
+                ]
+              );
+
+              if (notificationResult.success) {
+                // console.log(`✅ WhatsApp notification sent successfully for alarm ${alarm.id}`);
+              } else {
+                console.log(`❌ WhatsApp notification failed for alarm ${alarm.id}: ${notificationResult.error_message}`);
+              }
+            } else {
+              console.log(`ℹ️ Alarm ${alarm.id} has no WhatsApp number configured`);
+            }
+
+            // Kirim notifikasi browser via WebSocket untuk semua user
+            try {
+              const browserResult = await this.sendBrowserNotification(
+                alarm,
+                numericValue,
+                currentTime
+              );
+              
+              if (browserResult.success) {
+                console.log(`✅ Browser notification sent successfully for alarm ${alarm.id}`);
+              } else {
+                console.log(`❌ Browser notification failed for alarm ${alarm.id}: ${browserResult.error_message}`);
+              }
+            } catch (browserError) {
+              console.error(`❌ Error sending browser notification for alarm ${alarm.id}:`, browserError);
+            }
+          } else {
+            console.log(`✅ Condition not met for alarm ${alarm.id}`);
+          }
+        } catch (alarmError) {
+          console.error(`❌ Error processing alarm ${alarm.id}:`, alarmError);
         }
       }
     } catch (error) {
-      console.error("Error checking alarms:", error);
+      console.error("❌ Error in checkAlarms:", error);
+      throw error;
     }
   }
 
   /**
-   * Get notification history untuk user
+   * Test WhatsApp Web service connection
    */
-  async getNotificationHistory(
-    userId: number,
-    limit: number = 50
-  ): Promise<any[]> {
+  async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      const query = `
-        SELECT 
-          an.*,
-          a.description as alarm_name,
-          d.description as device_description,
-          ds.description as datastream_description
-        FROM alarm_notifications an
-        JOIN alarms a ON an.alarm_id = a.id
-        JOIN devices d ON an.device_id = d.id
-        JOIN datastreams ds ON an.datastream_id = ds.id
-        WHERE an.user_id = ?
-        ORDER BY an.triggered_at DESC
-        LIMIT ?
-      `;
-
-      const [rows] = await this.db.query(query, [userId, limit]);
-      return rows as any[];
-    } catch (error) {
-      console.error("Error getting notification history:", error);
-      return [];
-    }
-  }
-
-  /**
-   * Test WAHA connection
-   */
-  async testWahaConnection(): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await fetch(`${this.wahaBaseUrl}/api/sessions`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-
-      if (response.ok) {
-        return {
-          success: true,
-          message: "WAHA connection successful",
-        };
-      } else {
+      console.log("🧪 Testing WhatsApp Web connection...");
+      
+      if (!this.isWhatsAppReady) {
         return {
           success: false,
-          message: `WAHA connection failed: ${response.status}`,
+          message: this.isWhatsAppInitializing 
+            ? "WhatsApp Web is initializing. Please wait or scan QR code if needed."
+            : "WhatsApp Web not ready. Please scan QR code to authenticate.",
         };
       }
+
+      // Get client info
+      const info = this.whatsAppClient.info;
+      
+      return {
+        success: true,
+        message: `WhatsApp Web ready. Connected as: ${info.pushname || 'Unknown'} (${info.wid.user})`,
+      };
     } catch (error) {
+      console.error("❌ WhatsApp Web connection test failed:", error);
       return {
         success: false,
-        message: `WAHA connection error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        message: `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
       };
+    }
+  }
+
+  /**
+   * Get alarm statistics
+   */
+  async getAlarmStats(): Promise<any> {
+    try {
+      const [totalAlarms] = await this.db.execute(
+        `SELECT COUNT(*) as total FROM alarms WHERE is_active = 1`
+      );
+
+      const [todayTriggers] = await this.db.execute(`
+        SELECT COUNT(*) as today_triggers 
+        FROM alarm_notifications 
+        WHERE DATE(triggered_at) = CURDATE()
+      `);
+
+      const [recentLogs] = await this.db.execute(`
+        SELECT 
+          an.id, an.alarm_id, an.triggered_at, an.notification_type as notification_status,
+          an.sensor_value, an.conditions_text,
+          a.description, a.field_name as condition_field, a.condition_operator, a.condition_value
+        FROM alarm_notifications an
+        JOIN alarms a ON an.alarm_id = a.id
+        ORDER BY an.triggered_at DESC
+        LIMIT 10
+      `);
+
+      return {
+        total_active_alarms: (totalAlarms as any[])[0].total,
+        today_triggers: (todayTriggers as any[])[0].today_triggers,
+        recent_logs: recentLogs,
+        whatsapp_status: {
+          ready: this.isWhatsAppReady,
+          initializing: this.isWhatsAppInitializing
+        }
+      };
+    } catch (error) {
+      console.error("❌ Error getting alarm stats:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get WhatsApp client status
+   */
+  getWhatsAppStatus(): { ready: boolean; initializing: boolean } {
+    return {
+      ready: this.isWhatsAppReady,
+      initializing: this.isWhatsAppInitializing
+    };
+  }
+
+  /**
+   * Force WhatsApp logout and reinitialize (untuk troubleshooting)
+   */
+  async resetWhatsApp(): Promise<void> {
+    try {
+      console.log('🔄 Resetting WhatsApp Web connection...');
+      
+      if (this.isWhatsAppReady) {
+        await this.whatsAppClient.logout();
+      }
+      
+      await this.whatsAppClient.destroy();
+      this.isWhatsAppReady = false;
+      this.isWhatsAppInitializing = false;
+      
+      // Reinitialize
+      this.initializeWhatsAppClient();
+      
+      console.log('✅ WhatsApp Web reset complete');
+    } catch (error) {
+      console.error('❌ Error during WhatsApp reset:', error);
     }
   }
 }

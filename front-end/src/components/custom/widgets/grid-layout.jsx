@@ -472,7 +472,7 @@ export default function GridLayout({
 
           if (!widget) {
             // Widget tidak ditemukan - mungkin sudah dihapus dari database
-            console.log(`Widget not found for layout item ${layoutItem.i}`);
+            // console.log(`Widget not found for layout item ${layoutItem.i}`);
             return null;
           }
 

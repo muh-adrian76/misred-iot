@@ -185,77 +185,13 @@ export const deleteAlarmSchema = {
   }
 };
 
-// Toggle Alarm Status Schema
-export const toggleAlarmStatusSchema = {
-  params: t.Object({
-    alarmId: t.String({ minimum: 1 })
-  }),
-  response: {
-    200: t.Object({
-      success: t.Boolean(),
-      message: t.String()
-    }),
-    404: t.Object({
-      success: t.Boolean(),
-      message: t.String()
-    }),
-    401: t.Object({
-      success: t.Boolean(),
-      message: t.String()
-    })
-  },
-  detail: {
-    tags: ["Alarm"],
-    description: "Toggle status alarm (aktif/nonaktif)",
-    summary: "Toggle alarm status"
-  }
-};
-
-// Get Notification History Schema
-export const getNotificationHistorySchema = {
-  query: t.Optional(t.Object({
-    limit: t.Optional(t.Number({ minimum: 1, maximum: 100 }))
-  })),
-  response: {
-    200: t.Object({
-      success: t.Boolean(),
-      notifications: t.Array(t.Object({
-        id: t.Number(),
-        alarm_id: t.Number(),
-        sensor_value: t.Number(),
-        threshold: t.Number(),
-        operator: t.String(),
-        notification_type: t.String(),
-        whatsapp_status: t.String(),
-        browser_status: t.String(),
-        whatsapp_message_id: t.Union([t.String(), t.Null()]),
-        error_message: t.Union([t.String(), t.Null()]),
-        triggered_at: t.String(),
-        sent_at: t.Union([t.String(), t.Null()]),
-        alarm_name: t.String(),
-        device_description: t.String(),
-        datastream_description: t.String()
-      }))
-    }),
-    401: t.Object({
-      success: t.Boolean(),
-      message: t.String()
-    })
-  },
-  detail: {
-    tags: ["Alarm"],
-    description: "Mengambil history notifikasi",
-    summary: "Get notification history"
-  }
-};
-
-// Test WAHA Connection Schema
-export const testWahaConnectionSchema = {
+// Test API Connection Schema
+export const testApiConnectionSchema = {
   response: {
     200: t.Object({
       success: t.Boolean(),
       message: t.String(),
-      waha_status: t.Object({
+      api_status: t.Object({
         success: t.Boolean(),
         message: t.String()
       })
@@ -267,8 +203,8 @@ export const testWahaConnectionSchema = {
   },
   detail: {
     tags: ["Alarm"],
-    description: "Test koneksi ke WAHA service",
-    summary: "Test WAHA connection"
+    description: "Test koneksi ke API service",
+    summary: "Test API connection"
   }
 };
 
@@ -297,5 +233,44 @@ export const sendTestNotificationSchema = {
     tags: ["Alarm"],
     description: "Kirim test notifikasi WhatsApp",
     summary: "Send test notification"
+  }
+};
+
+// Get Recent Notifications Schema
+export const getRecentNotificationsSchema = {
+  response: {
+    200: t.Object({
+      success: t.Boolean(),
+      message: t.String(),
+      notifications: t.Array(t.Object({
+        id: t.String(),
+        title: t.String(),
+        message: t.String(),
+        isRead: t.Boolean(),
+        createdAt: t.String(),
+        priority: t.String(),
+        alarm_id: t.Number(),
+        device_description: t.String(),
+        datastream_description: t.String(),
+        sensor_value: t.Number(),
+        condition_text: t.String(),
+        user_email: t.String()
+      })),
+      total: t.Number(),
+      last_seen: t.String()
+    }),
+    401: t.Object({
+      success: t.Boolean(),
+      message: t.String()
+    }),
+    500: t.Object({
+      success: t.Boolean(),
+      message: t.String()
+    })
+  },
+  detail: {
+    tags: ["Notifications"],
+    description: "Mengambil notifikasi alarm sejak last login atau 24 jam terakhir",
+    summary: "Get notifications for login"
   }
 };

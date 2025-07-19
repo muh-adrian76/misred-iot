@@ -110,8 +110,10 @@ export class PayloadService {
           // Fallback ke AES decryption untuk backward compatibility
           console.log("🔄 Falling back to AES decryption");
           try {
-            decrypted = decryptAES(crypto, decodedPayload.encryptedData, secret);
-            console.log("📦 AES decrypted payload:", decrypted);
+            const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
+            console.log("📦 AES decrypted payload:", decryptedString);
+            decrypted = JSON.parse(decryptedString);
+            console.log("📦 AES parsed JSON:", decrypted);
           } catch (aesError) {
             console.error("❌ All decryption methods failed:", aesError);
             throw new Error("Unable to decrypt payload data");
@@ -198,7 +200,7 @@ export class PayloadService {
                   deviceId, 
                   datastream.id, 
                   value,
-                  JSON.stringify({ raw_payload_id: rawPayloadId, pin, original_value: value })
+                  JSON.stringify({ raw_payload_id: rawPayloadId, pin, value })
                 ]
               );
               insertedIds.push(result.insertId);

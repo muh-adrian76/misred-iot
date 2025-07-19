@@ -32,10 +32,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `otp`, `refresh_token`) VALUES
-('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw'),
-('2', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ'),
-('3', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, NULL, '');
+INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `otp`, `refresh_token`, `whatsapp_notif`) VALUES
+('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', TRUE),
+('2', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE),
+('3', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, NULL, '', FALSE);
 
 CREATE TABLE IF NOT EXISTS `dashboards` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -159,12 +159,11 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
   `sensor_value` DECIMAL(10,3) NOT NULL,
-  `conditions_text` VARCHAR(500) NOT NULL,
-  `notification_type` ENUM('whatsapp', 'browser', 'both') NOT NULL,
+  `conditions_text` VARCHAR(255) NOT NULL,
+  `notification_type` ENUM('browser', 'all') NOT NULL,
   `whatsapp_message_id` VARCHAR(255) NULL,
   `error_message` TEXT NULL,
-  `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-  `sent_at` TIMESTAMP NULL DEFAULT NULL,
+  `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
   PRIMARY KEY (`id`),
   FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
@@ -199,17 +198,38 @@ CREATE TABLE IF NOT EXISTS `raw_payloads` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- TESTING
-INSERT IGNORE INTO devices (id, description, board_type, protocol, new_secret, user_id, status) VALUES
-(1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online'),
-(2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online');
+INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, new_secret, user_id, status) VALUES
+(1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', NULL, '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online'),
+(2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', 'device/data', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online');
 
 INSERT IGNORE INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
-(1, 'pH Sensor', 'A0', 'sensor', 'pH', '7.0', 0.0, 14.0, '2', 1, 1),
-(2, 'Flow Sensor', 'A1', 'sensor', 'L/min', '25.0', 0.0, 100.0, '2', 1, 1),
-(3, 'COD Sensor', 'A2', 'sensor', 'mg/L', '50.0', 0.0, 200.0, '1', 1, 1),
-(4, 'Temperature Sensor', 'A3', 'sensor', '°C', '25.0', -10.0, 60.0, '1', 1, 1),
-(5, 'NH3N Sensor', 'A4', 'sensor', 'mg/L', '2.0', 0.0, 20.0, '2', 1, 1),
-(6, 'Turbidity Sensor', 'A5', 'sensor', 'NTU', '10.0', 0.0, 100.0, '1', 1, 1);
+(1, 'pH Sensor', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 1, 1),
+(2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 1, 1),
+(3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 1, 1),
+(4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 1, 1),
+(5, 'NH3N Sensor', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 1, 1),
+(6, 'Turbidity Sensor', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 1, 1),
+-- Device 2 (MQTT) datastreams
+(7, 'pH Sensor MQTT', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 2, 1),
+(8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 2, 1),
+(9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 2, 1),
+(10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 2, 1),
+(11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 2, 1),
+(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 2, 1);
+
+INSERT IGNORE INTO alarms (id, description, user_id, device_id, datastream_id, is_active, cooldown_minutes) VALUES
+(1, 'pH Level Too High Alert', 1, 1, 1, TRUE, 1),
+(2, 'Low Flow Rate Alert', 1, 1, 2, TRUE, 1),
+-- Device 2 (MQTT) alarms
+(3, 'MQTT pH Level Too High Alert', 1, 2, 7, TRUE, 1),
+(4, 'MQTT Low Flow Rate Alert', 1, 2, 8, TRUE, 1);
+
+INSERT IGNORE INTO alarm_conditions (id, alarm_id, operator, threshold) VALUES
+(1, 1, '>', 8.0),
+(2, 2, '<', 15.0),
+-- Device 2 (MQTT) alarm conditions
+(3, 3, '>', 8.0),
+(4, 4, '<', 15.0);
 
 CREATE INDEX idx_payloads_device_time ON payloads(device_id, server_time);
 CREATE INDEX idx_payloads_datastream_time ON payloads(datastream_id, server_time);
@@ -217,7 +237,7 @@ CREATE INDEX idx_payloads_device_datastream_time ON payloads(device_id, datastre
 CREATE INDEX idx_device_commands_status ON device_commands(status, sent_at);
 
 -- View untuk dashboard sensor data yang sudah dinormalisasi
-CREATE VIEW dashboard_sensor_data AS
+CREATE OR REPLACE VIEW dashboard_sensor_data AS
 SELECT 
     p.id,
     p.device_id,
@@ -234,6 +254,7 @@ SELECT
     ds.max_value,
     ds.decimal_value,
     u.name as user_name,
+    u.email as user_email,
     u.id as user_id
 FROM payloads p
 LEFT JOIN devices d ON p.device_id = d.id

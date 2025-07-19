@@ -2,59 +2,76 @@
 
 import React from 'react';
 import { NotificationCenter } from "@/components/custom/other/notification-center";
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useBreakpoint } from "@/hooks/use-mobile";
+import { useWebSocket } from "@/providers/websocket-provider";
+import { fetchFromBackend } from '@/lib/helper';
 
-// --- Simulated Backend API ---
-let masterNotifications = [ /* ... initial notifications ... */ ];
-let nextId = masterNotifications.length + 1;
-const fetchNotifications = async () => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  return [...masterNotifications];
-};
+// --- API Functions ---
+// Tidak perlu fetchRecentNotifications karena menggunakan WebSocket + localStorage
+
 const markAsRead = async (id) => {
-  masterNotifications = masterNotifications.map(n => n.id === id ? { ...n, isRead: true } : n);
+  // Since we're using localStorage, just simulate marking as read
+  await new Promise(resolve => setTimeout(resolve, 300));
 };
+
 const markAllAsRead = async () => {
-  masterNotifications = masterNotifications.map(n => ({ ...n, isRead: true }));
+  await new Promise(resolve => setTimeout(resolve, 500));
 };
+
 const deleteNotification = async (id) => {
-  masterNotifications = masterNotifications.filter(n => n.id !== id);
+  await new Promise(resolve => setTimeout(resolve, 300));
 };
-// --- End of Simulated API ---
+// --- End of API Functions ---
 
 const queryClient = new QueryClient();
 
 // Separate the component that uses useQueryClient
 function NotificationContent() {
-  const qc = useQueryClient();
-
+  const { isMobile } = useBreakpoint();
+  const { alarmNotifications = [] } = useWebSocket(); // Get notifications dari WebSocket + localStorage
+  const [refreshKey, setRefreshKey] = React.useState(0);
+  
+  console.log("🔔 alarmNotifications in button:", alarmNotifications); // Debug log
+  
+  // Force refresh NotificationCenter ketika alarmNotifications berubah
   React.useEffect(() => {
-    const interval = setInterval(() => {
-      const newNotification = {
-        id: String(nextId++),
-        title: 'Alarm Aplikasi MiSREd-IoT!',
-        message: 'This notification was added automatically.',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        priority: 'medium',
-      };
-      masterNotifications.unshift(newNotification);
-      qc.invalidateQueries({ queryKey: ['notifications'] });
-    }, 600000);
-    return () => clearInterval(interval);
-  }, [qc]);
+    setRefreshKey(prev => prev + 1);
+  }, [alarmNotifications]);
+  
+  // Transform alarm notifications to match the expected format
+  const transformedNotifications = React.useMemo(() => {
+    return alarmNotifications.map(alarm => ({
+      id: alarm.id || `notification_${Math.random()}`,
+      title: alarm.title || 'Alarm Triggered',
+      message: alarm.message,
+      createdAt: alarm.createdAt || new Date().toISOString(),
+      isRead: false,
+      priority: 'high',
+      device: alarm.device_name || alarm.device_description || 'Unknown Device'
+    }));
+  }, [alarmNotifications]);
+
+  // Simple function yang langsung return notifications dari WebSocket/localStorage
+  const fetchNotifications = async () => {
+    console.log("📋 Fetching notifications, count:", transformedNotifications.length);
+    return transformedNotifications;
+  };
 
   return (
       <NotificationCenter
+        key={refreshKey} // Force re-render saat data berubah
         variant="popover"
+        notifications={transformedNotifications} // Pass sebagai static data
         fetchNotifications={fetchNotifications}
         onMarkAsRead={markAsRead}
         onMarkAllAsRead={markAllAsRead}
         onDeleteNotification={deleteNotification}
-        enableRealTimeUpdates={true}
-        updateInterval={15000}
-        enableBrowserNotifications={true}
+        enableRealTimeUpdates={false} // Disable polling karena menggunakan WebSocket
+        updateInterval={0} // No interval needed
+        enableBrowserNotifications={false} // Sudah handle di WebSocket provider
         className="rounded-full"
+        align={isMobile ? "center" : "end"}
       />
   );
 }

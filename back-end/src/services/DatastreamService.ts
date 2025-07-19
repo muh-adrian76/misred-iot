@@ -49,6 +49,7 @@ export class DatastreamService {
     minValue,
     maxValue,
     decimalValue,
+    booleanValue,
   }: {
     userId: string;
     deviceId: string;
@@ -60,12 +61,14 @@ export class DatastreamService {
     minValue: string;
     maxValue: string;
     decimalValue: string;
+    booleanValue?: string;
   }) {
     try {
       // Cek apakah pin sudah terpakai
+      const virtualPin = `V${pin}`;
       const [usedPin] = await this.db.query(
         "SELECT id FROM datastreams WHERE user_id = ? AND device_id = ? AND pin = ?",
-        [userId, deviceId, pin]
+        [userId, deviceId, virtualPin]
       );
       if ((usedPin as any[]).length > 0) {
         return new Response(
@@ -87,13 +90,17 @@ export class DatastreamService {
         defaultVal = parseFloat(Number(defaultValue).toFixed(decimalFormat));
         minVal = parseFloat(Number(minValue).toFixed(decimalFormat));
         maxVal = parseFloat(Number(maxValue).toFixed(decimalFormat));
+      } else if (type === "boolean") {
+        defaultVal = booleanValue === "1" ? 1 : 0;
+        minVal = 0;
+        maxVal = 1;
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
         "INSERT INTO datastreams (description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           description,
-          pin,
+          virtualPin,
           type,
           unit,
           defaultVal,
@@ -123,6 +130,7 @@ export class DatastreamService {
       minValue,
       maxValue,
       decimalValue,
+      booleanValue,
     }: {
       deviceId: string;
       pin: string;
@@ -133,10 +141,12 @@ export class DatastreamService {
       minValue: string;
       maxValue: string;
       decimalValue: string;
+      booleanValue?: string;
     }
   ) {
     try {
       // Cek format tipe data
+      const virtualPin = `V${pin}`;
       let defaultVal: any = defaultValue;
       let minVal: any = minValue;
       let maxVal: any = maxValue;
@@ -149,13 +159,17 @@ export class DatastreamService {
         defaultVal = parseFloat(Number(defaultValue).toFixed(decimalFormat));
         minVal = parseFloat(Number(minValue).toFixed(decimalFormat));
         maxVal = parseFloat(Number(maxValue).toFixed(decimalFormat));
+      } else if (type === "boolean") {
+        defaultVal = booleanValue === "1" ? 1 : 0;
+        minVal = 0;
+        maxVal = 1;
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
         "UPDATE datastreams SET device_id = ?, pin = ?, type = ?, unit = ?, description = ?, default_value = ?, min_value = ?, max_value = ?, decimal_value = ? WHERE id = ?",
         [
           Number(deviceId),
-          pin,
+          virtualPin,
           type,
           unit ?? null,
           description ?? null,

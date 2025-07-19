@@ -40,7 +40,15 @@ export default function DeviceContent({
   };
 
   const columns = [
-    { key: "description", label: "Nama", sortable: true },
+    { key: "description", label: "Nama", sortable: true,
+      render: (row) => (
+        <DescriptionTooltip content={row.description} side="right">
+        <span className="truncate max-w-[300px] max-sm:max-w-[100px] max-sm:underline max-sm:underline-offset-2 inline-block">
+          {row.description || row.name}
+        </span>
+        </DescriptionTooltip>
+      ),
+     },
     {
       key: "status",
       label: "Status",

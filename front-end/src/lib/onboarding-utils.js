@@ -13,36 +13,36 @@ export const completeOnboardingTask = async (taskId) => {
     detail: { taskId }
   });
   
-  console.log(`🎯 Dispatching onboarding task ${taskId} completion event`);
+  // console.log(`🎯 Dispatching onboarding task ${taskId} completion event`);
   window.dispatchEvent(event);
   
   // Add a small delay to ensure event is processed
   setTimeout(() => {
-    console.log(`✅ Onboarding task ${taskId} event dispatched successfully`);
+    // console.log(`✅ Onboarding task ${taskId} event dispatched successfully`);
   }, 100);
 };
 
 export const markDeviceCreated = () => {
-  console.log('Device created - marking onboarding task 1 complete');
+  // console.log('Device created - marking onboarding task 1 complete');
   completeOnboardingTask(onboardingTasks.DEVICE);
 };
 
 export const markDatastreamCreated = () => {
-  console.log('Datastream created - marking onboarding task 2 complete');
+  // console.log('Datastream created - marking onboarding task 2 complete');
   completeOnboardingTask(onboardingTasks.DATASTREAM);
 };
 
 export const markDashboardCreated = () => {
-  console.log('Dashboard created - marking onboarding task 3 complete');
+  // console.log('Dashboard created - marking onboarding task 3 complete');
   completeOnboardingTask(onboardingTasks.DASHBOARD);
 };
 
 export const markWidgetCreated = () => {
-  console.log('Widget created - marking onboarding task 4 complete');
+  // console.log('Widget created - marking onboarding task 4 complete');
   completeOnboardingTask(onboardingTasks.WIDGET);
 };
 
 export const markAlarmCreated = () => {
-  console.log('Alarm created - marking onboarding task 5 complete');
+  // console.log('Alarm created - marking onboarding task 5 complete');
   completeOnboardingTask(onboardingTasks.ALARM);
 };

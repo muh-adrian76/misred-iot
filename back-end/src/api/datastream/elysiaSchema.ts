@@ -43,7 +43,8 @@ const postDatastreamSchema = {
     defaultValue: t.String({ description: "Nilai default", example: 0 }),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
-    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"})
+    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"}),
+    booleanValue: t.String({description: "Nilai boolean", examples: "0"})
   }),
   response: {
     201: t.Object(
@@ -78,7 +79,8 @@ const putDatastreamSchema = {
     defaultValue: t.String({ description: "Nilai default", example: 0 }),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
-    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"})
+    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"}),
+    booleanValue: t.String({description: "Nilai boolean", examples: "0"})
   }),
   response: {
     200: t.Object(

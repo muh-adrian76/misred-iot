@@ -59,6 +59,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             minValue,
             maxValue,
             decimalValue,
+            booleanValue,
           } = body;
           const datastreamId = await datastreamService.createDatastream({
             userId: user.sub,
@@ -71,6 +72,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             minValue,
             maxValue,
             decimalValue,
+            booleanValue,
           });
           return new Response(
             JSON.stringify({
@@ -99,6 +101,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             minValue,
             maxValue,
             decimalValue,
+            booleanValue,
           } = body;
           const updated = await datastreamService.updateDatastream(params.id, {
             deviceId,
@@ -110,6 +113,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
             minValue,
             maxValue,
             decimalValue,
+            booleanValue,
           });
           if (!updated) {
             return new Response("Datastream gagal diupdate", { status: 400 });

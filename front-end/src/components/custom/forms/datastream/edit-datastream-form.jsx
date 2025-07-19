@@ -48,6 +48,7 @@ export default function EditDatastreamForm({
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [showDecimal, setShowDecimal] = useState(false);
   const [decimalValue, setdecimalValue] = useState("0.0");
+  const [booleanValue, setBooleanValue] = useState("0");
 
   useEffect(() => {
     if (editDatastream) {
@@ -55,7 +56,8 @@ export default function EditDatastreamForm({
       setDeviceId(
         editDatastream.device_id ? String(editDatastream.device_id) : ""
       );
-      setPin(editDatastream.pin ? String(editDatastream.pin) : "");
+      // Ekstrak angka dari format V0 menjadi 0
+      setPin(editDatastream.pin ? String(editDatastream.pin).replace('V', '') : "");
       setType(editDatastream.type || "");
       setUnit(editDatastream.unit || "");
       setDefaultValue(editDatastream.default_value || "");
@@ -79,11 +81,11 @@ export default function EditDatastreamForm({
   const getAvailablePins = () => {
     const used =
       deviceId && usedPins?.[deviceId] ? usedPins[deviceId] : new Set();
-    const currentPin = String(editDatastream?.pin);
+    const currentPin = editDatastream?.pin || null;
     const availablePins = [];
-    for (let p = 0; p < 256 && availablePins.length < 6; p++) {
+    for (let p = 0; p < 256 && availablePins.length < 32; p++) {
       // Hanya render pin yang belum terpakai, atau pin yang sedang dipakai datastream ini
-      if (!used.has(String(p)) || String(p) === currentPin) {
+      if (!used.has(`V${String(p)}`) || `V${String(p)}` === currentPin) {
         availablePins.push(p);
       }
     }
@@ -176,7 +178,7 @@ export default function EditDatastreamForm({
         {/* PIN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium ml-1 max-sm:text-xs">
-            Pin
+            Virtual Pin
           </Label>
           <Select value={pin} onValueChange={setPin} disabled={!deviceId}>
             <SelectTrigger className="w-full">
@@ -192,7 +194,7 @@ export default function EditDatastreamForm({
                 ) : (
                   availablePins.map((p) => (
                     <SelectItem key={p} value={String(p)}>
-                      {String(p)}
+                      {`V${String(p)}`}
                     </SelectItem>
                   ))
                 );
@@ -220,13 +222,14 @@ export default function EditDatastreamForm({
               <SelectItem value="integer">Integer</SelectItem>
               <SelectItem value="string">String</SelectItem>
               <SelectItem value="double">Double</SelectItem>
+              <SelectItem value="boolean">Boolean</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       {/* SATUAN & FORMAT DESIMAL */}
-      <div className={cn("grid gap-4", showDecimal ? "grid-cols-2" : "")}>
+      <div className={cn("grid gap-4", showDecimal || type === "boolean" ? "grid-cols-2" : "")}>
         {/* SATUAN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -256,6 +259,22 @@ export default function EditDatastreamForm({
             </SelectContent>
           </Select>
         </div>
+        {type === "boolean" && (
+          <div className="flex flex-col gap-2">
+            <Label className="text-left font-medium max-sm:text-xs ml-1">
+              Nilai Default
+            </Label>
+            <Select value={booleanValue} onValueChange={setBooleanValue} required>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Nilai Default" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">False</SelectItem>
+                <SelectItem value="1">True</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         {/* FORMAT DESIMAL */}
         {type === "double" && (
           <div className="flex flex-col gap-2">
@@ -278,7 +297,7 @@ export default function EditDatastreamForm({
         )}
       </div>
 
-      {type === "string" ? (
+      {type === "boolean" ? null : type === "string" ? (
         <div className="flex flex-col gap-2">
           <Label
             htmlFor="defaultValue"
@@ -366,6 +385,7 @@ export default function EditDatastreamForm({
       minValue,
       maxValue,
       decimalValue,
+      booleanValue,
     });
     setOpen(false);
   };

@@ -45,7 +45,7 @@ export default function DashboardSelect({
             type="text"
             placeholder={selectedLabel}
             value={editValue}
-            className="w-[300px] pr-10"
+            className="w-[300px] max-sm:w-[260px] pr-10"
             onChange={(e) => onEditValueChange(e.target.value)}
             noInfo
             required
@@ -65,7 +65,7 @@ export default function DashboardSelect({
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="justify-between w-[300px] font-semibold"
+                className="justify-between w-[300px] max-sm:w-[260px] font-semibold"
                 disabled={editState}
               >
                 <span className="truncate">{selectedLabel}</span>

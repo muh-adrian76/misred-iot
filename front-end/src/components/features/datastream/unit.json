@@ -1,5 +1,5 @@
 [
-  { "group": "Default", "label": "Tidak Ada", "value": "none" },
+  { "group": "Default", "label": "Tidak Ada", "value": "-" },
 
   { "group": "Panjang, Jarak", "label": "Inci", "value": "in" },
   { "group": "Panjang, Jarak", "label": "Kaki", "value": "ft" },
@@ -39,8 +39,8 @@
   { "group": "Volume", "label": "Mililiter", "value": "ml" },
   { "group": "Volume", "label": "Meter Kubik", "value": "m³" },
 
-  { "group": "Suhu", "label": "Celsius", "value": "°C" },
-  { "group": "Suhu", "label": "Fahrenheit", "value": "°F" },
+  { "group": "Suhu", "label": "Derajat Celsius", "value": "°C" },
+  { "group": "Suhu", "label": "Derajat Fahrenheit", "value": "°F" },
   { "group": "Suhu", "label": "Kelvin", "value": "K" },
 
   { "group": "Kecepatan", "label": "Kilometer Per Jam", "value": "km/h" },
@@ -80,7 +80,7 @@
   { "group": "Lainnya", "label": "Liter Per Meter Persegi", "value": "L/m²" },
   { "group": "Lainnya", "label": "Liter Per Detik", "value": "L/s" },
   { "group": "Lainnya", "label": "Desibel miliWatt", "value": "dBm" },
-  { "group": "Lainnya", "label": "Aliran Volume", "value": "L/min" },
+  { "group": "Lainnya", "label": "Liter Per Menit", "value": "L/min" },
   { "group": "Lainnya", "label": "Pon Per Inci Persegi", "value": "lbf/in²" },
   { "group": "Lainnya", "label": "Pon Per Inci Persegi", "value": "psi" },
   { "group": "Lainnya", "label": "Mikrogram Per Meter Kubik", "value": "ug/m³" },
@@ -94,5 +94,6 @@
   { "group": "Lainnya", "label": "Kilogram per Meter Kuadrat", "value": "kg/m²" },
   { "group": "Lainnya", "label": "Tekanan", "value": "bar" },
   { "group": "Lainnya", "label": "Indeks Kualitas Udara", "value": "AQI" },
-  { "group": "Lainnya", "label": "Hari Derajat", "value": "DD" }
+  { "group": "Lainnya", "label": "Hari Derajat", "value": "DD" },
+  { "group": "Lainnya", "label": "Nephelometric Turbidity Unit", "value": "NTU" }
 ]
