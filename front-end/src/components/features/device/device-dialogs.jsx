@@ -25,6 +25,7 @@ export default function DeviceDialogs({
   setDeleteChecked,
   setSelectedRows,
   boardOptions,
+  isMobile,
 }) {
   return (
     <>
@@ -35,6 +36,7 @@ export default function DeviceDialogs({
         openBoardPopover={openBoardPopover}
         setOpenBoardPopover={setOpenBoardPopover}
         boardOptions={boardOptions}
+        isMobile={isMobile}
       />
       <EditDeviceForm
         open={editFormOpen}
@@ -44,6 +46,7 @@ export default function DeviceDialogs({
         openBoardPopover={openBoardPopover}
         setOpenBoardPopover={setOpenBoardPopover}
         boardOptions={boardOptions}
+        isMobile={isMobile}
       />
       <DeleteDeviceForm
         open={deleteFormOpen}

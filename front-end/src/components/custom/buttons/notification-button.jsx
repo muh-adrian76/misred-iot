@@ -5,7 +5,6 @@ import { NotificationCenter } from "@/components/custom/other/notification-cente
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { useWebSocket } from "@/providers/websocket-provider";
-import { fetchFromBackend } from '@/lib/helper';
 
 // --- API Functions ---
 // Tidak perlu fetchRecentNotifications karena menggunakan WebSocket + localStorage
@@ -31,9 +30,6 @@ function NotificationContent() {
   const { isMobile } = useBreakpoint();
   const { alarmNotifications = [] } = useWebSocket(); // Get notifications dari WebSocket + localStorage
   const [refreshKey, setRefreshKey] = React.useState(0);
-  
-  console.log("🔔 alarmNotifications in button:", alarmNotifications); // Debug log
-  
   // Force refresh NotificationCenter ketika alarmNotifications berubah
   React.useEffect(() => {
     setRefreshKey(prev => prev + 1);
@@ -54,7 +50,7 @@ function NotificationContent() {
 
   // Simple function yang langsung return notifications dari WebSocket/localStorage
   const fetchNotifications = async () => {
-    console.log("📋 Fetching notifications, count:", transformedNotifications.length);
+    // console.log("📋 Fetching notifications, count:", transformedNotifications.length);
     return transformedNotifications;
   };
 

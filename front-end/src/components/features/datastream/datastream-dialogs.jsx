@@ -23,6 +23,7 @@ export default function DatastreamDialogs({
   setSelectedRows,
   unitOptions,
   decimalOptions,
+  isMobile,
 }) {
 
   return (
@@ -36,6 +37,7 @@ export default function DatastreamDialogs({
         devices={devices}
         usedPins={usedPinsPerDevice}
         decimalOptions={decimalOptions}
+        isMobile={isMobile}
       />
       <EditDatastreamForm
         open={editFormOpen}
@@ -48,6 +50,7 @@ export default function DatastreamDialogs({
         devices={devices}
         usedPins={usedPinsPerDevice}
         decimalOptions={decimalOptions}
+        isMobile={isMobile}
       />
       <DeleteDatastreamForm
         open={deleteFormOpen}

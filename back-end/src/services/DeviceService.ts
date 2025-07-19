@@ -1,12 +1,14 @@
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { randomBytes } from "crypto";
 import { OtaaUpdateService } from "./OtaaUpdateService";
+import { MQTTTopicManager } from "./MQTTTopicManager";
 
 export class DeviceService {
   private db: Pool;
   private otaaService: OtaaUpdateService;
   private onSubscribeTopic?: (topic: string) => void;
   private onUnsubscribeTopic?: (topic: string) => void;
+  private mqttTopicManager?: MQTTTopicManager;
 
   constructor(
     db: Pool,
@@ -18,6 +20,7 @@ export class DeviceService {
     this.otaaService = otaaService;
     this.onSubscribeTopic = onSubscribeTopic;
     this.onUnsubscribeTopic = onUnsubscribeTopic;
+    this.mqttTopicManager = new MQTTTopicManager(db);
   }
 
   async createDevice({
@@ -52,17 +55,16 @@ export class DeviceService {
       );
       const id = result.insertId;
 
-      // Integrasi broker MQTT
-      if (topic) {
-        // const uniqueTopic = `${id}/${topic}`;
+      // Integrasi broker MQTT dengan topic manager
+      if (topic && this.mqttTopicManager && this.onSubscribeTopic) {
         const uniqueTopic = topic;
         await this.db.query("UPDATE devices SET mqtt_topic = ? WHERE id = ?", [
           uniqueTopic,
           id,
         ]);
-        if (topic && this.onSubscribeTopic) {
-          this.onSubscribeTopic(uniqueTopic);
-        }
+        
+        // Subscribe menggunakan topic manager
+        await this.mqttTopicManager.subscribeIfNeeded(uniqueTopic, this.onSubscribeTopic);
       }
 
       return id;
@@ -345,12 +347,14 @@ export class DeviceService {
         ]
       );
 
-      // MQTT
-      if (oldTopic && oldTopic !== uniqueTopic && this.onUnsubscribeTopic) {
-        this.onUnsubscribeTopic(oldTopic);
-      }
-      if (uniqueTopic && this.onSubscribeTopic) {
-        this.onSubscribeTopic(uniqueTopic);
+      // MQTT topic management dengan topic manager
+      if (this.mqttTopicManager && this.onSubscribeTopic && this.onUnsubscribeTopic) {
+        await this.mqttTopicManager.handleTopicChange(
+          oldTopic,
+          uniqueTopic,
+          this.onSubscribeTopic,
+          this.onUnsubscribeTopic
+        );
       }
 
       return result.affectedRows > 0;
@@ -362,12 +366,25 @@ export class DeviceService {
 
   async deleteDevice(id: string, userId: string) {
     try {
+      // Get topic sebelum delete untuk unsubscribe jika perlu
+      const [deviceRows]: any = await this.db.query(
+        "SELECT mqtt_topic FROM devices WHERE id = ? AND user_id = ?",
+        [id, userId]
+      );
+      const topicToCheck = deviceRows[0]?.mqtt_topic;
+
       await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
       await this.db.query("DELETE FROM widgets WHERE device_id = ?", [id]);
       const [result] = await this.db.query<ResultSetHeader>(
         "DELETE FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]
       );
+
+      // Unsubscribe dari topic jika tidak digunakan lagi
+      if (topicToCheck && this.mqttTopicManager && this.onUnsubscribeTopic) {
+        await this.mqttTopicManager.unsubscribeIfUnused(topicToCheck, this.onUnsubscribeTopic);
+      }
+
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error deleting device:", error);
@@ -395,7 +412,7 @@ export class DeviceService {
   async updateDeviceStatus(deviceId: string, status: "online" | "offline") {
     try {
       await this.db.query(
-        "UPDATE devices SET status = ?, last_seen = NOW() WHERE id = ?",
+        "UPDATE devices SET status = ? WHERE id = ?",
         [status, deviceId]
       );
       return true;
@@ -403,5 +420,12 @@ export class DeviceService {
       console.error("Error updating device status:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get MQTT Topic Manager instance
+   */
+  getMQTTTopicManager(): MQTTTopicManager | undefined {
+    return this.mqttTopicManager;
   }
 }

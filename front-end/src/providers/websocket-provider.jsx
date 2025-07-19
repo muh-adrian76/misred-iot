@@ -69,9 +69,8 @@ export function WebSocketProvider({ children }) {
           
           if (response.ok) {
             const data = await response.json();
-            console.log("🌐 API Response:", data);
+            // console.log("🌐 API Response:", data);
             if (data.success && data.notifications) {
-              // console.log("📥 Received notifications from API:", data.notifications.length);
               // Merge dengan notifications yang sudah ada di localStorage
               setAlarmNotifications(prev => {
                 const combined = [...data.notifications, ...prev];

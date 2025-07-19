@@ -101,7 +101,7 @@ export default function DataTableToolbar({
                 </PopoverTrigger>
               </DescriptionTooltip>
             </div>
-            <PopoverContent align="end" className="p-3 w-auto">
+            <PopoverContent align={isMobile ? "center" : "end"} className="p-3 w-auto max-sm:mr-5">
               <div className="flex flex-col gap-3">
                 <h4 className="font-medium text-sm text-center">Status Notifikasi Alarm</h4>
                 <div className="flex flex-col gap-2">

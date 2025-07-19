@@ -173,7 +173,7 @@ const LandingPage = () => {
       {/* Main Content */}
       <main>
         {/* Beranda Section */}
-        <section id="beranda" className="scroll-mt-0 py-35 bg-[url('/bg-landing.webp')] bg-cover bg-center bg-no-repeat relative">
+        <section id="beranda" className="scroll-mt-0 py-35 bg-[url('/bg-landing_compressed.webp')] bg-cover bg-center bg-no-repeat relative">
         <div className="absolute inset-0 backdrop-blur-sm bg-black/30"></div>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center">
@@ -225,7 +225,7 @@ const LandingPage = () => {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Multi-Protocol Support</h3>
                 <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mb-4`}>
-                  Dukungan multi-protokol (HTTP, MQTT, LoRaWAN) untuk integrasi perangkat IoT yang fleksibel.
+                  Dukungan multi-protokol (HTTP, MQTT, WebSocket) untuk integrasi perangkat IoT yang fleksibel.
                 </p>
                 <div className="flex items-center space-x-2">
                   <CheckCircle size={16} className="text-green-500" />

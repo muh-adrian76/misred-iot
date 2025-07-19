@@ -57,10 +57,10 @@ const formatTimeAgo = (dateString) => {
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
+  if (minutes < 1) return "Baru saja";
+  if (minutes < 60) return `${minutes} menit yang lalu`;
+  if (hours < 24) return `${hours} jam yang lalu`;
+  return `${days} hari yang lalu`;
 };
 
 const getPriorityColor = (priority) => {
@@ -93,7 +93,7 @@ const NotificationItem = ({
       className={cn(
         "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm",
         !notification.isRead &&
-          "border-l-4 border-l-green-500 bg-green-50/30 dark:bg-green-950/10 dark:border-l-green-400",
+          "border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 dark:border-l-red-400",
         notification.isRead && "border-border hover:border-muted-foreground/20",
         onClick && "cursor-pointer"
       )}
@@ -119,8 +119,8 @@ const NotificationItem = ({
                 {notification.title}
               </h4>
               {!notification.isRead && (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                  New
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                  Baru
                 </span>
               )}
             </div>
@@ -141,8 +141,21 @@ const NotificationItem = ({
                 {formatTimeAgo(notification.createdAt)}
               </span>
 
+              <Button
+              size="sm"
+                    className="h-8 text-xs"
+              variant={"outline"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(notification.id);
+                }}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Hapus
+              </Button>
+
               {/* {notification.priority && (
-                <Badge
+                  <Badge
                   variant={
                     notification.priority === "high"
                       ? "destructive"
@@ -153,12 +166,12 @@ const NotificationItem = ({
                   className="text-xs px-2 py-0.5"
                 >
                   {notification.priority}
-                </Badge>
+                  </Badge>
               )} */}
             </div>
           </div>
 
-          {(onMarkAsRead || onDelete) && (
+          {/* {(onMarkAsRead || onDelete) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -197,7 +210,7 @@ const NotificationItem = ({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          )} */}
         </div>
       </div>
     </div>
@@ -347,7 +360,9 @@ export function NotificationCenter({
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <BellRing className="h-16 w-16 text-muted-foreground/40 mb-4" />
           <h3 className="font-semibold text-lg text-foreground mb-2">
-            {filter === "unread" ? "Semua alarm telah dibaca." : emptyState.title}
+            {filter === "unread"
+              ? "Semua alarm telah dibaca."
+              : emptyState.title}
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm">
             {filter === "unread"
@@ -453,8 +468,9 @@ export function NotificationCenter({
                       <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
                     ) : (
                       <CheckCheck className="mr-1.5 h-3 w-3" />
+                      // <Trash2 className="mr-1.5 h-3 w-3" />
                     )}
-                    Mark All Read
+                    Simpan Semua
                   </Button>
                 )}
               </div>

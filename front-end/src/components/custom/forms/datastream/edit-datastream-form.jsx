@@ -36,6 +36,7 @@ export default function EditDatastreamForm({
   usedPins,
   devices,
   decimalOptions,
+  isMobile,
 }) {
   const [description, setDescription] = useState("");
   const [pin, setPin] = useState("");
@@ -57,7 +58,9 @@ export default function EditDatastreamForm({
         editDatastream.device_id ? String(editDatastream.device_id) : ""
       );
       // Ekstrak angka dari format V0 menjadi 0
-      setPin(editDatastream.pin ? String(editDatastream.pin).replace('V', '') : "");
+      setPin(
+        editDatastream.pin ? String(editDatastream.pin).replace("V", "") : ""
+      );
       setType(editDatastream.type || "");
       setUnit(editDatastream.unit || "");
       setDefaultValue(editDatastream.default_value || "");
@@ -119,6 +122,22 @@ export default function EditDatastreamForm({
             <span className="text-sm text-muted-foreground px-2 py-2 italic">
               Tidak ada device
             </span>
+          ) : isMobile ? (
+            <Select
+              value={deviceId}
+              onValueChange={(value) => setDeviceId(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Device" />
+              </SelectTrigger>
+              <SelectContent>
+                {devices.map((dev) => (
+                  <SelectItem key={dev.id} value={String(dev.id)}>
+                    {dev.description || dev.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : (
             <Popover
               open={openDevicePopover}
@@ -229,7 +248,12 @@ export default function EditDatastreamForm({
       </div>
 
       {/* SATUAN & FORMAT DESIMAL */}
-      <div className={cn("grid gap-4", showDecimal || type === "boolean" ? "grid-cols-2" : "")}>
+      <div
+        className={cn(
+          "grid gap-4",
+          type === "double" || type === "boolean" ? "grid-cols-2" : ""
+        )}
+      >
         {/* SATUAN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -264,7 +288,11 @@ export default function EditDatastreamForm({
             <Label className="text-left font-medium max-sm:text-xs ml-1">
               Nilai Default
             </Label>
-            <Select value={booleanValue} onValueChange={setBooleanValue} required>
+            <Select
+              value={booleanValue}
+              onValueChange={setBooleanValue}
+              required
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Nilai Default" />
               </SelectTrigger>

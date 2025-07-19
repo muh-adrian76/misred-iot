@@ -15,6 +15,7 @@ export default function AlarmDialogs({
   setDeleteFormOpen,
   alarmToDelete,
   handleDeleteAlarm,
+  isMobile,
 }) {
   return (
     <>
@@ -22,6 +23,7 @@ export default function AlarmDialogs({
         open={addFormOpen}
         setOpen={setAddFormOpen}
         handleAddAlarm={handleAddAlarm}
+        isMobile={isMobile}
       />
       <EditAlarmForm
         open={editFormOpen}
@@ -29,6 +31,7 @@ export default function AlarmDialogs({
         editAlarm={editAlarm}
         setEditAlarm={setEditAlarm}
         handleEditAlarm={handleEditAlarm}
+        isMobile={isMobile}
       />
       <DeleteAlarmForm
         open={deleteFormOpen}

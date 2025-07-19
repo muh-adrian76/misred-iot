@@ -18,7 +18,7 @@ export function alarmRoutes(alarmService: AlarmService) {
       //@ts-ignore
       async ({ jwt, cookie, body }) => {
         const decoded = await authorizeRequest(jwt, cookie);
-        const { description, device_id, datastream_id, conditions, cooldown_minutes } = body;
+        const { description, device_id, datastream_id, is_active, conditions, cooldown_minutes } = body;
         const user_id = decoded.sub;
         
         try {
@@ -27,6 +27,7 @@ export function alarmRoutes(alarmService: AlarmService) {
             user_id: Number(user_id),
             device_id,
             datastream_id,
+            is_active,
             conditions,
             cooldown_minutes,
           });

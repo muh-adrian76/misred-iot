@@ -50,21 +50,36 @@ export class MQTTService {
   }
 
   async subscribeAllDeviceTopics() {
-    const [devices] = await this.db.query(
-      "SELECT mqtt_topic FROM devices WHERE mqtt_topic IS NOT NULL"
-    );
-    // @ts-ignore
-    devices.forEach((dev: any) => {
-      if (dev.mqtt_topic) {
-        this.mqttClient.subscribe(dev.mqtt_topic, (err) => {
+    // Gunakan topic manager dari device service untuk subscribe
+    const topicManager = this.deviceService?.getMQTTTopicManager();
+    if (topicManager) {
+      await topicManager.subscribeToAllActiveTopics((topic: string) => {
+        this.mqttClient.subscribe(topic, (err) => {
           if (!err) {
-            console.log(`✅ Berhasil subscribe topik: ${dev.mqtt_topic}`);
+            console.log(`✅ Berhasil subscribe topik: ${topic}`);
           } else {
-            console.error(`❌ Gagal subscribe topik: ${dev.mqtt_topic}`, err);
+            console.error(`❌ Gagal subscribe topik: ${topic}`, err);
           }
         });
-      }
-    });
+      });
+    } else {
+      // Fallback ke method lama jika topic manager tidak tersedia
+      const [devices] = await this.db.query(
+        "SELECT DISTINCT mqtt_topic FROM devices WHERE mqtt_topic IS NOT NULL AND protocol = 'MQTT'"
+      );
+      // @ts-ignore
+      devices.forEach((dev: any) => {
+        if (dev.mqtt_topic) {
+          this.mqttClient.subscribe(dev.mqtt_topic, (err) => {
+            if (!err) {
+              console.log(`✅ Berhasil subscribe topik: ${dev.mqtt_topic}`);
+            } else {
+              console.error(`❌ Gagal subscribe topik: ${dev.mqtt_topic}`, err);
+            }
+          });
+        }
+      });
+    }
   }
 
   // Fungsi verifikasi JWT dan dekripsi payload
@@ -144,20 +159,16 @@ export class MQTTService {
       try {
         // Coba parse sebagai JSON langsung (untuk CustomJWT)
         decrypted = JSON.parse(decodedPayload.encryptedData);
-        console.log("📦 MQTT CustomJWT payload parsed successfully");
+        console.log("📦 (MQTT) Berhasil mem-parsing payload CustomJWT");
       } catch (parseError) {
         // Fallback ke AES decryption untuk backward compatibility
-        console.log("🔄 MQTT Falling back to AES decryption");
-        console.log("🔐 MQTT Encrypted data to decrypt:", decodedPayload.encryptedData);
-        console.log("🔑 MQTT Secret for decryption:", secret);
-        
+        console.log("🔄 (MQTT) Mencoba menggunakan metode dekripsi AES");
         try {
           decrypted = decryptAES(crypto, decodedPayload.encryptedData, secret);
-          console.log("✅ MQTT AES decryption successful:", decrypted);
           
           // Parse JSON after AES decryption
           decrypted = JSON.parse(decrypted);
-          console.log("📦 MQTT Parsed decrypted JSON:", decrypted);
+          console.log("✅ (MQTT) Berhasil mem-parsing payload dengan dekripsi AES:", decrypted);
         } catch (aesError) {
           console.error("❌ MQTT AES decryption failed:", aesError);
           throw new Error(`AES decryption failed: ${aesError instanceof Error ? aesError.message : String(aesError)}`);
@@ -193,21 +204,14 @@ export class MQTTService {
         VALUES (?, ?, NOW())`,
         [device_id, JSON.stringify({ ...decrypted, protocol: 'mqtt', topic: data.topic || 'unknown' })]
       );
-      
-      console.log(`📥 MQTT Raw payload saved with ID: ${rawResult.insertId}`);
-      
       // STEP 2: Parse dan normalisasi data ke tabel payloads
       const normalizedPayloads = await this.parseAndNormalizePayload(
         Number(device_id), 
         decrypted, 
         rawResult.insertId
       );
-      
-      console.log(`✅ MQTT Parsed ${normalizedPayloads.length} sensor readings`);
-
       // STEP 3: Check alarms setelah payload disimpan (sama seperti HTTP)
       if (this.alarmNotificationService) {
-        console.log(`🔍 Checking alarms for MQTT device ${device_id}`);
         await this.alarmNotificationService.checkAlarms(Number(device_id), decrypted);
       }
 
@@ -235,8 +239,6 @@ export class MQTTService {
       
       // Parse setiap pin di raw data
       for (const [pin, value] of Object.entries(rawData)) {
-        console.log(`🔍 MQTT Processing pin: ${pin}, value: ${value}, type: ${typeof value}`);
-        
         if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
           
           // Cari datastream yang cocok dengan pin
@@ -261,7 +263,7 @@ export class MQTTService {
               );
               
               insertedIds.push(result.insertId);
-              console.log(`📊 MQTT Sensor data saved: Pin ${pin} → Value ${value} ${datastream.unit}`);
+              console.log(`📊 Berhasil menyimpan payload MQTT pada database.`);
               
             } catch (error) {
               console.error(`Error saving MQTT sensor data for pin ${pin}:`, error);
@@ -269,12 +271,8 @@ export class MQTTService {
           } else {
             console.warn(`⚠️ MQTT: No datastream found for pin ${pin}`);
           }
-        } else {
-          console.log(`⚠️ MQTT: Skipping pin ${pin} (not number or excluded): ${value}`);
         }
       }
-      
-      console.log(`✅ MQTT parseAndNormalizePayload completed. Inserted ${insertedIds.length} records`);
       return insertedIds;
       
     } catch (error) {
@@ -309,5 +307,36 @@ export class MQTTService {
     this.mqttClient.on("offline", () => {
       console.log("⚠️  MQTT client offline");
     });
+
+    // Optional: Periodic sync setiap 5 menit untuk memastikan consistency
+    // setInterval(async () => {
+    //   const topicManager = this.deviceService?.getMQTTTopicManager();
+    //   if (topicManager) {
+    //     try {
+    //       await topicManager.syncSubscriptions(
+    //         (topic: string) => {
+    //           this.mqttClient.subscribe(topic, (err) => {
+    //             if (!err) {
+    //               console.log(`✅ Sync: Subscribed to topic: ${topic}`);
+    //             } else {
+    //               console.error(`❌ Sync: Failed to subscribe to topic: ${topic}`, err);
+    //             }
+    //           });
+    //         },
+    //         (topic: string) => {
+    //           this.mqttClient.unsubscribe(topic, (err) => {
+    //             if (!err) {
+    //               console.log(`✅ Sync: Unsubscribed from topic: ${topic}`);
+    //             } else {
+    //               console.error(`❌ Sync: Failed to unsubscribe from topic: ${topic}`, err);
+    //             }
+    //           });
+    //         }
+    //       );
+    //     } catch (error) {
+    //       console.error("❌ MQTT topic sync error:", error);
+    //     }
+    //   }
+    // }, 5 * 60 * 1000); // 5 minutes
   }
 }

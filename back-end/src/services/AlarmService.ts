@@ -5,6 +5,7 @@ export interface CreateAlarmData {
   user_id: number;
   device_id: number;
   datastream_id: number;
+  is_active: boolean;
   conditions: Array<{
     operator: '=' | '<' | '>' | '<=' | '>=';
     threshold: number;
@@ -40,8 +41,8 @@ export class AlarmService {
       const query = `
         INSERT INTO alarms (
           description, user_id, device_id, datastream_id,
-          cooldown_minutes
-        ) VALUES (?, ?, ?, ?, ?)
+          is_active, cooldown_minutes
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       const [result] = await this.db.query(query, [
@@ -49,6 +50,7 @@ export class AlarmService {
         data.user_id,
         data.device_id,
         data.datastream_id,
+        data.is_active,
         data.cooldown_minutes || 5
       ]);
 

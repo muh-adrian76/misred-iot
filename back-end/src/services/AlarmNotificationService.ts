@@ -287,8 +287,8 @@ export class AlarmNotificationService {
         type: "alarm_notification",
         data: {
           id: `alarm_${alarm.id}_${Date.now()}`,
-          title: `🚨 Peringatan Sensor Alarm`,
-          message: `${alarm.description} - ${alarm.datastream_description}(${alarm.field_name}): ${sensorValue} (${alarm.condition_operator} ${alarm.condition_value}) pada ${alarm.device_description}`,
+          title: alarm.description,
+          message: `Device: ${alarm.device_description}\nDatastream: ${alarm.datastream_description}(${alarm.field_name})\nNilai: ${sensorValue} (${alarm.condition_operator} ${alarm.condition_value})`,
           isRead: false,
           createdAt: triggeredAt.toISOString(),
           priority: "high",

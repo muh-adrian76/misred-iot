@@ -33,6 +33,7 @@ export default function AddDeviceForm({
   openBoardPopover,
   setOpenBoardPopover,
   boardOptions,
+  isMobile,
 }) {
   const [name, setName] = useState("");
   const [boardType, setBoardType] = useState("");
@@ -62,47 +63,62 @@ export default function AddDeviceForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label className="text-left ml-1 font-medium max-sm:text-xs">Tipe Board</Label>
-          <Popover open={openBoardPopover} onOpenChange={setOpenBoardPopover}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openBoardPopover}
-                className="justify-between w-full"
-              >
-                <span className="truncate">
-                  {boardType || "Pilih tipe board"}
-                </span>
-                <ChevronDown className="ml-2 h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-full">
-              <Command>
-                <CommandInput placeholder="Cari tipe board..." />
-                <CommandList>
-                  <CommandEmpty>Tidak ada opsi.</CommandEmpty>
-                  {boardOptions.map((option) => (
-                    <CommandItem
-                      key={option}
-                      value={option}
-                      onSelect={() => {
-                        setBoardType(option);
-                        setOpenBoardPopover(false);
-                      }}
-                    >
-                      <span className="truncate">{option}</span>
-                      <Check
-                        className={cn(
-                          "ml-auto",
-                          boardType === option ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          {isMobile ? (
+            <Select value={boardType} onValueChange={setBoardType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih tipe board" />
+              </SelectTrigger>
+              <SelectContent>
+                {boardOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Popover open={openBoardPopover} onOpenChange={setOpenBoardPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openBoardPopover}
+                  className="justify-between w-full"
+                >
+                  <span className="truncate">
+                    {boardType || "Pilih tipe board"}
+                  </span>
+                  <ChevronDown className="ml-2 h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-full">
+                <Command>
+                  <CommandInput placeholder="Cari tipe board..." />
+                  <CommandList>
+                    <CommandEmpty>Tidak ada opsi.</CommandEmpty>
+                    {boardOptions.map((option) => (
+                      <CommandItem
+                        key={option}
+                        value={option}
+                        onSelect={() => {
+                          setBoardType(option);
+                          setOpenBoardPopover(false);
+                        }}
+                      >
+                        <span className="truncate">{option}</span>
+                        <Check
+                          className={cn(
+                            "ml-auto",
+                            boardType === option ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label className="text-left ml-1 font-medium max-sm:text-xs">

@@ -18,8 +18,9 @@ export const createAlarmSchema = {
     description: t.String({ minLength: 1, maxLength: 255 }),
     device_id: t.Number({ minimum: 1 }),
     datastream_id: t.Number({ minimum: 1 }),
-    conditions: t.Array(conditionSchema, { minItems: 1, maxItems: 5 }), // Allow 1-5 conditions
-    cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 })) // max 24 hours
+    is_active: t.Boolean(),
+    conditions: t.Array(conditionSchema, { minItems: 1, maxItems: 10 }),
+    cooldown_minutes: t.Number({ minimum: 0, maximum: 1440 })
   }),
   response: {
     200: t.Object({

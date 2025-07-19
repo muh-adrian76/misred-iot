@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ export default function AddDatastreamForm({
   devices,
   usedPins,
   decimalOptions,
+  isMobile,
 }) {
   const [description, setDescription] = useState("");
   const [pin, setPin] = useState("");
@@ -49,6 +51,22 @@ export default function AddDatastreamForm({
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [decimalValue, setdecimalValue] = useState("0.0");
   const [booleanValue, setBooleanValue] = useState("0");
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setDescription("");
+      setPin("");
+      setType("");
+      setUnit("");
+      setDefaultValue("");
+      setMinValue(0);
+      setMaxValue(1);
+      setDeviceId("");
+      setdecimalValue("0.0");
+      setBooleanValue("0");
+    }
+  }, [open]);
 
   const formContent = (
     <div className="grid gap-4 py-2">
@@ -75,58 +93,76 @@ export default function AddDatastreamForm({
           <Label className="text-left font-medium max-sm:text-xs ml-1">
             Device
           </Label>
-          <Popover open={openDevicePopover} onOpenChange={setOpenDevicePopover}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openDevicePopover}
-                className="justify-between w-full"
-              >
-                <span className="truncate">
-                  {devices.find((d) => d.id === deviceId)?.description ||
-                    devices.find((d) => d.id === deviceId)?.name ||
-                    "Pilih Device"}
-                </span>
-                <ChevronDown className="ml-2 h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-full" align="start">
-              <Command>
-                <CommandInput placeholder="Cari device..." />
-                <CommandList>
-                  <CommandEmpty>
-                    <Link
-                      href="/devices"
-                      className="opacity-50 transition-all hover:opacity-100"
-                    >
-                      Buat device baru
-                    </Link>
-                  </CommandEmpty>
-                  {devices.map((dev) => (
-                    <CommandItem
-                      key={dev.id}
-                      value={dev.id}
-                      onSelect={() => {
-                        setDeviceId(dev.id);
-                        setOpenDevicePopover(false);
-                      }}
-                    >
-                      <span className="truncate">
-                        {dev.description || dev.name}
-                      </span>
-                      <Check
-                        className={cn(
-                          "ml-auto",
-                          deviceId === dev.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          {isMobile ? (
+            <Select value={deviceId} onValueChange={setDeviceId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Device" />
+              </SelectTrigger>
+              <SelectContent>
+                {devices.map((d) => (
+                  <SelectItem key={d.id} value={String(d.id)}>
+                    {d.description}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Popover
+              open={openDevicePopover}
+              onOpenChange={setOpenDevicePopover}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openDevicePopover}
+                  className="justify-between w-full"
+                >
+                  <span className="truncate">
+                    {devices.find((d) => d.id === deviceId)?.description ||
+                      devices.find((d) => d.id === deviceId)?.name ||
+                      "Pilih Device"}
+                  </span>
+                  <ChevronDown className="ml-2 h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-full" align="start">
+                <Command>
+                  <CommandInput placeholder="Cari device..." />
+                  <CommandList>
+                    <CommandEmpty>
+                      <Link
+                        href="/devices"
+                        className="opacity-50 transition-all hover:opacity-100"
+                      >
+                        Buat device baru
+                      </Link>
+                    </CommandEmpty>
+                    {devices.map((dev) => (
+                      <CommandItem
+                        key={dev.id}
+                        value={dev.id}
+                        onSelect={() => {
+                          setDeviceId(dev.id);
+                          setOpenDevicePopover(false);
+                        }}
+                      >
+                        <span className="truncate">
+                          {dev.description || dev.name}
+                        </span>
+                        <Check
+                          className={cn(
+                            "ml-auto",
+                            deviceId === dev.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         {/* PIN */}
         <div className="flex flex-col gap-2">
@@ -189,7 +225,12 @@ export default function AddDatastreamForm({
       </div>
 
       {/* SATUAN & FORMAT DESIMAL */}
-      <div className={cn("grid gap-4", type === "double" || type === "boolean" ? "grid-cols-2" : "")}>
+      <div
+        className={cn(
+          "grid gap-4",
+          type === "double" || type === "boolean" ? "grid-cols-2" : ""
+        )}
+      >
         {/* SATUAN */}
         <div className="flex flex-col gap-2">
           <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -224,7 +265,11 @@ export default function AddDatastreamForm({
             <Label className="text-left font-medium max-sm:text-xs ml-1">
               Nilai Default
             </Label>
-            <Select value={booleanValue} onValueChange={setBooleanValue} required>
+            <Select
+              value={booleanValue}
+              onValueChange={setBooleanValue}
+              required
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Nilai Default" />
               </SelectTrigger>
@@ -257,7 +302,7 @@ export default function AddDatastreamForm({
         )}
       </div>
 
-      {type === "boolean" ? null :  type === "string" ? (
+      {type === "boolean" ? null : type === "string" ? (
         <div className="flex flex-col gap-2">
           <Label
             htmlFor="defaultValue"
@@ -345,7 +390,7 @@ export default function AddDatastreamForm({
       minValue,
       maxValue,
       decimalValue,
-      booleanValue
+      booleanValue,
     });
     setDescription("");
     setPin("");
