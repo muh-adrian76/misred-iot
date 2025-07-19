@@ -42,3 +42,7 @@ yarn-error.log*
 package-lock.json
 bun.lock
 **/*.bun
+
+# WhatsApp API
+/.wwebjs_auth/
+/.wwebjs_cache
