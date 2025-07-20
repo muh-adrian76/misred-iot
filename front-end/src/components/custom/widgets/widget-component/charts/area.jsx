@@ -65,7 +65,7 @@ export function AreaChartWidget({
       },
       datastream_2: {
         label: "Datastream 2",
-        color: "var(--chart-2)",
+        color: "var(--chart-5)",
       },
       datastream_3: {
         label: "Datastream 3",
@@ -74,7 +74,7 @@ export function AreaChartWidget({
     };
 
     return (
-      <div className="h-full w-full min-h-[150px] min-w-[200px] space-y-2">
+      <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
         <ChartContainer
           config={previewChartConfig}
           className="h-full w-full"
@@ -95,7 +95,6 @@ export function AreaChartWidget({
             tickFormatter={(value) => value.slice(0, 3)}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
           <Area
             dataKey="datastream_1"
             type="natural"
@@ -284,6 +283,7 @@ export function AreaChartWidget({
             tick={{ fontSize: 11 }}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+          <ChartLegend content={<ChartLegendContent />} />
           {/* Render satu Area untuk setiap pair */}
           {pairs.map((pair, idx) => (
             <Area
@@ -296,7 +296,6 @@ export function AreaChartWidget({
               stackId="a"
             />
           ))}
-          <ChartLegend content={<ChartLegendContent />} />
         </AreaChart>
       </ChartContainer>
     </div>

@@ -226,7 +226,7 @@ const ToDoList = () => {
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
+      <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50">
         <div
           className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full shadow-2xl cursor-pointer hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-110 flex items-center justify-center"
           onClick={toggleMinimize}
@@ -272,7 +272,7 @@ const ToDoList = () => {
               <Goal className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-base sm:text-md font-bold">Tutorial Pengguna Baru!</h2>
+              <h2 className="text-base sm:text-md font-bold">Panduan Pengguna Baru!</h2>
               <p className="text-red-100 text-xs sm:text-sm">
                 {completedTasks.length}/{tasks.length} langkah sudah selesai
               </p>

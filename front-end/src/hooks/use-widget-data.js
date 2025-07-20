@@ -179,14 +179,16 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
   // Helper function untuk menerjemahkan time range ke bahasa Indonesia
   const getTimeRangeLabel = (range) => {
     const labels = {
+      '1m': '1 menit terakhir',
       '1h': '1 jam terakhir',
-      '6h': '6 jam terakhir', 
-      '12h': '12 jam terakhir',
-      '24h': '24 jam terakhir',
-      '7d': '7 hari terakhir',
-      '30d': '30 hari terakhir'
+      '12h': '12 jam terakhir', 
+      '1d': '1 hari terakhir',
+      '1w': '1 minggu terakhir',
+      '1M': '1 bulan terakhir',
+      '1y': '1 tahun terakhir',
+      'all': 'semua waktu'
     };
-    return labels[range] || '1 jam terakhir';
+    return labels[range] || '1 menit terakhir';
   };
 
   return {

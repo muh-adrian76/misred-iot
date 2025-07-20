@@ -1356,7 +1356,7 @@ export function useDashboardLogic() {
   const handleTimeRangeChange = useCallback((newTimeRange) => {
     setCurrentTimeRange(newTimeRange);
     // Optional: Trigger refresh widgets dengan time range baru
-    console.log('📅 Time range changed to:', newTimeRange);
+    // console.log('📅 Time range changed to:', newTimeRange);
   }, []);
 
   // Return all the required state and functions

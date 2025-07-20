@@ -144,17 +144,18 @@ export function alarmNotificationRoutes(
           }
           
           // Get total count
-          const [countResult] = await notificationService.db.execute(`
+          let countParams = [userId];
+          let queryParams = [userId];
+          
+          // Build proper SQL queries with parameters
+          let countQuery = `
             SELECT COUNT(*) as total
             FROM alarm_notifications an
             JOIN alarms a ON an.alarm_id = a.id
-            WHERE an.user_id = ? AND an.is_saved = TRUE ${timeCondition}
-          `, [userId]);
-
-          const total = (countResult as any[])[0].total;
-
-          // Get paginated results
-          const [rows] = await notificationService.db.execute(`
+            WHERE an.user_id = ? AND an.is_saved = TRUE
+          `;
+          
+          let dataQuery = `
             SELECT 
               an.id,
               an.alarm_id,
@@ -175,10 +176,23 @@ export function alarmNotificationRoutes(
             JOIN alarms a ON an.alarm_id = a.id
             JOIN datastreams ds ON an.datastream_id = ds.id
             JOIN devices dev ON an.device_id = dev.id
-            WHERE an.user_id = ? AND an.is_saved = TRUE ${timeCondition}
-            ORDER BY an.triggered_at DESC
-            LIMIT ? OFFSET ?
-          `, [userId, limit, offset]);
+            WHERE an.user_id = ? AND an.is_saved = TRUE
+          `;
+          
+          // Add time condition to queries if needed
+          if (timeCondition) {
+            countQuery += ` ${timeCondition}`;
+            dataQuery += ` ${timeCondition}`;
+          }
+          
+          dataQuery += ` ORDER BY an.triggered_at DESC LIMIT ? OFFSET ?`;
+          queryParams.push(limit, offset);
+
+          const [countResult] = await notificationService.db.execute(countQuery, countParams);
+          const total = (countResult as any[])[0]?.total || 0;
+
+          // Get paginated results
+          const [rows] = await notificationService.db.execute(dataQuery, queryParams);
 
           const notifications = (rows as any[]).map((row: any) => ({
             id: row.id,
@@ -200,21 +214,62 @@ export function alarmNotificationRoutes(
 
           return {
             success: true,
+            message: total === 0 ? "Belum ada riwayat notifikasi" : "Berhasil mengambil riwayat notifikasi",
             notifications: notifications,
             pagination: {
               page: page,
               limit: limit,
               total: total,
-              pages: Math.ceil(total / limit)
+              pages: Math.ceil(total / limit) || 1
             }
           };
 
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching notification history:", error);
+          
+          // Check if it's a database connection error
+          if (error.code === 'ER_WRONG_ARGUMENTS' || error.errno === 1210) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "Parameter query tidak valid",
+              notifications: [],
+              pagination: {
+                page: 1,
+                limit: 20,
+                total: 0,
+                pages: 1
+              }
+            };
+          }
+          
+          // General database error
+          if (error.errno) {
+            set.status = 500;
+            return {
+              success: false,
+              message: "Gagal mengambil data dari database",
+              notifications: [],
+              pagination: {
+                page: 1,
+                limit: 20,
+                total: 0,
+                pages: 1
+              }
+            };
+          }
+          
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error"
+            message: "Internal server error",
+            notifications: [],
+            pagination: {
+              page: 1,
+              limit: 20,
+              total: 0,
+              pages: 1
+            }
           };
         }
       }

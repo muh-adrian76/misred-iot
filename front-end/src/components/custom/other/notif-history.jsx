@@ -165,6 +165,7 @@ export default function NotifHistory({ open, setOpen }) {
     data: historyData,
     isLoading,
     refetch,
+    error,
   } = useQuery({
     queryKey: ["notification-history", currentPage, timeRange, pageSize],
     queryFn: async () => {
@@ -177,12 +178,33 @@ export default function NotifHistory({ open, setOpen }) {
       const response = await fetchFromBackend(
         `/notifications/history?${params}`
       );
+      
+      const data = await response.json();
+      
+      // Handle API errors gracefully
       if (!response.ok) {
+        // If backend returns structured error response, use it
+        if (data.success === false) {
+          return {
+            success: false,
+            notifications: [],
+            pagination: {
+              page: 1,
+              limit: pageSize,
+              total: 0,
+              pages: 1
+            },
+            message: data.message || "Gagal mengambil riwayat notifikasi"
+          };
+        }
         throw new Error("Failed to fetch notification history");
       }
-      return response.json();
+      
+      return data;
     },
     enabled: open && activeIndex === 0,
+    retry: 1, // Only retry once
+    refetchOnWindowFocus: false,
   });
 
   // Export functions
@@ -345,7 +367,7 @@ export default function NotifHistory({ open, setOpen }) {
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={!historyData?.notifications?.length}
+                    disabled={!historyData?.notifications?.length || error || isLoading}
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Ekspor
@@ -358,7 +380,7 @@ export default function NotifHistory({ open, setOpen }) {
                       size="sm"
                       className="w-full justify-start"
                       onClick={exportToCSV}
-                      disabled={!historyData?.notifications?.length}
+                      disabled={!historyData?.notifications?.length || error}
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       Ekspor CSV
@@ -368,7 +390,7 @@ export default function NotifHistory({ open, setOpen }) {
                       size="sm"
                       className="w-full justify-start"
                       onClick={exportToPDF}
-                      disabled={!historyData?.notifications?.length}
+                      disabled={!historyData?.notifications?.length || error}
                     >
                       <FileText className="w-4 h-4 mr-2" />
                       Ekspor PDF
@@ -388,6 +410,24 @@ export default function NotifHistory({ open, setOpen }) {
                       Memuat riwayat...
                     </p>
                   </div>
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <XCircle className="h-16 w-16 text-red-500/40 mb-4" />
+                  <h3 className="font-semibold text-lg text-foreground mb-2">
+                    Gagal memuat riwayat
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mb-4">
+                    {historyData?.message || "Terjadi kesalahan saat mengambil data riwayat notifikasi."}
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => refetch()}
+                    className="text-sm"
+                  >
+                    Coba Lagi
+                  </Button>
                 </div>
               ) : !historyData?.notifications?.length ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -413,11 +453,14 @@ export default function NotifHistory({ open, setOpen }) {
             </ScrollArea>
 
             {/* Pagination */}
-            {historyData?.pagination && historyData.pagination.pages > 1 && (
+            {historyData?.pagination && 
+             !error && 
+             !isLoading && 
+             historyData.pagination.pages > 1 && (
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   Halaman {historyData.pagination.page} dari{" "}
-                  {historyData.pagination.pages}({historyData.pagination.total}{" "}
+                  {historyData.pagination.pages} ({historyData.pagination.total}{" "}
                   total notifikasi)
                 </div>
 

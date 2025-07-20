@@ -65,7 +65,7 @@ export function LineChartWidget({
       },
       datastream_2: {
         label: "Datastream 2",
-        color: "var(--chart-2)",
+        color: "var(--chart-4)",
       },
       datastream_3: {
         label: "Datastream 3",
@@ -74,7 +74,7 @@ export function LineChartWidget({
     };
 
     return (
-      <div className="h-full w-full min-h-[150px] min-w-[200px] space-y-2">
+      <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
         <ChartContainer
           config={previewChartConfig}
           className="h-full w-full"
@@ -116,7 +116,6 @@ export function LineChartWidget({
             strokeWidth={2}
             dot={false}
           />
-          <ChartLegend content={<ChartLegendContent />} />
         </LineChart>
       </ChartContainer>
       </div>

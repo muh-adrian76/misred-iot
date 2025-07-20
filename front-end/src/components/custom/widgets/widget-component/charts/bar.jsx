@@ -45,7 +45,7 @@ export function BarChartWidget({
     };
 
     return (
-      <div className="h-full w-full min-h-[150px] min-w-[200px] space-y-2">
+      <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
         <ChartContainer
           config={previewChartConfig}
           className="h-full w-full"
@@ -69,7 +69,6 @@ export function BarChartWidget({
             cursor={false}
             content={<ChartTooltipContent indicator="dashed" />}
           />
-            <ChartLegend content={<ChartLegendContent />} />
           <Bar
             dataKey="datastream_1"
             fill={previewChartConfig.datastream_1.color}
