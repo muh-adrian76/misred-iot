@@ -1,6 +1,7 @@
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { DeviceService } from "./DeviceService";
 import { AlarmNotificationService } from "./AlarmNotificationService";
+import { broadcastToUsers } from "../api/ws/user-ws";
 import { decryptAES } from "../lib/utils";
 import crypto from "crypto";
 
@@ -156,7 +157,10 @@ export class PayloadService {
       
       console.log(`✅ Parsed ${normalizedPayloads.length} sensor readings`);
 
-      // STEP 3: Check alarms setelah payload disimpan
+      // STEP 3: Broadcast real-time data ke user pemilik device
+      await this.broadcastSensorUpdates(Number(deviceId), decrypted);
+
+      // STEP 4: Check alarms setelah payload disimpan
       if (this.alarmNotificationService) {
         console.log(`🔍 Checking alarms for device ${deviceId}`);
         await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
@@ -295,13 +299,19 @@ export class PayloadService {
     try {
       let timeCondition = '';
       switch (timeRange) {
+        case '1m': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 1 MINUTE'; break;
         case '1h': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 1 HOUR'; break;
         case '6h': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 6 HOUR'; break;
         case '12h': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 12 HOUR'; break;
-        case '24h': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 24 HOUR'; break;
-        case '7d': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 7 DAY'; break;
-        case '30d': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 30 DAY'; break;
-        default: timeCondition = 'AND p.server_time >= NOW() - INTERVAL 24 HOUR';
+        case '24h':
+        case '1d': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 1 DAY'; break;
+        case '7d':
+        case '1w': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 7 DAY'; break;
+        case '30d':
+        case '1M': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 30 DAY'; break;
+        case '1y': timeCondition = 'AND p.server_time >= NOW() - INTERVAL 1 YEAR'; break;
+        case 'all': timeCondition = ''; break; // Semua data
+        default: timeCondition = 'AND p.server_time >= NOW() - INTERVAL 1 DAY';
       }
 
       const [rows] = await this.db.query(
@@ -357,6 +367,61 @@ export class PayloadService {
     } catch (error) {
       console.error("Error saving Lora payload:", error);
       throw error;
+    }
+  }
+
+  // Real-time broadcasting method
+  private async broadcastSensorUpdates(deviceId: number, rawData: any) {
+    try {
+      // Get device info and owner
+      const [deviceRows]: any = await this.db.query(
+        `SELECT d.id, d.description as device_name, d.user_id, u.name as user_name
+         FROM devices d 
+         LEFT JOIN users u ON d.user_id = u.id 
+         WHERE d.id = ?`,
+        [deviceId]
+      );
+
+      if (!deviceRows.length) {
+        console.warn(`Device ${deviceId} not found for broadcasting`);
+        return;
+      }
+
+      const device = deviceRows[0];
+      
+      // Get datastreams for this device to map pin data
+      const [datastreams]: any = await this.db.query(
+        `SELECT id, pin, description, unit, type FROM datastreams WHERE device_id = ?`,
+        [deviceId]
+      );
+
+      // Broadcast each sensor value with datastream info
+      for (const [pin, value] of Object.entries(rawData)) {
+        if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
+          const datastream = datastreams.find((ds: any) => ds.pin === pin);
+          
+          if (datastream) {
+            // Broadcast real-time sensor update to all users (akan difilter oleh frontend berdasarkan user_id)
+            broadcastToUsers({
+              type: "sensor_update",
+              device_id: deviceId,
+              datastream_id: datastream.id,
+              value: value,
+              timestamp: new Date().toISOString(),
+              device_name: device.device_name,
+              sensor_name: datastream.description,
+              unit: datastream.unit,
+              user_id: device.user_id, // Frontend akan filter berdasarkan ini
+              pin: pin
+            });
+            
+            console.log(`📡 Broadcasted sensor update: Device ${deviceId} → Pin ${pin} → Value ${value}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error broadcasting sensor updates:", error);
+      // Don't throw error to avoid breaking payload saving
     }
   }
 }

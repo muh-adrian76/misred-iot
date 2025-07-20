@@ -11,16 +11,18 @@ import { cn } from "@/lib/utils";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
 const timeRangeOptions = [
+  { value: "1m", label: "1 Menit Terakhir", description: "Data dalam 1 menit terakhir" },
   { value: "1h", label: "1 Jam Terakhir", description: "Data dalam 1 jam terakhir" },
-  { value: "6h", label: "6 Jam Terakhir", description: "Data dalam 6 jam terakhir" },
   { value: "12h", label: "12 Jam Terakhir", description: "Data dalam 12 jam terakhir" },
-  { value: "24h", label: "24 Jam Terakhir", description: "Data dalam 24 jam terakhir" },
-  { value: "7d", label: "7 Hari Terakhir", description: "Data dalam 7 hari terakhir" },
-  { value: "30d", label: "30 Hari Terakhir", description: "Data dalam 30 hari terakhir" },
+  { value: "1d", label: "1 Hari Terakhir", description: "Data dalam 1 hari terakhir" },
+  { value: "1w", label: "1 Minggu Terakhir", description: "Data dalam 1 minggu terakhir" },
+  { value: "1M", label: "1 Bulan Terakhir", description: "Data dalam 1 bulan terakhir" },
+  { value: "1y", label: "1 Tahun Terakhir", description: "Data dalam 1 tahun terakhir" },
+  { value: "all", label: "Semua Waktu", description: "Semua data yang tersedia" },
 ];
 
 export default function DashboardTimeFilter({ 
-  currentTimeRange = "30d", 
+  currentTimeRange = "1m", 
   onTimeRangeChange,
   disabled = false 
 }) {
@@ -49,7 +51,7 @@ export default function DashboardTimeFilter({
             <CalendarSearch className="w-4 h-4" />
             <span className="inline">Filter</span>
             <span className="text-xs text-muted-foreground">
-              {isMobile || isMedium ? ("(" + currentOption?.value + ")" || "(24h)") : "(" + (currentOption?.description || "24 Jam Terakhir") + ")"}
+              {isMobile || isMedium ? ("(" + currentOption?.value + ")" || "(1m)") : "(" + (currentOption?.description || "Data dalam 1 menit terakhir") + ")"}
             </span>
           </div>
         </Button>

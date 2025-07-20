@@ -66,6 +66,9 @@ export function useDashboardLogic() {
   const [datastreams, setDatastreams] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
+  
+  // Time range state untuk mengontrol rentang waktu data widget
+  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
 
   // Dashboard provider
   const {
@@ -191,7 +194,33 @@ export function useDashboardLogic() {
         const widgetsByDashboard = {};
         for (const dashboard of dashboards) {
           const dashboardWidgets = await fetchWidgetsByDashboard(dashboard.id);
-          widgetsByDashboard[dashboard.id] = dashboardWidgets;
+          
+          // Process widgets to ensure inputs field is properly parsed
+          const processedWidgets = dashboardWidgets.map(widget => {
+            // Parse inputs if it's a string (from database JSON column)
+            if (widget.inputs && typeof widget.inputs === 'string') {
+              try {
+                widget.inputs = JSON.parse(widget.inputs);
+              } catch (e) {
+                console.warn('Failed to parse widget inputs:', widget.inputs, e);
+                widget.inputs = [];
+              }
+            }
+            
+            // Backward compatibility: if no inputs but has old format
+            if (!widget.inputs && widget.device_id && widget.datastream_id) {
+              widget.inputs = [{ device_id: widget.device_id, datastream_id: widget.datastream_id }];
+            }
+            
+            // Ensure inputs is always an array
+            if (!Array.isArray(widget.inputs)) {
+              widget.inputs = [];
+            }
+            
+            return widget;
+          });
+          
+          widgetsByDashboard[dashboard.id] = processedWidgets;
         }
         setWidgets(widgetsByDashboard);
       }
@@ -233,6 +262,14 @@ export function useDashboardLogic() {
         
         // Use dashboard ID as key for items
         items[dashboard.id] = dashboardWidgets;
+        
+        // Debug: Log widget data to see if inputs are properly parsed
+        // console.log(`Dashboard ${dashboard.id} widgets:`, dashboardWidgets.map(w => ({
+        //   id: w.id,
+        //   description: w.description,
+        //   inputs: w.inputs,
+        //   type: w.type
+        // })));
         
         // Generate or parse layouts
         let dashboardLayouts = {};
@@ -527,8 +564,7 @@ export function useDashboardLogic() {
           const widgetPayload = {
             description: stagedWidget.description,
             dashboard_id: dashboardId,
-            device_id: stagedWidget.device_id,
-            datastream_id: stagedWidget.datastream_id,
+            inputs: stagedWidget.inputs || stagedWidget.datastream_ids || [{ device_id: stagedWidget.device_id || 1, datastream_id: stagedWidget.datastream_id || 1 }],
             type: stagedWidget.type,
           };
           
@@ -658,8 +694,7 @@ export function useDashboardLogic() {
         body: JSON.stringify({
           description: `${chartType} chart`,
           dashboard_id: dashboardId,
-          device_id: 1,
-          datastream_id: 1,
+          inputs: [{ device_id: 1, datastream_id: 1 }],
           type: chartType,
         }),
       });
@@ -776,12 +811,13 @@ export function useDashboardLogic() {
         throw new Error('Widget description is required');
       }
       
-      if (!formData.device_id) {
-        throw new Error('Device ID is required');
-      }
+      // Support both old single device/datastream and new multi-datastream format
+      const hasOldFormat = formData.device_id && formData.datastream_id;
+      const hasNewFormat = formData.datastream_ids && Array.isArray(formData.datastream_ids) && formData.datastream_ids.length > 0;
+      const hasInputsFormat = formData.inputs && Array.isArray(formData.inputs) && formData.inputs.length > 0;
       
-      if (!formData.datastream_id) {
-        throw new Error('Datastream ID is required');
+      if (!hasOldFormat && !hasNewFormat && !hasInputsFormat) {
+        throw new Error('Device and datastream selection is required');
       }
 
       // Stage the widget changes in local state
@@ -799,14 +835,12 @@ export function useDashboardLogic() {
           ? { 
               ...item,
               description: formData.description.trim(),
-              device_id: parseInt(formData.device_id),
-              datastream_id: parseInt(formData.datastream_id),
+              inputs: formData.inputs || formData.datastream_ids || [{ device_id: parseInt(formData.device_id || item.device_id || 1), datastream_id: parseInt(formData.datastream_id || item.datastream_id || 1) }],
               // Mark as having staged edits
               hasEditedChanges: true,
               originalData: {
                 description: item.description,
-                device_id: item.device_id,
-                datastream_id: item.datastream_id
+                inputs: item.inputs || item.datastream_ids || [{ device_id: item.device_id, datastream_id: item.datastream_id }]
               }
             }
           : item
@@ -836,8 +870,7 @@ export function useDashboardLogic() {
       id: tempId,
       description: formData.description,
       dashboard_id: dashboardId,
-      device_id: formData.device_id,
-      datastream_id: formData.datastream_id,
+      inputs: formData.inputs || formData.datastream_ids || [{ device_id: formData.device_id || 1, datastream_id: formData.datastream_id || 1 }],
       type: formData.chartType,
       isStaged: true
     };
@@ -1089,8 +1122,7 @@ export function useDashboardLogic() {
           const updatePayload = {
             description: editedWidget.description,
             dashboard_id: parseInt(editedWidget.dashboard_id || dashboardId),
-            device_id: parseInt(editedWidget.device_id),
-            datastream_id: parseInt(editedWidget.datastream_id),
+            inputs: editedWidget.inputs || editedWidget.datastream_ids || [{ device_id: parseInt(editedWidget.device_id || 1), datastream_id: parseInt(editedWidget.datastream_id || 1) }],
             type: editedWidget.type,
           };
           
@@ -1122,8 +1154,7 @@ export function useDashboardLogic() {
           const widgetPayload = {
             description: stagedWidget.description,
             dashboard_id: dashboardId,
-            device_id: stagedWidget.device_id,
-            datastream_id: stagedWidget.datastream_id,
+            inputs: stagedWidget.inputs || stagedWidget.datastream_ids || [{ device_id: stagedWidget.device_id || 1, datastream_id: stagedWidget.datastream_id || 1 }],
             type: stagedWidget.type,
           };
           
@@ -1321,6 +1352,13 @@ export function useDashboardLogic() {
     }
   }, [activeTab, dashboards, editDashboardValue, tabItems, tabLayouts, updateTabLayouts, fetchDashboards]);
 
+  // Handler untuk perubahan time range
+  const handleTimeRangeChange = useCallback((newTimeRange) => {
+    setCurrentTimeRange(newTimeRange);
+    // Optional: Trigger refresh widgets dengan time range baru
+    console.log('📅 Time range changed to:', newTimeRange);
+  }, []);
+
   // Return all the required state and functions
   return {
     // State
@@ -1365,6 +1403,7 @@ export function useDashboardLogic() {
     setHasUnsavedChanges,
     isAuthenticated, // Add this missing property!
     layoutKey,
+    currentTimeRange,
     
     // Functions
     handleAddDashboard,
@@ -1387,6 +1426,7 @@ export function useDashboardLogic() {
     startEditMode,
     cancelEditMode,
     saveAllLayoutChanges,
+    handleTimeRangeChange,
     
     // Responsive
     isMobile,

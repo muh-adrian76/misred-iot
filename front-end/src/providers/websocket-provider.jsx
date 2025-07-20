@@ -8,7 +8,12 @@ const WebSocketContext = createContext(null);
 export function WebSocketProvider({ children }) {
   const { user } = useUser();
   const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 5000; // 5 seconds
   const [ws, setWs] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   const [deviceStatuses, setDeviceStatuses] = useState(new Map());
   const [deviceControls, setDeviceControls] = useState(new Map());
   const [alarmNotifications, setAlarmNotifications] = useState([]);
@@ -44,8 +49,14 @@ export function WebSocketProvider({ children }) {
 
   // Clear notifications saat user logout
   useEffect(() => {
-    if (!user) {
+    if (!user || !user.id) {
       setAlarmNotifications([]);
+      setIsConnected(false);
+      // Clear reconnect timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
       try {
         localStorage.removeItem("notifications");
       } catch (error) {
@@ -54,11 +65,120 @@ export function WebSocketProvider({ children }) {
     }
   }, [user]);
 
-  useEffect(() => {
+  // Function to create WebSocket connection
+  const createWebSocketConnection = () => {
+    if (!user) return;
+
+    // Close existing connection if any
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
       setWs(null);
+      setIsConnected(false);
+    }
+
+    console.log(`🔄 Attempting WebSocket connection... (Attempt ${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+
+    const socket = new WebSocket(
+      `${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user`
+    );
+    wsRef.current = socket;
+    setWs(socket);
+
+    socket.onopen = () => {
+      console.log("✅ WebSocket connected!");
+      setIsConnected(true);
+      reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
+    };
+    
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Handle device status updates
+        if (data.type === "status_update") {
+          setDeviceStatuses(prev => {
+            const newMap = new Map(prev);
+            newMap.set(data.device_id, {
+              status: data.status,
+              timestamp: data.timestamp || new Date().toISOString()
+            });
+            return newMap;
+          });
+        }
+        
+        // Handle device control status updates
+        if (data.type === "control_status_update") {
+          setDeviceControls(prev => {
+            const newMap = new Map(prev);
+            newMap.set(data.device_id, {
+              controls: data.controls,
+              timestamp: data.timestamp
+            });
+            return newMap;
+          });
+        }
+
+        // Handle command execution results
+        if (data.type === "command_executed") {
+          console.log(`Command ${data.command_id} executed:`, data.success ? 'SUCCESS' : 'FAILED');
+          // You can add toast notifications here
+        }
+
+        // Handle alarm notifications
+        if (data.type === "alarm_notification") {
+          // Tambahkan notification baru ke state dan localStorage
+          setAlarmNotifications(prev => {
+            const newNotifications = [data.data, ...prev];
+            // Limit notifications (misal: maksimal 100)
+            return newNotifications.slice(0, 100);
+          });
+          
+          // Show browser notification if permission granted
+          if (Notification.permission === "granted") {
+            new Notification(data.data.title, {
+              body: data.data.message,
+              icon: "/web-logo.svg",
+              badge: "/web-logo.svg"
+            });
+          }
+        }
+
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
+    };
+    
+    socket.onclose = (event) => {
+      console.log("❌ WebSocket disconnected!", event.code, event.reason);
+      setIsConnected(false);
+      wsRef.current = null;
+      setWs(null);
+
+      // Only attempt reconnect if user is still logged in and we haven't exceeded max attempts
+      if (user && reconnectAttemptsRef.current < maxReconnectAttempts) {
+        reconnectAttemptsRef.current += 1;
+        console.log(`🔄 Scheduling reconnect in ${reconnectDelay/1000} seconds... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+        
+        reconnectTimeoutRef.current = setTimeout(() => {
+          createWebSocketConnection();
+        }, reconnectDelay);
+      } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+        console.error("❌ Max reconnection attempts reached. Please refresh the page.");
+      }
+    };
+    
+    socket.onerror = (e) => {
+      console.error("❌ WebSocket error:", e);
+      setIsConnected(false);
+    };
+  };
+
+  useEffect(() => {
+    // Clear any existing timeouts
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     if (user) {
@@ -90,84 +210,35 @@ export function WebSocketProvider({ children }) {
       };
 
       fetchLoginNotifications();
-
-      const socket = new WebSocket(
-        `${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user`
-      );
-      wsRef.current = socket;
-      setWs(socket);
-
-      socket.onopen = () => {
-        console.log("WebSocket connected!");
-      };
-      
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          // Handle device status updates
-          if (data.type === "status_update") {
-            setDeviceStatuses(prev => {
-              const newMap = new Map(prev);
-              newMap.set(data.device_id, {
-                status: data.status,
-                timestamp: data.timestamp || new Date().toISOString()
-              });
-              return newMap;
-            });
-          }
-          
-          // Handle device control status updates
-          if (data.type === "control_status_update") {
-            setDeviceControls(prev => {
-              const newMap = new Map(prev);
-              newMap.set(data.device_id, {
-                controls: data.controls,
-                timestamp: data.timestamp
-              });
-              return newMap;
-            });
-          }
-
-          // Handle command execution results
-          if (data.type === "command_executed") {
-            console.log(`Command ${data.command_id} executed:`, data.success ? 'SUCCESS' : 'FAILED');
-            // You can add toast notifications here
-          }
-
-          // Handle alarm notifications
-          if (data.type === "alarm_notification") {
-            // Tambahkan notification baru ke state dan localStorage
-            setAlarmNotifications(prev => {
-              const newNotifications = [data.data, ...prev];
-              // Limit notifications (misal: maksimal 100)
-              return newNotifications.slice(0, 100);
-            });
-            
-            // Show browser notification if permission granted
-            if (Notification.permission === "granted") {
-              new Notification(data.data.title, {
-                body: data.data.message,
-                icon: "/web-logo.svg",
-                badge: "/web-logo.svg"
-              });
-            }
-          }
-
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      };
-      
-      socket.onclose = () => {
-        console.log("WebSocket disconnected!");
-      };
-      
-      socket.onerror = (e) => {
-        // console.error("WebSocket error:", e);
-      };
+      // Reset reconnect attempts when user changes
+      reconnectAttemptsRef.current = 0;
+      // Create initial WebSocket connection
+      createWebSocketConnection();
     }
+
+    // Cleanup function
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+        setWs(null);
+        setIsConnected(false);
+      }
+    };
   }, [user]);
+
+  // Function to manually trigger reconnection
+  const reconnectWebSocket = () => {
+    if (user && reconnectAttemptsRef.current < maxReconnectAttempts) {
+      console.log("🔄 Manual reconnection triggered...");
+      reconnectAttemptsRef.current = 0; // Reset attempts for manual reconnect
+      createWebSocketConnection();
+    }
+  };
 
   // Function to send device commands
   const sendDeviceCommand = (deviceId, controlId, commandType, value) => {
@@ -183,16 +254,19 @@ export function WebSocketProvider({ children }) {
       ws.send(JSON.stringify(command));
       return true;
     }
+    console.warn("❌ Cannot send command: WebSocket not connected");
     return false;
   };
 
   const contextValue = {
     ws,
+    isConnected,
     deviceStatuses,
     deviceControls,
     alarmNotifications,
     setAlarmNotifications,
     sendDeviceCommand,
+    reconnectWebSocket,
   };
 
   return (

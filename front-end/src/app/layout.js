@@ -8,6 +8,7 @@ import { UserProvider } from "@/providers/user-provider";
 import { DashboardProvider } from "@/providers/dashboard-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { WebSocketProvider } from "@/providers/websocket-provider";
+import { ReactQueryProvider } from "@/providers/react-query-provider";
 import LoadingProviders from "@/providers/loading-provider";
 import { brandLogo } from "@/lib/helper";
 
@@ -40,21 +41,23 @@ export default function RootLayout({ children }) {
             />
           </head>
           <body className={`${defaultFont.variable} antialiased`}>
-            <LoadingProviders>
-              <UserProvider>
-                <DashboardProvider>
-                  <WebSocketProvider>
-                    <ThemeProvider
-                      attribute="class"
-                      defaultTheme="system"
-                      enableSystem
-                    >
-                      {children}
-                    </ThemeProvider>
-                  </WebSocketProvider>
-                </DashboardProvider>
-              </UserProvider>
-            </LoadingProviders>
+            <ReactQueryProvider>
+              <LoadingProviders>
+                <UserProvider>
+                  <DashboardProvider>
+                    <WebSocketProvider>
+                      <ThemeProvider
+                        attribute="class"
+                        defaultTheme="system"
+                        enableSystem
+                      >
+                        {children}
+                      </ThemeProvider>
+                    </WebSocketProvider>
+                  </DashboardProvider>
+                </UserProvider>
+              </LoadingProviders>
+            </ReactQueryProvider>
             <Toaster
               className="text-pretty"
               duration={3500}

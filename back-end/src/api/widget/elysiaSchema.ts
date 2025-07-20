@@ -10,14 +10,30 @@ const postWidgetSchema = {
       description: "ID dashboard yang terkait dengan widget",
       example: 1,
     }),
-    device_id: t.Union([t.String(), t.Number()], {
-      description: "ID perangkat yang terkait dengan widget",
+    device_id: t.Optional(t.Union([t.String(), t.Number()], {
+      description: "ID perangkat yang terkait dengan widget (backward compatibility)",
       example: 1,
-    }),
-    datastream_id: t.Union([t.String(), t.Number()], {
-      description: "ID datastream yang terkait dengan widget",
+    })),
+    datastream_id: t.Optional(t.Union([t.String(), t.Number()], {
+      description: "ID datastream yang terkait dengan widget (backward compatibility)",
       example: 1,
-    }),
+    })),
+    datastream_ids: t.Optional(t.Array(t.Object({
+      device_id: t.Number(),
+      datastream_id: t.Number()
+    }), {
+      description: "Array of device-datastream pairs (max 5 for monitoring widgets)",
+      example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
+      maxItems: 5,
+    })),
+    inputs: t.Optional(t.Array(t.Object({
+      device_id: t.Number(),
+      datastream_id: t.Number()
+    }), {
+      description: "Direct inputs array (preferred format)",
+      example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
+      maxItems: 5,
+    })),
     type: t.String({ example: "line" }),
   }),
   response: {
@@ -99,7 +115,8 @@ const getWidgetByDeviceIdSchema = {
             description: t.String({ description: "Deskripsi widget", example: "COD Widget" }),
             dashboard_id: t.Number({ description: "ID dashboard", example: 1 }),
             device_id: t.Number({ description: "ID perangkat", example: 1 }),
-            datastream_id: t.Number({ description: "ID datastream", example: 1 }),
+            datastream_id: t.Union([t.Number(), t.Null()], { description: "ID datastream (backward compatibility)", example: 1 }),
+            datastream_ids: t.Union([t.Array(t.Number()), t.Null()], { description: "Array of datastream IDs", example: [1, 2, 3] }),
             type: t.String({ description: "Tipe widget", example: "line" }),
             widget_key: t.String({ description: "Widget key unik", example: "unique-widget-key" }),
           }),
@@ -141,14 +158,30 @@ const putWidgetSchema = {
       description: "ID dashboard yang terkait dengan widget",
       example: 1,
     }),
-    device_id: t.Number({
-      description: "ID perangkat yang terkait dengan widget",
+    device_id: t.Optional(t.Number({
+      description: "ID perangkat yang terkait dengan widget (backward compatibility)",
       example: 1,
-    }),
-    datastream_id: t.Number({
-      description: "ID datastream yang terkait dengan widget",
+    })),
+    datastream_id: t.Optional(t.Number({
+      description: "ID datastream yang terkait dengan widget (backward compatibility)",
       example: 1,
-    }),
+    })),
+    datastream_ids: t.Optional(t.Array(t.Object({
+      device_id: t.Number(),
+      datastream_id: t.Number()
+    }), {
+      description: "Array of device-datastream pairs (max 5 for monitoring widgets)",
+      example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
+      maxItems: 5,
+    })),
+    inputs: t.Optional(t.Array(t.Object({
+      device_id: t.Number(),
+      datastream_id: t.Number()
+    }), {
+      description: "Direct inputs array (preferred format)",
+      example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
+      maxItems: 5,
+    })),
     type: t.String({ example: "line" }),
   }),
   response: {

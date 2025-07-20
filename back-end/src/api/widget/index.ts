@@ -24,24 +24,34 @@ export function widgetRoutes(widgetService: WidgetService) {
             type,
             description,
             device_id,
-            datastream_id
+            datastream_id,
+            datastream_ids,
+            inputs
           } = body;
           if (!dashboard_id || !type || !description) {
             return new Response(JSON.stringify({ message: "Input tidak valid" }), { status: 400 });
           }
+          
+          // Validate that either inputs, datastream_ids, or old format is provided
+          if (!inputs && !datastream_ids && (!device_id || !datastream_id)) {
+            return new Response(JSON.stringify({ message: "Device dan datastream harus dipilih" }), { status: 400 });
+          }
+          
           const insertId = await widgetService.createWidget({
             dashboard_id,
             type,
             description,
             device_id,
             datastream_id,
+            datastream_ids,
+            inputs,
           });
           return new Response(
-            JSON.stringify({ id: insertId }),
+            JSON.stringify({ result: { id: insertId } }),
             { status: 201 }
           );
         },
-        postWidgetSchema // pastikan schema juga hanya field yang dibutuhkan
+        postWidgetSchema
       )
 
       // READ Semua Widget by Dashboard ID

@@ -3,6 +3,7 @@ import { Pool, ResultSetHeader } from "mysql2/promise";
 import { decryptAES } from "../lib/utils";
 import { DeviceService } from "./DeviceService";
 import { AlarmNotificationService } from "./AlarmNotificationService";
+import { broadcastToUsers } from "../api/ws/user-ws";
 import { jwt } from "@elysiajs/jwt";
 import crypto from "crypto";
 
@@ -110,9 +111,9 @@ export class MQTTService {
 
     // Manual JWT verification with device-specific secret (same as PayloadService)
     try {
-      console.log("🔍 MQTT: Starting JWT verification...");
-      console.log("🔑 MQTT: Device secret:", secret);
-      console.log("🎫 MQTT: Token:", token);
+      // console.log("🔍 MQTT: Starting JWT verification...");
+      // console.log("🔑 MQTT: Device secret:", secret);
+      // console.log("🎫 MQTT: Token:", token);
       
       const [header, payload, signature] = token.split('.');
       
@@ -120,14 +121,14 @@ export class MQTTService {
         throw new Error("Invalid JWT format");
       }
       
-      console.log("📋 MQTT: JWT parts:", { header, payload, signature });
+      // console.log("📋 MQTT: JWT parts:", { header, payload, signature });
       
       // Verify signature
       const data = `${header}.${payload}`;
       const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
       
-      console.log("🔍 MQTT: Expected signature:", expectedSignature);
-      console.log("🔍 MQTT: Received signature:", signature);
+      // console.log("🔍 MQTT: Expected signature:", expectedSignature);
+      // console.log("🔍 MQTT: Received signature:", signature);
       
       if (signature !== expectedSignature) {
         throw new Error("JWT signature verification failed");
@@ -150,28 +151,35 @@ export class MQTTService {
         throw new Error("Missing encryptedData in JWT payload");
       }
       
-      console.log("✅ MQTT: JWT verified successfully with device secret");
-      console.log("📦 MQTT: Encrypted data:", decodedPayload.encryptedData);
+      // console.log("✅ MQTT: JWT verified successfully with device secret");
+      // console.log("📦 MQTT: Encrypted data:", decodedPayload.encryptedData);
       
-      // Karena CustomJWT mengirim data langsung sebagai "encryptedData"
-      // kita akan parse langsung tanpa dekripsi AES tambahan
+      // Handle different encryption methods
       let decrypted;
       try {
-        // Coba parse sebagai JSON langsung (untuk CustomJWT)
+        // Method 1: Try parsing as JSON directly (for CustomJWT)
         decrypted = JSON.parse(decodedPayload.encryptedData);
-        console.log("📦 (MQTT) Berhasil mem-parsing payload CustomJWT");
+        // console.log("📦 (MQTT) Berhasil mem-parsing payload CustomJWT langsung");
       } catch (parseError) {
-        // Fallback ke AES decryption untuk backward compatibility
-        console.log("🔄 (MQTT) Mencoba menggunakan metode dekripsi AES");
         try {
-          decrypted = decryptAES(crypto, decodedPayload.encryptedData, secret);
-          
-          // Parse JSON after AES decryption
-          decrypted = JSON.parse(decrypted);
-          console.log("✅ (MQTT) Berhasil mem-parsing payload dengan dekripsi AES:", decrypted);
-        } catch (aesError) {
-          console.error("❌ MQTT AES decryption failed:", aesError);
-          throw new Error(`AES decryption failed: ${aesError instanceof Error ? aesError.message : String(aesError)}`);
+          // Method 2: Try Base64 decoding (for non-AES testing)
+          const base64Decoded = Buffer.from(decodedPayload.encryptedData, 'base64').toString('utf8');
+          decrypted = JSON.parse(base64Decoded);
+          // console.log("📦 (MQTT) Berhasil mem-parsing payload dengan Base64 decoding");
+        } catch (base64Error) {
+          // Method 3: Fallback to AES decryption (for production devices)
+          // console.log("🔄 (MQTT) Mencoba menggunakan metode dekripsi AES");
+          try {
+            const aesDecrypted = decryptAES(crypto, decodedPayload.encryptedData, secret);
+            decrypted = JSON.parse(aesDecrypted);
+            // console.log("✅ (MQTT) Berhasil mem-parsing payload dengan dekripsi AES");
+          } catch (aesError) {
+            console.error("❌ MQTT: Semua metode dekripsi gagal");
+            console.error("   - Direct JSON parse:", parseError);
+            console.error("   - Base64 decode:", base64Error);
+            console.error("   - AES decrypt:", aesError);
+            throw new Error(`All decryption methods failed. Data format not recognized.`);
+          }
         }
       }
       
@@ -204,13 +212,18 @@ export class MQTTService {
         VALUES (?, ?, NOW())`,
         [device_id, JSON.stringify({ ...decrypted, protocol: 'mqtt', topic: data.topic || 'unknown' })]
       );
+      
       // STEP 2: Parse dan normalisasi data ke tabel payloads
       const normalizedPayloads = await this.parseAndNormalizePayload(
         Number(device_id), 
         decrypted, 
         rawResult.insertId
       );
-      // STEP 3: Check alarms setelah payload disimpan (sama seperti HTTP)
+      
+      // STEP 3: Broadcast real-time data ke user pemilik device
+      await this.broadcastSensorUpdates(Number(device_id), decrypted);
+      
+      // STEP 4: Check alarms setelah payload disimpan (sama seperti HTTP)
       if (this.alarmNotificationService) {
         await this.alarmNotificationService.checkAlarms(Number(device_id), decrypted);
       }
@@ -263,7 +276,7 @@ export class MQTTService {
               );
               
               insertedIds.push(result.insertId);
-              console.log(`📊 Berhasil menyimpan payload MQTT pada database.`);
+              // console.log(`📊 Berhasil menyimpan payload MQTT pada database.`);
               
             } catch (error) {
               console.error(`Error saving MQTT sensor data for pin ${pin}:`, error);
@@ -338,5 +351,61 @@ export class MQTTService {
     //     }
     //   }
     // }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  // Real-time broadcasting method for MQTT
+  private async broadcastSensorUpdates(deviceId: number, rawData: any) {
+    try {
+      // Get device info and owner
+      const [deviceRows]: any = await this.db.query(
+        `SELECT d.id, d.description as device_name, d.user_id, u.name as user_name
+         FROM devices d 
+         LEFT JOIN users u ON d.user_id = u.id 
+         WHERE d.id = ?`,
+        [deviceId]
+      );
+
+      if (!deviceRows.length) {
+        console.warn(`MQTT: Device ${deviceId} not found for broadcasting`);
+        return;
+      }
+
+      const device = deviceRows[0];
+      
+      // Get datastreams for this device to map pin data
+      const [datastreams]: any = await this.db.query(
+        `SELECT id, pin, description, unit, type FROM datastreams WHERE device_id = ?`,
+        [deviceId]
+      );
+
+      // Broadcast each sensor value with datastream info
+      for (const [pin, value] of Object.entries(rawData)) {
+        if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
+          const datastream = datastreams.find((ds: any) => ds.pin === pin);
+          
+          if (datastream) {
+            // Broadcast real-time sensor update to all users (akan difilter oleh frontend berdasarkan user_id)
+            broadcastToUsers({
+              type: "sensor_update",
+              device_id: deviceId,
+              datastream_id: datastream.id,
+              value: value,
+              timestamp: new Date().toISOString(),
+              device_name: device.device_name,
+              sensor_name: datastream.description,
+              unit: datastream.unit,
+              user_id: device.user_id, // Frontend akan filter berdasarkan ini
+              pin: pin,
+              protocol: "mqtt"
+            });
+            
+            // console.log(`📡 MQTT: Broadcasted sensor update: Device ${deviceId} → Pin ${pin} → Value ${value}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("MQTT: Error broadcasting sensor updates:", error);
+      // Don't throw error to avoid breaking payload saving
+    }
   }
 }

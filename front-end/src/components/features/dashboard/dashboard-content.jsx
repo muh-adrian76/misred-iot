@@ -27,6 +27,7 @@ export default function DashboardContent(props) {
     handleAddChart,
     currentBreakpoint,
     layoutKey,
+    currentTimeRange,
     // Staging functions
     stageWidgetRemoval,
     removeWidgetFromDatabase,
@@ -189,6 +190,7 @@ export default function DashboardContent(props) {
             onLayoutChange={handleLayoutChange}
             onBreakpointChange={handleBreakpointChange}
             isEditing={false}
+            currentTimeRange={currentTimeRange}
             stageWidgetRemoval={stageWidgetRemoval}
             removeWidgetFromDatabase={removeWidgetFromDatabase}
             handleEditWidget={handleEditWidget}
@@ -214,6 +216,7 @@ export default function DashboardContent(props) {
                 onLayoutChange={handleLayoutChange}
                 onBreakpointChange={handleBreakpointChange}
                 isEditing={true}
+                currentTimeRange={currentTimeRange}
                 stageWidgetRemoval={stageWidgetRemoval}
                 removeWidgetFromDatabase={removeWidgetFromDatabase}
                 handleEditWidget={handleEditWidget}

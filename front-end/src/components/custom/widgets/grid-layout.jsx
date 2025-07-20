@@ -190,6 +190,7 @@ export default function GridLayout({
   onLayoutChange,
   onBreakpointChange,
   isEditing = true,
+  currentTimeRange = "1h",
   // Staging functions
   stageWidgetRemoval,
   removeWidgetFromDatabase,
@@ -538,9 +539,10 @@ export default function GridLayout({
                   </>
                 )}
 
-                <div className="flex font-semibold pt-3 items-center justify-center px-2 py-1">
+                {/* Old title */}
+                {/* <div className="flex font-semibold pt-3 items-center justify-center px-2 py-1">
                   {widget.description || "Widget Content"}
-                </div>
+                </div> */}
 
                 {isEditing && (
                   <div className="absolute top-3 right-3 flex gap-3 opacity-0 max-lg:opacity-100 group-hover:opacity-100 transition-opacity z-10">
@@ -574,7 +576,10 @@ export default function GridLayout({
                 {/* Chart Content */}
                 <div className="flex-1 p-2 flex justify-center items-center overflow-hidden min-h-0 min-w-0">
                   <div className="w-full h-full min-h-[180px] min-w-[180px]">
-                    <WidgetComponent widget={widget} />
+                    <WidgetComponent 
+                      widget={widget} 
+                      timeRange={currentTimeRange}
+                    />
                   </div>
                 </div>
               </div>

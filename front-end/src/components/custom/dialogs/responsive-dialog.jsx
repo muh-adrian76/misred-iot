@@ -41,7 +41,7 @@ export default function ResponsiveDialog({
         <DrawerContent className="rounded-t-2xl pb-4 px-4">
           <DrawerHeader className="text-center pt-4 pb-2 px-2">
             <DrawerTitle className="text-lg font-bold">{title}</DrawerTitle>
-            <DrawerDescription className="text-muted-foreground text-balance">
+            <DrawerDescription className="text-muted-foreground hidden text-balance">
               {description || ""}
             </DrawerDescription>
           </DrawerHeader>

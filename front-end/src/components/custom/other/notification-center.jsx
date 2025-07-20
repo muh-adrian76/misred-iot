@@ -6,19 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { brandLogo } from "@/lib/helper";
+import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
+import NotifHistory from "@/components/custom/other/notif-history";
+import { useWebSocket } from "@/providers/websocket-provider";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Bell,
   BellRing,
@@ -44,8 +40,49 @@ const defaultMarkAllAsRead = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
 };
 
-const defaultDeleteNotification = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+const defaultDeleteNotification = async (id) => {
+  try {
+    const response = await fetchFromBackend(`/notifications/${id}`, {
+      method: 'DELETE'
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete notification');
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    throw error;
+  }
+};
+
+const deleteAllNotifications = async () => {
+  try {
+    const response = await fetchFromBackend('/notifications', {
+      method: 'DELETE'
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete all notifications');
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error deleting all notifications:', error);
+    throw error;
+  }
+};
+
+const saveAllNotifications = async () => {
+  try {
+    const response = await fetchFromBackend('/notifications/save-all', {
+      method: 'POST'
+    });
+    if (!response.ok) {
+      throw new Error('Failed to save all notifications');
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Error saving all notifications:', error);
+    throw error;
+  }
 };
 
 const formatTimeAgo = (dateString) => {
@@ -85,6 +122,17 @@ const NotificationItem = ({
   const handleClick = () => {
     if (onClick) {
       onClick(notification);
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (onDelete) {
+      try {
+        await onDelete(notification.id);
+      } catch (error) {
+        console.error('Failed to delete notification:', error);
+      }
     }
   };
 
@@ -141,76 +189,19 @@ const NotificationItem = ({
                 {formatTimeAgo(notification.createdAt)}
               </span>
 
-              <Button
-              size="sm"
-                    className="h-8 text-xs"
-              variant={"outline"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(notification.id);
-                }}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Hapus
-              </Button>
-
-              {/* {notification.priority && (
-                  <Badge
-                  variant={
-                    notification.priority === "high"
-                      ? "destructive"
-                      : notification.priority === "medium"
-                        ? "default"
-                        : "secondary"
-                  }
-                  className="text-xs px-2 py-0.5"
+              {onDelete && (
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  variant={"outline"}
+                  onClick={handleDelete}
                 >
-                  {notification.priority}
-                  </Badge>
-              )} */}
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus
+                </Button>
+              )}
             </div>
           </div>
-
-          {/* {(onMarkAsRead || onDelete) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                {!notification.isRead && onMarkAsRead && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkAsRead(notification.id);
-                    }}
-                    className="text-sm"
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    Mark as read
-                  </DropdownMenuItem>
-                )}
-                {onDelete && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(notification.id);
-                    }}
-                    className="text-red-600 focus:text-red-600 text-sm"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )} */}
         </div>
       </div>
     </div>
@@ -238,9 +229,11 @@ export function NotificationCenter({
     description: "Alarm yang terpicu akan otomatis ditampilkan disini.",
   },
 }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("unread");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { ws, alarmNotifications = [], clearAlarmNotifications } = useWebSocket();
 
   useEffect(() => {
     if (
@@ -264,15 +257,42 @@ export function NotificationCenter({
     return () => clearInterval(interval);
   }, [enableRealTimeUpdates, updateInterval, queryClient]);
 
+  // Fetch saved notifications from database
+  const { data: savedNotifications = [], isLoading: isLoadingSaved, refetch: refetchSaved } = useQuery({
+    queryKey: ["saved-notifications"],
+    queryFn: async () => {
+      try {
+        const response = await fetchFromBackend('/notifications');
+        if (!response.ok) {
+          throw new Error('Failed to fetch saved notifications');
+        }
+        const data = await response.json();
+        return data.notifications || [];
+      } catch (error) {
+        console.error('Error fetching saved notifications:', error);
+        return [];
+      }
+    },
+    enabled: filter === "all",
+  });
+
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
     initialData: staticNotifications,
     refetchInterval: enableRealTimeUpdates ? updateInterval : false,
-    enabled: !staticNotifications,
+    enabled: !staticNotifications && filter === "all",
   });
 
-  const displayNotifications = staticNotifications || notifications;
+  // Choose notifications based on filter
+  const displayNotifications = useMemo(() => {
+    if (filter === "unread") {
+      return alarmNotifications; // WebSocket notifications (temporary)
+    } else {
+      return savedNotifications; // Database notifications (saved)
+    }
+  }, [filter, alarmNotifications, savedNotifications]);
+
   const prevDisplayNotificationsRef = React.useRef(null);
 
   useEffect(() => {
@@ -313,41 +333,54 @@ export function NotificationCenter({
     },
   });
 
+  // Save all WebSocket notifications to database
   const markAllAsReadMutation = useMutation({
-    mutationFn: onMarkAllAsRead,
+    mutationFn: saveAllNotifications,
     onSuccess: () => {
-      if (staticNotifications) return;
-
-      queryClient.setQueryData(["notifications"], (old = []) =>
-        old.map((n) => ({ ...n, isRead: true }))
-      );
+      // Clear WebSocket notifications
+      clearAlarmNotifications();
+      
+      // Refresh saved notifications
+      refetchSaved();
+      
+      // Switch to "all" filter to show saved notifications
+      setFilter("all");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: onDeleteNotification,
     onSuccess: (_, id) => {
-      if (staticNotifications) return;
+      if (filter === "all") {
+        refetchSaved();
+      }
+    },
+  });
 
-      queryClient.setQueryData(["notifications"], (old = []) =>
-        old.filter((n) => n.id !== id)
-      );
+  const deleteAllMutation = useMutation({
+    mutationFn: deleteAllNotifications,
+    onSuccess: () => {
+      if (filter === "all") {
+        refetchSaved();
+      } else {
+        clearAlarmNotifications();
+      }
     },
   });
 
   const filteredNotifications = useMemo(
-    () => displayNotifications.filter((n) => filter === "all" || !n.isRead),
-    [displayNotifications, filter]
+    () => displayNotifications,
+    [displayNotifications]
   );
 
   const unreadCount = useMemo(
-    () => displayNotifications.filter((n) => !n.isRead).length,
-    [displayNotifications]
+    () => alarmNotifications.length, // Only count WebSocket notifications as unread
+    [alarmNotifications]
   );
 
   const NotificationList = () => (
     <ScrollArea className={cn(maxHeight)}>
-      {isLoading ? (
+      {(isLoading || isLoadingSaved) ? (
         <div className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -361,13 +394,13 @@ export function NotificationCenter({
           <BellRing className="h-16 w-16 text-muted-foreground/40 mb-4" />
           <h3 className="font-semibold text-lg text-foreground mb-2">
             {filter === "unread"
-              ? "Semua alarm telah dibaca."
-              : emptyState.title}
+              ? "Tidak ada notifikasi baru."
+              : "Tidak ada notifikasi tersimpan."}
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm">
             {filter === "unread"
-              ? "Segera cek perangkat Anda!"
-              : emptyState.description}
+              ? "Notifikasi alarm akan muncul di sini saat terpicu."
+              : "Klik 'Simpan Semua' untuk menyimpan notifikasi ke riwayat."}
           </p>
         </div>
       ) : (
@@ -379,7 +412,7 @@ export function NotificationCenter({
               onMarkAsRead={
                 staticNotifications ? undefined : markAsReadMutation.mutate
               }
-              onDelete={staticNotifications ? undefined : deleteMutation.mutate}
+              onDelete={filter === "all" ? deleteMutation.mutate : undefined}
               onClick={onNotificationClick}
             />
           ))}
@@ -390,7 +423,8 @@ export function NotificationCenter({
 
   if (variant === "popover") {
     return (
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+      <>
+        <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <DescriptionTooltip content={"Notifikasi Terbaru"}>
           <PopoverTrigger asChild>
             <Button
@@ -468,7 +502,6 @@ export function NotificationCenter({
                       <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
                     ) : (
                       <CheckCheck className="mr-1.5 h-3 w-3" />
-                      // <Trash2 className="mr-1.5 h-3 w-3" />
                     )}
                     Simpan Semua
                   </Button>
@@ -480,8 +513,41 @@ export function NotificationCenter({
               <NotificationList />
             </div>
           </div>
+          <div className="p-2 flex items-center justify-between border-t">
+            <Button
+              variant={"ghost"}
+              size="sm"
+              className="cursor-pointer"
+              onClick={() => {
+                setIsPopoverOpen(false);
+                setIsHistoryOpen(true);
+              }}
+              >
+              Lihat riwayat lengkap
+            </Button>
+            <Button 
+              variant={"ghost"} 
+              size="sm" 
+              className="py-4"
+              onClick={() => deleteAllMutation.mutate()}
+              disabled={deleteAllMutation.isPending || filteredNotifications.length === 0}
+            >
+              {deleteAllMutation.isPending ? (
+                <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+              ) : (
+                <Trash2 className="mr-1.5 h-3 w-3" />
+              )}
+              Hapus semua
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
+      
+      <NotifHistory 
+        open={isHistoryOpen} 
+        setOpen={setIsHistoryOpen} 
+      />
+    </>
     );
   }
 

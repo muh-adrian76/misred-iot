@@ -23,6 +23,8 @@ export default function DashboardHeader(props) {
     widgetCount,
     setOpenChartSheet,
     handleSaveEditDashboard,
+    currentTimeRange,
+    onTimeRangeChange,
     
     // New staging functions
     startEditMode,
@@ -52,7 +54,7 @@ export default function DashboardHeader(props) {
           onChange={setActiveTab}
           icon="Search"
           placeholder="Pilih dashboard"
-          className={isMobile || isMedium ? "w-[348px]" : "w-[430px]"}
+          className={isMobile || isMedium ? "w-[308px]" : "w-[430px]"}
           editState={isEditing}
           editValue={editDashboardValue}
           onEditValueChange={setEditDashboardValue}
@@ -96,6 +98,8 @@ export default function DashboardHeader(props) {
             setOpenChartSheet={setOpenChartSheet}
             saveEdit={saveAllLayoutChanges}
             hasUnsavedChanges={hasUnsavedChanges}
+            currentTimeRange={currentTimeRange}
+            onTimeRangeChange={onTimeRangeChange}
           />
         </div>
       ) : (
@@ -109,6 +113,8 @@ export default function DashboardHeader(props) {
             setOpenChartSheet={setOpenChartSheet}
             saveEdit={saveAllLayoutChanges}
             hasUnsavedChanges={hasUnsavedChanges}
+            currentTimeRange={currentTimeRange}
+            onTimeRangeChange={onTimeRangeChange}
           />
         </div>
       )}

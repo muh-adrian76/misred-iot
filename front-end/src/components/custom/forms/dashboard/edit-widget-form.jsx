@@ -11,21 +11,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Check } from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandItem,
-  CommandEmpty,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
-import { Link } from "next-view-transitions";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function EditWidgetDialog({
@@ -40,8 +25,7 @@ export default function EditWidgetDialog({
     id: "",
     description: "",
     dashboard_id: "",
-    device_id: "",
-    datastream_id: "",
+    selectedPairs: [], // Array of { device_id, datastream_id }
   });
   const [loading, setLoading] = useState(false);
 
@@ -57,8 +41,13 @@ export default function EditWidgetDialog({
         id: widgetData.id || "",
         description: widgetData.description || "",
         dashboard_id: widgetData.dashboard_id || "",
-        device_id: widgetData.device_id?.toString() || "", // Convert to string for form
-        datastream_id: widgetData.datastream_id?.toString() || "", // Convert to string for form
+        selectedPairs: Array.isArray(widgetData.inputs)
+          ? widgetData.inputs
+          : Array.isArray(widgetData.datastream_ids) 
+            ? widgetData.datastream_ids
+            : widgetData.datastream_id
+              ? [{ device_id: widgetData.device_id, datastream_id: widgetData.datastream_id }]
+              : [],
       });
     }
   }, [open, widgetData]);
@@ -68,185 +57,157 @@ export default function EditWidgetDialog({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDeviceSelect = (deviceId) => {
-    setForm((prev) => ({ ...prev, device_id: deviceId.toString(), datastream_id: "" }));
-    setOpenDevicePopover(false);
+  // Multi-select device-datastream
+  const handlePairSelect = (device_id, datastream_id) => {
+    const currentPairs = form.selectedPairs || [];
+    const exists = currentPairs.some(
+      (pair) => pair.device_id === device_id && pair.datastream_id === datastream_id
+    );
+    if (exists) {
+      setForm((prev) => ({
+        ...prev,
+        selectedPairs: currentPairs.filter(
+          (pair) => !(pair.device_id === device_id && pair.datastream_id === datastream_id)
+        ),
+      }));
+    } else {
+      if (currentPairs.length < 5) {
+        setForm((prev) => ({
+          ...prev,
+          selectedPairs: [...currentPairs, { device_id, datastream_id }],
+        }));
+      }
+    }
   };
+
+  // ...existing code...
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // Validation
       if (!form.description.trim()) {
         errorToast("Nama widget harus diisi");
         return;
       }
-
-      if (!form.device_id) {
-        errorToast("Device harus dipilih");
+      if (form.selectedPairs.length === 0) {
+        errorToast("Pilih minimal satu device dan datastream!");
         return;
       }
-
-      if (!form.datastream_id) {
-        errorToast("Datastream harus dipilih");
-        return;
-      }
-
-      await onSubmit(form);
-    //   successToast("Widget berhasil diupdate");
+      await onSubmit({
+        id: form.id,
+        description: form.description,
+        dashboard_id: form.dashboard_id,
+        inputs: form.selectedPairs,
+      });
       setOpen(false);
     } catch (error) {
-      console.error("Error updating widget:", error);
       errorToast("Gagal mengupdate widget");
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter datastreams based on selected device
-  const filteredDatastreams = datastreams.filter(
-    (ds) => ds.device_id === parseInt(form.device_id)
-  );
+  // Group datastreams by device
+  const datastreamsByDevice = devices.map((device) => ({
+    ...device,
+    datastreams: datastreams.filter((ds) => String(ds.device_id) === String(device.id)),
+  }));
 
   const formContent = (
-    <div className="flex flex-col gap-4 py-2">
+    <div className="flex flex-col gap-2 py-2">
       {/* Hidden ID field */}
+      <Input id="id" type="hidden" value={form.id} required />
+      <Input id="dashboard_id" type="hidden" value={form.dashboard_id} required />
+      <div className="flex flex-col gap-2 mb-3">
+      <Label htmlFor="description" className="text-left ml-1 font-medium">Nama</Label>
       <Input
-        id="id"
-        type="hidden"
-        value={form.id}
+        id="description"
+        name="description"
+        placeholder="Nama atau judul widget"
+        value={form.description}
+        onChange={handleChange}
         required
       />
-      
-      {/* Deskripsi */}
-      <div className="flex flex-col gap-2">
-        {/* Dashboard ID */}
-        <Input
-          id="dashboard_id"
-          type="hidden"
-          value={form.dashboard_id}
-          required
-        />
-        <Label htmlFor="description" className="text-left ml-1 font-medium">
-          Nama
-        </Label>
-        <Input
-          id="description"
-          name="description"
-          placeholder="Nama atau judul widget"
-          value={form.description}
-          onChange={handleChange}
-          required
-        />
       </div>
-      
-      {/* Device */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1 font-medium">Device</Label>
-          <Popover open={openDevicePopover} onOpenChange={setOpenDevicePopover}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={openDevicePopover}
-                className="justify-between w-full"
-              >
-                <span className="truncate">
-                  {devices.find((d) => d.id === parseInt(form.device_id))?.description ||
-                    devices.find((d) => d.id === parseInt(form.device_id))?.name ||
-                    "Pilih Device"}
-                </span>
-                <ChevronDown className="ml-2 h-5 w-5" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-full" align="start">
-              <Command>
-                <CommandInput placeholder="Cari device..." />
-                <CommandList>
-                  <CommandEmpty>
-                    <Link
-                      href="/devices"
-                      className="opacity-50 transition-all hover:opacity-100"
-                    >
-                      Device tidak ditemukan. Buat device baru.
-                    </Link>
-                  </CommandEmpty>
-                  {devices.map((device) => (
-                    <CommandItem
-                      key={device.id}
-                      value={device.description || device.name}
-                      onSelect={() => handleDeviceSelect(device.id)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          parseInt(form.device_id) === device.id
-                            ? "opacity-100"
-                            : "opacity-0"
-                        )}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          {device.description || device.name}
-                        </span>
-                        {device.description && device.name && (
-                          <span className="text-xs opacity-60">{device.name}</span>
-                        )}
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+      {/* Multi-select device-datastream */}
+      <div className="flex flex-col gap-2">
+        <Label className="text-left ml-1 font-medium">Device & Datastream</Label>
+        
+        {/* Kondisi yang ditambahkan */}
+        <div className="space-y-2">
+          {form.selectedPairs.map((pair, idx) => {
+            const device = devices.find((d) => d.id === pair.device_id);
+            const ds = datastreams.find((d) => d.id === pair.datastream_id);
+            return (
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded"
+                    style={{ background: `var(--chart-${(idx % 5) + 1})` }}
+                  ></div>
+                  <div>
+                    <p className="text-sm font-medium">{device?.description || device?.name}</p>
+                    <p className="text-xs text-muted-foreground">{ds?.description} (Pin {ds?.pin})</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handlePairSelect(pair.device_id, pair.datastream_id)}
+                  className="h-8 w-8 p-0"
+                >
+                  ×
+                </Button>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Datastream */}
-        <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1 font-medium">Datastream</Label>
-          <Select
-            value={form.datastream_id}
-            onValueChange={(value) =>
-              setForm((prev) => ({ ...prev, datastream_id: value }))
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Pilih Datastream" />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredDatastreams.length === 0 ? (
-                <div className="p-2 text-center">
-                  <span className="text-sm opacity-50">
-                    {form.device_id
-                      ? "Tidak ada datastream untuk device ini"
-                      : "Pilih device terlebih dahulu"}
-                  </span>
-                  {form.device_id && (
-                    <Link
-                      href="/datastreams"
-                      className="block mt-1 text-xs opacity-50 transition-all hover:opacity-100"
-                    >
-                      Buat datastream baru
-                    </Link>
-                  )}
-                </div>
-              ) : (
-                filteredDatastreams.map((datastream) => (
-                  <SelectItem key={datastream.id} value={datastream.id.toString()}>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">
-                        {`${datastream.description} (Pin ${datastream.pin})`}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Tambah kondisi baru */}
+        {form.selectedPairs.length < 5 && (
+          <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg">
+            <Select
+              onValueChange={(value) => {
+                const [deviceId, datastreamId] = value.split('|');
+                handlePairSelect(parseInt(deviceId), parseInt(datastreamId));
+              }}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="Pilih Device & Datastream" />
+              </SelectTrigger>
+              <SelectContent>
+                {datastreamsByDevice.map((device) => (
+                  <div key={device.id}>
+                    {device.datastreams.length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b">
+                          {device.description || device.name}
+                        </div>
+                        {device.datastreams.map((ds) => {
+                          const alreadySelected = form.selectedPairs.some(
+                            pair => pair.device_id === device.id && pair.datastream_id === ds.id
+                          );
+                          if (alreadySelected) return null;
+                          
+                          return (
+                            <SelectItem key={ds.id} value={`${device.id}|${ds.id}`}>
+                              {ds.description} (Pin {ds.pin})
+                            </SelectItem>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button type="button" size="sm" variant="outline">
+              +
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

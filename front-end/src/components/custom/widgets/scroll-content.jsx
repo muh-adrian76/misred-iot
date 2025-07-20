@@ -9,18 +9,20 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 const widgetList = [
-  { key: "switch", label: "Switch", component: SwitchWidget, weight: "w-50" },
-  { key: "slider", label: "Slider", component: SliderWidget, weight: "w-50"  },
+  { key: "switch", label: "Switch", component: SwitchWidget },
+  { key: "slider", label: "Slider", component: SliderWidget },
   {
     key: "line",
     label: "Line Chart",
     component: LineChartWidget,
+    width: "w-50",
   },
-  { key: "bar", label: "Bar Chart", component: BarChartWidget },
+  { key: "bar", label: "Bar Chart", component: BarChartWidget, width: "w-50" },
   {
     key: "area",
     label: "Area Chart",
     component: AreaChartWidget,
+    width: "w-50",
   },
   // { key: "pie", label: "Pie Chart", component: PieChartWidget, height: "h-40" },
 ];
@@ -37,7 +39,7 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
   const handleAddWidget = (e, key) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Add widget button clicked:', key);
+    // console.log("Add widget button clicked:", key);
     // Panggil onAddWidget yang diteruskan dari parent
     if (onAddWidget) {
       onAddWidget(key);
@@ -58,10 +60,13 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
           className="droppable-element rounded border bg-background shadow p-2 flex flex-col items-center justify-center cursor-grab hover:bg-muted transition-all min-w-[180px] min-h-[120px] mb-2"
           title={`Tarik ke kanvas untuk menambah ${w.label}`}
         >
-          <div className={cn("flex w-full items-center justify-between mb-2", mobileView ? "px-5" : "px-10")}>
-            <span className="font-semibold">
-              {w.label}
-            </span>
+          <div
+            className={cn(
+              "flex w-full items-center justify-between mb-2",
+              mobileView ? "px-5" : "px-10"
+            )}
+          >
+            <span className="font-semibold">{w.label}</span>
             <Button
               size="xs"
               variant="outline"
@@ -72,7 +77,10 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
             </Button>
           </div>
           <div
-            className={cn("flex items-center h-40 justify-center", w.weight ? w.weight : "w-full")}
+            className={cn(
+              "flex items-center h-40 justify-center",
+              w.width ? w.width : "w-full"
+            )}
           >
             <w.component previewMode />
           </div>

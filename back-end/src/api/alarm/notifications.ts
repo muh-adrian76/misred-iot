@@ -88,7 +88,7 @@ export function alarmNotificationRoutes(
       getRecentNotificationsSchema
     )
 
-    // 📋 GET History Notifications dengan pagination
+    // 📋 GET History Notifications dengan pagination dan time range filter
     .get(
       "/history",
       //@ts-ignore
@@ -109,13 +109,46 @@ export function alarmNotificationRoutes(
           const page = parseInt(query.page as string) || 1;
           const limit = parseInt(query.limit as string) || 20;
           const offset = (page - 1) * limit;
+          const timeRange = query.timeRange as string || "all";
+          
+          // Build time range condition
+          let timeCondition = "";
+          switch(timeRange) {
+            case "1m":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
+              break;
+            case "1h":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
+              break;
+            case "12h":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
+              break;
+            case "1d":
+            case "today":
+              timeCondition = "AND an.triggered_at >= CURDATE()";
+              break;
+            case "1w":
+            case "week":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+              break;
+            case "1M":
+            case "month":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+              break;
+            case "1y":
+              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+              break;
+            case "all":
+            default:
+              timeCondition = "";
+          }
           
           // Get total count
           const [countResult] = await notificationService.db.execute(`
             SELECT COUNT(*) as total
             FROM alarm_notifications an
             JOIN alarms a ON an.alarm_id = a.id
-            WHERE an.user_id = ?
+            WHERE an.user_id = ? AND an.is_saved = TRUE ${timeCondition}
           `, [userId]);
 
           const total = (countResult as any[])[0].total;
@@ -130,6 +163,10 @@ export function alarmNotificationRoutes(
               an.triggered_at,
               an.notification_type,
               an.whatsapp_message_id,
+              an.is_saved,
+              an.saved_at,
+              an.is_read,
+              an.read_at,
               a.description as alarm_description,
               ds.description as datastream_description,
               ds.pin as field_name,
@@ -138,7 +175,7 @@ export function alarmNotificationRoutes(
             JOIN alarms a ON an.alarm_id = a.id
             JOIN datastreams ds ON an.datastream_id = ds.id
             JOIN devices dev ON an.device_id = dev.id
-            WHERE an.user_id = ?
+            WHERE an.user_id = ? AND an.is_saved = TRUE ${timeCondition}
             ORDER BY an.triggered_at DESC
             LIMIT ? OFFSET ?
           `, [userId, limit, offset]);
@@ -153,7 +190,12 @@ export function alarmNotificationRoutes(
             conditions_text: row.conditions_text,
             triggered_at: row.triggered_at,
             notification_type: row.notification_type,
-            whatsapp_message_id: row.whatsapp_message_id
+            whatsapp_message_id: row.whatsapp_message_id,
+            whatsapp_sent: !!row.whatsapp_message_id,
+            is_saved: row.is_saved,
+            saved_at: row.saved_at,
+            is_read: row.is_read,
+            read_at: row.read_at
           }));
 
           return {
@@ -169,6 +211,106 @@ export function alarmNotificationRoutes(
 
         } catch (error) {
           console.error("Error fetching notification history:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
+      }
+    )
+
+    // 💾 SAVE All WebSocket Notifications to Database
+    .post(
+      "/save-all",
+      //@ts-ignore
+      async ({ jwt, cookie, set }) => {
+        try {
+          const user = await authorizeRequest(jwt, cookie);
+          const userId = user.sub;
+
+          // Mark all unsaved notifications for this user as saved
+          const [result] = await notificationService.db.execute(`
+            UPDATE alarm_notifications 
+            SET is_saved = TRUE, saved_at = NOW() 
+            WHERE user_id = ? AND is_saved = FALSE
+          `, [userId]);
+
+          return {
+            success: true,
+            message: "Semua notifikasi berhasil disimpan",
+            affected_rows: (result as any).affectedRows
+          };
+        } catch (error) {
+          console.error("Error saving all notifications:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
+      }
+    )
+
+    // 🗑️ DELETE Single Notification
+    .delete(
+      "/:id",
+      //@ts-ignore
+      async ({ params, jwt, cookie, set }) => {
+        try {
+          const user = await authorizeRequest(jwt, cookie);
+          const userId = user.sub;
+          const notificationId = params.id;
+
+          const [result] = await notificationService.db.execute(`
+            DELETE FROM alarm_notifications 
+            WHERE id = ? AND user_id = ?
+          `, [notificationId, userId]);
+
+          if ((result as any).affectedRows === 0) {
+            set.status = 404;
+            return {
+              success: false,
+              message: "Notifikasi tidak ditemukan"
+            };
+          }
+
+          return {
+            success: true,
+            message: "Notifikasi berhasil dihapus"
+          };
+        } catch (error) {
+          console.error("Error deleting notification:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
+      }
+    )
+
+    // 🗑️ DELETE All Notifications
+    .delete(
+      "/",
+      //@ts-ignore
+      async ({ jwt, cookie, set }) => {
+        try {
+          const user = await authorizeRequest(jwt, cookie);
+          const userId = user.sub;
+
+          const [result] = await notificationService.db.execute(`
+            DELETE FROM alarm_notifications 
+            WHERE user_id = ?
+          `, [userId]);
+
+          return {
+            success: true,
+            message: "Semua notifikasi berhasil dihapus",
+            deleted_count: (result as any).affectedRows
+          };
+        } catch (error) {
+          console.error("Error deleting all notifications:", error);
           set.status = 500;
           return {
             success: false,

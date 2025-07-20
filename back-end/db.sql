@@ -45,10 +45,10 @@ CREATE TABLE IF NOT EXISTS `dashboards` (
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `layout` JSON NULL,
+  `time_range` ENUM('1m', '1h', '12h', '1d', '1w', '1M', '1y', 'all') DEFAULT '1m',
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-ALTER TABLE `dashboards` ADD COLUMN `time_range` ENUM('1h', '6h', '12h', '24h', '7d', '30d') DEFAULT '24h';
 
 CREATE TABLE IF NOT EXISTS `devices` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `payloads` (
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
   `value` DECIMAL(10,3) NOT NULL,
-  `raw_data` JSON NULL, -- Menyimpan data mentah untuk debugging
+  `raw_data` JSON NULL, 
   `server_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
@@ -104,13 +104,10 @@ CREATE TABLE IF NOT EXISTS `widgets` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `description` varchar(255) NOT NULL,
   `dashboard_id` INT NOT NULL,
-  `device_id` INT NOT NULL,
-  `datastream_id` INT NOT NULL,
+  `inputs` JSON NOT NULL,
   `type` VARCHAR(32) NOT NULL,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`dashboard_id`) REFERENCES `dashboards` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
+  FOREIGN KEY (`dashboard_id`) REFERENCES `dashboards` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `alarms` (
@@ -163,7 +160,11 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   `notification_type` ENUM('browser', 'all') NOT NULL,
   `whatsapp_message_id` VARCHAR(255) NULL,
   `error_message` TEXT NULL,
-  `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+  `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `is_saved` BOOLEAN DEFAULT FALSE,
+  `saved_at` TIMESTAMP NULL,
+  `is_read` BOOLEAN DEFAULT FALSE,
+  `read_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,

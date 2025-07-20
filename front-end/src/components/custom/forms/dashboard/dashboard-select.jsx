@@ -83,7 +83,7 @@ export default function DashboardSelect({
                     <CommandItem
                       key={option.value}
                       value={option.value}
-                      className="hover:font-semibold"
+                      className="hover:font-semibold w-[200p]"
                       onSelect={(currentValue) => {
                         // console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
                         if (currentValue !== value) {
@@ -93,7 +93,7 @@ export default function DashboardSelect({
                         setOpen(false);
                       }}
                     >
-                      <span className="truncate max-w-[400px]">
+                      <span className="truncate">
                         {option.label}
                       </span>
                       <Check
