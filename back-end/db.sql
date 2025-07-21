@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `datastreams` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `payloads` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
   `value` DECIMAL(10,3) NOT NULL,
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS `otaa_updates` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `alarm_notifications` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
   `alarm_id` INT NOT NULL,
   `user_id` INT NOT NULL,
   `device_id` INT NOT NULL,
@@ -163,8 +163,6 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `is_saved` BOOLEAN DEFAULT FALSE,
   `saved_at` TIMESTAMP NULL,
-  `is_read` BOOLEAN DEFAULT FALSE,
-  `read_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
@@ -173,7 +171,7 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `device_commands` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
   `device_id` INT NOT NULL,
   `datastream_id` INT NOT NULL,
   `command_type` ENUM('set_value', 'toggle', 'reset') NOT NULL,
@@ -190,7 +188,7 @@ CREATE TABLE IF NOT EXISTS `device_commands` (
 
 -- Tabel untuk menyimpan raw payload dari device (backup dan debugging)
 CREATE TABLE IF NOT EXISTS `raw_payloads` (
-  `id` INT NOT NULL AUTO_INCREMENT,
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
   `device_id` INT NOT NULL,
   `raw_data` JSON NOT NULL,
   `parsed_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,

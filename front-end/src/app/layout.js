@@ -3,11 +3,9 @@ import { Public_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ViewTransitions } from "next-view-transitions";
 
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import { UserProvider } from "@/providers/user-provider";
-import { DashboardProvider } from "@/providers/dashboard-provider";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { WebSocketProvider } from "@/providers/websocket-provider";
 import { ReactQueryProvider } from "@/providers/react-query-provider";
 import LoadingProviders from "@/providers/loading-provider";
 import { brandLogo } from "@/lib/helper";
@@ -44,17 +42,13 @@ export default function RootLayout({ children }) {
             <ReactQueryProvider>
               <LoadingProviders>
                 <UserProvider>
-                  <DashboardProvider>
-                    <WebSocketProvider>
-                      <ThemeProvider
-                        attribute="class"
-                        defaultTheme="system"
-                        enableSystem
-                      >
-                        {children}
-                      </ThemeProvider>
-                    </WebSocketProvider>
-                  </DashboardProvider>
+                  <ThemeProvider
+                    attribute="class"
+                    defaultTheme="system"
+                    enableSystem
+                  >
+                    {children}
+                  </ThemeProvider>
                 </UserProvider>
               </LoadingProviders>
             </ReactQueryProvider>

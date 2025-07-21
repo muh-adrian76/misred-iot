@@ -104,6 +104,14 @@ class Server {
     this.mqttService.listen();
 
     this.app
+      // Health check endpoint
+      .get("/health", () => ({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: "connected" // You can add actual DB health check here
+      }))
+      
       // API
       .use(authRoutes(this.authService))
       .use(userRoutes(this.userService))

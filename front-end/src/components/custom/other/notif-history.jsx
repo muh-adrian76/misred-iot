@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sheet,
   SheetContent,
@@ -33,7 +33,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Calendar,
   Download,
   FileText,
   Filter,
@@ -44,6 +43,7 @@ import {
   Smartphone,
   BellRing,
   ChartBar,
+  Trash2,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
@@ -93,7 +93,7 @@ const NotificationHistoryItem = ({ notification }) => {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+          <div className="flex gap-2 text-sm text-muted-foreground">
             <div>
               <span className="font-medium">Device:</span>{" "}
               {notification.device_description}
@@ -146,8 +146,8 @@ const NotificationHistoryItem = ({ notification }) => {
           className="text-xs"
         >
           {notification.notification_type === "all"
-            ? "Semua Channel"
-            : "Browser Only"}
+            ? "Browser dan WhatsApp"
+            : "Hanya Browser"}
         </Badge>
       </div>
     </div>
@@ -159,6 +159,7 @@ export default function NotifHistory({ open, setOpen }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [timeRange, setTimeRange] = useState("all");
   const [pageSize, setPageSize] = useState(10);
+  const queryClient = useQueryClient();
 
   // Fetch notification history
   const {
@@ -205,6 +206,30 @@ export default function NotifHistory({ open, setOpen }) {
     enabled: open && activeIndex === 0,
     retry: 1, // Only retry once
     refetchOnWindowFocus: false,
+  });
+
+  // Delete all notifications mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetchFromBackend("/notifications/", {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete all notifications");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refetch the current page data
+      refetch();
+      // Reset to first page
+      setCurrentPage(1);
+    },
+    onError: (error) => {
+      alert("Gagal menghapus semua notifikasi: " + error.message);
+    },
   });
 
   // Export functions
@@ -324,7 +349,7 @@ export default function NotifHistory({ open, setOpen }) {
         <div className="flex flex-col w-full h-full py-6 px-0 items-center gap-4">
           <div className="overflow-hidden w-full h-full px-4">
             {/* Filters */}
-            <div className="grid grid-cols-3 gap-3 pb-4 border-b">
+            <div className="grid grid-cols-3 gap-3 pb-4">
               <Select
                 value={timeRange}
                 onValueChange={(value) => {
@@ -373,12 +398,11 @@ export default function NotifHistory({ open, setOpen }) {
                     Ekspor
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-48">
-                  <div className="space-y-2">
+                <PopoverContent className="w-min p-1" align="end">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start"
+                      className="justify-start"
                       onClick={exportToCSV}
                       disabled={!historyData?.notifications?.length || error}
                     >
@@ -395,13 +419,12 @@ export default function NotifHistory({ open, setOpen }) {
                       <FileText className="w-4 h-4 mr-2" />
                       Ekspor PDF
                     </Button>
-                  </div>
                 </PopoverContent>
               </Popover>
             </div>
 
             {/* Content */}
-            <ScrollArea className="h-[500px]">
+            <ScrollArea className="h-[450px]">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
@@ -457,7 +480,7 @@ export default function NotifHistory({ open, setOpen }) {
              !error && 
              !isLoading && 
              historyData.pagination.pages > 1 && (
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex flex-col gap-2 items-center justify-between pt-4">
                 <div className="text-sm text-muted-foreground">
                   Halaman {historyData.pagination.page} dari{" "}
                   {historyData.pagination.pages} ({historyData.pagination.total}{" "}
@@ -514,6 +537,35 @@ export default function NotifHistory({ open, setOpen }) {
                     </PaginationItem>
                   </PaginationContent>
                 </Pagination>
+              </div>
+            )}
+
+            {/* Delete All Button */}
+            {historyData?.notifications?.length > 0 && (
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm("Apakah Anda yakin ingin menghapus SEMUA riwayat notifikasi? Tindakan ini tidak dapat dibatalkan.")) {
+                      deleteAllMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteAllMutation.isPending}
+                  className="w-full"
+                >
+                  {deleteAllMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Menghapus...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Hapus Semua Riwayat
+                    </>
+                  )}
+                </Button>
               </div>
             )}
           </div>

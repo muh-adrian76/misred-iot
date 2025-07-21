@@ -22,7 +22,7 @@ import {
   CheckCheck,
   Trash2,
   Filter,
-  MoreHorizontal,
+  History,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,44 +43,29 @@ const defaultMarkAllAsRead = async () => {
 const defaultDeleteNotification = async (id) => {
   try {
     const response = await fetchFromBackend(`/notifications/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
     if (!response.ok) {
-      throw new Error('Failed to delete notification');
+      throw new Error("Failed to delete notification");
     }
     return response.json();
   } catch (error) {
-    console.error('Error deleting notification:', error);
-    throw error;
-  }
-};
-
-const deleteAllNotifications = async () => {
-  try {
-    const response = await fetchFromBackend('/notifications', {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete all notifications');
-    }
-    return response.json();
-  } catch (error) {
-    console.error('Error deleting all notifications:', error);
+    console.error("Error deleting notification:", error);
     throw error;
   }
 };
 
 const saveAllNotifications = async () => {
   try {
-    const response = await fetchFromBackend('/notifications/save-all', {
-      method: 'POST'
+    const response = await fetchFromBackend("/notifications/save-all", {
+      method: "POST",
     });
     if (!response.ok) {
-      throw new Error('Failed to save all notifications');
+      throw new Error("Failed to save all notifications");
     }
     return response.json();
   } catch (error) {
-    console.error('Error saving all notifications:', error);
+    console.error("Error saving all notifications:", error);
     throw error;
   }
 };
@@ -127,11 +112,13 @@ const NotificationItem = ({
 
   const handleDelete = async (e) => {
     e.stopPropagation();
+    e.preventDefault(); // Prevent any default behavior
+    
     if (onDelete) {
       try {
         await onDelete(notification.id);
       } catch (error) {
-        console.error('Failed to delete notification:', error);
+        console.error("Failed to delete notification:", error);
       }
     }
   };
@@ -188,15 +175,14 @@ const NotificationItem = ({
               <span className="text-xs text-muted-foreground font-medium">
                 {formatTimeAgo(notification.createdAt)}
               </span>
-
               {onDelete && (
                 <Button
                   size="sm"
-                  className="h-8 text-xs"
-                  variant={"outline"}
+                  className="h-6 px-2 text-xs cursor-pointer"
+                  variant={"ghost"}
                   onClick={handleDelete}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                   Hapus
                 </Button>
               )}
@@ -233,7 +219,12 @@ export function NotificationCenter({
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const queryClient = useQueryClient();
-  const { ws, alarmNotifications = [], clearAlarmNotifications } = useWebSocket();
+  const {
+    ws,
+    alarmNotifications = [],
+    removeAlarmNotification,
+    clearAlarmNotifications,
+  } = useWebSocket();
 
   useEffect(() => {
     if (
@@ -258,23 +249,36 @@ export function NotificationCenter({
   }, [enableRealTimeUpdates, updateInterval, queryClient]);
 
   // Fetch saved notifications from database
-  const { data: savedNotifications = [], isLoading: isLoadingSaved, refetch: refetchSaved } = useQuery({
+  const {
+    data: savedNotifications = [],
+    isLoading: isLoadingSaved,
+    refetch: refetchSaved,
+  } = useQuery({
     queryKey: ["saved-notifications"],
     queryFn: async () => {
       try {
-        const response = await fetchFromBackend('/notifications');
+        const response = await fetchFromBackend("/notifications");
         if (!response.ok) {
-          throw new Error('Failed to fetch saved notifications');
+          throw new Error("Failed to fetch saved notifications");
         }
         const data = await response.json();
         return data.notifications || [];
       } catch (error) {
-        console.error('Error fetching saved notifications:', error);
+        console.error("Error fetching saved notifications:", error);
         return [];
       }
     },
-    enabled: filter === "all",
+    enabled: filter === "all", // Only fetch when viewing "all" filter
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider data stale to force refetch
   });
+
+  // Effect to refetch saved notifications when filter changes to "all"
+  useEffect(() => {
+    if (filter === "all") {
+      refetchSaved();
+    }
+  }, [filter, refetchSaved]);
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["notifications"],
@@ -339,13 +343,19 @@ export function NotificationCenter({
     onSuccess: () => {
       // Clear WebSocket notifications
       clearAlarmNotifications();
-      
-      // Refresh saved notifications
+
+      // Refresh saved notifications to show the newly saved ones
       refetchSaved();
-      
+
       // Switch to "all" filter to show saved notifications
       setFilter("all");
+      
+      // Keep popover open to show the result
+      // setIsPopoverOpen will remain true
     },
+    onError: (error) => {
+      console.error("Error saving notifications:", error);
+    }
   });
 
   const deleteMutation = useMutation({
@@ -357,16 +367,12 @@ export function NotificationCenter({
     },
   });
 
-  const deleteAllMutation = useMutation({
-    mutationFn: deleteAllNotifications,
-    onSuccess: () => {
-      if (filter === "all") {
-        refetchSaved();
-      } else {
-        clearAlarmNotifications();
-      }
-    },
-  });
+  // Function to remove WebSocket notification (for unread notifications)
+  const removeWebSocketNotification = (notificationId) => {
+    setAlarmNotifications((prev) =>
+      prev.filter((notif) => notif.id !== notificationId)
+    );
+  };
 
   const filteredNotifications = useMemo(
     () => displayNotifications,
@@ -380,7 +386,7 @@ export function NotificationCenter({
 
   const NotificationList = () => (
     <ScrollArea className={cn(maxHeight)}>
-      {(isLoading || isLoadingSaved) ? (
+      {isLoading || isLoadingSaved ? (
         <div className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -412,7 +418,13 @@ export function NotificationCenter({
               onMarkAsRead={
                 staticNotifications ? undefined : markAsReadMutation.mutate
               }
-              onDelete={filter === "all" ? deleteMutation.mutate : undefined}
+              onDelete={
+                filter === "all"
+                  ? deleteMutation.mutate
+                  : filter === "unread"
+                    ? removeAlarmNotification
+                    : undefined
+              }
               onClick={onNotificationClick}
             />
           ))}
@@ -425,129 +437,121 @@ export function NotificationCenter({
     return (
       <>
         <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-        <DescriptionTooltip content={"Notifikasi Terbaru"}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className={cn(
-                "relative hover:bg-muted transition-all duration-500 hover:scale-105",
-                className
-              )}
-            >
-              <Bell className="h-4 w-4" />
-              {unreadCount > 0 && (
-                <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+          <DescriptionTooltip content={"Notifikasi Terbaru"}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "relative hover:bg-muted transition-all duration-500 hover:scale-105",
+                  className
+                )}
+              >
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </div>
+                )}
+              </Button>
+            </PopoverTrigger>
+          </DescriptionTooltip>
+          <PopoverContent
+            className="w-80 p-0 max-sm:mr-7 shadow-xl border-border/50"
+            side="bottom"
+            align={align}
+            sideOffset={8}
+          >
+            <div className="p-4 border-b bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-lg text-foreground">
+                    Pesan Notifikasi
+                  </h4>
+                  {unreadCount > 0 && (
+                    <Badge variant="secondary" className="text-xs px-2 py-1">
+                      {unreadCount} baru
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-muted"
+                  onClick={() => setIsPopoverOpen(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="px-1 py-3">
+              {(showFilter || (showMarkAllRead && unreadCount > 0)) && (
+                <div className="flex items-center gap-2 mb-3 px-4 justify-between">
+                  {showFilter && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilter(filter === "all" ? "unread" : "all");
+                      }}
+                    >
+                      <Filter className="mr-1.5 h-3 w-3" />
+                      {filter === "all" ? "Belum dibaca" : "Semua"}
+                    </Button>
+                  )}
+
+                  {showMarkAllRead && unreadCount > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAllAsReadMutation.mutate();
+                      }}
+                      disabled={markAllAsReadMutation.isPending}
+                    >
+                      {markAllAsReadMutation.isPending ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                      ) : (
+                        <CheckCheck className="mr-1.5 h-3 w-3" />
+                      )}
+                      Simpan Semua
+                    </Button>
+                  )}
                 </div>
               )}
-            </Button>
-          </PopoverTrigger>
-        </DescriptionTooltip>
-        <PopoverContent
-          className="w-80 p-0 max-sm:mr-7 shadow-xl border-border/50"
-          side="bottom"
-          align={align}
-          sideOffset={8}
-        >
-          <div className="p-4 border-b bg-muted/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h4 className="font-semibold text-lg text-foreground">
-                  Pesan Notifikasi
-                </h4>
-                {unreadCount > 0 && (
-                  <Badge variant="secondary" className="text-xs px-2 py-1">
-                    {unreadCount} baru
-                  </Badge>
-                )}
+
+              <div className="max-h-96">
+                <NotificationList />
               </div>
+            </div>
+            <div className="p-2 flex items-center justify-center border-t">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:bg-muted"
-                onClick={() => setIsPopoverOpen(false)}
+                className="w-full cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPopoverOpen(false);
+                  // Small delay to ensure popover closes before opening history
+                  setTimeout(() => {
+                    setIsHistoryOpen(true);
+                  }, 100);
+                }}
               >
-                <X className="h-4 w-4" />
+                <History className="w-4 h-4 mr-2" />
+                Lihat riwayat lengkap
               </Button>
             </div>
-          </div>
+          </PopoverContent>
+        </Popover>
 
-          <div className="px-1 py-3">
-            {(showFilter || (showMarkAllRead && unreadCount > 0)) && (
-              <div className="flex items-center gap-2 mb-3 px-4 justify-between">
-                {showFilter && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() =>
-                      setFilter(filter === "all" ? "unread" : "all")
-                    }
-                  >
-                    <Filter className="mr-1.5 h-3 w-3" />
-                    {filter === "all" ? "Belum dibaca" : "Semua"}
-                  </Button>
-                )}
-
-                {showMarkAllRead && unreadCount > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs"
-                    onClick={() => markAllAsReadMutation.mutate()}
-                    disabled={markAllAsReadMutation.isPending}
-                  >
-                    {markAllAsReadMutation.isPending ? (
-                      <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
-                    ) : (
-                      <CheckCheck className="mr-1.5 h-3 w-3" />
-                    )}
-                    Simpan Semua
-                  </Button>
-                )}
-              </div>
-            )}
-
-            <div className="max-h-96">
-              <NotificationList />
-            </div>
-          </div>
-          <div className="p-2 flex items-center justify-between border-t">
-            <Button
-              variant={"ghost"}
-              size="sm"
-              className="cursor-pointer"
-              onClick={() => {
-                setIsPopoverOpen(false);
-                setIsHistoryOpen(true);
-              }}
-              >
-              Lihat riwayat lengkap
-            </Button>
-            <Button 
-              variant={"ghost"} 
-              size="sm" 
-              className="py-4"
-              onClick={() => deleteAllMutation.mutate()}
-              disabled={deleteAllMutation.isPending || filteredNotifications.length === 0}
-            >
-              {deleteAllMutation.isPending ? (
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
-              ) : (
-                <Trash2 className="mr-1.5 h-3 w-3" />
-              )}
-              Hapus semua
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-      
-      <NotifHistory 
-        open={isHistoryOpen} 
-        setOpen={setIsHistoryOpen} 
-      />
-    </>
+        <NotifHistory open={isHistoryOpen} setOpen={setIsHistoryOpen} />
+      </>
     );
   }
 

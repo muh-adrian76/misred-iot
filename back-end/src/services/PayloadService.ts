@@ -44,9 +44,9 @@ export class PayloadService {
 
     // Manual JWT verification with device-specific secret
     try {
-      console.log("🔍 Starting JWT verification...");
-      console.log("🔑 Device secret:", secret);
-      console.log("🎫 Token:", token);
+      // console.log("🔍 Starting JWT verification...");
+      // console.log("🔑 Device secret:", secret);
+      // console.log("🎫 Token:", token);
       
       const [header, payload, signature] = token.split('.');
       
@@ -54,14 +54,14 @@ export class PayloadService {
         throw new Error("Invalid JWT format");
       }
       
-      console.log("📋 JWT parts:", { header, payload, signature });
+      // console.log("📋 JWT parts:", { header, payload, signature });
       
       // Verify signature
       const data = `${header}.${payload}`;
       const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
       
-      console.log("🔍 Expected signature:", expectedSignature);
-      console.log("🔍 Received signature:", signature);
+      // console.log("🔍 Expected signature:", expectedSignature);
+      // console.log("🔍 Received signature:", signature);
       
       if (signature !== expectedSignature) {
         throw new Error("Invalid JWT signature");
@@ -71,7 +71,7 @@ export class PayloadService {
       let decodedPayload;
       try {
         decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
-        console.log("📋 Decoded JWT payload:", decodedPayload);
+        // console.log("📋 Decoded JWT payload:", decodedPayload);
       } catch (decodeError) {
         console.error("❌ Failed to decode JWT payload:", decodeError);
         throw new Error("Invalid JWT payload encoding");
@@ -86,35 +86,35 @@ export class PayloadService {
         throw new Error("Missing encryptedData in JWT");
       }
       
-      console.log("✅ JWT verified successfully with device secret");
-      console.log("📦 Encrypted data:", decodedPayload.encryptedData);
+      // console.log("✅ JWT verified successfully with device secret");
+      // console.log("📦 Encrypted data:", decodedPayload.encryptedData);
       
       // Karena CustomJWT mengirim data langsung sebagai "encryptedData"
       // kita akan parse langsung tanpa dekripsi AES tambahan
       let decrypted;
       try {
         // Coba parse sebagai JSON langsung (untuk CustomJWT)
-        console.log("🔄 Trying to parse as direct JSON...");
+        // console.log("🔄 Trying to parse as direct JSON...");
         decrypted = JSON.parse(decodedPayload.encryptedData);
-        console.log("📦 CustomJWT payload parsed successfully:", decrypted);
+        // console.log("📦 CustomJWT payload parsed successfully:", decrypted);
       } catch (parseError) {
         console.log("Parse error, trying base64 decode:", parseError);
         try {
           // Coba decode base64 dulu
-          console.log("🔄 Trying base64 decode...");
+          // console.log("🔄 Trying base64 decode...");
           const decodedData = Buffer.from(decodedPayload.encryptedData, 'base64').toString();
-          console.log("📄 Base64 decoded string:", decodedData);
+          // console.log("📄 Base64 decoded string:", decodedData);
           decrypted = JSON.parse(decodedData);
-          console.log("📦 Base64 decoded payload:", decrypted);
+          // console.log("📦 Base64 decoded payload:", decrypted);
         } catch (base64Error) {
-          console.log("Base64 decode failed:", base64Error);
+          // console.log("Base64 decode failed:", base64Error);
           // Fallback ke AES decryption untuk backward compatibility
-          console.log("🔄 Falling back to AES decryption");
+          // console.log("🔄 Falling back to AES decryption");
           try {
             const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
-            console.log("📦 AES decrypted payload:", decryptedString);
+            // console.log("📦 AES decrypted payload:", decryptedString);
             decrypted = JSON.parse(decryptedString);
-            console.log("📦 AES parsed JSON:", decrypted);
+            // console.log("📦 AES parsed JSON:", decrypted);
           } catch (aesError) {
             console.error("❌ All decryption methods failed:", aesError);
             throw new Error("Unable to decrypt payload data");
@@ -146,7 +146,7 @@ export class PayloadService {
         [deviceId, JSON.stringify(decrypted)]
       );
       
-      console.log(`📥 Raw payload saved with ID: ${rawResult.insertId}`);
+      // console.log(`📥 Raw payload saved with ID: ${rawResult.insertId}`);
       
       // STEP 2: Parse dan normalisasi data ke tabel payloads
       const normalizedPayloads = await this.parseAndNormalizePayload(
@@ -155,14 +155,14 @@ export class PayloadService {
         rawResult.insertId
       );
       
-      console.log(`✅ Parsed ${normalizedPayloads.length} sensor readings`);
+      // console.log(`✅ Parsed ${normalizedPayloads.length} sensor readings`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       await this.broadcastSensorUpdates(Number(deviceId), decrypted);
 
       // STEP 4: Check alarms setelah payload disimpan
       if (this.alarmNotificationService) {
-        console.log(`🔍 Checking alarms for device ${deviceId}`);
+        // console.log(`🔍 Checking alarms for device ${deviceId}`);
         await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
       }
 
@@ -209,7 +209,7 @@ export class PayloadService {
               );
               insertedIds.push(result.insertId);
               
-              console.log(`📊 Sensor data saved: Pin ${pin} → Value ${value} ${datastream.unit}`);
+              // console.log(`📊 Sensor data saved: Pin ${pin} → Value ${value} ${datastream.unit}`);
               
             } catch (error) {
               console.error(`Error saving sensor data for pin ${pin}:`, error);

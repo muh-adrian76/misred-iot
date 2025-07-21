@@ -23,9 +23,12 @@ export function alarmNotificationRoutes(
       async ({ query, jwt, cookie, set }) => {
         try {
           const user = await authorizeRequest(jwt, cookie);
+          if (!user) {
+            return new Response(JSON.stringify({ success: false, message: "Unauthorized" }), { status: 401 });
+          }
           const userId = user.sub;
 
-          // Get notifications sejak last_login user atau 24 jam terakhir jika last_login null
+          // Get saved notifications for the user
           const [rows] = await notificationService.db.execute(`
             SELECT 
               an.id,
@@ -33,6 +36,8 @@ export function alarmNotificationRoutes(
               an.sensor_value,
               an.conditions_text,
               an.triggered_at,
+              COALESCE(an.is_saved, 0) as is_saved,
+              an.saved_at,
               a.description as alarm_description,
               ds.description as datastream_description,
               ds.pin as field_name,
@@ -44,29 +49,27 @@ export function alarmNotificationRoutes(
             JOIN devices dev ON an.device_id = dev.id
             JOIN users u ON an.user_id = u.id
             WHERE an.user_id = ? 
-              AND an.triggered_at >= COALESCE(
-                (SELECT last_login FROM users WHERE id = ?), 
-                NOW() - INTERVAL 24 HOUR
-              )
-              AND an.notification_type IN ('all', 'sent')
+              AND COALESCE(an.is_saved, 0) = 1
             ORDER BY an.triggered_at DESC
             LIMIT 50
-          `, [userId, userId]);
+          `, [userId]);
 
           // Format notifications untuk frontend
           const notifications = (rows as any[]).map((row: any) => ({
             id: `alarm_${row.alarm_id}_${row.id}`,
             title: "🚨 Peringatan Sensor Alarm",
             message: `${row.alarm_description} - ${row.datastream_description}(${row.field_name}): ${row.sensor_value} (${row.conditions_text}) pada ${row.device_description}`,
-            isRead: false,
             createdAt: row.triggered_at,
+            isRead: Boolean(row.is_saved), // Use is_saved as isRead indicator
             priority: "high",
             alarm_id: row.alarm_id,
             device_description: row.device_description,
             datastream_description: row.datastream_description,
             sensor_value: row.sensor_value,
             condition_text: row.conditions_text,
-            user_email: row.user_email
+            user_email: row.user_email,
+            is_saved: Boolean(row.is_saved),
+            saved_at: row.saved_at
           }));
 
           return {
@@ -148,11 +151,12 @@ export function alarmNotificationRoutes(
           let queryParams = [userId];
           
           // Build proper SQL queries with parameters
+          // First, let's try to get all notifications and filter based on whether is_saved exists
           let countQuery = `
             SELECT COUNT(*) as total
             FROM alarm_notifications an
             JOIN alarms a ON an.alarm_id = a.id
-            WHERE an.user_id = ? AND an.is_saved = TRUE
+            WHERE an.user_id = ?
           `;
           
           let dataQuery = `
@@ -164,10 +168,8 @@ export function alarmNotificationRoutes(
               an.triggered_at,
               an.notification_type,
               an.whatsapp_message_id,
-              an.is_saved,
+              COALESCE(an.is_saved, 0) as is_saved,
               an.saved_at,
-              an.is_read,
-              an.read_at,
               a.description as alarm_description,
               ds.description as datastream_description,
               ds.pin as field_name,
@@ -176,7 +178,7 @@ export function alarmNotificationRoutes(
             JOIN alarms a ON an.alarm_id = a.id
             JOIN datastreams ds ON an.datastream_id = ds.id
             JOIN devices dev ON an.device_id = dev.id
-            WHERE an.user_id = ? AND an.is_saved = TRUE
+            WHERE an.user_id = ?
           `;
           
           // Add time condition to queries if needed
@@ -207,9 +209,7 @@ export function alarmNotificationRoutes(
             whatsapp_message_id: row.whatsapp_message_id,
             whatsapp_sent: !!row.whatsapp_message_id,
             is_saved: row.is_saved,
-            saved_at: row.saved_at,
-            is_read: row.is_read,
-            read_at: row.read_at
+            saved_at: row.saved_at
           }));
 
           return {
@@ -226,6 +226,13 @@ export function alarmNotificationRoutes(
 
         } catch (error: any) {
           console.error("Error fetching notification history:", error);
+          console.error("Error details:", {
+            message: error.message,
+            code: error.code,
+            errno: error.errno,
+            sqlMessage: error.sqlMessage,
+            sql: error.sql
+          });
           
           // Check if it's a database connection error
           if (error.code === 'ER_WRONG_ARGUMENTS' || error.errno === 1210) {
@@ -248,7 +255,7 @@ export function alarmNotificationRoutes(
             set.status = 500;
             return {
               success: false,
-              message: "Gagal mengambil data dari database",
+              message: `Database error: ${error.message}`,
               notifications: [],
               pagination: {
                 page: 1,
@@ -288,7 +295,7 @@ export function alarmNotificationRoutes(
           const [result] = await notificationService.db.execute(`
             UPDATE alarm_notifications 
             SET is_saved = TRUE, saved_at = NOW() 
-            WHERE user_id = ? AND is_saved = FALSE
+            WHERE user_id = ? AND COALESCE(is_saved, 0) = 0
           `, [userId]);
 
           return {

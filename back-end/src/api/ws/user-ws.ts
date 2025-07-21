@@ -14,6 +14,7 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
       command_type: t.Optional(t.String()),
       command_id: t.Optional(t.String()),
       value: t.Optional(t.Any()),
+      timestamp: t.Optional(t.String()),
     }),
     open(ws) {
       userClients.add(ws);

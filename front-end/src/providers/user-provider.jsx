@@ -14,7 +14,7 @@ export const userType = {
   }
 
 export function UserProvider({ children }) {
-  const [user, setUser] = useState(userType);
+  const [user, setUser] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Ambil user dari localStorage
@@ -32,7 +32,7 @@ export function UserProvider({ children }) {
   // Simpan user ke localStorage jika berubah
   useEffect(() => {
     if (isInitialized) {
-      if (user) {
+      if (user && user.id && user.email) {
         localStorage.setItem("user", JSON.stringify(user));
       } else {
         localStorage.removeItem("user");

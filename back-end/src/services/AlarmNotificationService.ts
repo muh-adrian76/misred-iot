@@ -457,7 +457,7 @@ export class AlarmNotificationService {
 
             const [logResult] = await this.db.execute(
               `INSERT INTO alarm_notifications (alarm_id, user_id, device_id, datastream_id, sensor_value, conditions_text, notification_type, triggered_at) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               [alarmLog.alarm_id, alarmLog.user_id, alarmLog.device_id, alarmLog.datastream_id, 
                alarmLog.sensor_value, alarmLog.conditions_text, alarmLog.notification_type, alarmLog.triggered_at]
             );
@@ -487,21 +487,22 @@ export class AlarmNotificationService {
                 message
               );
 
-              // Update log dengan hasil notifikasi  
-              const updateStatus = notificationResult.success ? "sent" : "failed";
-              await this.db.execute(
-                `UPDATE alarm_notifications SET 
-                  notification_type = ?, 
-                  whatsapp_message_id = ?, 
-                  error_message = ?
-                WHERE id = ?`,
-                [
-                  updateStatus,
-                  notificationResult.whatsapp_message_id || null,
-                  notificationResult.error_message || null,
-                  logId
-                ]
-              );
+              // Update log dengan hasil notifikasi WhatsApp
+              if (notificationResult.success) {
+                await this.db.execute(
+                  `UPDATE alarm_notifications SET 
+                    whatsapp_message_id = ?
+                  WHERE id = ?`,
+                  [notificationResult.whatsapp_message_id, logId]
+                );
+              } else {
+                await this.db.execute(
+                  `UPDATE alarm_notifications SET 
+                    error_message = ?
+                  WHERE id = ?`,
+                  [notificationResult.error_message, logId]
+                );
+              }
 
               if (notificationResult.success) {
                 // console.log(`✅ WhatsApp notification sent successfully for alarm ${alarm.id}`);

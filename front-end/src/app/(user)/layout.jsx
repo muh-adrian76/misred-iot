@@ -1,10 +1,16 @@
 import UserLayoutClient from "./client";
 import { SidebarOpenProvider } from "@/providers/sidebar-provider";
+import { WebSocketProvider } from "@/providers/websocket-provider";
+import { DashboardProvider } from "@/providers/dashboard-provider";
 
 export default function UserLayout({ children }) {
   return (
-    <SidebarOpenProvider>
-      <UserLayoutClient>{children}</UserLayoutClient>
-    </SidebarOpenProvider>
+      <DashboardProvider>
+        <WebSocketProvider>
+          <SidebarOpenProvider>
+            <UserLayoutClient>{children}</UserLayoutClient>
+          </SidebarOpenProvider>
+        </WebSocketProvider>
+      </DashboardProvider>
   );
 }

@@ -6,25 +6,50 @@ import { SliderWidget } from "./widget-component/slider";
 import { SwitchWidget } from "./widget-component/switch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { HelpCircle, Plus } from "lucide-react";
+import DescriptionTooltip from "../other/description-tooltip";
 
 const widgetList = [
-  { key: "switch", label: "Switch", component: SwitchWidget },
-  { key: "slider", label: "Slider", component: SliderWidget },
+  {
+    key: "switch",
+    label: "Switch",
+    component: SwitchWidget,
+    tooltip: "Cocok untuk menghidupkan/mematikan sesuatu",
+  },
+  {
+    key: "slider",
+    label: "Slider",
+    component: SliderWidget,
+    tooltip: "Cocok untuk mengatur nilai dalam rentang tertentu",
+  },
   {
     key: "line",
     label: "Line Chart",
     component: LineChartWidget,
     width: "w-50",
+    tooltip: "Cocok untuk melihat tren data dari waktu ke waktu",
   },
-  { key: "bar", label: "Bar Chart", component: BarChartWidget, width: "w-50" },
+  // {
+  //   key: "bar",
+  //   label: "Bar Chart",
+  //   component: BarChartWidget,
+  //   width: "w-50",
+  //   tooltip: "Cocok untuk membandingkan nilai antar kategori",
+  // },
   {
     key: "area",
     label: "Area Chart",
     component: AreaChartWidget,
     width: "w-50",
+    tooltip: "Cocok untuk melihat total kumulatif atau volume dari data",
   },
-  // { key: "pie", label: "Pie Chart", component: PieChartWidget, height: "h-40" },
+  // {
+  //   key: "pie",
+  //   label: "Pie Chart",
+  //   component: PieChartWidget,
+  //   height: "h-40",
+  //   tooltip: "Cocok untuk melihat proporsi antar kategori",
+  // },
 ];
 
 export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
@@ -58,23 +83,34 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
           unselectable="on"
           onDragStart={(e) => handleDragStart(e, w.key)}
           className="droppable-element rounded border bg-background shadow p-2 flex flex-col items-center justify-center cursor-grab hover:bg-muted transition-all min-w-[180px] min-h-[120px] mb-2"
-          title={`Tarik ke kanvas untuk menambah ${w.label}`}
-        >
+          >
           <div
             className={cn(
               "flex w-full items-center justify-between mb-2",
               mobileView ? "px-5" : "px-10"
             )}
-          >
-            <span className="font-semibold">{w.label}</span>
-            <Button
-              size="xs"
-              variant="outline"
-              className="flex gap-2 items-center"
-              onClick={(e) => handleAddWidget(e, w.key)}
+            // title={`Tarik ke kanvas untuk menambah ${w.label}`}
             >
-              <Plus className="w-5 h-5" />
-            </Button>
+            <span className="font-semibold">{w.label}</span>
+            <div className="flex gap-2">
+              <Button
+                size="xs"
+                variant="outline"
+                className="flex gap-2 items-center"
+                onClick={(e) => handleAddWidget(e, w.key)}
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+              <DescriptionTooltip content={w.tooltip} side={"left"}>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="flex gap-2 items-center cursor-help"
+                  >
+                  <HelpCircle className="w-5 h-5" />
+                </Button>
+              </DescriptionTooltip>
+            </div>
           </div>
           <div
             className={cn(
