@@ -295,7 +295,7 @@ export function AreaChartWidget({
             stackId="a"
             />
           ))}
-          <ChartLegend content={<ChartLegendContent />} />
+          {/* <ChartLegend content={<ChartLegendContent />} /> */}
         </AreaChart>
       </ChartContainer>
     </div>

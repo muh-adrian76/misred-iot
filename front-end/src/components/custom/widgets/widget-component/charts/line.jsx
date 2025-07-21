@@ -304,7 +304,7 @@ export function LineChartWidget({
               }}
             />
           ))}
-          <ChartLegend content={<ChartLegendContent />} />
+          {/* <ChartLegend content={<ChartLegendContent />} /> */}
         </LineChart>
       </ChartContainer>
     </div>
