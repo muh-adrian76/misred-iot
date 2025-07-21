@@ -32,10 +32,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`) VALUES
-('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', TRUE),
-('2', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE),
-('3', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE);
+INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`, `onboarding_completed`, `onboarding_progress`) VALUES
+('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, FALSE, NULL),
+('2', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE, FALSE, NULL),
+('3', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE, FALSE, NULL);
 
 CREATE TABLE IF NOT EXISTS `dashboards` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -267,8 +267,8 @@ SELECT
     w.description as widget_description,
     w.type as widget_type,
     w.dashboard_id,
-    w.device_id,
-    w.datastream_id,
+    JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.device_id')) AS device_id,
+    JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.datastream_id')) AS datastream_id,
     d.description as device_name,
     d.status as device_status,
     ds.description as sensor_name,
@@ -279,16 +279,16 @@ SELECT
     ds.max_value,
     ds.decimal_value,
     (SELECT p.value FROM payloads p 
-     WHERE p.device_id = w.device_id 
-     AND p.datastream_id = w.datastream_id 
+     WHERE p.device_id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.device_id'))
+     AND p.datastream_id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.datastream_id'))
      ORDER BY p.server_time DESC LIMIT 1) as latest_value,
     (SELECT p.server_time FROM payloads p 
-     WHERE p.device_id = w.device_id 
-     AND p.datastream_id = w.datastream_id 
+     WHERE p.device_id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.device_id'))
+     AND p.datastream_id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.datastream_id'))
      ORDER BY p.server_time DESC LIMIT 1) as latest_time
 FROM widgets w
-LEFT JOIN devices d ON w.device_id = d.id
-LEFT JOIN datastreams ds ON w.datastream_id = ds.id;
+LEFT JOIN devices d ON d.id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.device_id'))
+LEFT JOIN datastreams ds ON ds.id = JSON_UNQUOTE(JSON_EXTRACT(w.inputs, '$.datastream_id'));
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

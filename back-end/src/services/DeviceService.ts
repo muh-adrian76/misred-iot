@@ -373,8 +373,40 @@ export class DeviceService {
       );
       const topicToCheck = deviceRows[0]?.mqtt_topic;
 
+      // Delete data dalam urutan yang tepat untuk menghindari foreign key constraint errors
+      
+      // 1. Delete payloads first (child table)
       await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
-      await this.db.query("DELETE FROM widgets WHERE device_id = ?", [id]);
+      
+      // 2. Delete widgets yang menggunakan device ini
+      await this.db.query(
+        "DELETE FROM widgets WHERE JSON_UNQUOTE(JSON_EXTRACT(inputs, '$.device_id')) = ?",
+        [id]
+      );
+      
+      // 3. Delete alarm_notifications yang terkait dengan device
+      await this.db.query("DELETE FROM alarm_notifications WHERE device_id = ?", [id]);
+      
+      // 4. Delete device_commands yang terkait dengan device
+      await this.db.query("DELETE FROM device_commands WHERE device_id = ?", [id]);
+      
+      // 5. Delete alarm_conditions yang terkait dengan alarms dari device ini
+      await this.db.query(`
+        DELETE ac FROM alarm_conditions ac 
+        INNER JOIN alarms a ON ac.alarm_id = a.id 
+        WHERE a.device_id = ?
+      `, [id]);
+      
+      // 6. Delete alarms yang terkait dengan device
+      await this.db.query("DELETE FROM alarms WHERE device_id = ?", [id]);
+      
+      // 7. Delete datastreams yang terkait dengan device
+      await this.db.query("DELETE FROM datastreams WHERE device_id = ?", [id]);
+      
+      // 8. Delete raw_payloads yang terkait dengan device
+      await this.db.query("DELETE FROM raw_payloads WHERE device_id = ?", [id]);
+      
+      // 9. Finally, delete the device itself
       const [result] = await this.db.query<ResultSetHeader>(
         "DELETE FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]

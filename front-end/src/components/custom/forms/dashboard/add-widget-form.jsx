@@ -11,21 +11,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Check } from "lucide-react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandItem,
-  CommandEmpty,
-} from "@/components/ui/command";
-import { cn } from "@/lib/utils";
-import { Link } from "next-view-transitions";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function AddWidgetDialog({
@@ -42,6 +27,9 @@ export default function AddWidgetDialog({
     selectedPairs: [], // Array of { device_id, datastream_id }
   });
   const [loading, setLoading] = useState(false);
+  
+  // State untuk menyimpan pilihan sementara sebelum ditambahkan
+  const [tempSelection, setTempSelection] = useState("");
 
   // Popover state for device selection
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
@@ -56,6 +44,7 @@ export default function AddWidgetDialog({
         dashboard_id: String(initialData?.dashboard_id) || "",
         selectedPairs: [],
       });
+      setTempSelection(""); // Reset temp selection
     }
   }, [open, initialData]);
 
@@ -71,27 +60,37 @@ export default function AddWidgetDialog({
     }));
   };
 
-  // Handle multi-select device-datastream
-  const handlePairSelect = (device_id, datastream_id) => {
+  // Handle adding device-datastream pair from temp selection
+  const handleAddPair = () => {
+    if (!tempSelection) return;
+    
+    const [deviceId, datastreamId] = tempSelection.split('|');
+    const device_id = parseInt(deviceId);
+    const datastream_id = parseInt(datastreamId);
+    
     const currentPairs = form.selectedPairs || [];
     const exists = currentPairs.some(
       (pair) => pair.device_id === device_id && pair.datastream_id === datastream_id
     );
-    if (exists) {
+    
+    if (!exists && currentPairs.length < 5) {
       setForm((prev) => ({
         ...prev,
-        selectedPairs: currentPairs.filter(
-          (pair) => !(pair.device_id === device_id && pair.datastream_id === datastream_id)
-        ),
+        selectedPairs: [...currentPairs, { device_id, datastream_id }],
       }));
-    } else {
-      if (currentPairs.length < 5) {
-        setForm((prev) => ({
-          ...prev,
-          selectedPairs: [...currentPairs, { device_id, datastream_id }],
-        }));
-      }
+      setTempSelection(""); // Reset selection after adding
     }
+  };
+
+  // Handle removing device-datastream pair
+  const handleRemovePair = (device_id, datastream_id) => {
+    const currentPairs = form.selectedPairs || [];
+    setForm((prev) => ({
+      ...prev,
+      selectedPairs: currentPairs.filter(
+        (pair) => !(pair.device_id === device_id && pair.datastream_id === datastream_id)
+      ),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -162,7 +161,7 @@ export default function AddWidgetDialog({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handlePairSelect(pair.device_id, pair.datastream_id)}
+                  onClick={() => handleRemovePair(pair.device_id, pair.datastream_id)}
                   className="h-8 w-8 p-0"
                 >
                   ×
@@ -176,10 +175,8 @@ export default function AddWidgetDialog({
         {form.selectedPairs.length < 5 && (
           <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg">
             <Select
-              onValueChange={(value) => {
-                const [deviceId, datastreamId] = value.split('|');
-                handlePairSelect(parseInt(deviceId), parseInt(datastreamId));
-              }}
+              value={tempSelection}
+              onValueChange={setTempSelection}
             >
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Pilih Device & Datastream" />
@@ -210,7 +207,13 @@ export default function AddWidgetDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" size="sm" variant="outline">
+            <Button 
+              type="button" 
+              size="sm" 
+              variant="outline"
+              onClick={handleAddPair}
+              disabled={!tempSelection}
+            >
               +
             </Button>
           </div>

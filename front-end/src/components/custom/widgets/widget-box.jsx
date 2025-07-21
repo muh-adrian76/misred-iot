@@ -90,7 +90,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
         transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
         className={cn(
           "flex",
-          minimize === true ? "h-16 w-[175px]" : "w-[325px] h-125"
+          minimize === true ? "h-16 w-[175px]" : "w-[325px] h-[80vh]"
         )}
       >
         <ScrollArea

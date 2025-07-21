@@ -9,6 +9,12 @@ export function useAlarmLogic() {
   const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Data untuk form (devices dan datastreams)
+  const [devices, setDevices] = useState([]);
+  const [datastreams, setDatastreams] = useState([]);
+  const [loadingDevices, setLoadingDevices] = useState(false);
+  const [loadingDatastreams, setLoadingDatastreams] = useState(false);
+
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [deleteFormOpen, setDeleteFormOpen] = useState(false);
@@ -34,9 +40,45 @@ export function useAlarmLogic() {
     }
   }, []);
 
+  // Fetch devices
+  const fetchDevices = useCallback(async () => {
+    setLoadingDevices(true);
+    try {
+      const res = await fetchFromBackend("/device");
+      if (!res.ok) throw new Error("Gagal fetch devices");
+      const data = await res.json();
+      setDevices(data.result || []);
+    } catch (e) {
+      console.error("Error fetching devices:", e);
+      setDevices([]);
+    } finally {
+      setLoadingDevices(false);
+    }
+  }, []);
+
+  // Fetch all datastreams (semua datastream dari semua device)
+  const fetchDatastreams = useCallback(async () => {
+    setLoadingDatastreams(true);
+    try {
+      const res = await fetchFromBackend("/datastream");
+      if (!res.ok) throw new Error("Gagal fetch datastreams");
+      const data = await res.json();
+      setDatastreams(data.result || []);
+    } catch (e) {
+      console.error("Error fetching datastreams:", e);
+      setDatastreams([]);
+    } finally {
+      setLoadingDatastreams(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isAuthenticated) fetchAlarms();
-  }, [isAuthenticated, fetchAlarms]);
+    if (isAuthenticated) {
+      fetchAlarms();
+      fetchDevices();
+      fetchDatastreams();
+    }
+  }, [isAuthenticated, fetchAlarms, fetchDevices, fetchDatastreams]);
 
   // CRUD Handler
   const handleAddAlarm = async (payload) => {
@@ -89,6 +131,10 @@ export function useAlarmLogic() {
   return {
     alarms,
     loading,
+    devices,
+    datastreams,
+    loadingDevices,
+    loadingDatastreams,
     addFormOpen,
     setAddFormOpen,
     editFormOpen,

@@ -3,6 +3,10 @@ import EditAlarmForm from "@/components/custom/forms/alarm/edit-alarm-form";
 import DeleteAlarmForm from "@/components/custom/forms/alarm/delete-alarm-form";
 
 export default function AlarmDialogs({
+  devices,
+  datastreams,
+  loadingDevices,
+  loadingDatastreams,
   addFormOpen,
   setAddFormOpen,
   handleAddAlarm,
@@ -23,6 +27,10 @@ export default function AlarmDialogs({
         open={addFormOpen}
         setOpen={setAddFormOpen}
         handleAddAlarm={handleAddAlarm}
+        devices={devices}
+        datastreams={datastreams}
+        loadingDevices={loadingDevices}
+        loadingDatastreams={loadingDatastreams}
         isMobile={isMobile}
       />
       <EditAlarmForm
@@ -31,6 +39,10 @@ export default function AlarmDialogs({
         editAlarm={editAlarm}
         setEditAlarm={setEditAlarm}
         handleEditAlarm={handleEditAlarm}
+        devices={devices}
+        datastreams={datastreams}
+        loadingDevices={loadingDevices}
+        loadingDatastreams={loadingDatastreams}
         isMobile={isMobile}
       />
       <DeleteAlarmForm

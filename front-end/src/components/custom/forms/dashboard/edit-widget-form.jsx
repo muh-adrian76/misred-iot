@@ -28,6 +28,9 @@ export default function EditWidgetDialog({
     selectedPairs: [], // Array of { device_id, datastream_id }
   });
   const [loading, setLoading] = useState(false);
+  
+  // State untuk menyimpan pilihan sementara sebelum ditambahkan
+  const [tempSelection, setTempSelection] = useState("");
 
   // Popover state for device selection
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
@@ -49,6 +52,7 @@ export default function EditWidgetDialog({
               ? [{ device_id: widgetData.device_id, datastream_id: widgetData.datastream_id }]
               : [],
       });
+      setTempSelection(""); // Reset temp selection
     }
   }, [open, widgetData]);
 
@@ -57,27 +61,37 @@ export default function EditWidgetDialog({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Multi-select device-datastream
-  const handlePairSelect = (device_id, datastream_id) => {
+  // Handle adding device-datastream pair from temp selection
+  const handleAddPair = () => {
+    if (!tempSelection) return;
+    
+    const [deviceId, datastreamId] = tempSelection.split('|');
+    const device_id = parseInt(deviceId);
+    const datastream_id = parseInt(datastreamId);
+    
     const currentPairs = form.selectedPairs || [];
     const exists = currentPairs.some(
       (pair) => pair.device_id === device_id && pair.datastream_id === datastream_id
     );
-    if (exists) {
+    
+    if (!exists && currentPairs.length < 5) {
       setForm((prev) => ({
         ...prev,
-        selectedPairs: currentPairs.filter(
-          (pair) => !(pair.device_id === device_id && pair.datastream_id === datastream_id)
-        ),
+        selectedPairs: [...currentPairs, { device_id, datastream_id }],
       }));
-    } else {
-      if (currentPairs.length < 5) {
-        setForm((prev) => ({
-          ...prev,
-          selectedPairs: [...currentPairs, { device_id, datastream_id }],
-        }));
-      }
+      setTempSelection(""); // Reset selection after adding
     }
+  };
+
+  // Handle removing device-datastream pair
+  const handleRemovePair = (device_id, datastream_id) => {
+    const currentPairs = form.selectedPairs || [];
+    setForm((prev) => ({
+      ...prev,
+      selectedPairs: currentPairs.filter(
+        (pair) => !(pair.device_id === device_id && pair.datastream_id === datastream_id)
+      ),
+    }));
   };
 
   // ...existing code...
@@ -155,7 +169,7 @@ export default function EditWidgetDialog({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handlePairSelect(pair.device_id, pair.datastream_id)}
+                  onClick={() => handleRemovePair(pair.device_id, pair.datastream_id)}
                   className="h-8 w-8 p-0"
                 >
                   ×
@@ -169,10 +183,8 @@ export default function EditWidgetDialog({
         {form.selectedPairs.length < 5 && (
           <div className="flex items-center gap-2 p-3 border-2 border-dashed rounded-lg">
             <Select
-              onValueChange={(value) => {
-                const [deviceId, datastreamId] = value.split('|');
-                handlePairSelect(parseInt(deviceId), parseInt(datastreamId));
-              }}
+              value={tempSelection}
+              onValueChange={setTempSelection}
             >
               <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Pilih Device & Datastream" />
@@ -203,7 +215,13 @@ export default function EditWidgetDialog({
                 ))}
               </SelectContent>
             </Select>
-            <Button type="button" size="sm" variant="outline">
+            <Button 
+              type="button" 
+              size="sm" 
+              variant="outline"
+              onClick={handleAddPair}
+              disabled={!tempSelection}
+            >
               +
             </Button>
           </div>

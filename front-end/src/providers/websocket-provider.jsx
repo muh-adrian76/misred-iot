@@ -137,7 +137,7 @@ export function WebSocketProvider({ children }) {
       wsRef.current.close(1000, "Reconnecting");
     }
 
-    console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+    // console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
 
     const connectionTimer = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {

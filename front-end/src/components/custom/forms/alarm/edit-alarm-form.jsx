@@ -26,7 +26,6 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
-import { fetchFromBackend } from "@/lib/helper";
 import { errorToast } from "../../other/toaster";
 
 export default function EditAlarmForm({
@@ -34,6 +33,10 @@ export default function EditAlarmForm({
   setOpen,
   editAlarm,
   handleEditAlarm,
+  devices = [],
+  datastreams = [],
+  loadingDevices = false,
+  loadingDatastreams = false,
   isMobile,
 }) {
   const [description, setDescription] = useState("");
@@ -49,60 +52,12 @@ export default function EditAlarmForm({
   const [newConditionOperator, setNewConditionOperator] = useState(">");
   const [newConditionThreshold, setNewConditionThreshold] = useState("");
 
-  // State untuk data
-  const [devices, setDevices] = useState([]);
-  const [datastreams, setDatastreams] = useState([]);
-  const [loadingDevices, setLoadingDevices] = useState(false);
-  const [loadingDatastreams, setLoadingDatastreams] = useState(false);
+  // Filter datastreams berdasarkan device yang dipilih
+  const filteredDatastreams = deviceId
+    ? datastreams.filter((ds) => String(ds.device_id) === String(deviceId))
+    : [];
 
-  // Fetch devices when dialog opens
-  useEffect(() => {
-    if (open) {
-      fetchDevices();
-    }
-  }, [open]);
-
-  // Fetch datastreams when device changes
-  useEffect(() => {
-    if (deviceId) {
-      fetchDatastreams();
-    } else {
-      setDatastreams([]);
-    }
-  }, [deviceId]);
-
-  const fetchDevices = async () => {
-    setLoadingDevices(true);
-    try {
-      const res = await fetchFromBackend("/device");
-      if (!res.ok) throw new Error("Gagal fetch devices");
-      const data = await res.json();
-      setDevices(data.result || []);
-    } catch (e) {
-      console.error("Error fetching devices:", e);
-      setDevices([]);
-    } finally {
-      setLoadingDevices(false);
-    }
-  };
-
-  const fetchDatastreams = async () => {
-    if (!deviceId) return;
-
-    setLoadingDatastreams(true);
-    try {
-      const res = await fetchFromBackend(`/datastream/device/${deviceId}`);
-      if (!res.ok) throw new Error("Gagal fetch datastreams");
-      const data = await res.json();
-      setDatastreams(data.result || []);
-    } catch (e) {
-      console.error("Error fetching datastreams:", e);
-      setDatastreams([]);
-    } finally {
-      setLoadingDatastreams(false);
-    }
-  };
-
+  // Load data dan populate form ketika editAlarm berubah
   useEffect(() => {
     if (editAlarm) {
       setDescription(editAlarm.description || "");
@@ -137,6 +92,13 @@ export default function EditAlarmForm({
       setNewConditionThreshold("");
     }
   }, [editAlarm, open]);
+
+  // Reset datastream when device changes (selain saat inisialisasi)
+  useEffect(() => {
+    if (deviceId && editAlarm && String(deviceId) !== String(editAlarm.device_id)) {
+      setDatastreamId(""); // Reset datastream selection when device changes
+    }
+  }, [deviceId, editAlarm]);
 
   // Condition management functions
   const addCondition = () => {
@@ -267,7 +229,7 @@ export default function EditAlarmForm({
                 />
               </SelectTrigger>
               <SelectContent>
-                {datastreams.map((ds) => (
+                {filteredDatastreams.map((ds) => (
                   <SelectItem key={ds.id} value={String(ds.id)}>
                     {ds.description} (Pin {ds.pin})
                   </SelectItem>
@@ -288,7 +250,7 @@ export default function EditAlarmForm({
                   disabled={!deviceId}
                 >
                   <span className="truncate">
-                    {datastreams.find(
+                    {filteredDatastreams.find(
                       (ds) => String(ds.id) === String(datastreamId)
                     )?.description ||
                       (deviceId
@@ -305,7 +267,7 @@ export default function EditAlarmForm({
                     <CommandEmpty>
                       <span className="opacity-50">Tidak ada sensor.</span>
                     </CommandEmpty>
-                    {datastreams.map((ds) => (
+                    {filteredDatastreams.map((ds) => (
                       <CommandItem
                         key={ds.id}
                         value={String(ds.id)}
