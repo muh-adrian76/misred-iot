@@ -111,7 +111,7 @@ async function loadDeviceSecrets(): Promise<boolean> {
       }
     });
     
-    console.log(`🔑 Loaded secrets for devices 1 and 2`);
+    // console.log(`🔑 Loaded secrets for devices 1 and 2`);
     return !!(HTTP_DEVICE.device_secret && MQTT_DEVICE.device_secret);
     
   } catch (error) {

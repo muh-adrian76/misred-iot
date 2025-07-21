@@ -245,12 +245,12 @@ export function AreaChartWidget({
         <div className="flex justify-between mx-2 font-semibold items-center">
           {widget?.description || "Widget Chart"}
           <div className="flex items-center gap-2">
-            {isRealTimeConnected && (
+            {/* {isRealTimeConnected && (
               <div className="flex items-center gap-1 text-xs text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 Live
               </div>
-            )}
+            )} */}
             <p className="text-xs text-muted-foreground">
               {latestValue?.timeAgo || timeRangeLabel}
             </p>
@@ -283,19 +283,19 @@ export function AreaChartWidget({
             tick={{ fontSize: 11 }}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
           {/* Render satu Area untuk setiap pair */}
           {pairs.map((pair, idx) => (
             <Area
-              key={idx}
-              dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-              type="natural"
-              fill={chartColors[idx % chartColors.length]}
-              fillOpacity={0.4}
-              stroke={chartColors[idx % chartColors.length]}
-              stackId="a"
+            key={idx}
+            dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+            type="natural"
+            fill={chartColors[idx % chartColors.length]}
+            fillOpacity={0.4}
+            stroke={chartColors[idx % chartColors.length]}
+            stackId="a"
             />
           ))}
+          <ChartLegend content={<ChartLegendContent />} />
         </AreaChart>
       </ChartContainer>
     </div>

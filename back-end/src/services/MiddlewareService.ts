@@ -303,15 +303,15 @@ export class MQTTService {
     this.mqttClient.on("message", async (topic, message) => {
       try {
         const data = JSON.parse(message.toString());
-        console.log(`📡 Menerima payload MQTT dari topik ${topic}:`, data);
+        // console.log(`📡 Menerima payload MQTT dari topik ${topic}:`, data);
         
         // Tambahkan informasi topic ke data untuk debugging
         const dataWithTopic = { ...data, topic };
         await this.saveMqttPayload(dataWithTopic);
         
-        console.log(
-          `✅ Berhasil menyimpan data sensor MQTT pada topik ${topic} ke database.`
-        );
+        // console.log(
+        //   `✅ Berhasil menyimpan data sensor MQTT pada topik ${topic} ke database.`
+        // );
       } catch (error) {
         console.error(`❌ Gagal memproses pesan MQTT dari topik ${topic}:`, error);
       }

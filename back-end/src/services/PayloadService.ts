@@ -98,7 +98,7 @@ export class PayloadService {
         decrypted = JSON.parse(decodedPayload.encryptedData);
         // console.log("📦 CustomJWT payload parsed successfully:", decrypted);
       } catch (parseError) {
-        console.log("Parse error, trying base64 decode:", parseError);
+        // console.log("Parse error, trying base64 decode:", parseError);
         try {
           // Coba decode base64 dulu
           // console.log("🔄 Trying base64 decode...");
@@ -415,7 +415,7 @@ export class PayloadService {
               pin: pin
             });
             
-            console.log(`📡 Broadcasted sensor update: Device ${deviceId} → Pin ${pin} → Value ${value}`);
+            // console.log(`📡 Broadcasted sensor update: Device ${deviceId} → Pin ${pin} → Value ${value}`);
           }
         }
       }

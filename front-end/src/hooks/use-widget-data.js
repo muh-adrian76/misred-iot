@@ -13,15 +13,21 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
   const lastUpdateTime = useRef(null);
 
   // Ambil pairs dari widget atau argumen
-  const pairs = Array.isArray(pairsInput) && pairsInput.length > 0
-    ? pairsInput
-    : widget?.inputs && Array.isArray(widget.inputs)
-      ? widget.inputs
-      : widget?.datastream_ids && Array.isArray(widget.datastream_ids)
-        ? widget.datastream_ids
-        : widget?.device_id && widget?.datastream_id
-          ? [{ device_id: widget.device_id, datastream_id: widget.datastream_id }]
-          : [];
+  const pairs =
+    Array.isArray(pairsInput) && pairsInput.length > 0
+      ? pairsInput
+      : widget?.inputs && Array.isArray(widget.inputs)
+        ? widget.inputs
+        : widget?.datastream_ids && Array.isArray(widget.datastream_ids)
+          ? widget.datastream_ids
+          : widget?.device_id && widget?.datastream_id
+            ? [
+                {
+                  device_id: widget.device_id,
+                  datastream_id: widget.datastream_id,
+                },
+              ]
+            : [];
 
   const isValidWidget = pairs.length > 0;
 
@@ -32,7 +38,7 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     error: timeSeriesError,
     refetch: refetchTimeSeries,
   } = useQuery({
-    queryKey: ['widget-timeseries-multi', pairs, timeRange],
+    queryKey: ["widget-timeseries-multi", pairs, timeRange],
     queryFn: async () => {
       if (!isValidWidget) return [];
       // Ambil data semua pair
@@ -43,7 +49,11 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
           );
           if (!response.ok) return [];
           const data = await response.json();
-          return (data.result || []).map(item => ({ ...item, device_id: pair.device_id, datastream_id: pair.datastream_id }));
+          return (data.result || []).map((item) => ({
+            ...item,
+            device_id: pair.device_id,
+            datastream_id: pair.datastream_id,
+          }));
         })
       );
       // Gabungkan semua hasil
@@ -61,7 +71,7 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     error: latestError,
     refetch: refetchLatest,
   } = useQuery({
-    queryKey: ['widget-latest-multi', pairs],
+    queryKey: ["widget-latest-multi", pairs],
     queryFn: async () => {
       if (!isValidWidget) return [];
       const results = await Promise.all(
@@ -72,7 +82,13 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
           if (!response.ok) return null;
           const data = await response.json();
           const result = data.result || [];
-          return result.length > 0 ? { ...result[0], device_id: pair.device_id, datastream_id: pair.datastream_id } : null;
+          return result.length > 0
+            ? {
+                ...result[0],
+                device_id: pair.device_id,
+                datastream_id: pair.datastream_id,
+              }
+            : null;
         })
       );
       return results;
@@ -88,7 +104,9 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
       // Ambil data terbaru (paling baru server_time)
       const all = latestDataRaw.filter(Boolean);
       if (all.length === 0) return;
-      const sorted = [...all].sort((a, b) => new Date(b.server_time) - new Date(a.server_time));
+      const sorted = [...all].sort(
+        (a, b) => new Date(b.server_time) - new Date(a.server_time)
+      );
       setLatestValue(sorted[0]);
     }
   }, [latestDataRaw]);
@@ -103,7 +121,11 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
         if (
           data.type === "sensor_update" &&
           data.user_id === user.id &&
-          pairs.some(pair => pair.device_id === data.device_id && pair.datastream_id === data.datastream_id)
+          pairs.some(
+            (pair) =>
+              pair.device_id === data.device_id &&
+              pair.datastream_id === data.datastream_id
+          )
         ) {
           setRealTimeData(data);
           setLatestValue({
@@ -121,12 +143,12 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
           }, 2000);
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error("Error parsing WebSocket message:", error);
       }
     };
-    ws.addEventListener('message', handleMessage);
+    ws.addEventListener("message", handleMessage);
     return () => {
-      ws.removeEventListener('message', handleMessage);
+      ws.removeEventListener("message", handleMessage);
     };
   }, [ws, pairs, user, refetchLatest]);
 
@@ -136,59 +158,76 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     // Buat map waktu
     const timeMap = {};
     timeSeriesDataRaw.forEach((pairData, idx) => {
-      pairData.forEach(item => {
+      pairData.forEach((item) => {
         const key = new Date(item.server_time).toISOString();
         if (!timeMap[key]) {
           timeMap[key] = {
             timestamp: key,
-            time: new Date(item.server_time).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+            time: new Date(item.server_time).toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
           };
         }
-        timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = parseFloat(item.value);
+        timeMap[key][`value_${item.device_id}_${item.datastream_id}`] =
+          parseFloat(item.value);
       });
     });
     // Urutkan berdasarkan waktu
-    formattedTimeSeriesData = Object.values(timeMap).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    formattedTimeSeriesData = Object.values(timeMap).sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
   }
 
   // Legend data untuk chart
   const legendData = pairs.map((pair, idx) => {
     // Cari info sensor dari latestDataRaw
-    const latest = Array.isArray(latestDataRaw) ? latestDataRaw.find(d => d && d.device_id === pair.device_id && d.datastream_id === pair.datastream_id) : null;
+    const latest = Array.isArray(latestDataRaw)
+      ? latestDataRaw.find(
+          (d) =>
+            d &&
+            d.device_id === pair.device_id &&
+            d.datastream_id === pair.datastream_id
+        )
+      : null;
     return {
       device_id: pair.device_id,
       datastream_id: pair.datastream_id,
       device_name: latest?.device_name || `Device ${pair.device_id}`,
       sensor_name: latest?.sensor_name || `Datastream ${pair.datastream_id}`,
-      unit: latest?.unit || '',
+      unit: latest?.unit || "",
     };
   });
 
   // Format latest value untuk display
-  const formattedLatestValue = latestValue ? {
-    value: parseFloat(latestValue.value),
-    timestamp: latestValue.server_time,
-    timeAgo: latestValue.server_time ? getTimeAgo(latestValue.server_time) : 'Unknown',
-    unit: latestValue.unit || '',
-    sensor_name: latestValue.sensor_name || 'Unknown Sensor',
-    device_name: latestValue.device_name || 'Unknown Device',
-    device_id: latestValue.device_id,
-    datastream_id: latestValue.datastream_id,
-  } : null;
+  const formattedLatestValue = latestValue
+    ? {
+        value: parseFloat(latestValue.value),
+        timestamp: latestValue.server_time,
+        timeAgo: latestValue.server_time
+          ? getTimeAgo(latestValue.server_time)
+          : "Unknown",
+        unit: latestValue.unit || "",
+        sensor_name: latestValue.sensor_name || "Unknown Sensor",
+        device_name: latestValue.device_name || "Unknown Device",
+        device_id: latestValue.device_id,
+        datastream_id: latestValue.datastream_id,
+      }
+    : null;
 
   // Helper function untuk menerjemahkan time range ke bahasa Indonesia
   const getTimeRangeLabel = (range) => {
     const labels = {
-      '1m': '1 menit terakhir',
-      '1h': '1 jam terakhir',
-      '12h': '12 jam terakhir', 
-      '1d': '1 hari terakhir',
-      '1w': '1 minggu terakhir',
-      '1M': '1 bulan terakhir',
-      '1y': '1 tahun terakhir',
-      'all': 'semua waktu'
+      "1m": "1 menit terakhir",
+      "1h": "1 jam terakhir",
+      "12h": "12 jam terakhir",
+      "1d": "1 hari terakhir",
+      "1w": "1 minggu terakhir",
+      "1M": "1 bulan terakhir",
+      "1y": "1 tahun terakhir",
+      all: "semua waktu",
     };
-    return labels[range] || '1 menit terakhir';
+    return labels[range] || "1 menit terakhir";
   };
 
   return {
@@ -218,14 +257,21 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
 
 // Helper function untuk menghitung waktu relatif
 function getTimeAgo(timestamp) {
-  if (!timestamp) return 'Unknown';
-  
+  if (!timestamp) return "Unknown";
+
   const now = new Date();
   const time = new Date(timestamp);
   const diffInSeconds = Math.floor((now - time) / 1000);
-  
+
   if (diffInSeconds < 60) {
-    return 'Baru saja';
+    const live = (
+      <div className="flex items-center gap-1 text-xs text-green-600">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        Live
+      </div>
+    );
+    return live;
+    // return 'Baru saja';
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);
     return `${minutes} menit yang lalu`;
