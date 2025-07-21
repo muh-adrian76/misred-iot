@@ -239,7 +239,7 @@ export function AreaChartWidget({
   }
 
   return (
-    <div className="h-full w-full min-h-[150px] space-y-2">
+    <div className="h-full w-full space-y-2">
       {/* Header dengan info widget */}
       <div className="px-2 pt-2">
         <div className="flex justify-between mx-2 font-semibold items-center">
@@ -259,13 +259,13 @@ export function AreaChartWidget({
       </div>
 
       {/* Chart */}
-      <ChartContainer config={dynamicChartConfig} className="h-full w-full">
+      <ChartContainer config={dynamicChartConfig} className="max-h-8/9 w-full">
         <AreaChart
           accessibilityLayer
           width={undefined}
           height={undefined}
           data={timeSeriesData}
-          margin={{ left: 12, right: 12, top: 5, bottom: 5 }}
+          margin={{ left: 0, right: 12, top: 5, bottom: 5 }}
         >
           <CartesianGrid vertical={false} />
           <XAxis
@@ -295,7 +295,7 @@ export function AreaChartWidget({
             stackId="a"
             />
           ))}
-          {/* <ChartLegend content={<ChartLegendContent />} /> */}
+          <ChartLegend content={<ChartLegendContent />} />
         </AreaChart>
       </ChartContainer>
     </div>
