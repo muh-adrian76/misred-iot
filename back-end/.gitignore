@@ -44,4 +44,5 @@ bun.lock
 **/*.bun
 
 # WhatsApp API
+/.wwebjs_auth/
 /.wwebjs_cache
