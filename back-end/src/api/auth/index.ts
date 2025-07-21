@@ -5,6 +5,7 @@ import {
   setAuthCookie,
 } from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
+import { UserService } from "../../services/UserService";
 import {
   getRefreshTokenSchema,
   getVerifyTokenSchema,
@@ -16,7 +17,7 @@ import {
   postResetForgottenPasswordSchema,
 } from "./elysiaSchema";
 
-export function authRoutes(authService: AuthService) {
+export function authRoutes(authService: AuthService, userService: UserService) {
   return (
     new Elysia({ prefix: "/auth" })
 
@@ -25,6 +26,31 @@ export function authRoutes(authService: AuthService) {
         "/register",
         async ({ body }: any) => {
           const result = await authService.register(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        },
+        // @ts-ignore
+        postRegisterSchema
+      )
+
+      // Admin: Register User
+      .post(
+        "/admin/register",
+        // @ts-ignore
+        async ({ jwt, cookie, body }) => {
+          const decoded = await authorizeRequest(jwt, cookie);
+          
+          // Check if user is admin
+          const adminUser = await userService.getUserById(decoded.sub);
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const result = await authService.registerAdmin(body);
           return new Response(JSON.stringify(result), {
             status: result.status,
           });
@@ -190,6 +216,39 @@ export function authRoutes(authService: AuthService) {
           });
         },
         postLogoutSchema
+      )
+
+      // Check admin status
+      .get(
+        "/check-admin",
+        // @ts-ignore
+        async ({ jwt, cookie }) => {
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            
+            const user = await userService.getUserById(decoded.sub);
+            
+            return new Response(JSON.stringify({
+              status: 200,
+              isAdmin: Boolean(user?.is_admin),
+              user: {
+                id: user?.id,
+                name: user?.name,
+                email: user?.email,
+              }
+            }), { 
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+          } catch (error) {
+            return new Response(JSON.stringify({
+              status: 401,
+              message: "Unauthorized"
+            }), { status: 401 });
+          }
+        }
       )
   );
 }

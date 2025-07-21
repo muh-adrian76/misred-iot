@@ -29,13 +29,15 @@ CREATE TABLE IF NOT EXISTS `users` (
   `whatsapp_notif` BOOLEAN DEFAULT FALSE,
   `onboarding_completed` BOOLEAN DEFAULT FALSE,
   `onboarding_progress` JSON DEFAULT NULL,
+  `is_admin` BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`, `onboarding_completed`, `onboarding_progress`) VALUES
-('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, FALSE, NULL),
-('2', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE, FALSE, NULL),
-('3', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE, FALSE, NULL);
+INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`, `onboarding_completed`, `onboarding_progress`, `is_admin`) VALUES
+('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Admin MiSREd', 'admin@misred.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, TRUE, NULL, TRUE),
+('2', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh User', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, FALSE, NULL, FALSE),
+('3', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE, FALSE, NULL, FALSE),
+('4', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE, FALSE, NULL, FALSE);
 
 CREATE TABLE IF NOT EXISTS `dashboards` (
   `id` INT NOT NULL AUTO_INCREMENT,
@@ -202,19 +204,30 @@ INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, n
 (2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', 'device/data', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online');
 
 INSERT IGNORE INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
+-- Device 1 (HTTP) - Sensors
 (1, 'pH Sensor', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 1, 1),
 (2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 1, 1),
 (3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 1, 1),
 (4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 1, 1),
 (5, 'NH3N Sensor', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 1, 1),
 (6, 'Turbidity Sensor', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 1, 1),
--- Device 2 (MQTT) datastreams
+-- Device 1 (HTTP) - Actuators
+(13, 'LED Control', 'D0', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
+(14, 'Pump Control', 'D1', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
+(15, 'Fan Speed', 'D2', 'string', '%', '50', 0.0, 100.0, '0', 1, 1),
+(16, 'Valve Position', 'D3', 'string', 'degrees', '90', 0.0, 180.0, '0', 1, 1),
+-- Device 2 (MQTT) - Sensors
 (7, 'pH Sensor MQTT', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 2, 1),
 (8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 2, 1),
 (9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 2, 1),
 (10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 2, 1),
 (11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 2, 1),
-(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 2, 1);
+(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 2, 1),
+-- Device 2 (MQTT) - Actuators
+(17, 'LED Control MQTT', 'D0', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
+(18, 'Pump Control MQTT', 'D1', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
+(19, 'Fan Speed MQTT', 'D2', 'string', '%', '50', 0.0, 100.0, '0', 2, 1),
+(20, 'Valve Position MQTT', 'D3', 'string', 'degrees', '90', 0.0, 180.0, '0', 2, 1);
 
 INSERT IGNORE INTO alarms (id, description, user_id, device_id, datastream_id, is_active, cooldown_minutes) VALUES
 (1, 'pH Level Too High Alert', 1, 1, 1, TRUE, 1),

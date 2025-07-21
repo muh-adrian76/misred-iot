@@ -10,6 +10,7 @@ type User = {
   whatsapp_notif: boolean;
   onboarding_completed: boolean;
   onboarding_progress: any;
+  is_admin?: boolean;
 };
 
 export class UserService {
@@ -22,7 +23,7 @@ export class UserService {
   async getAllUsers() {
     try {
       const [rows] = await this.db.query(
-        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress FROM users"
+        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress, is_admin FROM users"
       );
       return rows;
     } catch (error) {
@@ -34,7 +35,7 @@ export class UserService {
   async getUserById(id: string) {
     try {
       const [rows] = await this.db.query(
-        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress FROM users WHERE id = ?",
+        "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress, is_admin FROM users WHERE id = ?",
         [id]
       );
       const user = Array.isArray(rows) ? (rows[0] as User) : null;
@@ -49,6 +50,7 @@ export class UserService {
         // Convert tinyint to boolean
         user.whatsapp_notif = Boolean(user.whatsapp_notif);
         user.onboarding_completed = Boolean(user.onboarding_completed);
+        user.is_admin = Boolean(user.is_admin);
         
         // Parse JSON onboarding_progress
         if (user.onboarding_progress && typeof user.onboarding_progress === 'string') {
@@ -87,6 +89,45 @@ export class UserService {
       return null;
     } catch (error) {
       console.error("Error updating user:", error);
+      throw new Error("Failed to update user");
+    }
+  }
+
+  async updateUserAdmin(id: string, userData: { name?: string; email?: string; is_admin?: boolean }) {
+    try {
+      const updates: string[] = [];
+      const params: any[] = [];
+      
+      if (userData.name !== undefined) {
+        updates.push("name=?");
+        params.push(userData.name);
+      }
+      
+      if (userData.email !== undefined) {
+        updates.push("email=?");
+        params.push(userData.email);
+      }
+      
+      if (userData.is_admin !== undefined) {
+        updates.push("is_admin=?");
+        params.push(userData.is_admin);
+      }
+      
+      if (updates.length === 0) {
+        return null; // No updates to perform
+      }
+      
+      const query = `UPDATE users SET ${updates.join(", ")} WHERE id=?`;
+      params.push(id);
+      
+      const [result] = await this.db.query<ResultSetHeader>(query, params);
+      if (result.affectedRows > 0) {
+        const updatedUser = await this.getUserById(id);
+        return updatedUser;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error updating user (admin):", error);
       throw new Error("Failed to update user");
     }
   }

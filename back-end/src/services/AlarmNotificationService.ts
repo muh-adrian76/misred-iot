@@ -56,9 +56,19 @@ export class AlarmNotificationService {
   private whatsAppClient!: Client;
   private isWhatsAppReady: boolean = false;
   private isWhatsAppInitializing: boolean = false;
+  private whatsAppDisabled: boolean = false; // Flag to disable WhatsApp if needed
 
   constructor(database: Pool) {
     this.db = database;
+    
+    // Check if WhatsApp should be disabled (e.g., in test environment)
+    const disableWhatsApp = process.env.DISABLE_WHATSAPP === 'true';
+    if (disableWhatsApp) {
+      console.log('⚠️ Notifikasi WhatsApp dinonaktifkan, ubah variabel .env untuk mengaktifkan kembali');
+      this.whatsAppDisabled = true;
+      return;
+    }
+    
     // Initialize WhatsApp Web client
     this.initializeWhatsAppClient();
   }
@@ -73,7 +83,7 @@ export class AlarmNotificationService {
         dataPath: '.wwebjs_auth' // Session storage path
       }),
       puppeteer: {
-        // Headless environment flags for VPS
+        // Headless environment flags for VPS/Windows
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -81,17 +91,25 @@ export class AlarmNotificationService {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--disable-gpu'
+          '--disable-gpu',
         ],
-        headless: true // Force headless mode
+        headless: true, // Force headless mode
+        timeout: 60000, // 60 second timeout for navigation
+      },
+      // Add client options for better stability
+      webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
       }
     });
 
     this.setupWhatsAppEventHandlers();
     
-    // Start initialization asynchronously
+    // Start initialization asynchronously dengan error handling
     this.startWhatsAppInitialization().catch(error => {
       console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
+      console.log('⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality.');
+      // Don't throw error to prevent service crash
     });
   }
 
@@ -131,6 +149,15 @@ export class AlarmNotificationService {
     this.whatsAppClient.on('disconnected', (reason) => {
       console.log('⚠️ WhatsApp Web disconnected:', reason);
       this.isWhatsAppReady = false;
+      this.isWhatsAppInitializing = false;
+      
+      // Auto-reconnect after disconnection (with delay)
+      setTimeout(() => {
+        console.log('🔄 Attempting to reconnect WhatsApp Web...');
+        this.startWhatsAppInitialization().catch(error => {
+          console.error('❌ Auto-reconnect failed:', error);
+        });
+      }, 60000); // 10 second delay
     });
 
     // Error event
@@ -153,14 +180,47 @@ export class AlarmNotificationService {
       return;
     }
 
-    try {
-      console.log('🚀Menginisialisasi WhatsApp Web client...');
-      this.isWhatsAppInitializing = true;
-      await this.whatsAppClient.initialize();
-    } catch (error) {
-      console.error('❌ Gagal menginisialisasi WhatsApp client:', error);
-      this.isWhatsAppInitializing = false;
-      throw error;
+    const maxRetries = 3;
+    let currentRetry = 0;
+
+    while (currentRetry < maxRetries) {
+      try {
+        console.log(`🚀 Menginisialisasi WhatsApp Web client... (Attempt ${currentRetry + 1}/${maxRetries})`);
+        this.isWhatsAppInitializing = true;
+        
+        // Set timeout untuk initialization
+        const initPromise = this.whatsAppClient.initialize();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Initialization timeout after 120 seconds')), 120000)
+        );
+        
+        await Promise.race([initPromise, timeoutPromise]);
+        return;
+      } catch (error) {
+        currentRetry++;
+        console.error(`❌ Gagal menginisialisasi WhatsApp client (Attempt ${currentRetry}/${maxRetries}):`, error);
+        
+        this.isWhatsAppInitializing = false;
+        
+        if (currentRetry < maxRetries) {
+          const delay = Math.pow(2, currentRetry) * 5000; // 5s, 10s, 20s
+          console.log(`⏳ Mencoba untuk reconnect ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          // Destroy current client before retry
+          try {
+            await this.whatsAppClient.destroy();
+          } catch (destroyError) {
+            console.log('Warning: Failed to destroy client during retry:', destroyError);
+          }
+          
+          // Reinitialize client for retry
+          this.initializeWhatsAppClient();
+        } else {
+          console.error('❌ Gagal menginisialisasi, sistem akan berjalan tanpa API WhatsApp.');
+          throw error;
+        }
+      }
     }
   }
 
@@ -203,6 +263,14 @@ export class AlarmNotificationService {
     retryCount: number = 0
   ): Promise<NotificationResult> {
     try {
+      if (this.whatsAppDisabled) {
+        console.log('📱 WhatsApp notifications disabled, skipping send');
+        return {
+          success: false,
+          error_message: "WhatsApp notifications disabled"
+        };
+      }
+
       if (!phone || phone === "") {
         throw new Error("Phone number is required");
       }
@@ -222,13 +290,19 @@ export class AlarmNotificationService {
 
       // Check if WhatsApp Web is ready
       if (!this.isWhatsAppReady) {
-        // console.log('⚠️ WhatsApp Web not ready, attempting to initialize...');
-        await this.startWhatsAppInitialization();
+        console.log('⚠️ WhatsApp Web not ready, attempting to initialize...');
         
-        // Wait for ready
-        const isReady = await this.waitForWhatsAppReady(30000);
-        if (!isReady) {
-          throw new Error('WhatsApp Web belum aktif. Tolong scan ulang QR Code.');
+        try {
+          await this.startWhatsAppInitialization();
+          
+          // Wait for ready
+          const isReady = await this.waitForWhatsAppReady(30000);
+          if (!isReady) {
+            throw new Error('WhatsApp Web belum aktif setelah initialization. Service mungkin tidak tersedia.');
+          }
+        } catch (initError) {
+          console.error('❌ Failed to initialize WhatsApp during send:', initError);
+          throw new Error('WhatsApp Web service tidak tersedia. Silakan periksa koneksi internet dan coba lagi nanti.');
         }
       }
 
@@ -548,6 +622,13 @@ export class AlarmNotificationService {
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
       console.log("🧪 Testing WhatsApp Web connection...");
+      
+      if (this.whatsAppDisabled) {
+        return {
+          success: false,
+          message: "WhatsApp notifications are disabled by configuration.",
+        };
+      }
       
       if (!this.isWhatsAppReady) {
         return {

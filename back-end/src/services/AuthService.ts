@@ -55,6 +55,56 @@ export class AuthService {
     }
   }
 
+  async registerAdmin({ email, password, name, is_admin }: { 
+    password: string; 
+    email: string; 
+    name?: string; 
+    is_admin?: boolean 
+  }) {
+    if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
+      return {
+        status: 400,
+        message: "Email tidak valid. Gagal menambahkan user.",
+      };
+    }
+
+    try {
+      // Pengecekan apakah email sudah terdaftar
+      const [existingUser] = await this.db.query<any[]>(
+        "SELECT id FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (existingUser.length > 0) {
+        return {
+          status: 400,
+          message: "Email sudah terdaftar. Gunakan email lain.",
+        };
+      }
+
+      // Jika email belum terdaftar, lanjutkan proses insert
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const userName = name || email.split("@")[0];
+
+      const [result] = await this.db.query<ResultSetHeader>(
+        "INSERT INTO users (email, password, name, is_admin, created_at) VALUES (?, ?, ?, ?, NOW())",
+        [email, hashedPassword, userName, is_admin || false]
+      );
+
+      if (result.affectedRows > 0) {
+        return { status: 201, message: "User berhasil terdaftar", id: result.insertId };
+      } else {
+        return { status: 400, message: "Gagal menambahkan user." };
+      }
+    } catch (err: any) {
+      let msg = "Gagal menambahkan user.";
+      if (err.code === "ER_DUP_ENTRY") {
+        msg = "Email sudah terdaftar.";
+      }
+      return { status: 400, message: msg };
+    }
+  }
+
   async login({ email, password }: { email: string; password: string }) {
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
@@ -64,7 +114,7 @@ export class AuthService {
     }
 
     const [rows] = await this.db.query<any[]>(
-      "SELECT id, email, password, name, created_at, phone FROM users WHERE email = ?",
+      "SELECT id, email, password, name, created_at, phone, is_admin FROM users WHERE email = ?",
       [email]
     );
 
@@ -208,12 +258,13 @@ export class AuthService {
     let userPassword: string;
     let userCreatedAt: string;
     let userPhone: string = "";
+    let userIsAdmin: boolean = false;
     const oauthPassword: string = "GOOGLE_OAUTH_USER"; // Kredensial khusus untuk Gmail
     const serverTime = new Date();
 
     try {
       const [rows] = await this.db.query<any[]>(
-        "SELECT id, email, name, password, created_at, phone FROM users WHERE email = ?",
+        "SELECT id, email, name, password, created_at, phone, is_admin FROM users WHERE email = ?",
         [payload.email]
       );
 
@@ -223,6 +274,7 @@ export class AuthService {
         userPassword = rows[0].password;
         userCreatedAt = rows[0].created_at;
         userPhone = rows[0].phone;
+        userIsAdmin = Boolean(rows[0].is_admin);
 
         if (userPassword !== "GOOGLE_OAUTH_USER") {
           return {
@@ -250,6 +302,7 @@ export class AuthService {
         userId = result.insertId;
         userName = payload.name || payload.email.split("@")[0];
         userCreatedAt = serverTime.toISOString();
+        userIsAdmin = false; // Default admin status untuk Google OAuth
 
         if (result.affectedRows === 0) {
           return { status: 400, message: "Gagal menambahkan user Google." };

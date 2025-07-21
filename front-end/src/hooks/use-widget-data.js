@@ -64,6 +64,34 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     staleTime: 10000,
   });
 
+  // Query untuk mendapatkan datastream info (type, min_value, max_value)
+  const {
+    data: datastreamInfo,
+    isLoading: isLoadingDatastream
+  } = useQuery({
+    queryKey: ["widget-datastream-info", pairs],
+    queryFn: async () => {
+      if (!isValidWidget) return [];
+      const results = await Promise.all(
+        pairs.map(async (pair) => {
+          const response = await fetchFromBackend(
+            `/datastream/${pair.datastream_id}`
+          );
+          if (!response.ok) return null;
+          const data = await response.json();
+          return {
+            ...data.result,
+            device_id: pair.device_id,
+            datastream_id: pair.datastream_id,
+          };
+        })
+      );
+      return results.filter(Boolean);
+    },
+    enabled: isValidWidget,
+    staleTime: 30000, // Datastream info rarely changes
+  });
+
   // Query untuk mendapatkan latest value semua pair
   const {
     data: latestDataRaw,
@@ -235,7 +263,7 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     latestValue: formattedLatestValue,
     realTimeData,
     legendData,
-    isLoading: isLoadingTimeSeries || isLoadingLatest,
+    isLoading: isLoadingTimeSeries || isLoadingLatest || isLoadingDatastream,
     isLoadingTimeSeries,
     isLoadingLatest,
     error: timeSeriesError || latestError,
@@ -252,6 +280,7 @@ export function useWidgetData(widget, timeRange = "1h", pairsInput) {
     isRealTimeConnected: !!ws,
     timeRange,
     timeRangeLabel: getTimeRangeLabel(timeRange),
+    datastreamInfo, // Add datastream info to return
   };
 }
 

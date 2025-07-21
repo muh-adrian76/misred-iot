@@ -11,6 +11,7 @@ export const userType = {
     created_at: "",
     last_login: "",
     phone: "",
+    is_admin: false,
   }
 
 export function UserProvider({ children }) {

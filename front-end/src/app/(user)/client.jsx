@@ -10,7 +10,7 @@ import AppNavbar from "@/components/features/app-navbar";
 import ToDoList from "@/components/custom/other/to-do-list";
 import OnboardingDebug from "@/components/custom/other/onboarding-debug";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { LayoutDashboard, Cpu, Siren, CircuitBoard } from "lucide-react";
+import { LayoutDashboard, Cpu, Siren, CircuitBoard, ArrowLeftRight } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import localFont from "next/font/local";
 
@@ -18,22 +18,36 @@ const logoFont = localFont({
   src: "../../../public/logo-font.ttf",
 });
 
-const menu = [
-  {
-    title: "Dashboards",
-    url: "/dashboards",
-    icon: LayoutDashboard,
-    disabled: false,
-  },
-  { title: "Devices", url: "/devices", icon: Cpu, disabled: false },
-  {
-    title: "Datastreams",
-    url: "/datastreams",
-    icon: CircuitBoard,
-    disabled: false,
-  },
-  { title: "Alarms", url: "/alarms", icon: Siren, disabled: false },
-];
+const getMenu = (isAdmin = false) => {
+  const baseMenu = [
+    {
+      title: "Dashboards",
+      url: "/dashboards",
+      icon: LayoutDashboard,
+      disabled: false,
+    },
+    { title: "Devices", url: "/devices", icon: Cpu, disabled: false },
+    {
+      title: "Datastreams",
+      url: "/datastreams",
+      icon: CircuitBoard,
+      disabled: false,
+    },
+    { title: "Alarms", url: "/alarms", icon: Siren, disabled: false },
+  ];
+  
+  if (isAdmin) {
+    baseMenu.unshift({
+      title: "Switch to Admin",
+      url: "/overviews",
+      icon: ArrowLeftRight,
+      disabled: false,
+      isSpecial: true,
+    });
+  }
+
+  return baseMenu;
+};
 
 export default function UserLayoutClient({ children }) {
   const { sidebarOpen, setSidebarOpen } = useSidebarOpen();
@@ -43,6 +57,43 @@ export default function UserLayoutClient({ children }) {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // Check if user is admin to show admin switch menu
+  useEffect(() => {
+    // Skip admin check if we're on admin pages to avoid conflicts
+    if (pathname.startsWith('/admin/') || pathname.startsWith('/overviews') || pathname.startsWith('/users') || pathname.startsWith('/maps')) {
+      return;
+    }
+    
+    const checkAdminStatus = async () => {
+      if (!isAuthenticated) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const response = await fetchFromBackend("/auth/check-admin");
+        console.log("User sidebar admin check raw response:", response);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("User sidebar admin check parsed data:", data);
+          console.log("Setting admin status in user sidebar:", data.isAdmin);
+          setIsAdmin(data.isAdmin || false);
+        } else {
+          console.log("User sidebar admin check failed:", response.status);
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.log("Admin check error in user sidebar:", error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [isAuthenticated, pathname]);
+  
+  const menu = getMenu(isAdmin);
   
   const activeMenu = menu.find((item) => pathname.startsWith(item.url)) || {
     title: "Menu",

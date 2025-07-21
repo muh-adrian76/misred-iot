@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { UserService } from "../../services/UserService";
 import {
-  // getAllUsersSchema,
+  getAllUsersSchema,
   getUserByIdSchema,
   putUserSchema,
   deleteUserSchema,
@@ -12,16 +12,16 @@ export function userRoutes(userService: UserService) {
   return new Elysia({ prefix: "/user" })
 
     // Get all users
-    // .get(
-    //   "/all",
-    //   // @ts-ignore
-    //   async ({ jwt, cookie }) => {
-    //     await authorizeRequest(jwt, cookie.auth);
-    //     const users = await userService.getAllUsers();
-    //     return users;
-    //   },
-    //   getAllUsersSchema
-    // )
+    .get(
+      "",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        await authorizeRequest(jwt, cookie.auth);
+        const users = await userService.getAllUsers();
+        return { status: "success", data: users };
+      },
+      getAllUsersSchema
+    )
 
     // Get user by ID
     .get(
@@ -38,7 +38,70 @@ export function userRoutes(userService: UserService) {
       getUserByIdSchema
     )
 
-    // Update user by ID
+    // Admin: Update user by ID
+    .put(
+      "/:id",
+      // @ts-ignore
+      async ({ jwt, cookie, params, body }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        
+        // Check if user is admin
+        const adminUser = await userService.getUserById(decoded.sub);
+        if (!adminUser?.is_admin) {
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Unauthorized: Admin access required"
+          }), { status: 403 });
+        }
+
+        const { name, email, is_admin } = body as any;
+        const updated = await userService.updateUserAdmin(params.id, { name, email, is_admin });
+        if (!updated) {
+          return {
+            status: "error",
+            message: "User gagal diperbarui",
+          };
+        }
+        return {
+          status: "success",
+          message: "User berhasil diperbarui",
+        };
+      },
+      putUserSchema
+    )
+
+    // Admin: Delete user by ID  
+    .delete(
+      "/:id",
+      // @ts-ignore
+      async ({ jwt, cookie, params }) => {
+        const decoded = await authorizeRequest(jwt, cookie);
+        
+        // Check if user is admin
+        const adminUser = await userService.getUserById(decoded.sub);
+        if (!adminUser?.is_admin) {
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Unauthorized: Admin access required"
+          }), { status: 403 });
+        }
+
+        const deleted = await userService.deleteUser(params.id);
+        if (!deleted) {
+          return {
+            status: "error",
+            message: "User gagal dihapus",
+          };
+        }
+        return {
+          status: "success",
+          message: "User berhasil dihapus",
+        };
+      },
+      deleteUserSchema
+    )
+
+    // User: Update own profile
     .put(
       "/",
       // @ts-ignore

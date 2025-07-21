@@ -345,17 +345,18 @@ export function WebSocketProvider({ children }) {
   };
 
   // Function to send device commands
-  const sendDeviceCommand = (deviceId, controlId, commandType, value) => {
+  const sendDeviceCommand = (deviceId, datastreamId, commandType, value) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       const command = {
         type: "device_command",
         device_id: deviceId,
-        control_id: controlId,
+        datastream_id: datastreamId,
         command_type: commandType,
         value: value,
         timestamp: new Date().toISOString()
       };
       ws.send(JSON.stringify(command));
+      console.log(`📤 Device command sent:`, command);
       return true;
     }
     console.warn("❌ Cannot send command: WebSocket not connected");

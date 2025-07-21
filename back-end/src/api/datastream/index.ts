@@ -43,6 +43,28 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         }
       )
 
+      // Get single datastream by ID
+      .get(
+        "/:id",
+        //@ts-ignore
+        async ({ jwt, cookie, params }) => {
+          const user = await authorizeRequest(jwt, cookie);
+          const datastream = await datastreamService.getDatastreamById(
+            params.id,
+            user.sub
+          );
+          if (!datastream) {
+            return new Response(
+              JSON.stringify({ message: "Datastream tidak ditemukan" }),
+              { status: 404 }
+            );
+          }
+          return new Response(JSON.stringify({ result: datastream }), {
+            status: 200,
+          });
+        }
+      )
+
       // Create a new datastream
       .post(
         "/",

@@ -31,6 +31,7 @@ import { AlarmService } from "./services/AlarmService";
 import { AlarmNotificationService } from "./services/AlarmNotificationService";
 import { DashboardService } from "./services/DashboardService";
 import { DatastreamService } from "./services/DatastreamService";
+import { DeviceCommandService } from "./services/DeviceCommandService";
 import { OtaaUpdateService } from "./services/OtaaUpdateService";
 import { MQTTService } from "./services/MiddlewareService";
 
@@ -113,7 +114,7 @@ class Server {
       }))
       
       // API
-      .use(authRoutes(this.authService))
+      .use(authRoutes(this.authService, this.userService))
       .use(userRoutes(this.userService))
       .use(deviceRoutes(this.deviceService))
       .use(deviceCommandRoutes(this.db))
@@ -203,6 +204,19 @@ class Server {
           );
         }
       );
+
+    // Cleanup old pending device commands setiap 30 detik
+    setInterval(async () => {
+      try {
+        const commandService = new DeviceCommandService(this.db);
+        const affected = await commandService.markOldCommandsAsFailed(0.17); // 10 seconds timeout
+        if (affected > 0) {
+          console.log(`🧹 Marked ${affected} old device commands as failed`);
+        }
+      } catch (error) {
+        console.error("Error cleaning up device commands:", error);
+      }
+    }, 30000); // 30 seconds interval
 
     // Refresh variabel secret semua device setiap 5 menit
     setInterval(async () => {
