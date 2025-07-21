@@ -264,13 +264,7 @@ function getTimeAgo(timestamp) {
   const diffInSeconds = Math.floor((now - time) / 1000);
 
   if (diffInSeconds < 60) {
-    const live = (
-      <div className="flex items-center gap-1 text-xs text-green-600">
-        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        Live
-      </div>
-    );
-    return live;
+    return 'Live';
     // return 'Baru saja';
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);

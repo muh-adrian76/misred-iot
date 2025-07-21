@@ -60,13 +60,17 @@ const saveAllNotifications = async () => {
     const response = await fetchFromBackend("/notifications/save-all", {
       method: "POST",
     });
+    
+    const data = await response.json();
+    
     if (!response.ok) {
-      throw new Error("Failed to save all notifications");
+      throw new Error(data.message || `HTTP ${response.status}: Failed to save notifications`);
     }
-    return response.json();
+    
+    return data;
   } catch (error) {
     console.error("Error saving all notifications:", error);
-    throw error;
+    throw error; // Re-throw to let the mutation handle it
   }
 };
 
@@ -253,24 +257,28 @@ export function NotificationCenter({
     data: savedNotifications = [],
     isLoading: isLoadingSaved,
     refetch: refetchSaved,
+    error: savedNotificationsError,
   } = useQuery({
     queryKey: ["saved-notifications"],
     queryFn: async () => {
       try {
-        const response = await fetchFromBackend("/notifications");
+        const response = await fetchFromBackend("/notifications/");
         if (!response.ok) {
-          throw new Error("Failed to fetch saved notifications");
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch saved notifications`);
         }
         const data = await response.json();
         return data.notifications || [];
       } catch (error) {
         console.error("Error fetching saved notifications:", error);
-        return [];
+        throw error; // Re-throw to let React Query handle it
       }
     },
     enabled: filter === "all", // Only fetch when viewing "all" filter
     refetchOnWindowFocus: false,
     staleTime: 0, // Always consider data stale to force refetch
+    retry: 2, // Retry failed requests up to 2 times
+    retryDelay: 1000, // Wait 1 second between retries
   });
 
   // Effect to refetch saved notifications when filter changes to "all"
@@ -340,21 +348,28 @@ export function NotificationCenter({
   // Save all WebSocket notifications to database
   const markAllAsReadMutation = useMutation({
     mutationFn: saveAllNotifications,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("✅ Successfully saved all notifications:", data);
+      
       // Clear WebSocket notifications
       clearAlarmNotifications();
 
       // Refresh saved notifications to show the newly saved ones
-      refetchSaved();
+      setTimeout(() => {
+        refetchSaved();
+      }, 500); // Small delay to ensure backend processing is complete
 
       // Switch to "all" filter to show saved notifications
       setFilter("all");
       
-      // Keep popover open to show the result
-      // setIsPopoverOpen will remain true
+      // Show success feedback (optional - you can add a toast here)
+      console.log(`✅ ${data.affected_rows || 0} notifikasi berhasil disimpan`);
     },
     onError: (error) => {
-      console.error("Error saving notifications:", error);
+      console.error("❌ Error saving notifications:", error);
+      
+      // Show error feedback (you can replace this with a toast notification)
+      alert(`Gagal menyimpan notifikasi: ${error.message || "Unknown error"}`);
     }
   });
 
@@ -394,6 +409,24 @@ export function NotificationCenter({
               Loading notifications...
             </p>
           </div>
+        </div>
+      ) : savedNotificationsError && filter === "all" ? (
+        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+          <X className="h-16 w-16 text-red-500/40 mb-4" />
+          <h3 className="font-semibold text-lg text-foreground mb-2">
+            Gagal memuat notifikasi
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-sm mb-4">
+            {savedNotificationsError.message || "Terjadi kesalahan saat mengambil data notifikasi."}
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => refetchSaved()}
+            className="text-sm"
+          >
+            Coba Lagi
+          </Button>
         </div>
       ) : filteredNotifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
@@ -495,11 +528,21 @@ export function NotificationCenter({
                       className="h-8 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setFilter(filter === "all" ? "unread" : "all");
+                        const newFilter = filter === "all" ? "unread" : "all";
+                        setFilter(newFilter);
+                        
+                        // Immediately fetch saved notifications when switching to "all"
+                        if (newFilter === "all") {
+                          setTimeout(() => refetchSaved(), 100);
+                        }
                       }}
+                      disabled={isLoadingSaved && filter === "all"}
                     >
                       <Filter className="mr-1.5 h-3 w-3" />
                       {filter === "all" ? "Belum dibaca" : "Semua"}
+                      {isLoadingSaved && filter === "all" && (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current ml-1.5" />
+                      )}
                     </Button>
                   )}
 
@@ -512,14 +555,19 @@ export function NotificationCenter({
                         e.stopPropagation();
                         markAllAsReadMutation.mutate();
                       }}
-                      disabled={markAllAsReadMutation.isPending}
+                      disabled={markAllAsReadMutation.isPending || isLoadingSaved}
                     >
                       {markAllAsReadMutation.isPending ? (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                          Menyimpan...
+                        </>
                       ) : (
-                        <CheckCheck className="mr-1.5 h-3 w-3" />
+                        <>
+                          <CheckCheck className="mr-1.5 h-3 w-3" />
+                          Simpan Semua
+                        </>
                       )}
-                      Simpan Semua
                     </Button>
                   )}
                 </div>

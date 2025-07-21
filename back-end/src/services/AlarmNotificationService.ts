@@ -457,7 +457,7 @@ export class AlarmNotificationService {
 
             const [logResult] = await this.db.execute(
               `INSERT INTO alarm_notifications (alarm_id, user_id, device_id, datastream_id, sensor_value, conditions_text, notification_type, triggered_at) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
               [alarmLog.alarm_id, alarmLog.user_id, alarmLog.device_id, alarmLog.datastream_id, 
                alarmLog.sensor_value, alarmLog.conditions_text, alarmLog.notification_type, alarmLog.triggered_at]
             );

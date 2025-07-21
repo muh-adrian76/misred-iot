@@ -245,15 +245,16 @@ export function AreaChartWidget({
         <div className="flex justify-between mx-2 font-semibold items-center">
           {widget?.description || "Widget Chart"}
           <div className="flex items-center gap-2">
-            {/* {isRealTimeConnected && (
+            {latestValue?.timeAgo === "Live" ? (
               <div className="flex items-center gap-1 text-xs text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 Live
               </div>
-            )} */}
+            ) : (
             <p className="text-xs text-muted-foreground">
               {latestValue?.timeAgo || timeRangeLabel}
             </p>
+            )}
           </div>
         </div>
       </div>
