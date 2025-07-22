@@ -59,7 +59,7 @@ class Server {
   async init() {
     this.db = MySQLDatabase.getInstance();
     this.mqttClient = MQTTClient.getInstance();
-    
+
     // Init services yang tidak butuh dependencies dulu
     this.authService = new AuthService(this.db);
     this.userService = new UserService(this.db);
@@ -86,8 +86,8 @@ class Server {
 
     // Init payload service dengan dependencies
     this.payloadService = new PayloadService(
-      this.db, 
-      this.deviceService, 
+      this.db,
+      this.deviceService,
       this.alarmNotificationService
     );
 
@@ -110,9 +110,9 @@ class Server {
         status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        database: "connected" // You can add actual DB health check here
+        database: "connected", // You can add actual DB health check here
       }))
-      
+
       // API
       .use(authRoutes(this.authService, this.userService))
       .use(userRoutes(this.userService))
@@ -137,7 +137,7 @@ class Server {
             process.env.FRONTEND_URL!,
             subDomain(process.env.FRONTEND_URL!),
             process.env.FRONTEND_ADMIN_URL!,
-            "http://192.168.18.121:7600"
+            "http://192.168.18.121:7600",
           ],
           preflight: true,
           credentials: true,
@@ -187,11 +187,12 @@ class Server {
           },
         });
       })
-      
+
       // Error handler
-      .onError(({ error, code }) => {
+      .onError(({ error, code, request }) => {
         console.error("❌ Terjadi kesalahan:", error);
-        if (code === "NOT_FOUND") return "Anda salah alamat :(";
+        if (code === "NOT_FOUND")
+          return `Halaman tidak ditemukan: ${request.url}`;
         if (code === "VALIDATION") return "Invalid user";
       })
       .listen(
