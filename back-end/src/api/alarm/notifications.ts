@@ -9,7 +9,8 @@ import {
   deleteAlarmSchema,
   testApiConnectionSchema,
   sendTestNotificationSchema,
-  getRecentNotificationsSchema
+  getRecentNotificationsSchema,
+  getNotificationHistorySchema
 } from "./elysiaSchema";
 
 export function alarmNotificationRoutes(
@@ -35,7 +36,19 @@ export function alarmNotificationRoutes(
             };
           }
           
-          const userId = user.sub;
+          const userId = parseInt(user.sub);
+
+          // Validate userId
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID",
+              notifications: [],
+              total: 0
+            };
+          }
 
           // Get saved notifications for the user
           const [rows] = await notificationService.db.execute(`
@@ -65,7 +78,7 @@ export function alarmNotificationRoutes(
 
           // Format notifications untuk frontend
           const notifications = (rows as any[]).map((row: any) => ({
-            id: row.id, // Use actual database ID instead of concatenated string
+            id: String(row.id), // Convert to string to match schema
             title: "🚨 Peringatan Sensor Alarm",
             message: `${row.alarm_description} - ${row.datastream_description}(${row.field_name}): ${row.sensor_value} (${row.conditions_text}) pada ${row.device_description}`,
             createdAt: row.triggered_at,
@@ -142,11 +155,21 @@ export function alarmNotificationRoutes(
             };
           }
 
-          const userId = user.sub;
+          const userId = parseInt(user.sub);
           const page = parseInt(query.page as string) || 1;
           const limit = parseInt(query.limit as string) || 20;
           const offset = (page - 1) * limit;
           const timeRange = query.timeRange as string || "all";
+
+          // Validate userId
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID"
+            };
+          }
           
           // Build time range condition
           let timeCondition = "";
@@ -180,16 +203,15 @@ export function alarmNotificationRoutes(
               timeCondition = "";
           }
           
-          // Simplified queries - only show saved notifications in history
-          const countQuery = `
+          // Build queries with proper parameter handling
+          const baseCountQuery = `
             SELECT COUNT(*) as total
             FROM alarm_notifications an
             WHERE an.user_id = ? 
-              AND COALESCE(an.is_saved, 0) = 1 
-              ${timeCondition}
+              AND COALESCE(an.is_saved, 0) = 1
           `;
           
-          const dataQuery = `
+          const baseDataQuery = `
             SELECT 
               an.id,
               an.alarm_id,
@@ -209,17 +231,35 @@ export function alarmNotificationRoutes(
             LEFT JOIN datastreams ds ON an.datastream_id = ds.id
             LEFT JOIN devices dev ON an.device_id = dev.id
             WHERE an.user_id = ? 
-              AND COALESCE(an.is_saved, 0) = 1 
-              ${timeCondition}
+              AND COALESCE(an.is_saved, 0) = 1
+          `;
+          
+          const countQuery = baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
+          const dataQuery = baseDataQuery + (timeCondition ? ` ${timeCondition}` : "") + `
             ORDER BY an.triggered_at DESC 
             LIMIT ? OFFSET ?
           `;
 
+          console.log("🔍 Debug SQL Query:", {
+            timeRange: timeRange,
+            timeCondition: timeCondition,
+            countQuery: countQuery,
+            dataQuery: dataQuery,
+            userId: userId,
+            userIdType: typeof userId,
+            limit: limit,
+            limitType: typeof limit,
+            offset: offset,
+            offsetType: typeof offset
+          });
+
           // Execute count query first
+          console.log("🔍 Executing count query with params:", [userId]);
           const [countResult] = await notificationService.db.execute(countQuery, [userId]);
           const total = (countResult as any[])[0]?.total || 0;
 
           // Execute data query with pagination
+          console.log("🔍 Executing data query with params:", [userId, limit, offset]);
           const [rows] = await notificationService.db.execute(dataQuery, [userId, limit, offset]);
 
           const notifications = (rows as any[]).map((row: any) => ({
@@ -307,7 +347,8 @@ export function alarmNotificationRoutes(
             }
           };
         }
-      }
+      },
+      getNotificationHistorySchema
     )
 
     // 💾 SAVE All WebSocket Notifications to Database
@@ -317,7 +358,17 @@ export function alarmNotificationRoutes(
       async ({ jwt, cookie, set }) => {
         try {
           const user = await authorizeRequest(jwt, cookie);
-          const userId = user.sub;
+          const userId = parseInt(user.sub);
+
+          // Validate userId
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID"
+            };
+          }
 
           // Mark all unsaved notifications for this user as saved
           const [result] = await notificationService.db.execute(`
@@ -349,8 +400,26 @@ export function alarmNotificationRoutes(
       async ({ params, jwt, cookie, set }) => {
         try {
           const user = await authorizeRequest(jwt, cookie);
-          const userId = user.sub;
-          const notificationId = params.id;
+          const userId = parseInt(user.sub);
+          const notificationId = parseInt(params.id);
+
+          // Validate inputs
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID"
+            };
+          }
+
+          if (isNaN(notificationId) || notificationId <= 0) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid notification ID"
+            };
+          }
 
           const [result] = await notificationService.db.execute(`
             DELETE FROM alarm_notifications 
@@ -387,7 +456,17 @@ export function alarmNotificationRoutes(
       async ({ jwt, cookie, set }) => {
         try {
           const user = await authorizeRequest(jwt, cookie);
-          const userId = user.sub;
+          const userId = parseInt(user.sub);
+
+          // Validate userId
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID"
+            };
+          }
 
           const [result] = await notificationService.db.execute(`
             DELETE FROM alarm_notifications 
@@ -468,5 +547,82 @@ export function alarmNotificationRoutes(
         }
       },
       sendTestNotificationSchema
+    )
+
+    // 🔄 RESET WhatsApp Connection
+    .post(
+      "/whatsapp/reset",
+      //@ts-ignore
+      async ({ set }) => {
+        try {
+          await notificationService.resetWhatsApp();
+          return {
+            success: true,
+            message: "WhatsApp connection reset successfully. New QR code will be generated."
+          };
+        } catch (error) {
+          console.error("Error resetting WhatsApp:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Failed to reset WhatsApp connection"
+          };
+        }
+      }
+    )
+
+    // 📱 FORCE New QR Code
+    .post(
+      "/whatsapp/qr",
+      //@ts-ignore
+      async ({ set }) => {
+        try {
+          await notificationService.forceNewQRCode();
+          return {
+            success: true,
+            message: "New QR code generation forced. Check server console for QR code."
+          };
+        } catch (error) {
+          console.error("Error forcing QR code:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Failed to force new QR code"
+          };
+        }
+      }
+    )
+
+    // 📊 WhatsApp Status
+    .get(
+      "/whatsapp/status",
+      //@ts-ignore
+      async ({ set }) => {
+        try {
+          const status = notificationService.getWhatsAppStatus();
+          const sessionExists = await notificationService.checkSessionExists();
+          
+          return {
+            success: true,
+            data: {
+              ready: status.ready,
+              initializing: status.initializing,
+              session_exists: sessionExists,
+              message: status.ready 
+                ? "WhatsApp Web is ready" 
+                : status.initializing 
+                  ? "WhatsApp Web is initializing..." 
+                  : "WhatsApp Web is not ready"
+            }
+          };
+        } catch (error) {
+          console.error("Error getting WhatsApp status:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Failed to get WhatsApp status"
+          };
+        }
+      }
     );
 }

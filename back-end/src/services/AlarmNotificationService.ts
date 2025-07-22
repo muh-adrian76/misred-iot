@@ -11,9 +11,9 @@ export interface AlarmData {
   datastream_id: number;
   is_active: boolean;
   cooldown_minutes: number;
-  last_triggered?: Date;
-  created_at: Date;
-  updated_at: Date;
+  last_triggered?: string;
+  created_at: string;
+  updated_at: string;
   
   // Fields from joined tables
   field_name: string;        // dari datastreams.pin
@@ -71,52 +71,122 @@ export class AlarmNotificationService {
     
     // Initialize WhatsApp Web client
     this.initializeWhatsAppClient();
+    
+    // Start health monitoring
+    this.startHealthMonitoring();
+  }
+
+  /**
+   * Start health monitoring for WhatsApp connection
+   */
+  private startHealthMonitoring(): void {
+    // Check WhatsApp health every 5 minutes
+    setInterval(async () => {
+      try {
+        await this.healthCheck();
+      } catch (error) {
+        console.error('❌ WhatsApp health check failed:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+  }
+
+  /**
+   * Perform health check on WhatsApp connection
+   */
+  private async healthCheck(): Promise<void> {
+    try {
+      if (this.whatsAppDisabled) {
+        return;
+      }
+
+      if (!this.isWhatsAppReady && !this.isWhatsAppInitializing) {
+        console.log('🏥 WhatsApp health check: Not ready, attempting restart...');
+        await this.startWhatsAppInitialization();
+      } else if (this.isWhatsAppReady) {
+        // Try to get client info to verify connection
+        try {
+          const info = this.whatsAppClient.info;
+          if (info) {
+            console.log('🏥 WhatsApp health check: OK');
+          }
+        } catch (infoError) {
+          console.log('🏥 WhatsApp health check: Connection seems stale, restarting...');
+          await this.resetWhatsApp();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Health check error:', error);
+    }
   }
 
   /**
    * Initialize WhatsApp Web client with LocalAuth
    */
   private initializeWhatsAppClient(): void {
-    // Create client with LocalAuth for persistent sessions
-    this.whatsAppClient = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: '.wwebjs_auth' // Session storage path
-      }),
-      puppeteer: {
-        // Headless environment flags for VPS/Windows
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-        ],
-        headless: true, // Force headless mode
-        timeout: 60000, // 60 second timeout for navigation
-      },
-      // Add client options for better stability
-      webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-      }
-    });
+    try {
+      console.log('📱 Creating WhatsApp client...');
+      
+      // Create client with LocalAuth for persistent sessions
+      this.whatsAppClient = new Client({
+        authStrategy: new LocalAuth({
+          dataPath: './wwebjs_auth'
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-extensions'
+          ],
+          timeout: 60000
+        }
+      });
 
-    this.setupWhatsAppEventHandlers();
-    
-    // Start initialization asynchronously dengan error handling
-    this.startWhatsAppInitialization().catch(error => {
-      console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
-      console.log('⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality.');
-      // Don't throw error to prevent service crash
-    });
+      console.log('📱 WhatsApp client created with session path: ./wwebjs_auth');
+
+      this.setupWhatsAppEventHandlers();
+      
+      // Start initialization asynchronously dengan error handling
+      this.startWhatsAppInitialization().catch(error => {
+        console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
+        console.log('⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality.');
+        // Don't throw error to prevent service crash
+      });
+    } catch (error) {
+      console.error('❌ Error creating WhatsApp client:', error);
+      this.whatsAppDisabled = true;
+    }
   }
 
   /**
    * Setup event handlers for WhatsApp client
    */
   private setupWhatsAppEventHandlers(): void {
+    // Loading event - shows session loading status
+    this.whatsAppClient.on('loading_screen', (percent, message) => {
+      console.log(`📱 WhatsApp Web loading: ${percent}% - ${message}`);
+    });
+
+    // Authentication event - session validation
+    this.whatsAppClient.on('auth_failure', (msg) => {
+      console.error('❌ WhatsApp Web authentication failed:', msg);
+      this.isWhatsAppReady = false;
+      this.isWhatsAppInitializing = false;
+      
+      // Clean up corrupted session on auth failure
+      console.log('🗑️ Cleaning up corrupted session after auth failure...');
+      this.cleanupSessionFiles().then(() => {
+        console.log('✅ Session cleaned up, restart will generate new QR');
+      });
+    });
+
     // Client ready event
     this.whatsAppClient.on('ready', () => {
       console.log('✅ WhatsApp Web client sudah aktif!');
@@ -126,23 +196,18 @@ export class AlarmNotificationService {
 
     // QR Code event - display QR for initial setup
     this.whatsAppClient.on('qr', (qr) => {
-      console.log('📱 WhatsApp Web QR Code:');
-      console.log('Scan QR code ini dengan aplikasi WhatsApp anda');
-      console.log('═'.repeat(50));
+      console.log('📱 WhatsApp Web QR Code Generated:');
+      console.log('Silakan scan QR code ini dengan aplikasi WhatsApp anda');
+      console.log('═'.repeat(60));
       qrcode.generate(qr, { small: true });
-      console.log('═'.repeat(50));
+      console.log('═'.repeat(60));
+      console.log('QR Code akan expired dalam 20 detik, scan sekarang!');
     });
 
     // Authentication success
     this.whatsAppClient.on('authenticated', () => {
-      console.log('✅ WhatsApp Web berhasil terkoneksi!');
-    });
-
-    // Authentication failure
-    this.whatsAppClient.on('auth_failure', (msg) => {
-      console.error('❌ Koneksi WhatsApp Web gagal:', msg);
-      this.isWhatsAppReady = false;
-      this.isWhatsAppInitializing = false;
+      console.log('✅ WhatsApp Web berhasil terautentikasi!');
+      console.log('💾 Session tersimpan, tidak perlu scan QR lagi di restart berikutnya');
     });
 
     // Disconnected event
@@ -151,23 +216,53 @@ export class AlarmNotificationService {
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
       
+      // Check if disconnect reason requires QR code
+      if (reason === 'LOGOUT' || reason === 'CONFLICT' || reason === 'UNLAUNCHED') {
+        console.log('🔄 Session invalid, akan memerlukan QR code baru...');
+        // Clean up corrupted session
+        this.cleanupSessionFiles().then(() => {
+          console.log('🗑️ Corrupted session cleaned up');
+        });
+      }
+      
       // Auto-reconnect after disconnection (with delay)
       setTimeout(() => {
         console.log('🔄 Attempting to reconnect WhatsApp Web...');
         this.startWhatsAppInitialization().catch(error => {
           console.error('❌ Auto-reconnect failed:', error);
         });
-      }, 60000); // 10 second delay
+      }, 10000); // 10 second delay
     });
 
     // Error event
     this.whatsAppClient.on('error', (error) => {
       console.error('❌ WhatsApp Web error:', error);
+      this.isWhatsAppReady = false;
+      
+      // Handle specific errors
+      if (error.message.includes('Session closed') || error.message.includes('Protocol error')) {
+        console.log('📱 Session/Protocol error, cleaning up...');
+        this.cleanupSessionFiles().then(() => {
+          console.log('🗑️ Session cleaned up due to error');
+        });
+      }
     });
 
     // Message sent acknowledgment
     this.whatsAppClient.on('message_ack', (message, ack) => {
-      console.log(`📧 Message ${message.id.id} status: ${ack}`);
+      // Only log important ack states to reduce noise
+      if (ack === 1) {
+        console.log(`📧 Message ${message.id.id} delivered to server`);
+      } else if (ack === 2) {
+        console.log(`📧 Message ${message.id.id} delivered to recipient`);
+      } else if (ack === 3) {
+        console.log(`📧 Message ${message.id.id} read by recipient`);
+      }
+    });
+
+    // Remote session saved event
+    this.whatsAppClient.on('remote_session_saved', () => {
+      console.log('💾 WhatsApp session remote saved successfully');
     });
   }
 
@@ -175,51 +270,64 @@ export class AlarmNotificationService {
    * Start WhatsApp client initialization
    */
   private async startWhatsAppInitialization(): Promise<void> {
-    if (this.isWhatsAppInitializing || this.isWhatsAppReady) {
-      // console.log('⚠️ WhatsApp client already initialized or initializing');
+    if (this.isWhatsAppInitializing) {
+      console.log('⚠️ WhatsApp client already initializing, skipping...');
       return;
     }
 
-    const maxRetries = 3;
-    let currentRetry = 0;
+    if (this.isWhatsAppReady) {
+      console.log('✅ WhatsApp client already ready');
+      return;
+    }
 
-    while (currentRetry < maxRetries) {
-      try {
-        console.log(`🚀 Menginisialisasi WhatsApp Web client... (Attempt ${currentRetry + 1}/${maxRetries})`);
-        this.isWhatsAppInitializing = true;
+    console.log('🚀 Starting WhatsApp Web initialization...');
+    this.isWhatsAppInitializing = true;
+
+    try {
+      // Check if session exists before initializing
+      const sessionExists = await this.checkSessionExists();
+      console.log(`� Session exists: ${sessionExists ? 'YES' : 'NO'}`);
+      
+      if (sessionExists) {
+        console.log('📱 Loading existing session...');
+      } else {
+        console.log('📱 No session found, will need QR scan...');
+      }
+
+      // Initialize with shorter timeout to prevent hanging
+      const initPromise = this.whatsAppClient.initialize();
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Initialization timeout after 60 seconds')), 60000)
+      );
+      
+      await Promise.race([initPromise, timeoutPromise]);
+      console.log('✅ WhatsApp Web initialization completed successfully');
+      
+    } catch (error) {
+      console.error('❌ WhatsApp initialization failed:', error);
+      this.isWhatsAppInitializing = false;
+      
+      // If timeout, likely session is corrupted
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.log('🗑️ Initialization timeout, cleaning up corrupted session...');
+        await this.cleanupSessionFiles();
         
-        // Set timeout untuk initialization
-        const initPromise = this.whatsAppClient.initialize();
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Initialization timeout after 120 seconds')), 120000)
-        );
+        // Try one more time after cleanup
+        console.log('🔄 Retrying after session cleanup...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
-        await Promise.race([initPromise, timeoutPromise]);
-        return;
-      } catch (error) {
-        currentRetry++;
-        console.error(`❌ Gagal menginisialisasi WhatsApp client (Attempt ${currentRetry}/${maxRetries}):`, error);
-        
-        this.isWhatsAppInitializing = false;
-        
-        if (currentRetry < maxRetries) {
-          const delay = Math.pow(2, currentRetry) * 5000; // 5s, 10s, 20s
-          console.log(`⏳ Mencoba untuk reconnect ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          
-          // Destroy current client before retry
-          try {
-            await this.whatsAppClient.destroy();
-          } catch (destroyError) {
-            console.log('Warning: Failed to destroy client during retry:', destroyError);
-          }
-          
-          // Reinitialize client for retry
-          this.initializeWhatsAppClient();
-        } else {
-          console.error('❌ Gagal menginisialisasi, sistem akan berjalan tanpa API WhatsApp.');
-          throw error;
+        try {
+          this.isWhatsAppInitializing = true;
+          await this.whatsAppClient.initialize();
+          console.log('✅ WhatsApp Web initialization completed after cleanup');
+        } catch (retryError) {
+          console.error('❌ WhatsApp initialization failed even after cleanup:', retryError);
+          this.isWhatsAppInitializing = false;
+          this.whatsAppDisabled = true;
         }
+      } else {
+        // Other errors
+        this.whatsAppDisabled = true;
       }
     }
   }
@@ -713,20 +821,121 @@ export class AlarmNotificationService {
     try {
       console.log('🔄 Resetting WhatsApp Web connection...');
       
-      if (this.isWhatsAppReady) {
-        await this.whatsAppClient.logout();
-      }
-      
-      await this.whatsAppClient.destroy();
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
       
+      if (this.whatsAppClient) {
+        try {
+          console.log('️ Destroying WhatsApp client...');
+          await this.whatsAppClient.destroy();
+        } catch (destroyError) {
+          console.log('⚠️ Warning during client destruction:', destroyError);
+        }
+      }
+      
+      // Clean up session files
+      await this.cleanupSessionFiles();
+      
+      // Wait a bit before reinitializing
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       // Reinitialize
+      console.log('🔄 Reinitializing WhatsApp client...');
       this.initializeWhatsAppClient();
       
-      console.log('✅ WhatsApp Web reset complete');
+      console.log('✅ WhatsApp Web reset complete, new QR code will be generated');
     } catch (error) {
       console.error('❌ Error during WhatsApp reset:', error);
+      this.whatsAppDisabled = true;
+    }
+  }
+
+  /**
+   * Clean up session files (for troubleshooting)
+   */
+  private async cleanupSessionFiles(): Promise<void> {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const sessionPath = path.join(process.cwd(), 'wwebjs_auth');
+      
+      try {
+        console.log('🗑️ Cleaning up session files at:', sessionPath);
+        
+        // Check if directory exists
+        await fs.access(sessionPath);
+        
+        // Remove the entire session directory
+        await fs.rmdir(sessionPath, { recursive: true });
+        console.log('✅ Session files cleaned up successfully');
+        
+        // Wait a bit to ensure filesystem operations complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+      } catch (accessError) {
+        console.log('📁 No session files to clean up (directory not found)');
+      }
+    } catch (error) {
+      console.log('⚠️ Warning: Could not clean up session files:', error);
+    }
+  }
+
+  /**
+   * Force generate new QR code
+   */
+  async forceNewQRCode(): Promise<void> {
+    try {
+      console.log('🔄 Forcing new QR code generation...');
+      await this.resetWhatsApp();
+    } catch (error) {
+      console.error('❌ Error forcing new QR code:', error);
+    }
+  }
+
+  /**
+   * Check if session exists
+   */
+  async checkSessionExists(): Promise<boolean> {
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      const sessionPath = path.join(process.cwd(), 'wwebjs_auth');
+      
+      try {
+        await fs.access(sessionPath);
+        
+        // Check for session.json file specifically
+        const sessionJsonPath = path.join(sessionPath, 'session.json');
+        try {
+          await fs.access(sessionJsonPath);
+          console.log('📁 Valid session file found');
+          return true;
+        } catch {
+          // Check for Default directory (newer session format)
+          const defaultPath = path.join(sessionPath, 'Default');
+          try {
+            await fs.access(defaultPath);
+            const files = await fs.readdir(defaultPath);
+            //@ts-ignore
+            const hasSessionFiles = files.some(file => 
+              file.includes('Session') || file.includes('Local') || file.includes('IndexedDB')
+            );
+            console.log(`📁 Session directory found with ${files.length} files, valid: ${hasSessionFiles}`);
+            return hasSessionFiles;
+          } catch {
+            console.log('📁 Session directory exists but no valid session files found');
+            return false;
+          }
+        }
+      } catch {
+        console.log('📁 Session directory not found');
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Error checking session:', error);
+      return false;
     }
   }
 }

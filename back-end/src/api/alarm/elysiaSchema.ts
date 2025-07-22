@@ -275,3 +275,68 @@ export const getRecentNotificationsSchema = {
     summary: "Get notifications for login"
   }
 };
+
+// Get Notification History Schema
+export const getNotificationHistorySchema = {
+  query: t.Object({
+    page: t.Optional(t.String()),
+    limit: t.Optional(t.String()),
+    timeRange: t.Optional(t.Union([
+      t.Literal('1m'),
+      t.Literal('1h'),
+      t.Literal('12h'),
+      t.Literal('1d'),
+      t.Literal('today'),
+      t.Literal('1w'),
+      t.Literal('week'),
+      t.Literal('1M'),
+      t.Literal('month'),
+      t.Literal('1y'),
+      t.Literal('all')
+    ]))
+  }),
+  response: {
+    200: t.Object({
+      success: t.Boolean(),
+      message: t.String(),
+      notifications: t.Array(t.Object({
+        id: t.Number(),
+        alarm_id: t.Number(),
+        alarm_description: t.String(),
+        datastream_description: t.String(),
+        device_description: t.String(),
+        sensor_value: t.Number(),
+        conditions_text: t.String(),
+        triggered_at: t.String(),
+        notification_type: t.String(),
+        whatsapp_message_id: t.Union([t.String(), t.Null()]),
+        whatsapp_sent: t.Boolean(),
+        is_saved: t.Boolean(),
+        saved_at: t.Union([t.String(), t.Null()])
+      })),
+      pagination: t.Object({
+        page: t.Number(),
+        limit: t.Number(),
+        total: t.Number(),
+        pages: t.Number()
+      })
+    }),
+    400: t.Object({
+      success: t.Boolean(),
+      message: t.String()
+    }),
+    401: t.Object({
+      success: t.Boolean(),
+      message: t.String()
+    }),
+    500: t.Object({
+      success: t.Boolean(),
+      message: t.String()
+    })
+  },
+  detail: {
+    tags: ["Notifications"],
+    description: "Mengambil riwayat notifikasi dengan pagination dan filter waktu",
+    summary: "Get notification history"
+  }
+};

@@ -23,16 +23,16 @@ export function useAdminAuth() {
         
         if (response.ok) {
           const data = await response.json();
-          console.log("useAdminAuth: Admin check result -", { isAdmin: data.isAdmin, user: data.user?.name });
+          // console.log("useAdminAuth: Admin check result -", { isAdmin: data.isAdmin, user: data.user?.name });
           setIsAdmin(data.isAdmin || false);
           setUser(data.user || null);
         } else {
-          console.log("useAdminAuth: Admin check failed with status:", response.status);
+          // console.log("useAdminAuth: Admin check failed with status:", response.status);
           setIsAdmin(false);
           setUser(null);
         }
       } catch (error) {
-        console.error("useAdminAuth: Error checking admin status:", error);
+        // console.error("useAdminAuth: Error checking admin status:", error);
         setIsAdmin(false);
         setUser(null);
       } finally {

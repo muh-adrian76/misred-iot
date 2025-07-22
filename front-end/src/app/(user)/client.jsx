@@ -38,7 +38,7 @@ const getMenu = (isAdmin = false) => {
   
   if (isAdmin) {
     baseMenu.unshift({
-      title: "Switch to Admin",
+      title: "Beralih ke Halaman Admin",
       url: "/overviews",
       icon: ArrowLeftRight,
       disabled: false,
@@ -74,18 +74,18 @@ export default function UserLayoutClient({ children }) {
 
       try {
         const response = await fetchFromBackend("/auth/check-admin");
-        console.log("User sidebar admin check raw response:", response);
+        // console.log("User sidebar admin check raw response:", response);
         if (response.ok) {
           const data = await response.json();
-          console.log("User sidebar admin check parsed data:", data);
-          console.log("Setting admin status in user sidebar:", data.isAdmin);
+          // console.log("User sidebar admin check parsed data:", data);
+          // console.log("Setting admin status in user sidebar:", data.isAdmin);
           setIsAdmin(data.isAdmin || false);
         } else {
-          console.log("User sidebar admin check failed:", response.status);
+          // console.log("User sidebar admin check failed:", response.status);
           setIsAdmin(false);
         }
       } catch (error) {
-        console.log("Admin check error in user sidebar:", error);
+        // console.log("Admin check error in user sidebar:", error);
         setIsAdmin(false);
       }
     };
@@ -127,7 +127,7 @@ export default function UserLayoutClient({ children }) {
           setShowOnboarding(!allTasksCompleted);
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
+        // console.error('Error checking onboarding status:', error);
         setShowOnboarding(true); // Show onboarding by default on error
       } finally {
         setIsCheckingOnboarding(false);

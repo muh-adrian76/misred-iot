@@ -207,6 +207,210 @@ function decryptAES(
   return decrypted.toString("utf8");
 }
 
+// Fungsi verifikasi JWT dan dekripsi payload untuk device
+async function verifyDeviceJWTAndDecrypt({
+  deviceService,
+  deviceId,
+  token,
+}: {
+  deviceService: any;
+  deviceId: string;
+  token: string;
+}) {
+  // Ambil secret dari database
+  const devices = await deviceService.getDeviceById(deviceId);
+  //@ts-ignore
+  if (!devices || devices.length === 0) {
+    throw new Error("Device tidak terdaftar");
+  }
+  
+  //@ts-ignore
+  const device = devices[0]; // getDeviceById returns array
+  const secret = device.new_secret;
+  if (!secret) throw new Error("Device secret tidak valid");
+
+  // Manual JWT verification with device-specific secret
+  try {
+    const [header, payload, signature] = token.split('.');
+    
+    if (!header || !payload || !signature) {
+      throw new Error("Invalid JWT format");
+    }
+    
+    // Verify signature
+    const data = `${header}.${payload}`;
+    const expectedSignature = require('crypto').createHmac('sha256', secret).update(data).digest('base64url');
+    
+    if (signature !== expectedSignature) {
+      throw new Error("Invalid JWT signature");
+    }
+    
+    // Decode payload
+    let decodedPayload;
+    try {
+      decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    } catch (decodeError) {
+      console.error("❌ Failed to decode JWT payload:", decodeError);
+      throw new Error("Invalid JWT payload encoding");
+    }
+    
+    // Check expiration
+    if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+      throw new Error("JWT expired");
+    }
+    
+    if (!decodedPayload.encryptedData) {
+      throw new Error("Missing encryptedData in JWT");
+    }
+    
+    // Handle different encryption methods
+    let decrypted;
+    try {
+      // Method 1: Try parsing as JSON directly (for CustomJWT)
+      decrypted = JSON.parse(decodedPayload.encryptedData);
+    } catch (parseError) {
+      try {
+        // Method 2: Try base64 decode
+        const decodedData = Buffer.from(decodedPayload.encryptedData, 'base64').toString();
+        decrypted = JSON.parse(decodedData);
+      } catch (base64Error) {
+        // Method 3: Fallback to AES decryption for backward compatibility
+        try {
+          const decryptedString = decryptAES(require('crypto'), decodedPayload.encryptedData, secret);
+          decrypted = JSON.parse(decryptedString);
+        } catch (aesError) {
+          console.error("❌ All decryption methods failed:", aesError);
+          throw new Error("Unable to decrypt payload data");
+        }
+      }
+    }
+    
+    return decrypted;
+    
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+    throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+// Fungsi untuk parsing dan normalisasi payload ke database
+async function parseAndNormalizePayload(
+  db: any,
+  deviceId: number, 
+  rawData: any, 
+  rawPayloadId: number
+): Promise<number[]> {
+  try {
+    // Ambil datastreams yang ada untuk device ini
+    const [datastreams]: any = await db.query(
+      `SELECT id, pin, type, unit FROM datastreams WHERE device_id = ?`,
+      [deviceId]
+    );
+    
+    const insertedIds: number[] = [];
+    
+    // Parse setiap pin di raw data
+    for (const [pin, value] of Object.entries(rawData)) {
+      if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
+        
+        // Cari datastream yang cocok dengan pin
+        const datastream = datastreams.find((ds: any) => ds.pin === pin);
+        if (datastream) {
+          try {
+            // Insert ke tabel payloads yang sudah ada
+            const [result] = await db.query(
+              `INSERT INTO payloads (device_id, datastream_id, value, raw_data, server_time)
+              VALUES (?, ?, ?, ?, NOW())`,
+              [
+                deviceId, 
+                datastream.id, 
+                value,
+                JSON.stringify({ raw_payload_id: rawPayloadId, pin, value })
+              ]
+            );
+            insertedIds.push(result.insertId);
+            
+          } catch (error) {
+            console.error(`Error saving sensor data for pin ${pin}:`, error);
+          }
+        } else {
+          console.warn(`⚠️ No datastream found for pin ${pin}`);
+        }
+      }
+    }
+    
+    return insertedIds;
+  } catch (error) {
+    console.error("Error in parseAndNormalizePayload:", error);
+    throw new Error("Failed to parse and normalize payload");
+  }
+}
+
+// Fungsi untuk broadcasting real-time sensor updates
+async function broadcastSensorUpdates(
+  db: any,
+  broadcastFunction: any,
+  deviceId: number, 
+  rawData: any,
+  protocol?: string
+) {
+  try {
+    // Get device info and owner
+    const [deviceRows]: any = await db.query(
+      `SELECT d.id, d.description as device_name, d.user_id, u.name as user_name
+       FROM devices d 
+       LEFT JOIN users u ON d.user_id = u.id 
+       WHERE d.id = ?`,
+      [deviceId]
+    );
+
+    if (!deviceRows.length) {
+      console.warn(`Device ${deviceId} not found for broadcasting`);
+      return;
+    }
+
+    const device = deviceRows[0];
+    
+    // Get datastreams for this device to map pin data
+    const [datastreams]: any = await db.query(
+      `SELECT id, pin, description, unit, type FROM datastreams WHERE device_id = ?`,
+      [deviceId]
+    );
+
+    // Broadcast each sensor value with datastream info
+    for (const [pin, value] of Object.entries(rawData)) {
+      if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
+        const datastream = datastreams.find((ds: any) => ds.pin === pin);
+        
+        if (datastream) {
+          // Broadcast real-time sensor update to all users
+          const broadcastData: any = {
+            type: "sensor_update",
+            device_id: deviceId,
+            datastream_id: datastream.id,
+            value: value,
+            timestamp: new Date().toISOString(),
+            device_name: device.device_name,
+            sensor_name: datastream.description,
+            unit: datastream.unit,
+            user_id: device.user_id,
+            pin: pin
+          };
+
+          if (protocol) {
+            broadcastData.protocol = protocol;
+          }
+
+          broadcastFunction(broadcastData);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error broadcasting sensor updates:", error);
+    // Don't throw error to avoid breaking payload saving
+  }
+}
+
 export {
   subDomain,
   apiTags,
@@ -216,4 +420,7 @@ export {
   renewToken,
   decryptAES,
   ageConverter,
+  verifyDeviceJWTAndDecrypt,
+  parseAndNormalizePayload,
+  broadcastSensorUpdates,
 };

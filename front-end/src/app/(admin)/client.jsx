@@ -27,7 +27,7 @@ const logoFont = localFont({
 
 const adminMenu = [
   {
-    title: "Switch to User",
+    title: "Beralih ke Halaman User",
     url: "/dashboards",
     icon: ArrowLeftRight,
     disabled: false,
@@ -63,13 +63,13 @@ export default function AdminLayoutClient({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Debug logging
-  console.log("Admin client render:", {
-    isAdmin,
-    isAuthenticated,
-    adminLoading,
-    isLoading,
-    pathname,
-  });
+  // console.log("Admin client render:", {
+  //   isAdmin,
+  //   isAuthenticated,
+  //   adminLoading,
+  //   isLoading,
+  //   pathname,
+  // });
 
   const activeMenu = adminMenu.find((item) =>
     pathname.startsWith(item.url)
@@ -91,23 +91,21 @@ export default function AdminLayoutClient({ children }) {
     // Hanya redirect jika sudah selesai loading dan definitif bukan admin
     if (!isLoading && !adminLoading && isAuthenticated !== undefined && isAdmin !== undefined) {
       if (!isAuthenticated) {
-        console.log("Admin client: Not authenticated, redirecting to auth");
+        // console.log("Admin client: Not authenticated, redirecting to auth");
         router.push("/auth");
       } else if (isAuthenticated && isAdmin === false) {
-        console.log("Admin client: Authenticated but definitely not admin, redirecting to dashboards");
+        // console.log("Admin client: Authenticated but definitely not admin, redirecting to dashboards");
         router.push("/dashboards");
-      } else if (isAuthenticated && isAdmin === true) {
-        console.log("Admin client: Authenticated and confirmed admin, staying on admin page");
       }
     }
   }, [isAuthenticated, isAdmin, isLoading, adminLoading, router]);
 
   // Show loading state
   if (isLoading || adminLoading) {
-    console.log("Admin client: Showing loading state", {
-      isLoading,
-      adminLoading,
-    });
+    // console.log("Admin client: Showing loading state", {
+    //   isLoading,
+    //   adminLoading,
+    // });
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -125,7 +123,7 @@ export default function AdminLayoutClient({ children }) {
 
   // Show access denied if not authenticated
   if (!isAuthenticated) {
-    console.log("Admin client: Not authenticated, showing login screen");
+    // console.log("Admin client: Not authenticated, showing login screen");
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
@@ -149,9 +147,9 @@ export default function AdminLayoutClient({ children }) {
 
   // Show access denied if authenticated but not admin
   if (isAuthenticated && isAdmin === false) {
-    console.log(
-      "Admin client: Authenticated but definitely not admin, showing access denied"
-    );
+    // console.log(
+    //   "Admin client: Authenticated but definitely not admin, showing access denied"
+    // );
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
@@ -177,7 +175,7 @@ export default function AdminLayoutClient({ children }) {
   }
 
   // Render admin content if all checks pass
-  console.log("Admin client: All checks passed, rendering admin content");
+  // console.log("Admin client: All checks passed, rendering admin content");
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       {isMobile ? (
