@@ -229,17 +229,18 @@ async function verifyDeviceJWTAndDecrypt({
   const secret = device.new_secret;
   if (!secret) throw new Error("Device secret tidak valid");
 
-  // Manual JWT verification with device-specific secret
   try {
+    // Manual JWT verification dengan device-specific secret
     const [header, payload, signature] = token.split('.');
     
     if (!header || !payload || !signature) {
       throw new Error("Invalid JWT format");
     }
     
-    // Verify signature
+    // Verify signature menggunakan device secret
     const data = `${header}.${payload}`;
-    const expectedSignature = require('crypto').createHmac('sha256', secret).update(data).digest('base64url');
+    const crypto = require('crypto');
+    const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
     
     if (signature !== expectedSignature) {
       throw new Error("Invalid JWT signature");
@@ -276,7 +277,7 @@ async function verifyDeviceJWTAndDecrypt({
       } catch (base64Error) {
         // Method 3: Fallback to AES decryption for backward compatibility
         try {
-          const decryptedString = decryptAES(require('crypto'), decodedPayload.encryptedData, secret);
+          const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
           decrypted = JSON.parse(decryptedString);
         } catch (aesError) {
           console.error("❌ All decryption methods failed:", aesError);
@@ -291,9 +292,7 @@ async function verifyDeviceJWTAndDecrypt({
     console.error("JWT verification failed:", error);
     throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
   }
-}
-
-// Fungsi untuk parsing dan normalisasi payload ke database
+}// Fungsi untuk parsing dan normalisasi payload ke database
 async function parseAndNormalizePayload(
   db: any,
   deviceId: number, 

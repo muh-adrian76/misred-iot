@@ -104,12 +104,12 @@ void sendSensorDataHTTP() {
   
   // Create sensor data payload
   StaticJsonDocument<512> sensorDoc;
-  sensorDoc["A0"] = phValue;        // pH sensor on pin A0
-  sensorDoc["A1"] = flowValue;      // Flow sensor on pin A1  
-  sensorDoc["A2"] = codValue;       // COD sensor on pin A2
-  sensorDoc["A3"] = tempValue;      // Temperature sensor on pin A3
-  sensorDoc["A4"] = nh3nValue;      // NH3N sensor on pin A4
-  sensorDoc["A5"] = ntuValue;       // NTU sensor on pin A5
+  sensorDoc["V0"] = phValue;        // pH sensor on pin A0
+  sensorDoc["V1"] = flowValue;      // Flow sensor on pin A1  
+  sensorDoc["V2"] = codValue;       // COD sensor on pin A2
+  sensorDoc["V3"] = tempValue;      // Temperature sensor on pin A3
+  sensorDoc["V4"] = nh3nValue;      // NH3N sensor on pin A4
+  sensorDoc["V5"] = ntuValue;       // NTU sensor on pin A5
   sensorDoc["timestamp"] = millis();
   sensorDoc["device_id"] = device_id;
   

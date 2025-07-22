@@ -89,11 +89,9 @@ export class MQTTService {
 
   // Fungsi verifikasi JWT dan dekripsi payload
   async verifyDeviceJWTAndDecrypt({
-    jwt,
     device_id,
     token,
   }: {
-    jwt: any;
     device_id: string;
     token: string;
   }) {
@@ -117,7 +115,6 @@ export class MQTTService {
 
       // Verifikasi JWT dan dekripsi AES (gunakan fungsi yang sama seperti HTTP)
       const decrypted = await this.verifyDeviceJWTAndDecrypt({
-        jwt: this.jwtInstance,
         device_id,
         token,
       });

@@ -137,6 +137,7 @@ class Server {
             process.env.FRONTEND_URL!,
             subDomain(process.env.FRONTEND_URL!),
             process.env.FRONTEND_ADMIN_URL!,
+            "http://192.168.18.121:7600"
           ],
           preflight: true,
           credentials: true,

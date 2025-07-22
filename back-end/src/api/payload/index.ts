@@ -40,7 +40,6 @@ export function payloadRoutes(payloadService: PayloadService) {
             }
             
             const decrypted = await payloadService.verifyDeviceJWTAndDecrypt({
-              jwt,
               deviceId,
               token,
             });
@@ -103,32 +102,7 @@ export function payloadRoutes(payloadService: PayloadService) {
       postPayloadLoraSchema
     )
 
-      // READ Semua Payload
-      .get(
-        "/all",
-        //@ts-ignore
-        async ({ jwt, cookie }) => {
-          try {
-            await authorizeRequest(jwt, cookie);
-            const data = await payloadService.getAll();
-            return new Response(JSON.stringify({ result: data }), {
-              status: 200,
-            });
-          } catch (error: any) {
-            console.error("Error fetching all payloads:", error);
-            return new Response(
-              JSON.stringify({ 
-                error: "Failed to fetch payloads",
-                message: error.message || "Internal server error"
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
-          }
-        }
-        // getAllPayloadsSchema
-      )
-
-      // READ Payload by Device ID
+            // READ Payload by Device ID
       .get(
         "/:device_id",
         //@ts-ignore

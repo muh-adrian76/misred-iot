@@ -26,11 +26,9 @@ export class PayloadService {
 
   // Fungsi verifikasi JWT dan dekripsi payload
   async verifyDeviceJWTAndDecrypt({
-    jwt,
     deviceId,
     token,
   }: {
-    jwt: any;
     deviceId: string;
     token: string;
   }) {

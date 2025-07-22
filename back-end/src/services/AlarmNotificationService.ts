@@ -201,7 +201,7 @@ export class AlarmNotificationService {
       console.log('═'.repeat(60));
       qrcode.generate(qr, { small: true });
       console.log('═'.repeat(60));
-      console.log('QR Code akan expired dalam 20 detik, scan sekarang!');
+      console.log('QR Code akan expired dalam 30 detik, scan sekarang!');
     });
 
     // Authentication success
@@ -297,7 +297,7 @@ export class AlarmNotificationService {
       // Initialize with shorter timeout to prevent hanging
       const initPromise = this.whatsAppClient.initialize();
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Initialization timeout after 60 seconds')), 60000)
+        setTimeout(() => reject(new Error('Initialization timeout after 10 seconds')), 10000)
       );
       
       await Promise.race([initPromise, timeoutPromise]);
@@ -404,7 +404,7 @@ export class AlarmNotificationService {
           await this.startWhatsAppInitialization();
           
           // Wait for ready
-          const isReady = await this.waitForWhatsAppReady(30000);
+          const isReady = await this.waitForWhatsAppReady(10000);
           if (!isReady) {
             throw new Error('WhatsApp Web belum aktif setelah initialization. Service mungkin tidak tersedia.');
           }
