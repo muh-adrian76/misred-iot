@@ -425,6 +425,7 @@ export function deviceRoutes(deviceService: DeviceService) {
             const deviceID = params.device_id;
             const oldSecret = body.old_secret;
 
+            console.log(deviceID, oldSecret);
             if (!deviceID || !oldSecret) {
               const newSecret = await deviceService.getNewSecret(
                 deviceID,
