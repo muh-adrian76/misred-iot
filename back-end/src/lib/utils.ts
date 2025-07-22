@@ -242,6 +242,7 @@ async function verifyDeviceJWTAndDecrypt({
     const crypto = require('crypto');
     const expectedSignature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
     
+    console.log(signature, expectedSignature);
     if (signature !== expectedSignature) {
       throw new Error("Invalid JWT signature");
     }

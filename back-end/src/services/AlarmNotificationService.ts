@@ -129,23 +129,13 @@ export class AlarmNotificationService {
       // Create client with LocalAuth for persistent sessions
       this.whatsAppClient = new Client({
         authStrategy: new LocalAuth({
+          clientId: 'misred-iot-server',
           dataPath: './wwebjs_auth'
         }),
         puppeteer: {
           headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--disable-extensions'
-          ],
-          timeout: 60000
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          timeout: 90000
         }
       });
 
@@ -170,8 +160,17 @@ export class AlarmNotificationService {
    */
   private setupWhatsAppEventHandlers(): void {
     // Loading event - shows session loading status
-    this.whatsAppClient.on('loading_screen', (percent, message) => {
+    this.whatsAppClient.on('loading_screen', (percent: number, message) => {
       console.log(`📱 WhatsApp Web loading: ${percent}% - ${message}`);
+      
+      // Provide more detailed feedback during loading
+      if (percent === 0) {
+        console.log('🚀 WhatsApp Web starting...');
+      } else if (percent >= 50 && percent < 100) {
+        console.log('⏳ WhatsApp Web loading session data...');
+      } else if (percent === 100) {
+        console.log('✅ WhatsApp Web loading completed, waiting for ready...');
+      }
     });
 
     // Authentication event - session validation
@@ -205,9 +204,10 @@ export class AlarmNotificationService {
     });
 
     // Authentication success
-    this.whatsAppClient.on('authenticated', () => {
+    this.whatsAppClient.on('authenticated', (session) => {
       console.log('✅ WhatsApp Web berhasil terautentikasi!');
-      console.log('💾 Session tersimpan, tidak perlu scan QR lagi di restart berikutnya');
+      console.log('💾 Session tersimpan dengan clientId: misred-iot-server');
+      console.log('🔗 Session akan persist setelah restart server');
     });
 
     // Disconnected event
@@ -263,6 +263,12 @@ export class AlarmNotificationService {
     // Remote session saved event
     this.whatsAppClient.on('remote_session_saved', () => {
       console.log('💾 WhatsApp session remote saved successfully');
+      console.log('🔗 Session persistence verified');
+    });
+
+    // Add change state event for better debugging
+    this.whatsAppClient.on('change_state', (state) => {
+      console.log(`🔄 WhatsApp state changed to: ${state}`);
     });
   }
 
@@ -294,10 +300,10 @@ export class AlarmNotificationService {
         console.log('📱 No session found, will need QR scan...');
       }
 
-      // Initialize with shorter timeout to prevent hanging
+      // Initialize with extended timeout for WhatsApp Web
       const initPromise = this.whatsAppClient.initialize();
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Initialization timeout after 10 seconds')), 10000)
+        setTimeout(() => reject(new Error('Initialization timeout after 60 seconds')), 60000)
       );
       
       await Promise.race([initPromise, timeoutPromise]);
@@ -312,21 +318,34 @@ export class AlarmNotificationService {
         console.log('🗑️ Initialization timeout, cleaning up corrupted session...');
         await this.cleanupSessionFiles();
         
-        // Try one more time after cleanup
+        // Try one more time after cleanup with longer delay
         console.log('🔄 Retrying after session cleanup...');
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         try {
           this.isWhatsAppInitializing = true;
-          await this.whatsAppClient.initialize();
-          console.log('✅ WhatsApp Web initialization completed after cleanup');
+          console.log('🔄 Second attempt: initializing fresh WhatsApp client...');
+          
+          // Reinitialize client completely
+          this.initializeWhatsAppClient();
+          
+          // Wait for initialization with longer timeout
+          const isReady = await this.waitForWhatsAppReady(120000); // 2 minutes
+          
+          if (isReady) {
+            console.log('✅ WhatsApp Web initialization completed after cleanup');
+          } else {
+            throw new Error('WhatsApp Web still not ready after retry');
+          }
         } catch (retryError) {
           console.error('❌ WhatsApp initialization failed even after cleanup:', retryError);
           this.isWhatsAppInitializing = false;
           this.whatsAppDisabled = true;
+          console.log('⚠️ WhatsApp notifications permanently disabled for this session');
         }
       } else {
         // Other errors
+        console.log('❌ Non-timeout error, disabling WhatsApp service');
         this.whatsAppDisabled = true;
       }
     }
@@ -558,13 +577,13 @@ export class AlarmNotificationService {
               console.log(`⏳ Alarm ${alarm.id} masih cooldown. Waktu cooldown yang tersisa: ${remainingCooldownSeconds}s (${cooldownMinutes}m total)`);
               
               // Kirim pesan cooldown untuk pengujian
-              if (alarm.whatsapp_number) {
-                const cooldownMessage = `⏳ Ini pesan untuk pengujian COOLDOWN. Sensor ${alarm.datastream_description}(${alarm.datastream_id}) pada ${alarm.device_description} masih dalam waktu tunggu ${cooldownMinutes} menit.\n\n` +
-                                       `Sisa waktu cooldown: ${remainingMinutes} menit ${remainingSeconds} detik\n` +
-                                       `Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
+              // if (alarm.whatsapp_number) {
+              //   const cooldownMessage = `⏳ Ini pesan untuk pengujian COOLDOWN. Sensor ${alarm.datastream_description}(${alarm.datastream_id}) pada ${alarm.device_description} masih dalam waktu tunggu ${cooldownMinutes} menit.\n\n` +
+              //                          `Sisa waktu cooldown: ${remainingMinutes} menit ${remainingSeconds} detik\n` +
+              //                          `Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
                 
-                await this.sendWhatsAppNotification(alarm.whatsapp_number, cooldownMessage);
-              }
+              //   await this.sendWhatsAppNotification(alarm.whatsapp_number, cooldownMessage);
+              // }
               
               continue; // Skip this alarm, still in cooldown
             }
@@ -866,12 +885,16 @@ export class AlarmNotificationService {
         // Check if directory exists
         await fs.access(sessionPath);
         
-        // Remove the entire session directory
-        await fs.rmdir(sessionPath, { recursive: true });
+        // List what we're about to delete
+        const files = await fs.readdir(sessionPath);
+        console.log(`🗑️ Found ${files.length} items to clean up`);
+        
+        // Remove the entire session directory recursively
+        await fs.rm(sessionPath, { recursive: true, force: true });
         console.log('✅ Session files cleaned up successfully');
         
         // Wait a bit to ensure filesystem operations complete
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
       } catch (accessError) {
         console.log('📁 No session files to clean up (directory not found)');
@@ -901,34 +924,46 @@ export class AlarmNotificationService {
       const fs = require('fs').promises;
       const path = require('path');
       
-      const sessionPath = path.join(process.cwd(), 'wwebjs_auth');
+      const sessionPath = path.join(process.cwd(), 'wwebjs_auth', 'session-misred-iot-server');
       
       try {
         await fs.access(sessionPath);
         
-        // Check for session.json file specifically
-        const sessionJsonPath = path.join(sessionPath, 'session.json');
-        try {
-          await fs.access(sessionJsonPath);
-          console.log('📁 Valid session file found');
-          return true;
-        } catch {
-          // Check for Default directory (newer session format)
+        // Check for various session file patterns
+        const files = await fs.readdir(sessionPath);
+        console.log(`📁 Session directory contains: ${files.length} files`);
+        
+        // Look for critical session files
+        //@ts-ignore
+        const hasWABrowserId = files.some(file => file.includes('WABrowserId'));
+        //@ts-ignore
+        const hasWASecretBundle = files.some(file => file.includes('WASecretBundle'));
+        //@ts-ignore
+        const hasWAToken = files.some(file => file.includes('WAToken'));
+        const hasDefault = files.includes('Default');
+        
+        console.log(`� Session validation - WABrowserId: ${hasWABrowserId}, WASecretBundle: ${hasWASecretBundle}, WAToken: ${hasWAToken}, Default: ${hasDefault}`);
+        
+        // Session is valid if we have at least some critical files or Default directory
+        const isValid = hasWABrowserId || hasWASecretBundle || hasDefault;
+        
+        if (isValid && hasDefault) {
+          // Also check Default directory for Chromium session files
           const defaultPath = path.join(sessionPath, 'Default');
           try {
-            await fs.access(defaultPath);
-            const files = await fs.readdir(defaultPath);
+            const defaultFiles = await fs.readdir(defaultPath);
             //@ts-ignore
-            const hasSessionFiles = files.some(file => 
-              file.includes('Session') || file.includes('Local') || file.includes('IndexedDB')
+            const hasSessionStorage = defaultFiles.some(file => 
+              file.includes('Session') || file.includes('Local Storage') || file.includes('IndexedDB')
             );
-            console.log(`📁 Session directory found with ${files.length} files, valid: ${hasSessionFiles}`);
-            return hasSessionFiles;
+            console.log(`📁 Default directory has ${defaultFiles.length} files, session storage: ${hasSessionStorage}`);
+            return hasSessionStorage;
           } catch {
-            console.log('📁 Session directory exists but no valid session files found');
-            return false;
+            return hasWABrowserId || hasWASecretBundle;
           }
         }
+        
+        return isValid;
       } catch {
         console.log('📁 Session directory not found');
         return false;
