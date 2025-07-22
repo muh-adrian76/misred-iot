@@ -113,6 +113,13 @@ class Server {
         database: "connected", // You can add actual DB health check here
       }))
 
+      // Set body parser limit for file uploads
+      .derive(() => ({
+        body: {
+          maxSize: 10 * 1024 * 1024, // 10MB limit for file uploads
+        }
+      }))
+
       // API
       .use(authRoutes(this.authService, this.userService))
       .use(userRoutes(this.userService))
@@ -190,7 +197,7 @@ class Server {
 
       // Error handler
       .onError(({ error, code, request }) => {
-        console.error("❌ Terjadi kesalahan:", error);
+        console.error("❌ Terjadi kesalahan:", error, request.url);
         if (code === "NOT_FOUND")
           return `Halaman tidak ditemukan: ${request.url}`;
         if (code === "VALIDATION") return "Invalid user";

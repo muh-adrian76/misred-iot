@@ -416,7 +416,7 @@ export function deviceRoutes(deviceService: DeviceService) {
         }
       })
 
-      // Renew device secret
+            // Renew device secret
       .post(
         "/renew-secret/:device_id",
         //@ts-ignore
@@ -425,13 +425,13 @@ export function deviceRoutes(deviceService: DeviceService) {
             const deviceID = params.device_id;
             const oldSecret = body.old_secret;
 
-            if (deviceID || oldSecret !== undefined) {
+            if (deviceID && oldSecret) {
               const newSecret = await deviceService.getNewSecret(
                 deviceID,
                 oldSecret
               );
 
-              console.log(newSecret);
+              console.log(`🔄 Device ${deviceID} secret renewed:`, newSecret);
               // Kirim secret baru
               return new Response(
                 JSON.stringify({
@@ -440,6 +440,13 @@ export function deviceRoutes(deviceService: DeviceService) {
                   secret_key: newSecret,
                 }),
                 { status: 200 }
+              );
+            } else {
+              return new Response(
+                JSON.stringify({
+                  message: "device_id dan old_secret wajib diisi",
+                }),
+                { status: 400 }
               );
             }
           } catch (error) {

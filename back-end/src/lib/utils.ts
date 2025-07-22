@@ -309,6 +309,13 @@ async function parseAndNormalizePayload(
     
     const insertedIds: number[] = [];
     
+    // Ekstrak dan konversi timestamp dari raw data
+    let deviceTime = null;
+    if (rawData.timestamp && typeof rawData.timestamp === 'number') {
+      // Konversi dari Unix timestamp (milliseconds) ke MySQL DATETIME
+      deviceTime = new Date(rawData.timestamp).toISOString().slice(0, 19).replace('T', ' ');
+    }
+    
     // Parse setiap pin di raw data
     for (const [pin, value] of Object.entries(rawData)) {
       if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
@@ -317,15 +324,16 @@ async function parseAndNormalizePayload(
         const datastream = datastreams.find((ds: any) => ds.pin === pin);
         if (datastream) {
           try {
-            // Insert ke tabel payloads yang sudah ada
+            // Insert ke tabel payloads yang sudah ada dengan device_time
             const [result] = await db.query(
-              `INSERT INTO payloads (device_id, datastream_id, value, raw_data, server_time)
-              VALUES (?, ?, ?, ?, NOW())`,
+              `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
+              VALUES (?, ?, ?, ?, ?, NOW())`,
               [
                 deviceId, 
                 datastream.id, 
                 value,
-                JSON.stringify({ raw_payload_id: rawPayloadId, pin, value })
+                JSON.stringify({ raw_payload_id: rawPayloadId, pin, value }),
+                deviceTime
               ]
             );
             insertedIds.push(result.insertId);

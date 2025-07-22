@@ -193,10 +193,10 @@ export class PayloadService {
         [device_id, JSON.stringify({ dev_eui, datastream_id, value, protocol: 'lora' })]
       );
       
-      // Simpan ke payloads (normalized)
+      // Simpan ke payloads (normalized) - LoRa biasanya tidak memiliki device timestamp
       const [result] = await this.db.query<ResultSetHeader>(
-        `INSERT INTO payloads (device_id, datastream_id, value, raw_data, server_time)
-        VALUES (?, ?, ?, ?, NOW())`,
+        `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
+        VALUES (?, ?, ?, ?, NULL, NOW())`,
         [
           device_id, 
           datastream_id, 

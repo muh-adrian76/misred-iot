@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS `payloads` (
   `datastream_id` INT NOT NULL,
   `value` DECIMAL(10,3) NOT NULL,
   `raw_data` JSON NULL, 
+  `device_time` DATETIME NULL DEFAULT NULL,
   `server_time` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
