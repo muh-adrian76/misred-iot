@@ -425,13 +425,14 @@ export function deviceRoutes(deviceService: DeviceService) {
             const deviceID = params.device_id;
             const oldSecret = body.old_secret;
 
-            console.log(deviceID, oldSecret);
-            if (!deviceID || !oldSecret) {
+            if (deviceID || oldSecret !== undefined) {
+              console.log(deviceID, oldSecret);
               const newSecret = await deviceService.getNewSecret(
                 deviceID,
                 oldSecret
               );
 
+              console.log(newSecret);
               // Kirim secret baru
               return new Response(
                 JSON.stringify({
@@ -440,13 +441,6 @@ export function deviceRoutes(deviceService: DeviceService) {
                   secret_key: newSecret,
                 }),
                 { status: 200 }
-              );
-            } else {
-              return new Response(
-                JSON.stringify({
-                  message: "Gagal memperbarui secret perangkat",
-                }),
-                { status: 401 }
               );
             }
           } catch (error) {
