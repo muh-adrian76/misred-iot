@@ -106,18 +106,11 @@ class Server {
 
     this.app
       // Health check endpoint
-      .get("/health", () => ({
+      .get("/health-check", () => ({
         status: "ok",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         database: "connected", // You can add actual DB health check here
-      }))
-
-      // Set body parser limit for file uploads
-      .derive(() => ({
-        body: {
-          maxSize: 10 * 1024 * 1024, // 10MB limit for file uploads
-        }
       }))
 
       // API
@@ -144,7 +137,6 @@ class Server {
             process.env.FRONTEND_URL!,
             subDomain(process.env.FRONTEND_URL!),
             process.env.FRONTEND_ADMIN_URL!,
-            "http://192.168.18.121:7600",
           ],
           preflight: true,
           credentials: true,
