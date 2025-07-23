@@ -20,7 +20,6 @@ import {
   BellRing,
   Check,
   CheckCheck,
-  Trash2,
   Filter,
   History,
   X,
@@ -32,44 +31,36 @@ const defaultFetchNotifications = async () => {
   return [];
 };
 
-const defaultMarkAsRead = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
-};
-
-const defaultMarkAllAsRead = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 500));
-};
-
-const defaultDeleteNotification = async (id) => {
+const defaultMarkAsRead = async (id) => {
   try {
-    const response = await fetchFromBackend(`/notifications/${id}`, {
-      method: "DELETE",
+    const response = await fetchFromBackend(`/notifications/${id}/read`, {
+      method: "POST",
     });
     if (!response.ok) {
-      throw new Error("Failed to delete notification");
+      throw new Error("Failed to mark notification as read");
     }
     return response.json();
   } catch (error) {
-    console.error("Error deleting notification:", error);
+    console.error("Error marking notification as read:", error);
     throw error;
   }
 };
 
-const saveAllNotifications = async () => {
+const defaultMarkAllAsRead = async () => {
   try {
-    const response = await fetchFromBackend("/notifications/save-all", {
+    const response = await fetchFromBackend("/notifications/mark-all-read", {
       method: "POST",
     });
     
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.message || `HTTP ${response.status}: Failed to save notifications`);
+      throw new Error(data.message || `HTTP ${response.status}: Failed to mark all notifications as read`);
     }
     
     return data;
   } catch (error) {
-    console.error("Error saving all notifications:", error);
+    console.error("Error marking all notifications as read:", error);
     throw error; // Re-throw to let the mutation handle it
   }
 };
@@ -105,36 +96,30 @@ const getPriorityColor = (priority) => {
 const NotificationItem = ({
   notification,
   onMarkAsRead,
-  onDelete,
   onClick,
 }) => {
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Mark as read when clicked (if not already read)
+    if (!notification.isRead && onMarkAsRead) {
+      try {
+        await onMarkAsRead(notification.id);
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+      }
+    }
+    
     if (onClick) {
       onClick(notification);
-    }
-  };
-
-  const handleDelete = async (e) => {
-    e.stopPropagation();
-    e.preventDefault(); // Prevent any default behavior
-    
-    if (onDelete) {
-      try {
-        await onDelete(notification.id);
-      } catch (error) {
-        console.error("Failed to delete notification:", error);
-      }
     }
   };
 
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm",
+        "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm cursor-pointer",
         !notification.isRead &&
           "border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 dark:border-l-red-400",
-        notification.isRead && "border-border hover:border-muted-foreground/20",
-        onClick && "cursor-pointer"
+        notification.isRead && "border-border hover:border-muted-foreground/20"
       )}
       onClick={handleClick}
     >
@@ -179,16 +164,10 @@ const NotificationItem = ({
               <span className="text-xs text-muted-foreground font-medium">
                 {formatTimeAgo(notification.createdAt)}
               </span>
-              {onDelete && (
-                <Button
-                  size="sm"
-                  className="h-6 px-2 text-xs cursor-pointer"
-                  variant={"ghost"}
-                  onClick={handleDelete}
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Hapus
-                </Button>
+              {!notification.isRead && (
+                <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  Klik untuk tandai dibaca
+                </span>
               )}
             </div>
           </div>
@@ -205,7 +184,6 @@ export function NotificationCenter({
   fetchNotifications = defaultFetchNotifications,
   onMarkAsRead = defaultMarkAsRead,
   onMarkAllAsRead = defaultMarkAllAsRead,
-  onDeleteNotification = defaultDeleteNotification,
   onNotificationClick,
   maxHeight = "h-96",
   showFilter = true,
@@ -265,12 +243,12 @@ export function NotificationCenter({
         const response = await fetchFromBackend("/notifications/");
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch saved notifications`);
+          throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch notifications`);
         }
         const data = await response.json();
         return data.notifications || [];
       } catch (error) {
-        console.error("Error fetching saved notifications:", error);
+        console.error("Error fetching notifications:", error);
         throw error; // Re-throw to let React Query handle it
       }
     },
@@ -339,47 +317,40 @@ export function NotificationCenter({
     onSuccess: (_, id) => {
       if (staticNotifications) return;
 
-      queryClient.setQueryData(["notifications"], (old = []) =>
-        old.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-      );
+      // Update query cache untuk refresh UI
+      queryClient.invalidateQueries({ queryKey: ["saved-notifications"] });
+      
+      // Juga hapus dari WebSocket notifications jika ada
+      removeAlarmNotification(id);
+    },
+    onError: (error) => {
+      console.error("Failed to mark notification as read:", error);
     },
   });
 
-  // Save all WebSocket notifications to database
+  // Mark all notifications as read
   const markAllAsReadMutation = useMutation({
-    mutationFn: saveAllNotifications,
+    mutationFn: onMarkAllAsRead,
     onSuccess: (data) => {
-      console.log("✅ Successfully saved all notifications:", data);
+      console.log("✅ Successfully marked all notifications as read:", data);
       
       // Clear WebSocket notifications
       clearAlarmNotifications();
 
-      // Refresh saved notifications to show the newly saved ones
+      // Refresh saved notifications to show updated read status
       setTimeout(() => {
         refetchSaved();
       }, 500); // Small delay to ensure backend processing is complete
 
-      // Switch to "all" filter to show saved notifications
-      setFilter("all");
-      
       // Show success feedback (optional - you can add a toast here)
-      console.log(`✅ ${data.affected_rows || 0} notifikasi berhasil disimpan`);
+      console.log(`✅ ${data.affected_rows || 0} notifikasi berhasil ditandai dibaca`);
     },
     onError: (error) => {
-      console.error("❌ Error saving notifications:", error);
+      console.error("❌ Error marking all notifications as read:", error);
       
       // Show error feedback (you can replace this with a toast notification)
-      alert(`Gagal menyimpan notifikasi: ${error.message || "Unknown error"}`);
+      alert(`Gagal menandai notifikasi dibaca: ${error.message || "Unknown error"}`);
     }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: onDeleteNotification,
-    onSuccess: (_, id) => {
-      if (filter === "all") {
-        refetchSaved();
-      }
-    },
   });
 
   // Function to remove WebSocket notification (for unread notifications)
@@ -390,13 +361,30 @@ export function NotificationCenter({
   };
 
   const filteredNotifications = useMemo(
-    () => displayNotifications,
-    [displayNotifications]
+    () => {
+      if (filter === "unread") {
+        // Gabungkan WebSocket notifications (belum tersimpan) dan database notifications yang belum dibaca
+        const unreadSaved = savedNotifications.filter(n => !n.isRead);
+        const allUnread = [...alarmNotifications, ...unreadSaved];
+        // Remove duplicates by id
+        return allUnread.filter((item, index, arr) => 
+          arr.findIndex(i => i.id === item.id) === index
+        );
+      } else {
+        return savedNotifications; // Database notifications (semua, read & unread)
+      }
+    },
+    [filter, alarmNotifications, savedNotifications]
   );
 
   const unreadCount = useMemo(
-    () => alarmNotifications.length, // Only count WebSocket notifications as unread
-    [alarmNotifications]
+    () => {
+      // Count unread from both WebSocket and database notifications
+      const unreadSaved = savedNotifications.filter(n => !n.isRead).length;
+      const unreadWebSocket = alarmNotifications.length;
+      return unreadSaved + unreadWebSocket;
+    },
+    [alarmNotifications, savedNotifications]
   );
 
   const NotificationList = () => (
@@ -439,7 +427,7 @@ export function NotificationCenter({
           <p className="text-sm text-muted-foreground max-w-sm">
             {filter === "unread"
               ? "Notifikasi alarm akan muncul di sini saat terpicu."
-              : "Klik 'Simpan Semua' untuk menyimpan notifikasi ke riwayat."}
+              : "Notifikasi yang tersimpan akan muncul di sini."}
           </p>
         </div>
       ) : (
@@ -450,13 +438,6 @@ export function NotificationCenter({
               notification={notification}
               onMarkAsRead={
                 staticNotifications ? undefined : markAsReadMutation.mutate
-              }
-              onDelete={
-                filter === "all"
-                  ? deleteMutation.mutate
-                  : filter === "unread"
-                    ? removeAlarmNotification
-                    : undefined
               }
               onClick={onNotificationClick}
             />
@@ -560,12 +541,12 @@ export function NotificationCenter({
                       {markAllAsReadMutation.isPending ? (
                         <>
                           <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
-                          Menyimpan...
+                          Menandai dibaca...
                         </>
                       ) : (
                         <>
                           <CheckCheck className="mr-1.5 h-3 w-3" />
-                          Simpan Semua
+                          Tandai semua dibaca
                         </>
                       )}
                     </Button>

@@ -11,21 +11,17 @@ const verifyToken = async (router, skipRedirect = false) => {
     });
 
     if (!res.ok) {
-      console.log(`useAuth: Token verification failed with status ${res.status}`);
       if (!skipRedirect) {
-        console.log("useAuth: Redirecting to 401 page");
         router.push("/401");
       }
       return false;
     }
 
-    console.log("useAuth: Token verification successful");
     return true;
   } catch (error) {
     console.error("useAuth: Network error during token verification:", error);
     // Network error juga dianggap unauthorized
     if (!skipRedirect) {
-      console.log("useAuth: Network error - redirecting to 401 page");
       router.push("/401");
     }
     return false;
@@ -45,7 +41,6 @@ export const useAuth = (skipRedirect = false) => {
         
         // Jika tidak valid dan tidak skip redirect, pastikan redirect terjadi
         if (!isValid && !skipRedirect) {
-          console.log("useAuth: User not authenticated, ensuring redirect to 401");
           router.push("/401");
         }
       } catch (error) {
@@ -54,7 +49,6 @@ export const useAuth = (skipRedirect = false) => {
         
         // Error juga harus redirect ke 401
         if (!skipRedirect) {
-          console.log("useAuth: Error occurred - redirecting to 401 page");
           router.push("/401");
         }
       } finally {

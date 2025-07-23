@@ -361,6 +361,49 @@ export function alarmNotificationRoutes(
       }
     )
     
+    // 🧪 TEST Green API Connection
+    .get(
+      "/test/api",
+      //@ts-ignore
+      async ({ set }) => {
+        try {
+          const greenApiBaseUrl = process.env.GREEN_API_BASE_URL || "";
+          const greenApiToken = process.env.GREEN_API_TOKEN || "";
+
+          if (!greenApiBaseUrl || !greenApiToken) {
+            return {
+              success: false,
+              message: "Green API configuration missing (BASE_URL or TOKEN)",
+            };
+          }
+
+          const response = await fetch(`${greenApiBaseUrl}/waInstance${greenApiToken}/getStateInstance/${greenApiToken}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          const data = await response.json();
+
+          return {
+            success: response.ok,
+            message: response.ok ? "Green API connected successfully" : "Green API connection failed",
+            status: response.status,
+            data: data,
+          };
+        } catch (error) {
+          console.error("Error testing Green API connection:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error during Green API test",
+          };
+        }
+      },
+      testApiConnectionSchema
+    )
+
     // 🧪 SEND Test Notification
     .post(
       "/test/send",

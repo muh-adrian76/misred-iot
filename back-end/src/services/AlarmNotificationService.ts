@@ -62,26 +62,26 @@ export class AlarmNotificationService {
     this.db = database;
 
     // Check if WhatsApp should be disabled (e.g., in test environment or missing dependencies)
-    const disableWhatsApp =
-      process.env.DISABLE_WHATSAPP === "true" ||
-      this.checkSystemCompatibility();
-    if (disableWhatsApp) {
-      console.log("⚠️ Notifikasi WhatsApp dinonaktifkan");
-      if (process.env.DISABLE_WHATSAPP === "true") {
-        console.log(
-          "📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true"
-        );
-      } else {
-        console.log(
-          "📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia"
-        );
-      }
-      console.log(
-        "📧 Notifikasi alarm akan menggunakan browser/WebSocket saja"
-      );
-      this.whatsAppDisabled = true;
-      return;
-    }
+    // const disableWhatsApp =
+    //   process.env.DISABLE_WHATSAPP === "true" ||
+    //   this.checkSystemCompatibility();
+    // if (disableWhatsApp) {
+    //   console.log("⚠️ Notifikasi WhatsApp dinonaktifkan");
+    //   if (process.env.DISABLE_WHATSAPP === "true") {
+    //     console.log(
+    //       "📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true"
+    //     );
+    //   } else {
+    //     console.log(
+    //       "📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia"
+    //     );
+    //   }
+    //   console.log(
+    //     "📧 Notifikasi alarm akan menggunakan browser/WebSocket saja"
+    //   );
+    //   this.whatsAppDisabled = true;
+    //   return;
+    // }
 
     // Initialize WhatsApp Web client
     this.initializeWhatsAppClient();
@@ -119,38 +119,6 @@ export class AlarmNotificationService {
       if (!hasRequiredLibs) {
         console.log(
           "❌ Sistem tidak memiliki dependencies yang dibutuhkan untuk WhatsApp Web"
-        );
-        console.log(
-          "💡 Untuk mengaktifkan WhatsApp di VPS Linux, install dependencies:"
-        );
-        console.log("   sudo apt-get update");
-        console.log("   sudo apt-get install -y wget gnupg ca-certificates");
-        console.log(
-          "   sudo apt-get install -y fonts-liberation libasound2 libatk-bridge2.0-0"
-        );
-        console.log(
-          "   sudo apt-get install -y libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3"
-        );
-        console.log(
-          "   sudo apt-get install -y libexpat1 libfontconfig1 libgcc1 libgconf-2-4"
-        );
-        console.log(
-          "   sudo apt-get install -y libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0"
-        );
-        console.log(
-          "   sudo apt-get install -y libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0"
-        );
-        console.log(
-          "   sudo apt-get install -y libstdc++6 libx11-6 libx11-xcb1 libxcb1"
-        );
-        console.log(
-          "   sudo apt-get install -y libxcomposite1 libxcursor1 libxdamage1 libxext6"
-        );
-        console.log(
-          "   sudo apt-get install -y libxfixes3 libxi6 libxrandr2 libxrender1"
-        );
-        console.log(
-          "   sudo apt-get install -y libxss1 libxtst6 libxinerama1 xdg-utils"
         );
         return true; // Disable WhatsApp
       }
@@ -1241,8 +1209,8 @@ export class AlarmNotificationService {
           an.sensor_value,
           an.conditions_text,
           an.triggered_at,
-          COALESCE(an.is_saved, 0) as is_saved,
-          an.saved_at,
+          COALESCE(an.is_read, 0) as is_read,
+          an.read_at,
           a.description as alarm_description,
           ds.description as datastream_description,
           ds.pin as field_name,
@@ -1254,7 +1222,6 @@ export class AlarmNotificationService {
         JOIN devices dev ON an.device_id = dev.id
         JOIN users u ON an.user_id = u.id
         WHERE an.user_id = ? 
-          AND COALESCE(an.is_saved, 0) = 1
         ORDER BY an.triggered_at DESC
         LIMIT 50
       `,
@@ -1325,7 +1292,6 @@ export class AlarmNotificationService {
         SELECT COUNT(*) as total
         FROM alarm_notifications an
         WHERE an.user_id = ? 
-          AND COALESCE(an.is_saved, 0) = 1
       `;
 
       const baseDataQuery = `
@@ -1337,8 +1303,8 @@ export class AlarmNotificationService {
           an.triggered_at,
           COALESCE(an.notification_type, 'browser') as notification_type,
           an.whatsapp_message_id,
-          an.is_saved,
-          an.saved_at,
+          COALESCE(an.is_read, 0) as is_read,
+          an.read_at,
           a.description as alarm_description,
           ds.description as datastream_description,
           ds.pin as field_name,
@@ -1348,7 +1314,6 @@ export class AlarmNotificationService {
         LEFT JOIN datastreams ds ON an.datastream_id = ds.id
         LEFT JOIN devices dev ON an.device_id = dev.id
         WHERE an.user_id = ? 
-          AND COALESCE(an.is_saved, 0) = 1
       `;
 
       const countQuery =
@@ -1408,37 +1373,35 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Save all notifications for a user
+   * Mark all notifications as read for a user
    */
-  async saveAllNotifications(userId: number): Promise<number> {
+  async markAllAsRead(userId: number): Promise<number> {
     try {
       const [result] = await this.db.execute(
         `
         UPDATE alarm_notifications 
-        SET is_saved = TRUE, saved_at = NOW() 
-        WHERE user_id = ? AND COALESCE(is_saved, 0) = 0
+        SET is_read = TRUE, read_at = NOW() 
+        WHERE user_id = ? AND COALESCE(is_read, 0) = 0
       `,
         [userId]
       );
 
       return (result as any).affectedRows;
     } catch (error) {
-      console.error("❌ Error saving all notifications:", error);
+      console.error("❌ Error marking all notifications as read:", error);
       throw error;
     }
   }
 
   /**
-   * Delete a single notification
+   * Mark a single notification as read
    */
-  async deleteNotification(
-    notificationId: number,
-    userId: number
-  ): Promise<boolean> {
+  async markAsRead(notificationId: number, userId: number): Promise<boolean> {
     try {
       const [result] = await this.db.execute(
         `
-        DELETE FROM alarm_notifications 
+        UPDATE alarm_notifications 
+        SET is_read = TRUE, read_at = NOW() 
         WHERE id = ? AND user_id = ?
       `,
         [notificationId, userId]
@@ -1446,27 +1409,7 @@ export class AlarmNotificationService {
 
       return (result as any).affectedRows > 0;
     } catch (error) {
-      console.error("❌ Error deleting notification:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete all notifications for a user
-   */
-  async deleteAllNotifications(userId: number): Promise<number> {
-    try {
-      const [result] = await this.db.execute(
-        `
-        DELETE FROM alarm_notifications 
-        WHERE user_id = ?
-      `,
-        [userId]
-      );
-
-      return (result as any).affectedRows;
-    } catch (error) {
-      console.error("❌ Error deleting all notifications:", error);
+      console.error("❌ Error marking notification as read:", error);
       throw error;
     }
   }

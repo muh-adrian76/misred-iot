@@ -245,11 +245,6 @@ export function WebSocketProvider({ children }) {
         clearTimeout(connectionTimer);
         connectionAttemptRef.current = false;
         console.error("🚨 WebSocket error:", error);
-        console.error("💡 Possible causes:");
-        console.error("   1. Backend server is not running");
-        console.error("   2. CORS configuration issue");
-        console.error("   3. Network connectivity problem");
-        console.error("   4. Incorrect WebSocket URL");
       };
 
     } catch (error) {

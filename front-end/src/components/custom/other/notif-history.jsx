@@ -43,7 +43,6 @@ import {
   Smartphone,
   BellRing,
   ChartBar,
-  Trash2,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
@@ -93,7 +92,7 @@ const NotificationHistoryItem = ({ notification }) => {
             )}
           </div>
 
-          <div className="flex gap-2 text-sm text-muted-foreground">
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <div>
               <span className="font-medium">Device:</span>{" "}
               {notification.device_description}
@@ -208,15 +207,15 @@ export default function NotifHistory({ open, setOpen }) {
     refetchOnWindowFocus: false,
   });
 
-  // Delete all notifications mutation
-  const deleteAllMutation = useMutation({
+  // Mark all notifications as read mutation
+  const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetchFromBackend("/notifications/", {
-        method: "DELETE",
+      const response = await fetchFromBackend("/notifications/mark-all-read", {
+        method: "POST",
       });
       
       if (!response.ok) {
-        throw new Error("Failed to delete all notifications");
+        throw new Error("Failed to mark all notifications as read");
       }
       
       return response.json();
@@ -224,11 +223,9 @@ export default function NotifHistory({ open, setOpen }) {
     onSuccess: () => {
       // Refetch the current page data
       refetch();
-      // Reset to first page
-      setCurrentPage(1);
     },
     onError: (error) => {
-      alert("Gagal menghapus semua notifikasi: " + error.message);
+      alert("Gagal menandai semua notifikasi sebagai dibaca: " + error.message);
     },
   });
 
@@ -424,7 +421,7 @@ export default function NotifHistory({ open, setOpen }) {
             </div>
 
             {/* Content */}
-            <ScrollArea className="h-[450px]">
+            <ScrollArea className="h-[55vh]">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
@@ -540,29 +537,27 @@ export default function NotifHistory({ open, setOpen }) {
               </div>
             )}
 
-            {/* Delete All Button */}
+            {/* Mark All as Read Button */}
             {historyData?.notifications?.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                   onClick={() => {
-                    if (window.confirm("Apakah Anda yakin ingin menghapus SEMUA riwayat notifikasi? Tindakan ini tidak dapat dibatalkan.")) {
-                      deleteAllMutation.mutate();
-                    }
+                    markAllAsReadMutation.mutate();
                   }}
-                  disabled={deleteAllMutation.isPending}
+                  disabled={markAllAsReadMutation.isPending}
                   className="w-full"
                 >
-                  {deleteAllMutation.isPending ? (
+                  {markAllAsReadMutation.isPending ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Menghapus...
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
+                      Memproses...
                     </>
                   ) : (
                     <>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Hapus Semua Riwayat
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Tandai Semua Sebagai Dibaca
                     </>
                   )}
                 </Button>
