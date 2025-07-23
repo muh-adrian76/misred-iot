@@ -1,7 +1,7 @@
 import { Pool } from "mysql2/promise";
-import { Client, LocalAuth } from 'whatsapp-web.js';
-import qrcode from 'qrcode-terminal';
-import { broadcastToUsers } from '../api/ws/user-ws';
+import { Client, LocalAuth } from "whatsapp-web.js";
+import qrcode from "qrcode-terminal";
+import { broadcastToUsers } from "../api/ws/user-ws";
 
 export interface AlarmData {
   id: number;
@@ -14,17 +14,17 @@ export interface AlarmData {
   last_triggered?: string;
   created_at: string;
   updated_at: string;
-  
+
   // Fields from joined tables
-  field_name: string;        // dari datastreams.pin
-  data_type: string;         // dari datastreams.type
+  field_name: string; // dari datastreams.pin
+  data_type: string; // dari datastreams.type
   datastream_description: string; // dari datastreams.description
   device_description: string; // dari devices.description
-  whatsapp_number: string;   // dari users.phone
-  user_name: string;         // dari users.name
-  user_email: string;        // dari users.email
+  whatsapp_number: string; // dari users.phone
+  user_name: string; // dari users.name
+  user_email: string; // dari users.email
   condition_operator: string; // dari alarm_conditions.operator
-  condition_value: string;   // dari alarm_conditions.threshold
+  condition_value: string; // dari alarm_conditions.threshold
 }
 
 export interface NotificationResult {
@@ -51,7 +51,7 @@ export class AlarmNotificationService {
   public db: Pool; // Changed to public for API access
   private lastNotificationTime: number = 0;
   private minNotificationInterval = 500; // delay 500ms
-  
+
   // WhatsApp Web client properties
   private whatsAppClient!: Client;
   private isWhatsAppReady: boolean = false;
@@ -60,24 +60,32 @@ export class AlarmNotificationService {
 
   constructor(database: Pool) {
     this.db = database;
-    
+
     // Check if WhatsApp should be disabled (e.g., in test environment or missing dependencies)
-    const disableWhatsApp = process.env.DISABLE_WHATSAPP === 'true' || this.checkSystemCompatibility();
+    const disableWhatsApp =
+      process.env.DISABLE_WHATSAPP === "true" ||
+      this.checkSystemCompatibility();
     if (disableWhatsApp) {
-      console.log('⚠️ Notifikasi WhatsApp dinonaktifkan');
-      if (process.env.DISABLE_WHATSAPP === 'true') {
-        console.log('📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true');
+      console.log("⚠️ Notifikasi WhatsApp dinonaktifkan");
+      if (process.env.DISABLE_WHATSAPP === "true") {
+        console.log(
+          "📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true"
+        );
       } else {
-        console.log('📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia');
+        console.log(
+          "📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia"
+        );
       }
-      console.log('📧 Notifikasi alarm akan menggunakan browser/WebSocket saja');
+      console.log(
+        "📧 Notifikasi alarm akan menggunakan browser/WebSocket saja"
+      );
       this.whatsAppDisabled = true;
       return;
     }
-    
+
     // Initialize WhatsApp Web client
     this.initializeWhatsAppClient();
-    
+
     // Start health monitoring
     this.startHealthMonitoring();
   }
@@ -88,18 +96,18 @@ export class AlarmNotificationService {
   private checkSystemCompatibility(): boolean {
     try {
       // Check if we're in a minimal container environment
-      const fs = require('fs');
-      
+      const fs = require("fs");
+
       // Common paths where Chrome dependencies should be
       const requiredLibs = [
-        '/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0',
-        '/lib/x86_64-linux-gnu/libatk-1.0.so.0',
-        '/usr/lib/libatk-1.0.so.0',
-        '/lib/libatk-1.0.so.0'
+        "/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0",
+        "/lib/x86_64-linux-gnu/libatk-1.0.so.0",
+        "/usr/lib/libatk-1.0.so.0",
+        "/lib/libatk-1.0.so.0",
       ];
-      
+
       // Check if any of the required libraries exist
-      const hasRequiredLibs = requiredLibs.some(path => {
+      const hasRequiredLibs = requiredLibs.some((path) => {
         try {
           fs.accessSync(path);
           return true;
@@ -107,33 +115,57 @@ export class AlarmNotificationService {
           return false;
         }
       });
-      
+
       if (!hasRequiredLibs) {
-        console.log('❌ Sistem tidak memiliki dependencies yang dibutuhkan untuk WhatsApp Web');
-        console.log('💡 Untuk mengaktifkan WhatsApp di VPS Linux, install dependencies:');
-        console.log('   sudo apt-get update');
-        console.log('   sudo apt-get install -y wget gnupg ca-certificates');
-        console.log('   sudo apt-get install -y fonts-liberation libasound2 libatk-bridge2.0-0');
-        console.log('   sudo apt-get install -y libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3');
-        console.log('   sudo apt-get install -y libexpat1 libfontconfig1 libgcc1 libgconf-2-4');
-        console.log('   sudo apt-get install -y libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0');
-        console.log('   sudo apt-get install -y libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0');
-        console.log('   sudo apt-get install -y libstdc++6 libx11-6 libx11-xcb1 libxcb1');
-        console.log('   sudo apt-get install -y libxcomposite1 libxcursor1 libxdamage1 libxext6');
-        console.log('   sudo apt-get install -y libxfixes3 libxi6 libxrandr2 libxrender1');
-        console.log('   sudo apt-get install -y libxss1 libxtst6 libxinerama1 xdg-utils');
+        console.log(
+          "❌ Sistem tidak memiliki dependencies yang dibutuhkan untuk WhatsApp Web"
+        );
+        console.log(
+          "💡 Untuk mengaktifkan WhatsApp di VPS Linux, install dependencies:"
+        );
+        console.log("   sudo apt-get update");
+        console.log("   sudo apt-get install -y wget gnupg ca-certificates");
+        console.log(
+          "   sudo apt-get install -y fonts-liberation libasound2 libatk-bridge2.0-0"
+        );
+        console.log(
+          "   sudo apt-get install -y libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3"
+        );
+        console.log(
+          "   sudo apt-get install -y libexpat1 libfontconfig1 libgcc1 libgconf-2-4"
+        );
+        console.log(
+          "   sudo apt-get install -y libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0"
+        );
+        console.log(
+          "   sudo apt-get install -y libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0"
+        );
+        console.log(
+          "   sudo apt-get install -y libstdc++6 libx11-6 libx11-xcb1 libxcb1"
+        );
+        console.log(
+          "   sudo apt-get install -y libxcomposite1 libxcursor1 libxdamage1 libxext6"
+        );
+        console.log(
+          "   sudo apt-get install -y libxfixes3 libxi6 libxrandr2 libxrender1"
+        );
+        console.log(
+          "   sudo apt-get install -y libxss1 libxtst6 libxinerama1 xdg-utils"
+        );
         return true; // Disable WhatsApp
       }
-      
+
       // Check if we have display capabilities (X11)
       const hasDisplay = process.env.DISPLAY || process.env.WAYLAND_DISPLAY;
       if (!hasDisplay) {
-        console.log('ℹ️ Tidak ada display server, WhatsApp Web akan berjalan dalam mode headless');
+        console.log(
+          "ℹ️ Tidak ada display server, WhatsApp Web akan berjalan dalam mode headless"
+        );
       }
-      
+
       return false; // System is compatible
     } catch (error) {
-      console.log('⚠️ Error checking system compatibility:', error);
+      console.log("⚠️ Error checking system compatibility:", error);
       return true; // Disable WhatsApp on error
     }
   }
@@ -147,7 +179,7 @@ export class AlarmNotificationService {
       try {
         await this.healthCheck();
       } catch (error) {
-        console.error('❌ WhatsApp health check failed:', error);
+        console.error("❌ WhatsApp health check failed:", error);
       }
     }, 5 * 60 * 1000); // 5 minutes
   }
@@ -162,22 +194,26 @@ export class AlarmNotificationService {
       }
 
       if (!this.isWhatsAppReady && !this.isWhatsAppInitializing) {
-        console.log('🏥 WhatsApp health check: Not ready, attempting restart...');
+        console.log(
+          "🏥 WhatsApp health check: Not ready, attempting restart..."
+        );
         await this.startWhatsAppInitialization();
       } else if (this.isWhatsAppReady) {
         // Try to get client info to verify connection
         try {
           const info = this.whatsAppClient.info;
           if (info) {
-            console.log('🏥 WhatsApp health check: OK');
+            console.log("🏥 WhatsApp health check: OK");
           }
         } catch (infoError) {
-          console.log('🏥 WhatsApp health check: Connection seems stale, restarting...');
+          console.log(
+            "🏥 WhatsApp health check: Connection seems stale, restarting..."
+          );
           await this.resetWhatsApp();
         }
       }
     } catch (error) {
-      console.error('❌ Health check error:', error);
+      console.error("❌ Health check error:", error);
     }
   }
 
@@ -186,69 +222,69 @@ export class AlarmNotificationService {
    */
   private initializeWhatsAppClient(): void {
     try {
-      console.log('📱 Creating WhatsApp client...');
-      
+      console.log("📱 Creating WhatsApp client...");
+
       // Enhanced Puppeteer configuration for Linux VPS
       const puppeteerConfig = {
+        // Konfigurasi khusus untuk VPS
         headless: true,
         args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process', // Important for containers
-          '--disable-gpu',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-web-security',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--disable-extensions',
-          '--disable-default-apps',
-          '--disable-background-networking',
-          '--disable-sync',
-          '--metrics-recording-only',
-          '--no-default-browser-check',
-          '--mute-audio',
-          '--disable-notifications',
-          '--disable-logging',
-          '--silent'
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process", // Penting untuk VPS dengan RAM terbatas
+          "--disable-gpu",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         ],
-        timeout: 120000, // Increase timeout for slower VPS
+        // Timeout yang lebih besar
+        timeout: 60000,
+        // Disable images untuk menghemat bandwidth
         defaultViewport: null,
-        ignoreDefaultArgs: ['--disable-extensions'],
-        executablePath: this.findChromiumExecutable()
+        ignoreDefaultArgs: ["--disable-extensions"],
       };
 
       // Create client with LocalAuth for persistent sessions
       this.whatsAppClient = new Client({
         authStrategy: new LocalAuth({
-          clientId: 'misred-iot-server',
-          dataPath: './wwebjs_auth'
+          clientId: "misred-iot-server",
+          dataPath: "./wwebjs_auth",
         }),
         puppeteer: puppeteerConfig,
         webVersionCache: {
-          type: 'remote',
-          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-        }
+          type: "remote",
+          remotePath:
+            "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html",
+        },
       });
 
-      console.log('📱 WhatsApp client created with enhanced Linux configuration');
+      console.log(
+        "📱 WhatsApp client created with enhanced Linux configuration"
+      );
 
       this.setupWhatsAppEventHandlers();
-      
+
       // Start initialization asynchronously dengan error handling
-      this.startWhatsAppInitialization().catch(error => {
-        console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
-        console.log('⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality.');
+      this.startWhatsAppInitialization().catch((error) => {
+        console.error(
+          "❌ Failed to initialize WhatsApp Web in constructor:",
+          error
+        );
+        console.log(
+          "⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality."
+        );
         this.whatsAppDisabled = true;
         // Don't throw error to prevent service crash
       });
     } catch (error) {
-      console.error('❌ Error creating WhatsApp client:', error);
+      console.error("❌ Error creating WhatsApp client:", error);
       this.whatsAppDisabled = true;
     }
   }
@@ -257,19 +293,19 @@ export class AlarmNotificationService {
    * Find available Chromium/Chrome executable on the system
    */
   private findChromiumExecutable(): string | undefined {
-    const fs = require('fs');
-    
+    const fs = require("fs");
+
     // Common Chrome/Chromium paths on Linux
     const possiblePaths = [
-      '/usr/bin/google-chrome-stable',
-      '/usr/bin/google-chrome',
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/snap/bin/chromium',
-      '/usr/bin/chrome',
-      '/opt/google/chrome/chrome',
+      "/usr/bin/google-chrome-stable",
+      "/usr/bin/google-chrome",
+      "/usr/bin/chromium-browser",
+      "/usr/bin/chromium",
+      "/snap/bin/chromium",
+      "/usr/bin/chrome",
+      "/opt/google/chrome/chrome",
       process.env.CHROME_BIN,
-      process.env.CHROMIUM_BIN
+      process.env.CHROMIUM_BIN,
     ].filter(Boolean);
 
     for (const path of possiblePaths) {
@@ -283,7 +319,9 @@ export class AlarmNotificationService {
       }
     }
 
-    console.log('⚠️ No system Chrome/Chromium found, using Puppeteer bundled version');
+    console.log(
+      "⚠️ No system Chrome/Chromium found, using Puppeteer bundled version"
+    );
     return undefined; // Let Puppeteer use its bundled version
   }
 
@@ -292,96 +330,103 @@ export class AlarmNotificationService {
    */
   private setupWhatsAppEventHandlers(): void {
     // Loading event - shows session loading status
-    this.whatsAppClient.on('loading_screen', (percent: number, message) => {
+    this.whatsAppClient.on("loading_screen", (percent: number, message) => {
       console.log(`📱 WhatsApp Web loading: ${percent}% - ${message}`);
-      
+
       // Provide more detailed feedback during loading
       if (percent === 0) {
-        console.log('🚀 WhatsApp Web starting...');
+        console.log("🚀 WhatsApp Web starting...");
       } else if (percent >= 50 && percent < 100) {
-        console.log('⏳ WhatsApp Web loading session data...');
+        console.log("⏳ WhatsApp Web loading session data...");
       } else if (percent === 100) {
-        console.log('✅ WhatsApp Web loading completed, waiting for ready...');
+        console.log("✅ WhatsApp Web loading completed, waiting for ready...");
       }
     });
 
     // Authentication event - session validation
-    this.whatsAppClient.on('auth_failure', (msg) => {
-      console.error('❌ WhatsApp Web authentication failed:', msg);
+    this.whatsAppClient.on("auth_failure", (msg) => {
+      console.error("❌ WhatsApp Web authentication failed:", msg);
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
-      
+
       // Clean up corrupted session on auth failure
-      console.log('🗑️ Cleaning up corrupted session after auth failure...');
+      console.log("🗑️ Cleaning up corrupted session after auth failure...");
       this.cleanupSessionFiles().then(() => {
-        console.log('✅ Session cleaned up, restart will generate new QR');
+        console.log("✅ Session cleaned up, restart will generate new QR");
       });
     });
 
     // Client ready event
-    this.whatsAppClient.on('ready', () => {
-      console.log('✅ WhatsApp Web client sudah aktif!');
+    this.whatsAppClient.on("ready", () => {
+      console.log("✅ WhatsApp Web client sudah aktif!");
       this.isWhatsAppReady = true;
       this.isWhatsAppInitializing = false;
     });
 
     // QR Code event - display QR for initial setup
-    this.whatsAppClient.on('qr', (qr) => {
-      console.log('📱 WhatsApp Web QR Code Generated:');
-      console.log('Silakan scan QR code ini dengan aplikasi WhatsApp anda');
-      console.log('═'.repeat(60));
+    this.whatsAppClient.on("qr", (qr) => {
+      console.log("📱 WhatsApp Web QR Code Generated:");
+      console.log("Silakan scan QR code ini dengan aplikasi WhatsApp anda");
+      console.log("═".repeat(60));
       qrcode.generate(qr, { small: true });
-      console.log('═'.repeat(60));
-      console.log('QR Code akan expired dalam 30 detik, scan sekarang!');
+      console.log("═".repeat(60));
+      console.log("QR Code akan expired dalam 30 detik, scan sekarang!");
     });
 
     // Authentication success
-    this.whatsAppClient.on('authenticated', (session) => {
-      console.log('✅ WhatsApp Web berhasil terautentikasi!');
-      console.log('💾 Session tersimpan dengan clientId: misred-iot-server');
-      console.log('🔗 Session akan persist setelah restart server');
+    this.whatsAppClient.on("authenticated", (session) => {
+      console.log("✅ WhatsApp Web berhasil terautentikasi!");
+      console.log("💾 Session tersimpan dengan clientId: misred-iot-server");
+      console.log("🔗 Session akan persist setelah restart server");
     });
 
     // Disconnected event
-    this.whatsAppClient.on('disconnected', (reason) => {
-      console.log('⚠️ WhatsApp Web disconnected:', reason);
+    this.whatsAppClient.on("disconnected", (reason) => {
+      console.log("⚠️ WhatsApp Web disconnected:", reason);
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
-      
+
       // Check if disconnect reason requires QR code
-      if (reason === 'LOGOUT' || reason === 'CONFLICT' || reason === 'UNLAUNCHED') {
-        console.log('🔄 Session invalid, akan memerlukan QR code baru...');
+      if (
+        reason === "LOGOUT" ||
+        reason === "CONFLICT" ||
+        reason === "UNLAUNCHED"
+      ) {
+        console.log("🔄 Session invalid, akan memerlukan QR code baru...");
         // Clean up corrupted session
         this.cleanupSessionFiles().then(() => {
-          console.log('🗑️ Corrupted session cleaned up');
+          console.log("🗑️ Corrupted session cleaned up");
         });
       }
-      
+
       // Auto-reconnect after disconnection (with delay)
       setTimeout(() => {
-        console.log('🔄 Attempting to reconnect WhatsApp Web...');
-        this.startWhatsAppInitialization().catch(error => {
-          console.error('❌ Auto-reconnect failed:', error);
+        console.log("🔄 Attempting to reconnect WhatsApp Web...");
+        this.startWhatsAppInitialization().catch((error) => {
+          console.error("❌ Auto-reconnect failed:", error);
         });
       }, 10000); // 10 second delay
     });
 
     // Error event
-    this.whatsAppClient.on('error', (error) => {
-      console.error('❌ WhatsApp Web error:', error);
+    this.whatsAppClient.on("error", (error) => {
+      console.error("❌ WhatsApp Web error:", error);
       this.isWhatsAppReady = false;
-      
+
       // Handle specific errors
-      if (error.message.includes('Session closed') || error.message.includes('Protocol error')) {
-        console.log('📱 Session/Protocol error, cleaning up...');
+      if (
+        error.message.includes("Session closed") ||
+        error.message.includes("Protocol error")
+      ) {
+        console.log("📱 Session/Protocol error, cleaning up...");
         this.cleanupSessionFiles().then(() => {
-          console.log('🗑️ Session cleaned up due to error');
+          console.log("🗑️ Session cleaned up due to error");
         });
       }
     });
 
     // Message sent acknowledgment
-    this.whatsAppClient.on('message_ack', (message, ack) => {
+    this.whatsAppClient.on("message_ack", (message, ack) => {
       // Only log important ack states to reduce noise
       if (ack === 1) {
         console.log(`📧 Message ${message.id.id} delivered to server`);
@@ -393,13 +438,13 @@ export class AlarmNotificationService {
     });
 
     // Remote session saved event
-    this.whatsAppClient.on('remote_session_saved', () => {
-      console.log('💾 WhatsApp session remote saved successfully');
-      console.log('🔗 Session persistence verified');
+    this.whatsAppClient.on("remote_session_saved", () => {
+      console.log("💾 WhatsApp session remote saved successfully");
+      console.log("🔗 Session persistence verified");
     });
 
     // Add change state event for better debugging
-    this.whatsAppClient.on('change_state', (state) => {
+    this.whatsAppClient.on("change_state", (state) => {
       console.log(`🔄 WhatsApp state changed to: ${state}`);
     });
   }
@@ -409,75 +454,88 @@ export class AlarmNotificationService {
    */
   private async startWhatsAppInitialization(): Promise<void> {
     if (this.isWhatsAppInitializing) {
-      console.log('⚠️ WhatsApp client already initializing, skipping...');
+      console.log("⚠️ WhatsApp client already initializing, skipping...");
       return;
     }
 
     if (this.isWhatsAppReady) {
-      console.log('✅ WhatsApp client already ready');
+      console.log("✅ WhatsApp client already ready");
       return;
     }
 
-    console.log('🚀 Starting WhatsApp Web initialization...');
+    console.log("🚀 Starting WhatsApp Web initialization...");
     this.isWhatsAppInitializing = true;
 
     try {
       // Check if session exists before initializing
       const sessionExists = await this.checkSessionExists();
-      console.log(`� Session exists: ${sessionExists ? 'YES' : 'NO'}`);
-      
+      console.log(`� Session exists: ${sessionExists ? "YES" : "NO"}`);
+
       if (sessionExists) {
-        console.log('📱 Loading existing session...');
+        console.log("📱 Loading existing session...");
       } else {
-        console.log('📱 No session found, will need QR scan...');
+        console.log("📱 No session found, will need QR scan...");
       }
 
       // Initialize with extended timeout for WhatsApp Web
       const initPromise = this.whatsAppClient.initialize();
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Initialization timeout after 60 seconds')), 60000)
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Initialization timeout after 60 seconds")),
+          60000
+        )
       );
-      
+
       await Promise.race([initPromise, timeoutPromise]);
-      console.log('✅ WhatsApp Web initialization completed successfully');
-      
+      console.log("✅ WhatsApp Web initialization completed successfully");
     } catch (error) {
-      console.error('❌ WhatsApp initialization failed:', error);
+      console.error("❌ WhatsApp initialization failed:", error);
       this.isWhatsAppInitializing = false;
-      
+
       // If timeout, likely session is corrupted
-      if (error instanceof Error && error.message.includes('timeout')) {
-        console.log('🗑️ Initialization timeout, cleaning up corrupted session...');
+      if (error instanceof Error && error.message.includes("timeout")) {
+        console.log(
+          "🗑️ Initialization timeout, cleaning up corrupted session..."
+        );
         await this.cleanupSessionFiles();
-        
+
         // Try one more time after cleanup with longer delay
-        console.log('🔄 Retrying after session cleanup...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        
+        console.log("🔄 Retrying after session cleanup...");
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+
         try {
           this.isWhatsAppInitializing = true;
-          console.log('🔄 Second attempt: initializing fresh WhatsApp client...');
-          
+          console.log(
+            "🔄 Second attempt: initializing fresh WhatsApp client..."
+          );
+
           // Reinitialize client completely
           this.initializeWhatsAppClient();
-          
+
           // Wait for initialization with longer timeout
           const isReady = await this.waitForWhatsAppReady(120000); // 2 minutes
-          
+
           if (isReady) {
-            console.log('✅ WhatsApp Web initialization completed after cleanup');
+            console.log(
+              "✅ WhatsApp Web initialization completed after cleanup"
+            );
           } else {
-            throw new Error('WhatsApp Web still not ready after retry');
+            throw new Error("WhatsApp Web still not ready after retry");
           }
         } catch (retryError) {
-          console.error('❌ WhatsApp initialization failed even after cleanup:', retryError);
+          console.error(
+            "❌ WhatsApp initialization failed even after cleanup:",
+            retryError
+          );
           this.isWhatsAppInitializing = false;
           this.whatsAppDisabled = true;
-          console.log('⚠️ WhatsApp notifications permanently disabled for this session');
+          console.log(
+            "⚠️ WhatsApp notifications permanently disabled for this session"
+          );
         }
       } else {
         // Other errors
-        console.log('❌ Non-timeout error, disabling WhatsApp service');
+        console.log("❌ Non-timeout error, disabling WhatsApp service");
         this.whatsAppDisabled = true;
       }
     }
@@ -486,13 +544,15 @@ export class AlarmNotificationService {
   /**
    * Wait for WhatsApp client to be ready
    */
-  private async waitForWhatsAppReady(timeoutMs: number = 60000): Promise<boolean> {
+  private async waitForWhatsAppReady(
+    timeoutMs: number = 60000
+  ): Promise<boolean> {
     const startTime = Date.now();
-    
-    while (!this.isWhatsAppReady && (Date.now() - startTime) < timeoutMs) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+    while (!this.isWhatsAppReady && Date.now() - startTime < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    
+
     return this.isWhatsAppReady;
   }
 
@@ -501,15 +561,15 @@ export class AlarmNotificationService {
    */
   private formatPhoneNumber(phone: string): string {
     // Remove all non-numeric characters
-    const cleaned = phone.replace(/\D/g, '');
-    
+    const cleaned = phone.replace(/\D/g, "");
+
     // Handle Indonesia format
-    if (cleaned.startsWith('0')) {
-      return '62' + cleaned.substring(1);
-    } else if (cleaned.startsWith('62')) {
+    if (cleaned.startsWith("0")) {
+      return "62" + cleaned.substring(1);
+    } else if (cleaned.startsWith("62")) {
       return cleaned;
     } else {
-      return '62' + cleaned;
+      return "62" + cleaned;
     }
   }
 
@@ -523,10 +583,10 @@ export class AlarmNotificationService {
   ): Promise<NotificationResult> {
     try {
       if (this.whatsAppDisabled) {
-        console.log('📱 WhatsApp notifications disabled, skipping send');
+        console.log("📱 WhatsApp notifications disabled, skipping send");
         return {
           success: false,
-          error_message: "WhatsApp notifications disabled"
+          error_message: "WhatsApp notifications disabled",
         };
       }
 
@@ -537,11 +597,12 @@ export class AlarmNotificationService {
       // Global rate limiting untuk mencegah spam
       const now = Date.now();
       const timeSinceLastNotification = now - this.lastNotificationTime;
-      
+
       if (timeSinceLastNotification < this.minNotificationInterval) {
-        const waitTime = this.minNotificationInterval - timeSinceLastNotification;
+        const waitTime =
+          this.minNotificationInterval - timeSinceLastNotification;
         // console.log(`⏳ Global rate limit: waiting ${waitTime}ms before sending`);
-        await new Promise(resolve => setTimeout(resolve, waitTime));
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
       }
 
       // console.log(`📱 Sending WhatsApp to: ${phone} (Attempt ${retryCount + 1})`);
@@ -549,19 +610,26 @@ export class AlarmNotificationService {
 
       // Check if WhatsApp Web is ready
       if (!this.isWhatsAppReady) {
-        console.log('⚠️ WhatsApp Web not ready, attempting to initialize...');
-        
+        console.log("⚠️ WhatsApp Web not ready, attempting to initialize...");
+
         try {
           await this.startWhatsAppInitialization();
-          
+
           // Wait for ready
           const isReady = await this.waitForWhatsAppReady(10000);
           if (!isReady) {
-            throw new Error('WhatsApp Web belum aktif setelah initialization. Service mungkin tidak tersedia.');
+            throw new Error(
+              "WhatsApp Web belum aktif setelah initialization. Service mungkin tidak tersedia."
+            );
           }
         } catch (initError) {
-          console.error('❌ Failed to initialize WhatsApp during send:', initError);
-          throw new Error('WhatsApp Web service tidak tersedia. Silakan periksa koneksi internet dan coba lagi nanti.');
+          console.error(
+            "❌ Failed to initialize WhatsApp during send:",
+            initError
+          );
+          throw new Error(
+            "WhatsApp Web service tidak tersedia. Silakan periksa koneksi internet dan coba lagi nanti."
+          );
         }
       }
 
@@ -577,26 +645,28 @@ export class AlarmNotificationService {
       }
 
       // Send message via WhatsApp Web
-      const sentMessage = await this.whatsAppClient.sendMessage(chatId, message);
+      const sentMessage = await this.whatsAppClient.sendMessage(
+        chatId,
+        message
+      );
 
       // Update last notification time on success
       this.lastNotificationTime = Date.now();
 
       // console.log(`✅ WhatsApp sent successfully! Message ID: ${sentMessage.id.id}`);
-      
+
       return {
         success: true,
         whatsapp_message_id: sentMessage.id.id,
       };
-
     } catch (error) {
       console.error("❌ WhatsApp notification failed:", error);
-      
+
       // Retry logic for WhatsApp Web errors
       if (retryCount < 2) {
         const delay = Math.pow(2, retryCount) * 2000; // 2s, 4s
         // console.log(`⏳ Retrying WhatsApp send in ${delay}ms (attempt ${retryCount + 1}/2)`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         return this.sendWhatsAppNotification(phone, message, retryCount + 1);
       }
 
@@ -633,20 +703,19 @@ export class AlarmNotificationService {
           device_description: alarm.device_description,
           datastream_description: alarm.datastream_description,
           condition_text: `${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}`,
-          user_email: alarm.user_email
-        }
+          user_email: alarm.user_email,
+        },
       };
 
       // Broadcast ke semua user yang sedang online via WebSocket
       broadcastToUsers(notificationPayload);
-      
+
       console.log(`📱 Browser notification sent for alarm ${alarm.id}`);
-      
+
       return {
         success: true,
         whatsapp_message_id: `browser_${alarm.id}_${Date.now()}`, // Using this field for tracking
       };
-
     } catch (error) {
       console.error("❌ Browser notification failed:", error);
       return {
@@ -664,7 +733,8 @@ export class AlarmNotificationService {
       // console.log(`🔍 Checking alarms for device ${deviceId} with data:`, receivedData);
 
       // Query untuk mendapatkan alarm yang aktif untuk device ini
-      const [alarmRows] = await this.db.execute(`
+      const [alarmRows] = await this.db.execute(
+        `
         SELECT 
           a.id, a.description, a.user_id, a.device_id, a.datastream_id,
           a.is_active, a.cooldown_minutes, a.last_triggered,
@@ -678,7 +748,9 @@ export class AlarmNotificationService {
         JOIN users u ON a.user_id = u.id
         JOIN alarm_conditions ac ON a.id = ac.alarm_id
         WHERE a.device_id = ? AND a.is_active = 1
-      `, [deviceId]);
+      `,
+        [deviceId]
+      );
 
       const alarms = alarmRows as any[];
       // console.log(`📋 Found ${alarms.length} active alarms for device ${deviceId}`);
@@ -699,24 +771,31 @@ export class AlarmNotificationService {
             const lastTriggeredTime = new Date(alarm.last_triggered);
             const cooldownMinutes = alarm.cooldown_minutes || 1; // Default 1 menit
             const cooldownMs = cooldownMinutes * 60 * 1000;
-            const timeSinceLastTrigger = Date.now() - lastTriggeredTime.getTime();
-            
+            const timeSinceLastTrigger =
+              Date.now() - lastTriggeredTime.getTime();
+
             if (timeSinceLastTrigger < cooldownMs) {
-              const remainingCooldownSeconds = Math.ceil((cooldownMs - timeSinceLastTrigger) / 1000);
-              const remainingMinutes = Math.floor(remainingCooldownSeconds / 60);
+              const remainingCooldownSeconds = Math.ceil(
+                (cooldownMs - timeSinceLastTrigger) / 1000
+              );
+              const remainingMinutes = Math.floor(
+                remainingCooldownSeconds / 60
+              );
               const remainingSeconds = remainingCooldownSeconds % 60;
-              
-              console.log(`⏳ Alarm ${alarm.id} masih cooldown. Waktu cooldown yang tersisa: ${remainingCooldownSeconds}s (${cooldownMinutes}m total)`);
-              
+
+              console.log(
+                `⏳ Alarm ${alarm.id} masih cooldown. Waktu cooldown yang tersisa: ${remainingCooldownSeconds}s (${cooldownMinutes}m total)`
+              );
+
               // Kirim pesan cooldown untuk pengujian
               // if (alarm.whatsapp_number) {
               //   const cooldownMessage = `⏳ Ini pesan untuk pengujian COOLDOWN. Sensor ${alarm.datastream_description}(${alarm.datastream_id}) pada ${alarm.device_description} masih dalam waktu tunggu ${cooldownMinutes} menit.\n\n` +
               //                          `Sisa waktu cooldown: ${remainingMinutes} menit ${remainingSeconds} detik\n` +
               //                          `Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
-                
+
               //   await this.sendWhatsAppNotification(alarm.whatsapp_number, cooldownMessage);
               // }
-              
+
               continue; // Skip this alarm, still in cooldown
             }
           }
@@ -739,22 +818,22 @@ export class AlarmNotificationService {
           // Evaluasi kondisi alarm
           let conditionMet = false;
           switch (alarm.condition_operator) {
-            case '>':
+            case ">":
               conditionMet = numericValue > thresholdValue;
               break;
-            case '<':
+            case "<":
               conditionMet = numericValue < thresholdValue;
               break;
-            case '>=':
+            case ">=":
               conditionMet = numericValue >= thresholdValue;
               break;
-            case '<=':
+            case "<=":
               conditionMet = numericValue <= thresholdValue;
               break;
-            case '==':
+            case "==":
               conditionMet = numericValue === thresholdValue;
               break;
-            case '!=':
+            case "!=":
               conditionMet = numericValue !== thresholdValue;
               break;
             default:
@@ -766,7 +845,7 @@ export class AlarmNotificationService {
 
           if (conditionMet) {
             // console.log(`🚨 ALARM TRIGGERED! ${alarm.description}`);
-            
+
             // Update last_triggered timestamp untuk cooldown
             const currentTime = new Date();
             await this.db.execute(
@@ -774,7 +853,7 @@ export class AlarmNotificationService {
               [currentTime, alarm.id]
             );
             // console.log(`⏰ Updated last_triggered for alarm ${alarm.id} to ${currentTime.toISOString()}`);
-            
+
             // Log alarm ke tabel alarm_notifications
             const conditionsText = `${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}`;
             const alarmLog: AlarmLog = {
@@ -785,14 +864,22 @@ export class AlarmNotificationService {
               sensor_value: numericValue,
               conditions_text: conditionsText,
               notification_type: "all",
-              triggered_at: new Date()
+              triggered_at: new Date(),
             };
 
             const [logResult] = await this.db.execute(
               `INSERT INTO alarm_notifications (alarm_id, user_id, device_id, datastream_id, sensor_value, conditions_text, notification_type, triggered_at) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-              [alarmLog.alarm_id, alarmLog.user_id, alarmLog.device_id, alarmLog.datastream_id, 
-               alarmLog.sensor_value, alarmLog.conditions_text, alarmLog.notification_type, alarmLog.triggered_at]
+              [
+                alarmLog.alarm_id,
+                alarmLog.user_id,
+                alarmLog.device_id,
+                alarmLog.datastream_id,
+                alarmLog.sensor_value,
+                alarmLog.conditions_text,
+                alarmLog.notification_type,
+                alarmLog.triggered_at,
+              ]
             );
 
             const logId = (logResult as any).insertId;
@@ -803,15 +890,18 @@ export class AlarmNotificationService {
               // console.log(`📱 Sending WhatsApp notification to: ${alarm.whatsapp_number}`);
 
               // Format pesan alarm dengan data yang relevan
-              const message = `🚨 PERINGATAN SENSOR ALARM 🚨\n\n` +
-                             `📍 Alarm: ${alarm.description}\n` +
-                             `⚙ Perangkat: ${alarm.device_description}\n` +
-                             `📊 Sensor: ${alarm.datastream_description}(${alarm.field_name})\n` +
-                             `📈 Nilai Saat Ini: ${numericValue}\n` +
-                             `⚠️ Kondisi: ${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}\n` +
-                             `👤 Akun: ${alarm.user_email}\n` +
-                             `🕐 Waktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB\n\n` +
-                             `Mohon segera melakukan pengecekan!`;
+              const message =
+                `🚨 PERINGATAN SENSOR ALARM 🚨\n\n` +
+                `📍 Alarm: ${alarm.description}\n` +
+                `⚙ Perangkat: ${alarm.device_description}\n` +
+                `📊 Sensor: ${alarm.datastream_description}(${alarm.field_name})\n` +
+                `📈 Nilai Saat Ini: ${numericValue}\n` +
+                `⚠️ Kondisi: ${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}\n` +
+                `👤 Akun: ${alarm.user_email}\n` +
+                `🕐 Waktu: ${new Date().toLocaleString("id-ID", {
+                  timeZone: "Asia/Jakarta",
+                })} WIB\n\n` +
+                `Mohon segera melakukan pengecekan!`;
 
               // console.log(`📝 Formatted message: ${message}`);
 
@@ -840,10 +930,14 @@ export class AlarmNotificationService {
               if (notificationResult.success) {
                 // console.log(`✅ WhatsApp notification sent successfully for alarm ${alarm.id}`);
               } else {
-                console.log(`❌ WhatsApp notification failed for alarm ${alarm.id}: ${notificationResult.error_message}`);
+                console.log(
+                  `❌ WhatsApp notification failed for alarm ${alarm.id}: ${notificationResult.error_message}`
+                );
               }
             } else {
-              console.log(`ℹ️ Alarm ${alarm.id} has no WhatsApp number configured`);
+              console.log(
+                `ℹ️ Alarm ${alarm.id} has no WhatsApp number configured`
+              );
             }
 
             // Kirim notifikasi browser via WebSocket untuk semua user
@@ -853,14 +947,21 @@ export class AlarmNotificationService {
                 numericValue,
                 currentTime
               );
-              
+
               if (browserResult.success) {
-                console.log(`✅ Browser notification sent successfully for alarm ${alarm.id}`);
+                console.log(
+                  `✅ Browser notification sent successfully for alarm ${alarm.id}`
+                );
               } else {
-                console.log(`❌ Browser notification failed for alarm ${alarm.id}: ${browserResult.error_message}`);
+                console.log(
+                  `❌ Browser notification failed for alarm ${alarm.id}: ${browserResult.error_message}`
+                );
               }
             } catch (browserError) {
-              console.error(`❌ Error sending browser notification for alarm ${alarm.id}:`, browserError);
+              console.error(
+                `❌ Error sending browser notification for alarm ${alarm.id}:`,
+                browserError
+              );
             }
           } else {
             console.log(`✅ Condition not met for alarm ${alarm.id}`);
@@ -881,18 +982,18 @@ export class AlarmNotificationService {
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
       console.log("🧪 Testing WhatsApp Web connection...");
-      
+
       if (this.whatsAppDisabled) {
         return {
           success: false,
           message: "WhatsApp notifications are disabled by configuration.",
         };
       }
-      
+
       if (!this.isWhatsAppReady) {
         return {
           success: false,
-          message: this.isWhatsAppInitializing 
+          message: this.isWhatsAppInitializing
             ? "WhatsApp Web is initializing. Please wait or scan QR code if needed."
             : "WhatsApp Web not ready. Please scan QR code to authenticate.",
         };
@@ -900,16 +1001,20 @@ export class AlarmNotificationService {
 
       // Get client info
       const info = this.whatsAppClient.info;
-      
+
       return {
         success: true,
-        message: `WhatsApp Web ready. Connected as: ${info.pushname || 'Unknown'} (${info.wid.user})`,
+        message: `WhatsApp Web ready. Connected as: ${
+          info.pushname || "Unknown"
+        } (${info.wid.user})`,
       };
     } catch (error) {
       console.error("❌ WhatsApp Web connection test failed:", error);
       return {
         success: false,
-        message: `Connection test failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message: `Connection test failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       };
     }
   }
@@ -946,8 +1051,8 @@ export class AlarmNotificationService {
         recent_logs: recentLogs,
         whatsapp_status: {
           ready: this.isWhatsAppReady,
-          initializing: this.isWhatsAppInitializing
-        }
+          initializing: this.isWhatsAppInitializing,
+        },
       };
     } catch (error) {
       console.error("❌ Error getting alarm stats:", error);
@@ -961,7 +1066,7 @@ export class AlarmNotificationService {
   getWhatsAppStatus(): { ready: boolean; initializing: boolean } {
     return {
       ready: this.isWhatsAppReady,
-      initializing: this.isWhatsAppInitializing
+      initializing: this.isWhatsAppInitializing,
     };
   }
 
@@ -970,33 +1075,35 @@ export class AlarmNotificationService {
    */
   async resetWhatsApp(): Promise<void> {
     try {
-      console.log('🔄 Resetting WhatsApp Web connection...');
-      
+      console.log("🔄 Resetting WhatsApp Web connection...");
+
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
-      
+
       if (this.whatsAppClient) {
         try {
-          console.log('️ Destroying WhatsApp client...');
+          console.log("️ Destroying WhatsApp client...");
           await this.whatsAppClient.destroy();
         } catch (destroyError) {
-          console.log('⚠️ Warning during client destruction:', destroyError);
+          console.log("⚠️ Warning during client destruction:", destroyError);
         }
       }
-      
+
       // Clean up session files
       await this.cleanupSessionFiles();
-      
+
       // Wait a bit before reinitializing
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       // Reinitialize
-      console.log('🔄 Reinitializing WhatsApp client...');
+      console.log("🔄 Reinitializing WhatsApp client...");
       this.initializeWhatsAppClient();
-      
-      console.log('✅ WhatsApp Web reset complete, new QR code will be generated');
+
+      console.log(
+        "✅ WhatsApp Web reset complete, new QR code will be generated"
+      );
     } catch (error) {
-      console.error('❌ Error during WhatsApp reset:', error);
+      console.error("❌ Error during WhatsApp reset:", error);
       this.whatsAppDisabled = true;
     }
   }
@@ -1006,33 +1113,32 @@ export class AlarmNotificationService {
    */
   private async cleanupSessionFiles(): Promise<void> {
     try {
-      const fs = require('fs').promises;
-      const path = require('path');
-      
-      const sessionPath = path.join(process.cwd(), 'wwebjs_auth');
-      
+      const fs = require("fs").promises;
+      const path = require("path");
+
+      const sessionPath = path.join(process.cwd(), "wwebjs_auth");
+
       try {
-        console.log('🗑️ Cleaning up session files at:', sessionPath);
-        
+        console.log("🗑️ Cleaning up session files at:", sessionPath);
+
         // Check if directory exists
         await fs.access(sessionPath);
-        
+
         // List what we're about to delete
         const files = await fs.readdir(sessionPath);
         console.log(`🗑️ Found ${files.length} items to clean up`);
-        
+
         // Remove the entire session directory recursively
         await fs.rm(sessionPath, { recursive: true, force: true });
-        console.log('✅ Session files cleaned up successfully');
-        
+        console.log("✅ Session files cleaned up successfully");
+
         // Wait a bit to ensure filesystem operations complete
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (accessError) {
-        console.log('📁 No session files to clean up (directory not found)');
+        console.log("📁 No session files to clean up (directory not found)");
       }
     } catch (error) {
-      console.log('⚠️ Warning: Could not clean up session files:', error);
+      console.log("⚠️ Warning: Could not clean up session files:", error);
     }
   }
 
@@ -1041,10 +1147,10 @@ export class AlarmNotificationService {
    */
   async forceNewQRCode(): Promise<void> {
     try {
-      console.log('🔄 Forcing new QR code generation...');
+      console.log("🔄 Forcing new QR code generation...");
       await this.resetWhatsApp();
     } catch (error) {
-      console.error('❌ Error forcing new QR code:', error);
+      console.error("❌ Error forcing new QR code:", error);
     }
   }
 
@@ -1053,55 +1159,71 @@ export class AlarmNotificationService {
    */
   async checkSessionExists(): Promise<boolean> {
     try {
-      const fs = require('fs').promises;
-      const path = require('path');
-      
-      const sessionPath = path.join(process.cwd(), 'wwebjs_auth', 'session-misred-iot-server');
-      
+      const fs = require("fs").promises;
+      const path = require("path");
+
+      const sessionPath = path.join(
+        process.cwd(),
+        "wwebjs_auth",
+        "session-misred-iot-server"
+      );
+
       try {
         await fs.access(sessionPath);
-        
+
         // Check for various session file patterns
         const files = await fs.readdir(sessionPath);
         console.log(`📁 Session directory contains: ${files.length} files`);
-        
+
         // Look for critical session files
         //@ts-ignore
-        const hasWABrowserId = files.some(file => file.includes('WABrowserId'));
+        const hasWABrowserId = files.some((file) =>
+          file.includes("WABrowserId")
+        );
         //@ts-ignore
-        const hasWASecretBundle = files.some(file => file.includes('WASecretBundle'));
+        const hasWASecretBundle = files.some((file) =>
+          file.includes("WASecretBundle")
+        );
         //@ts-ignore
-        const hasWAToken = files.some(file => file.includes('WAToken'));
-        const hasDefault = files.includes('Default');
-        
-        console.log(`� Session validation - WABrowserId: ${hasWABrowserId}, WASecretBundle: ${hasWASecretBundle}, WAToken: ${hasWAToken}, Default: ${hasDefault}`);
-        
+        const hasWAToken = files.some((file) => file.includes("WAToken"));
+        const hasDefault = files.includes("Default");
+
+        console.log(
+          `� Session validation - WABrowserId: ${hasWABrowserId}, WASecretBundle: ${hasWASecretBundle}, WAToken: ${hasWAToken}, Default: ${hasDefault}`
+        );
+
         // Session is valid if we have at least some critical files or Default directory
         const isValid = hasWABrowserId || hasWASecretBundle || hasDefault;
-        
+
         if (isValid && hasDefault) {
           // Also check Default directory for Chromium session files
-          const defaultPath = path.join(sessionPath, 'Default');
+          const defaultPath = path.join(sessionPath, "Default");
           try {
             const defaultFiles = await fs.readdir(defaultPath);
             //@ts-ignore
-            const hasSessionStorage = defaultFiles.some(file => 
-              file.includes('Session') || file.includes('Local Storage') || file.includes('IndexedDB')
+            const hasSessionStorage = defaultFiles.some(
+              //@ts-ignore
+              (file) =>
+                file.includes("Session") ||
+                file.includes("Local Storage") ||
+                file.includes("IndexedDB")
             );
-            console.log(`📁 Default directory has ${defaultFiles.length} files, session storage: ${hasSessionStorage}`);
+            console.log(
+              `📁 Default directory has ${defaultFiles.length} files, session storage: ${hasSessionStorage}`
+            );
             return hasSessionStorage;
           } catch {
             return hasWABrowserId || hasWASecretBundle;
           }
         }
-        
+
         return isValid;
       } catch {
-        console.log('📁 Session directory not found');
+        console.log("📁 Session directory not found");
         return false;
       }
     } catch (error) {
-      console.error('❌ Error checking session:', error);
+      console.error("❌ Error checking session:", error);
       return false;
     }
   }
@@ -1111,7 +1233,8 @@ export class AlarmNotificationService {
    */
   async getRecentNotifications(userId: number): Promise<any[]> {
     try {
-      const [rows] = await this.db.execute(`
+      const [rows] = await this.db.execute(
+        `
         SELECT 
           an.id,
           an.alarm_id,
@@ -1134,7 +1257,9 @@ export class AlarmNotificationService {
           AND COALESCE(an.is_saved, 0) = 1
         ORDER BY an.triggered_at DESC
         LIMIT 50
-      `, [userId]);
+      `,
+        [userId]
+      );
 
       return rows as any[];
     } catch (error) {
@@ -1154,20 +1279,23 @@ export class AlarmNotificationService {
   ): Promise<{ notifications: any[]; total: number }> {
     try {
       const offset = (page - 1) * limit;
-      
+
       // Build time range condition
       let timeCondition = "";
       let timeParams: any[] = [];
-      
-      switch(timeRange) {
+
+      switch (timeRange) {
         case "1m":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
           break;
         case "1h":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
           break;
         case "12h":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
           break;
         case "1d":
         case "today":
@@ -1175,20 +1303,23 @@ export class AlarmNotificationService {
           break;
         case "1w":
         case "week":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
           break;
         case "1M":
         case "month":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
           break;
         case "1y":
-          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+          timeCondition =
+            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
           break;
         case "all":
         default:
           timeCondition = "";
       }
-      
+
       // Build queries - fix parameter binding issue
       const baseCountQuery = `
         SELECT COUNT(*) as total
@@ -1196,7 +1327,7 @@ export class AlarmNotificationService {
         WHERE an.user_id = ? 
           AND COALESCE(an.is_saved, 0) = 1
       `;
-      
+
       const baseDataQuery = `
         SELECT 
           an.id,
@@ -1219,9 +1350,13 @@ export class AlarmNotificationService {
         WHERE an.user_id = ? 
           AND COALESCE(an.is_saved, 0) = 1
       `;
-      
-      const countQuery = baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
-      const dataQuery = baseDataQuery + (timeCondition ? ` ${timeCondition}` : "") + `
+
+      const countQuery =
+        baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
+      const dataQuery =
+        baseDataQuery +
+        (timeCondition ? ` ${timeCondition}` : "") +
+        `
         ORDER BY an.triggered_at DESC 
         LIMIT ? OFFSET ?
       `;
@@ -1233,29 +1368,38 @@ export class AlarmNotificationService {
         dataQuery: dataQuery,
         userId: userId,
         limit: limit,
-        offset: offset
+        offset: offset,
       });
 
       // Execute count query first
       console.log("🔍 Service executing count query with params:", [userId]);
-      const [countResult] = await this.db.execute(countQuery, [parseInt(String(userId))]);
+      const [countResult] = await this.db.execute(countQuery, [
+        parseInt(String(userId)),
+      ]);
       const total = (countResult as any[])[0]?.total || 0;
 
       // Execute data query with pagination - ensure all parameters are integers
-      const dataParams = [userId, parseInt(String(limit)), parseInt(String(offset))];
+      const dataParams = [
+        userId,
+        parseInt(String(limit)),
+        parseInt(String(offset)),
+      ];
       console.log("🔍 Service executing data query with params:", dataParams);
-      console.log("🔍 Parameter types:", dataParams.map(p => ({ value: p, type: typeof p })));
-      
+      console.log(
+        "🔍 Parameter types:",
+        dataParams.map((p) => ({ value: p, type: typeof p }))
+      );
+
       // Additional validation to ensure parameters are valid integers
-      if (dataParams.some(p => isNaN(p) || !Number.isInteger(p))) {
+      if (dataParams.some((p) => isNaN(p) || !Number.isInteger(p))) {
         throw new Error("Invalid integer parameters for SQL query");
       }
-      
+
       const [rows] = await this.db.execute(dataQuery, dataParams);
 
       return {
         notifications: rows as any[],
-        total: total
+        total: total,
       };
     } catch (error) {
       console.error("❌ Error getting notification history:", error);
@@ -1268,11 +1412,14 @@ export class AlarmNotificationService {
    */
   async saveAllNotifications(userId: number): Promise<number> {
     try {
-      const [result] = await this.db.execute(`
+      const [result] = await this.db.execute(
+        `
         UPDATE alarm_notifications 
         SET is_saved = TRUE, saved_at = NOW() 
         WHERE user_id = ? AND COALESCE(is_saved, 0) = 0
-      `, [userId]);
+      `,
+        [userId]
+      );
 
       return (result as any).affectedRows;
     } catch (error) {
@@ -1284,12 +1431,18 @@ export class AlarmNotificationService {
   /**
    * Delete a single notification
    */
-  async deleteNotification(notificationId: number, userId: number): Promise<boolean> {
+  async deleteNotification(
+    notificationId: number,
+    userId: number
+  ): Promise<boolean> {
     try {
-      const [result] = await this.db.execute(`
+      const [result] = await this.db.execute(
+        `
         DELETE FROM alarm_notifications 
         WHERE id = ? AND user_id = ?
-      `, [notificationId, userId]);
+      `,
+        [notificationId, userId]
+      );
 
       return (result as any).affectedRows > 0;
     } catch (error) {
@@ -1303,10 +1456,13 @@ export class AlarmNotificationService {
    */
   async deleteAllNotifications(userId: number): Promise<number> {
     try {
-      const [result] = await this.db.execute(`
+      const [result] = await this.db.execute(
+        `
         DELETE FROM alarm_notifications 
         WHERE user_id = ?
-      `, [userId]);
+      `,
+        [userId]
+      );
 
       return (result as any).affectedRows;
     } catch (error) {
@@ -1324,7 +1480,7 @@ export class AlarmNotificationService {
       whatsapp_initializing: this.isWhatsAppInitializing,
       whatsapp_disabled: this.whatsAppDisabled,
       system_compatible: true, // Will be set during system check
-      chrome_found: true // Will be determined during initialization
+      chrome_found: true, // Will be determined during initialization
     };
   }
 

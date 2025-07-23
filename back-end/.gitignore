@@ -46,3 +46,6 @@ bun.lock
 # WhatsApp API
 wwebjs_auth/
 .wwebjs_cache/
+
+# OTAA
+/src/assets/firmware/
