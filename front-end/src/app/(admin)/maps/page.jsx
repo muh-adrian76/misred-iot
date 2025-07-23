@@ -1,7 +1,7 @@
 import AdminMapsLayout from "./_layout";
 
 export const metadata = {
-  title: "Admin Maps - MiSREd-IoT",
+  title: "Maps - MiSREd-IoT",
   description: "Halaman admin peta lokasi device MiSREd-IoT",
 };
 

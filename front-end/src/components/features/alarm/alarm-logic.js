@@ -22,7 +22,7 @@ export function useAlarmLogic() {
   const [alarmToDelete, setAlarmToDelete] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
 
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isMobile } = useBreakpoint();
 
   // Fetch alarms milik user

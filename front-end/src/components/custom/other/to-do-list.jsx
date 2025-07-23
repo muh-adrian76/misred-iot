@@ -23,7 +23,7 @@ const ToDoList = () => {
   const [completedTasks, setCompletedTasks] = useState([]);
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   const { user } = useUser();
 
   // Function to fetch progress data

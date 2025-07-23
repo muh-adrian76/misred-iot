@@ -38,7 +38,7 @@ const getMenu = (isAdmin = false) => {
   
   if (isAdmin) {
     baseMenu.unshift({
-      title: "Beralih ke Halaman Admin",
+      title: "Mode Admin",
       url: "/overviews",
       icon: ArrowLeftRight,
       disabled: false,
@@ -51,7 +51,7 @@ const getMenu = (isAdmin = false) => {
 
 export default function UserLayoutClient({ children }) {
   const { sidebarOpen, setSidebarOpen } = useSidebarOpen();
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   const { user } = useUser();
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();

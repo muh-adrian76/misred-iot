@@ -7,7 +7,6 @@ import {
   parseAndNormalizePayload, 
   broadcastSensorUpdates 
 } from "../lib/utils";
-import crypto from "crypto";
 
 export class PayloadService {
   private db: Pool;

@@ -973,4 +973,213 @@ export class AlarmNotificationService {
       return false;
     }
   }
+
+  /**
+   * Get recent notifications for a user
+   */
+  async getRecentNotifications(userId: number): Promise<any[]> {
+    try {
+      const [rows] = await this.db.execute(`
+        SELECT 
+          an.id,
+          an.alarm_id,
+          an.sensor_value,
+          an.conditions_text,
+          an.triggered_at,
+          COALESCE(an.is_saved, 0) as is_saved,
+          an.saved_at,
+          a.description as alarm_description,
+          ds.description as datastream_description,
+          ds.pin as field_name,
+          dev.description as device_description,
+          u.email as user_email
+        FROM alarm_notifications an
+        JOIN alarms a ON an.alarm_id = a.id
+        JOIN datastreams ds ON an.datastream_id = ds.id
+        JOIN devices dev ON an.device_id = dev.id
+        JOIN users u ON an.user_id = u.id
+        WHERE an.user_id = ? 
+          AND COALESCE(an.is_saved, 0) = 1
+        ORDER BY an.triggered_at DESC
+        LIMIT 50
+      `, [userId]);
+
+      return rows as any[];
+    } catch (error) {
+      console.error("❌ Error getting recent notifications:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get notification history with pagination and time range filter
+   */
+  async getNotificationHistory(
+    userId: number,
+    page: number = 1,
+    limit: number = 20,
+    timeRange: string = "all"
+  ): Promise<{ notifications: any[]; total: number }> {
+    try {
+      const offset = (page - 1) * limit;
+      
+      // Build time range condition
+      let timeCondition = "";
+      let timeParams: any[] = [];
+      
+      switch(timeRange) {
+        case "1m":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
+          break;
+        case "1h":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
+          break;
+        case "12h":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
+          break;
+        case "1d":
+        case "today":
+          timeCondition = "AND an.triggered_at >= CURDATE()";
+          break;
+        case "1w":
+        case "week":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          break;
+        case "1M":
+        case "month":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+          break;
+        case "1y":
+          timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+          break;
+        case "all":
+        default:
+          timeCondition = "";
+      }
+      
+      // Build queries - fix parameter binding issue
+      const baseCountQuery = `
+        SELECT COUNT(*) as total
+        FROM alarm_notifications an
+        WHERE an.user_id = ? 
+          AND COALESCE(an.is_saved, 0) = 1
+      `;
+      
+      const baseDataQuery = `
+        SELECT 
+          an.id,
+          an.alarm_id,
+          an.sensor_value,
+          an.conditions_text,
+          an.triggered_at,
+          COALESCE(an.notification_type, 'browser') as notification_type,
+          an.whatsapp_message_id,
+          an.is_saved,
+          an.saved_at,
+          a.description as alarm_description,
+          ds.description as datastream_description,
+          ds.pin as field_name,
+          dev.description as device_description
+        FROM alarm_notifications an
+        LEFT JOIN alarms a ON an.alarm_id = a.id
+        LEFT JOIN datastreams ds ON an.datastream_id = ds.id
+        LEFT JOIN devices dev ON an.device_id = dev.id
+        WHERE an.user_id = ? 
+          AND COALESCE(an.is_saved, 0) = 1
+      `;
+      
+      const countQuery = baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
+      const dataQuery = baseDataQuery + (timeCondition ? ` ${timeCondition}` : "") + `
+        ORDER BY an.triggered_at DESC 
+        LIMIT ? OFFSET ?
+      `;
+
+      console.log("🔍 Service Debug SQL Query:", {
+        timeRange: timeRange,
+        timeCondition: timeCondition,
+        countQuery: countQuery,
+        dataQuery: dataQuery,
+        userId: userId,
+        limit: limit,
+        offset: offset
+      });
+
+      // Execute count query first
+      console.log("🔍 Service executing count query with params:", [userId]);
+      const [countResult] = await this.db.execute(countQuery, [parseInt(String(userId))]);
+      const total = (countResult as any[])[0]?.total || 0;
+
+      // Execute data query with pagination - ensure all parameters are integers
+      const dataParams = [userId, parseInt(String(limit)), parseInt(String(offset))];
+      console.log("🔍 Service executing data query with params:", dataParams);
+      console.log("🔍 Parameter types:", dataParams.map(p => ({ value: p, type: typeof p })));
+      
+      // Additional validation to ensure parameters are valid integers
+      if (dataParams.some(p => isNaN(p) || !Number.isInteger(p))) {
+        throw new Error("Invalid integer parameters for SQL query");
+      }
+      
+      const [rows] = await this.db.execute(dataQuery, dataParams);
+
+      return {
+        notifications: rows as any[],
+        total: total
+      };
+    } catch (error) {
+      console.error("❌ Error getting notification history:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save all notifications for a user
+   */
+  async saveAllNotifications(userId: number): Promise<number> {
+    try {
+      const [result] = await this.db.execute(`
+        UPDATE alarm_notifications 
+        SET is_saved = TRUE, saved_at = NOW() 
+        WHERE user_id = ? AND COALESCE(is_saved, 0) = 0
+      `, [userId]);
+
+      return (result as any).affectedRows;
+    } catch (error) {
+      console.error("❌ Error saving all notifications:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a single notification
+   */
+  async deleteNotification(notificationId: number, userId: number): Promise<boolean> {
+    try {
+      const [result] = await this.db.execute(`
+        DELETE FROM alarm_notifications 
+        WHERE id = ? AND user_id = ?
+      `, [notificationId, userId]);
+
+      return (result as any).affectedRows > 0;
+    } catch (error) {
+      console.error("❌ Error deleting notification:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all notifications for a user
+   */
+  async deleteAllNotifications(userId: number): Promise<number> {
+    try {
+      const [result] = await this.db.execute(`
+        DELETE FROM alarm_notifications 
+        WHERE user_id = ?
+      `, [userId]);
+
+      return (result as any).affectedRows;
+    } catch (error) {
+      console.error("❌ Error deleting all notifications:", error);
+      throw error;
+    }
+  }
 }

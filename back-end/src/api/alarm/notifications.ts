@@ -51,43 +51,20 @@ export function alarmNotificationRoutes(
           }
 
           // Get saved notifications for the user
-          const [rows] = await notificationService.db.execute(`
-            SELECT 
-              an.id,
-              an.alarm_id,
-              an.sensor_value,
-              an.conditions_text,
-              an.triggered_at,
-              COALESCE(an.is_saved, 0) as is_saved,
-              an.saved_at,
-              a.description as alarm_description,
-              ds.description as datastream_description,
-              ds.pin as field_name,
-              dev.description as device_description,
-              u.email as user_email
-            FROM alarm_notifications an
-            JOIN alarms a ON an.alarm_id = a.id
-            JOIN datastreams ds ON an.datastream_id = ds.id
-            JOIN devices dev ON an.device_id = dev.id
-            JOIN users u ON an.user_id = u.id
-            WHERE an.user_id = ? 
-              AND COALESCE(an.is_saved, 0) = 1
-            ORDER BY an.triggered_at DESC
-            LIMIT 50
-          `, [userId]);
+          const notifications = await notificationService.getRecentNotifications(userId);
 
           // Format notifications untuk frontend
-          const notifications = (rows as any[]).map((row: any) => ({
+          const formattedNotifications = notifications.map((row: any) => ({
             id: String(row.id), // Convert to string to match schema
             title: "🚨 Peringatan Sensor Alarm",
             message: `${row.alarm_description} - ${row.datastream_description}(${row.field_name}): ${row.sensor_value} (${row.conditions_text}) pada ${row.device_description}`,
-            createdAt: row.triggered_at,
+            createdAt: String(row.triggered_at),
             isRead: Boolean(row.is_saved), // Use is_saved as isRead indicator
             priority: "high",
             alarm_id: row.alarm_id,
             device_description: row.device_description,
             datastream_description: row.datastream_description,
-            sensor_value: row.sensor_value,
+            sensor_value: Number(row.sensor_value),
             condition_text: row.conditions_text,
             user_email: row.user_email,
             is_saved: Boolean(row.is_saved),
@@ -96,9 +73,9 @@ export function alarmNotificationRoutes(
 
           return {
             success: true,
-            message: notifications.length === 0 ? "Belum ada notifikasi tersimpan" : "Berhasil mengambil notifikasi",
-            notifications: notifications,
-            total: notifications.length,
+            message: formattedNotifications.length === 0 ? "Belum ada notifikasi tersimpan" : "Berhasil mengambil notifikasi",
+            notifications: formattedNotifications,
+            total: formattedNotifications.length,
             last_seen: new Date().toISOString()
           };
         } catch (error: any) {
@@ -156,10 +133,22 @@ export function alarmNotificationRoutes(
           }
 
           const userId = parseInt(user.sub);
-          const page = parseInt(query.page as string) || 1;
-          const limit = parseInt(query.limit as string) || 20;
+          const page = Math.max(1, parseInt(query.page as string) || 1);
+          const limit = Math.min(100, Math.max(1, parseInt(query.limit as string) || 20));
           const offset = (page - 1) * limit;
           const timeRange = query.timeRange as string || "all";
+
+          console.log("📊 API Debug - Parsed parameters:", {
+            userId: userId,
+            userIdType: typeof userId,
+            page: page,
+            pageType: typeof page,
+            limit: limit,
+            limitType: typeof limit,
+            offset: offset,
+            offsetType: typeof offset,
+            timeRange: timeRange
+          });
 
           // Validate userId
           if (isNaN(userId) || userId <= 0) {
@@ -171,104 +160,35 @@ export function alarmNotificationRoutes(
             };
           }
           
-          // Build time range condition
-          let timeCondition = "";
-          switch(timeRange) {
-            case "1m":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
-              break;
-            case "1h":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
-              break;
-            case "12h":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
-              break;
-            case "1d":
-            case "today":
-              timeCondition = "AND an.triggered_at >= CURDATE()";
-              break;
-            case "1w":
-            case "week":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
-              break;
-            case "1M":
-            case "month":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-              break;
-            case "1y":
-              timeCondition = "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
-              break;
-            case "all":
-            default:
-              timeCondition = "";
+          // Validate pagination parameters
+          if (isNaN(page) || page < 1) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid page parameter"
+            };
+          }
+
+          if (isNaN(limit) || limit < 1 || limit > 100) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid limit parameter (must be between 1-100)"
+            };
           }
           
-          // Build queries with proper parameter handling
-          const baseCountQuery = `
-            SELECT COUNT(*) as total
-            FROM alarm_notifications an
-            WHERE an.user_id = ? 
-              AND COALESCE(an.is_saved, 0) = 1
-          `;
-          
-          const baseDataQuery = `
-            SELECT 
-              an.id,
-              an.alarm_id,
-              an.sensor_value,
-              an.conditions_text,
-              an.triggered_at,
-              COALESCE(an.notification_type, 'browser') as notification_type,
-              an.whatsapp_message_id,
-              an.is_saved,
-              an.saved_at,
-              a.description as alarm_description,
-              ds.description as datastream_description,
-              ds.pin as field_name,
-              dev.description as device_description
-            FROM alarm_notifications an
-            LEFT JOIN alarms a ON an.alarm_id = a.id
-            LEFT JOIN datastreams ds ON an.datastream_id = ds.id
-            LEFT JOIN devices dev ON an.device_id = dev.id
-            WHERE an.user_id = ? 
-              AND COALESCE(an.is_saved, 0) = 1
-          `;
-          
-          const countQuery = baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
-          const dataQuery = baseDataQuery + (timeCondition ? ` ${timeCondition}` : "") + `
-            ORDER BY an.triggered_at DESC 
-            LIMIT ? OFFSET ?
-          `;
+          // Get notification history from service
+          const historyResult = await notificationService.getNotificationHistory(
+            userId, page, limit, timeRange
+          );
 
-          console.log("🔍 Debug SQL Query:", {
-            timeRange: timeRange,
-            timeCondition: timeCondition,
-            countQuery: countQuery,
-            dataQuery: dataQuery,
-            userId: userId,
-            userIdType: typeof userId,
-            limit: limit,
-            limitType: typeof limit,
-            offset: offset,
-            offsetType: typeof offset
-          });
-
-          // Execute count query first
-          console.log("🔍 Executing count query with params:", [userId]);
-          const [countResult] = await notificationService.db.execute(countQuery, [userId]);
-          const total = (countResult as any[])[0]?.total || 0;
-
-          // Execute data query with pagination
-          console.log("🔍 Executing data query with params:", [userId, limit, offset]);
-          const [rows] = await notificationService.db.execute(dataQuery, [userId, limit, offset]);
-
-          const notifications = (rows as any[]).map((row: any) => ({
+          const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: row.id,
             alarm_id: row.alarm_id,
             alarm_description: row.alarm_description,
             datastream_description: row.datastream_description,
             device_description: row.device_description,
-            sensor_value: row.sensor_value,
+            sensor_value: Number(row.sensor_value),
             conditions_text: row.conditions_text,
             triggered_at: row.triggered_at,
             notification_type: row.notification_type,
@@ -280,13 +200,13 @@ export function alarmNotificationRoutes(
 
           return {
             success: true,
-            message: total === 0 ? "Belum ada riwayat notifikasi tersimpan" : "Berhasil mengambil riwayat notifikasi",
-            notifications: notifications,
+            message: historyResult.total === 0 ? "Belum ada riwayat notifikasi tersimpan" : "Berhasil mengambil riwayat notifikasi",
+            notifications: formattedNotifications,
             pagination: {
               page: page,
               limit: limit,
-              total: total,
-              pages: Math.ceil(total / limit) || 1
+              total: historyResult.total,
+              pages: Math.ceil(historyResult.total / limit) || 1
             }
           };
 
@@ -371,16 +291,12 @@ export function alarmNotificationRoutes(
           }
 
           // Mark all unsaved notifications for this user as saved
-          const [result] = await notificationService.db.execute(`
-            UPDATE alarm_notifications 
-            SET is_saved = TRUE, saved_at = NOW() 
-            WHERE user_id = ? AND COALESCE(is_saved, 0) = 0
-          `, [userId]);
+          const affectedRows = await notificationService.saveAllNotifications(userId);
 
           return {
             success: true,
             message: "Semua notifikasi berhasil disimpan",
-            affected_rows: (result as any).affectedRows
+            affected_rows: affectedRows
           };
         } catch (error) {
           console.error("Error saving all notifications:", error);
@@ -421,12 +337,9 @@ export function alarmNotificationRoutes(
             };
           }
 
-          const [result] = await notificationService.db.execute(`
-            DELETE FROM alarm_notifications 
-            WHERE id = ? AND user_id = ?
-          `, [notificationId, userId]);
+          const deleted = await notificationService.deleteNotification(notificationId, userId);
 
-          if ((result as any).affectedRows === 0) {
+          if (!deleted) {
             set.status = 404;
             return {
               success: false,
@@ -468,15 +381,12 @@ export function alarmNotificationRoutes(
             };
           }
 
-          const [result] = await notificationService.db.execute(`
-            DELETE FROM alarm_notifications 
-            WHERE user_id = ?
-          `, [userId]);
+          const deletedCount = await notificationService.deleteAllNotifications(userId);
 
           return {
             success: true,
             message: "Semua notifikasi berhasil dihapus",
-            deleted_count: (result as any).affectedRows
+            deleted_count: deletedCount
           };
         } catch (error) {
           console.error("Error deleting all notifications:", error);

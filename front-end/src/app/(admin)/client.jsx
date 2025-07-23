@@ -27,7 +27,7 @@ const logoFont = localFont({
 
 const adminMenu = [
   {
-    title: "Beralih ke Halaman User",
+    title: "Mode User",
     url: "/dashboards",
     icon: ArrowLeftRight,
     disabled: false,
@@ -63,13 +63,13 @@ export default function AdminLayoutClient({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Debug logging
-  // console.log("Admin client render:", {
-  //   isAdmin,
-  //   isAuthenticated,
-  //   adminLoading,
-  //   isLoading,
-  //   pathname,
-  // });
+  console.log("Admin client render:", {
+    isAdmin,
+    isAuthenticated,
+    adminLoading,
+    isLoading,
+    pathname,
+  });
 
   const activeMenu = adminMenu.find((item) =>
     pathname.startsWith(item.url)
@@ -90,12 +90,20 @@ export default function AdminLayoutClient({ children }) {
   useEffect(() => {
     // Hanya redirect jika sudah selesai loading dan definitif bukan admin
     if (!isLoading && !adminLoading && isAuthenticated !== undefined && isAdmin !== undefined) {
+      console.log("Admin client: Making routing decision", {
+        isAuthenticated,
+        isAdmin,
+        willRedirect: !isAuthenticated || (isAuthenticated && isAdmin === false)
+      });
+      
       if (!isAuthenticated) {
-        // console.log("Admin client: Not authenticated, redirecting to auth");
+        console.log("Admin client: Not authenticated, redirecting to auth");
         router.push("/auth");
       } else if (isAuthenticated && isAdmin === false) {
-        // console.log("Admin client: Authenticated but definitely not admin, redirecting to dashboards");
+        console.log("Admin client: Authenticated but definitely not admin, redirecting to dashboards");
         router.push("/dashboards");
+      } else if (isAuthenticated && isAdmin === true) {
+        console.log("Admin client: Authenticated and is admin - staying on admin page");
       }
     }
   }, [isAuthenticated, isAdmin, isLoading, adminLoading, router]);

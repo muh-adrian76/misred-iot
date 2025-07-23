@@ -30,7 +30,7 @@ export default function DataTableToolbar({
   showNotificationInfo = false,
 }) {
   const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   
   // Use the custom hook for WhatsApp status
   const { whatsappEnabled, loading, refreshWhatsAppStatus } = useWhatsAppStatusStandalone();

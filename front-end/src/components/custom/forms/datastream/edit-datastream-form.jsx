@@ -47,6 +47,7 @@ export default function EditDatastreamForm({
   const [maxValue, setMaxValue] = useState(1);
   const [deviceId, setDeviceId] = useState("");
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
+  const [openUnitPopover, setOpenUnitPopover] = useState(false);
   const [showDecimal, setShowDecimal] = useState(false);
   const [decimalValue, setdecimalValue] = useState("0.0");
   const [booleanValue, setBooleanValue] = useState("0");
@@ -63,9 +64,9 @@ export default function EditDatastreamForm({
       );
       setType(editDatastream.type || "");
       setUnit(editDatastream.unit || "");
-      setDefaultValue(editDatastream.default_value || "");
+      setDefaultValue(editDatastream.default_value || 0);
       setMinValue(editDatastream.min_value || 0);
-      setMaxValue(editDatastream.max_value || "");
+      setMaxValue(editDatastream.max_value || 1);
     }
   }, [editDatastream, open]);
 
@@ -259,29 +260,79 @@ export default function EditDatastreamForm({
           <Label className="text-left font-medium max-sm:text-xs ml-1">
             Satuan
           </Label>
-          <Select value={unit} onValueChange={setUnit} required>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Pilih Satuan" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(
-                unitOptions.reduce((acc, opt) => {
-                  acc[opt.group] = acc[opt.group] || [];
-                  acc[opt.group].push(opt);
-                  return acc;
-                }, {})
-              ).map(([group, items]) => (
-                <SelectGroup key={group}>
-                  <SelectLabel>{group}</SelectLabel>
-                  {items.map((unit) => (
-                    <SelectItem key={unit.value} value={unit.value}>
-                      {`${unit.label}, ${unit.value}`}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
+          {isMobile ? (
+            <Select value={unit} onValueChange={setUnit} required>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Satuan" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(
+                  unitOptions.reduce((acc, opt) => {
+                    acc[opt.group] = acc[opt.group] || [];
+                    acc[opt.group].push(opt);
+                    return acc;
+                  }, {})
+                ).map(([group, items]) => (
+                  <SelectGroup key={group}>
+                    <SelectLabel>{group}</SelectLabel>
+                    {items.map((unit) => (
+                      <SelectItem key={unit.value} value={unit.value}>
+                        {`${unit.label}, ${unit.value}`}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Popover open={openUnitPopover} onOpenChange={setOpenUnitPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openUnitPopover}
+                  className="justify-between w-full"
+                >
+                  <span className="truncate">
+                    {unitOptions.find((u) => u.value === unit)?.label ||
+                      "Pilih Satuan"}
+                  </span>
+                  <ChevronDown className="ml-2 h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-full" align="start">
+                <Command>
+                  <CommandInput placeholder="Cari satuan..." />
+                  <CommandList>
+                    <CommandEmpty>
+                      <span className="opacity-50">Tidak ada satuan.</span>
+                    </CommandEmpty>
+                    {unitOptions.map((unitOption) => (
+                      <CommandItem
+                        key={unitOption.value}
+                        value={`${unitOption.label} ${unitOption.value}`}
+                        onSelect={() => {
+                          setUnit(unitOption.value);
+                          setOpenUnitPopover(false);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <span className="truncate">
+                          {unitOption.label}, {unitOption.value}
+                        </span>
+                        <Check
+                          className={cn(
+                            "ml-auto",
+                            unit === unitOption.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         {type === "boolean" && (
           <div className="flex flex-col gap-2">

@@ -5,7 +5,7 @@ import { fetchFromBackend } from '@/lib/helper';
 
 const OnboardingDebug = () => {
   const [debugInfo, setDebugInfo] = useState({});
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   const { user } = useUser();
 
   useEffect(() => {

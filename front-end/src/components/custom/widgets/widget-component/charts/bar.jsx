@@ -219,20 +219,66 @@ export function BarChartWidget({
     );
   }
 
-  // No data state
+  // No data state - show empty chart with message
   if (!timeSeriesData || timeSeriesData.length === 0) {
     return (
-      <div className="h-full w-full min-h-[150px] flex items-center justify-center bg-muted/30 rounded-lg">
-        <div className="text-center space-y-2">
-          <WifiOff className="h-8 w-8 text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">Tidak ada data</p>
-          <p className="text-xs text-muted-foreground">
-            Belum ada data sensor dalam {timeRangeLabel}
-          </p>
-          {!isRealTimeConnected && (
-            <p className="text-xs text-orange-500">⚠️ Real-time disconnected</p>
-          )}
+      <div className="h-full w-full min-h-[150px] space-y-2">
+        {/* Header dengan info tidak ada data */}
+        <div className="px-2 pt-2">
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                {widget?.description || "Widget Chart"}: tidak ada data dalam {timeRangeLabel}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {!isRealTimeConnected && (
+                <div className="flex items-center gap-1 text-xs text-orange-500">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  Offline
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Empty Chart */}
+        <ChartContainer config={dynamicChartConfig} className="h-full w-full">
+          <BarChart
+            accessibilityLayer
+            data={[]} // Empty data untuk chart kosong
+            width={undefined}
+            height={undefined}
+            margin={{ left: 12, right: 12, top: 5, bottom: 5 }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="time"
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={5}
+              tickCount={4}
+              tick={{ fontSize: 11 }}
+            />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <ChartLegend content={<ChartLegendContent />} />
+            {/* Render bars untuk setiap pair meski data kosong */}
+            {pairs.map((pair, idx) => (
+              <Bar
+                key={idx}
+                dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+                fill={chartColors[idx % chartColors.length]}
+                radius={[4, 4, 0, 0]}
+              />
+            ))}
+          </BarChart>
+        </ChartContainer>
       </div>
     );
   }

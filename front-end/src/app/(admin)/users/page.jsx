@@ -1,7 +1,7 @@
 import AdminUsersLayout from "./_layout";
 
 export const metadata = {
-  title: "Admin Users - MiSREd-IoT",
+  title: "Users - MiSREd-IoT",
   description: "Halaman admin kelola users MiSREd-IoT",
 };
 

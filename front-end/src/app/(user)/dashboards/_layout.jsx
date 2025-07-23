@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 
 export default function DashboardLayout() {
   const logic = useDashboardLogic();
-  const isAuthenticated = useAuth();
+  const { isAuthenticated } = useAuth();
   const { user } = useUser();
 
   // Show loading if authentication is not yet verified or user data not loaded

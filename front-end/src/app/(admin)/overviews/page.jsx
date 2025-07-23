@@ -1,7 +1,7 @@
 import AdminOverviewsLayout from "./_layout";
 
 export const metadata = {
-  title: "Admin Overviews - MiSREd-IoT",
+  title: "Overviews - MiSREd-IoT",
   description: "Halaman admin overviews MiSREd-IoT",
 };
 
