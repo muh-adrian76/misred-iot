@@ -102,6 +102,7 @@ export default function AddAlarmForm({
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            placeholder="Masukkan deskripsi alarm"
             required
           />
         </div>

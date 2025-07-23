@@ -23,25 +23,27 @@ export function useAdminOverviewsLogic() {
     try {
       setRefreshing(true);
       
-      // You can implement these endpoints later
-      // const usersRes = await fetchFromBackend("/api/admin/users/stats");
-      // const devicesRes = await fetchFromBackend("/api/admin/devices/stats");
+      // Fetch overview stats
+      const overviewRes = await fetchFromBackend("/admin/stats/overview");
+      const overviewData = await overviewRes.json();
       
-      // For now, using mock data
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      // Fetch recent users
+      const recentUsersRes = await fetchFromBackend("/admin/stats/recent-users?limit=5");
+      const recentUsersData = await recentUsersRes.json();
       
-      setStats({
-        totalUsers: 156,
-        totalDevices: 42,
-        totalDashboards: 28,
-        activeUsers: 12,
-        recentUsers: [
-          { id: 1, name: "John Doe", email: "john@example.com", created_at: "2025-01-20" },
-          { id: 2, name: "Jane Smith", email: "jane@example.com", created_at: "2025-01-19" },
-          { id: 3, name: "Bob Wilson", email: "bob@example.com", created_at: "2025-01-18" },
-        ],
-        systemHealth: "good"
-      });
+      // Fetch system health
+      const healthRes = await fetchFromBackend("/admin/system/health");
+      const healthData = await healthRes.json();
+      
+      if (overviewData.status === "success" && recentUsersData.status === "success" && healthData.status === "success") {
+        setStats({
+          ...overviewData.data,
+          recentUsers: recentUsersData.data,
+          systemHealth: healthData.data.status
+        });
+      } else {
+        throw new Error("Failed to fetch admin data");
+      }
       
       setIsLoading(false);
       setRefreshing(false);

@@ -19,6 +19,7 @@ import { alarmNotificationRoutes } from "./api/alarm/notifications";
 import { dashboardRoutes } from "./api/dashboard";
 import { datastreamRoutes } from "./api/datastream";
 import { otaaRoutes } from "./api/otaa";
+import { adminRoutes } from "./api/admin";
 import { userWsRoutes, broadcastToUsers } from "./api/ws/user-ws";
 import { deviceWsRoutes } from "./api/ws/device-ws";
 
@@ -33,6 +34,7 @@ import { DashboardService } from "./services/DashboardService";
 import { DatastreamService } from "./services/DatastreamService";
 import { DeviceCommandService } from "./services/DeviceCommandService";
 import { OtaaUpdateService } from "./services/OtaaUpdateService";
+import { AdminService } from "./services/AdminService";
 import { MQTTService } from "./services/MiddlewareService";
 
 class Server {
@@ -50,6 +52,7 @@ class Server {
   private dashboardService!: DashboardService;
   private datastreamService!: DatastreamService;
   private otaaService!: OtaaUpdateService;
+  private adminService!: AdminService;
   private mqttService!: MQTTService;
 
   constructor() {
@@ -69,6 +72,7 @@ class Server {
     this.dashboardService = new DashboardService(this.db);
     this.datastreamService = new DatastreamService(this.db);
     this.otaaService = new OtaaUpdateService(this.db);
+    this.adminService = new AdminService(this.db);
 
     // Init MQTT service dengan alarm notification
     this.mqttService = new MQTTService(this.db, this.alarmNotificationService);
@@ -125,6 +129,7 @@ class Server {
       .use(dashboardRoutes(this.dashboardService))
       .use(datastreamRoutes(this.datastreamService))
       .use(otaaRoutes(this.otaaService))
+      .use(adminRoutes(this.adminService, this.userService))
 
       // Websocket
       .use(userWsRoutes)

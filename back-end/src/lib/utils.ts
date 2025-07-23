@@ -39,6 +39,10 @@ const apiTags = [
     name: "Alarm",
     description: "Endpoint untuk keperluan alarm notifikasi",
   },
+  {
+    name: "Admin",
+    description: "Endpoint untuk keperluan administrasi sistem",
+  },
 ];
 
 // Konversi waktu dari string ke angka

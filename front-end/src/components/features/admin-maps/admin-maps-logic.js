@@ -19,41 +19,29 @@ export function useAdminMapsLogic() {
     try {
       setLoading(true);
       
-      // You can implement this endpoint later to get devices with location
-      // const response = await fetchFromBackend("/api/admin/devices/locations");
+      const response = await fetchFromBackend("/admin/devices/locations");
+      const data = await response.json();
       
-      // For now, using mock data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setDevices([
-        {
-          id: 1,
-          name: "Sensor Suhu Lab A",
-          location: { lat: -7.2575, lng: 112.7521, address: "Lab A, Gedung Utama" },
-          status: "online",
-          owner: "John Doe",
-          lastSeen: "2 menit lalu",
-          type: "temperature"
-        },
-        {
-          id: 2,
-          name: "Sensor Kelembaban Greenhouse",
-          location: { lat: -7.2580, lng: 112.7530, address: "Greenhouse, Area Belakang" },
-          status: "online",
-          owner: "Jane Smith",
-          lastSeen: "5 menit lalu",
-          type: "humidity"
-        },
-        {
-          id: 3,
-          name: "Monitor Kualitas Air",
-          location: { lat: -7.2570, lng: 112.7510, address: "Kolam Penelitian" },
-          status: "offline",
-          owner: "Bob Wilson",
-          lastSeen: "2 jam lalu",
-          type: "water_quality"
-        }
-      ]);
+      if (data.status === "success") {
+        // Transform data to match frontend format
+        const transformedDevices = data.data.map(device => ({
+          id: device.id,
+          name: device.name,
+          location: { 
+            lat: device.latitude, 
+            lng: device.longitude, 
+            address: device.address 
+          },
+          status: device.status,
+          owner: device.user_name,
+          lastSeen: device.last_seen,
+          type: "sensor" // Default type since it's not in backend data
+        }));
+        
+        setDevices(transformedDevices);
+      } else {
+        throw new Error(data.message || "Failed to fetch devices");
+      }
       
       setLoading(false);
     } catch (error) {
@@ -77,6 +65,30 @@ export function useAdminMapsLogic() {
   // Clear selection
   const clearSelection = () => {
     setSelectedDevice(null);
+  };
+
+  // Update device location
+  const updateDeviceLocation = async (deviceId, latitude, longitude, address) => {
+    try {
+      const response = await fetchFromBackend(`/admin/devices/${deviceId}/location`, {
+        method: 'PUT',
+        body: JSON.stringify({ latitude, longitude, address })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        successToast("Lokasi device berhasil diperbarui");
+        fetchDevices(); // Refresh data
+        return true;
+      } else {
+        throw new Error(data.message || "Failed to update device location");
+      }
+    } catch (error) {
+      console.error("Error updating device location:", error);
+      errorToast("Gagal memperbarui lokasi device");
+      return false;
+    }
   };
 
   // Initialize data
@@ -104,6 +116,7 @@ export function useAdminMapsLogic() {
     setFilterStatus,
     selectDevice,
     clearSelection,
+    updateDeviceLocation,
     fetchDevices
   };
 }

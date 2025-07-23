@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `firmware_version` varchar(50) DEFAULT NULL,
   `status` enum('offline','online') DEFAULT 'offline',
   `user_id` INT NOT NULL,
+  `latitude` DECIMAL(10, 8) DEFAULT NULL,
+  `longitude` DECIMAL(11, 8) DEFAULT NULL,
+  `address` TEXT DEFAULT NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -248,6 +251,12 @@ CREATE INDEX idx_payloads_device_time ON payloads(device_id, server_time);
 CREATE INDEX idx_payloads_datastream_time ON payloads(datastream_id, server_time);
 CREATE INDEX idx_payloads_device_datastream_time ON payloads(device_id, datastream_id, server_time);
 CREATE INDEX idx_device_commands_status ON device_commands(status, sent_at);
+
+-- Add location fields to devices table if not exists
+ALTER TABLE devices 
+ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 8) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS address TEXT DEFAULT NULL;
 
 -- View untuk dashboard sensor data yang sudah dinormalisasi
 CREATE OR REPLACE VIEW dashboard_sensor_data AS

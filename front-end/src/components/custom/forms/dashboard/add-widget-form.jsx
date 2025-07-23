@@ -182,29 +182,39 @@ export default function AddWidgetDialog({
                 <SelectValue placeholder="Pilih Device & Datastream" />
               </SelectTrigger>
               <SelectContent>
-                {datastreamsByDevice.map((device) => (
-                  <div key={device.id}>
-                    {device.datastreams.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b">
-                          {device.description || device.name}
-                        </div>
-                        {device.datastreams.map((ds) => {
-                          const alreadySelected = form.selectedPairs.some(
-                            pair => pair.device_id === device.id && pair.datastream_id === ds.id
-                          );
-                          if (alreadySelected) return null;
-                          
-                          return (
-                            <SelectItem key={ds.id} value={`${device.id}|${ds.id}`}>
-                              {ds.description} (Pin {ds.pin})
-                            </SelectItem>
-                          );
-                        })}
-                      </>
-                    )}
+                {devices.length === 0 || datastreams.length === 0 ? (
+                  <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                    {devices.length === 0 && datastreams.length === 0 
+                      ? "Device dan datastream masih kosong" 
+                      : devices.length === 0 
+                        ? "Device masih kosong" 
+                        : "Datastream masih kosong"}
                   </div>
-                ))}
+                ) : (
+                  datastreamsByDevice.map((device) => (
+                    <div key={device.id}>
+                      {device.datastreams.length > 0 && (
+                        <>
+                          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b">
+                            {device.description || device.name}
+                          </div>
+                          {device.datastreams.map((ds) => {
+                            const alreadySelected = form.selectedPairs.some(
+                              pair => pair.device_id === device.id && pair.datastream_id === ds.id
+                            );
+                            if (alreadySelected) return null;
+                            
+                            return (
+                              <SelectItem key={ds.id} value={`${device.id}|${ds.id}`}>
+                                {ds.description} (Pin {ds.pin})
+                              </SelectItem>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+                  ))
+                )}
               </SelectContent>
             </Select>
             <Button 

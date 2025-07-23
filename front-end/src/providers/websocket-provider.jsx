@@ -137,7 +137,7 @@ export function WebSocketProvider({ children }) {
       wsRef.current.close(1000, "Reconnecting");
     }
 
-    // console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+    console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
 
     const connectionTimer = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
@@ -153,7 +153,7 @@ export function WebSocketProvider({ children }) {
 
       socket.onopen = () => {
         clearTimeout(connectionTimer);
-        // console.log("✅ Koneksi websocket berhasil!");
+        console.log("✅ Koneksi websocket berhasil!");
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
         connectionAttemptRef.current = false;
@@ -214,7 +214,7 @@ export function WebSocketProvider({ children }) {
         // Only reconnect for abnormal closures and if user still exists
         if (event.code !== 1000 && isUserLoggedIn(user) && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current += 1;
-          // console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s...`);
+          console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s...`);
           
           reconnectTimeoutRef.current = setTimeout(createWebSocketConnection, reconnectDelay);
         }
