@@ -23,7 +23,7 @@ export function useAdminUsersLogic() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetchFromBackend("/api/user");
+      const response = await fetchFromBackend("/user");
       if (response.status === "success") {
         setUsers(response.data);
       }
@@ -38,7 +38,7 @@ export function useAdminUsersLogic() {
   // Add new user
   const handleAddUser = async (userData) => {
     try {
-      const response = await fetchFromBackend("/api/auth/admin/register", {
+      const response = await fetchFromBackend("/auth/admin/register", {
         method: "POST",
         body: JSON.stringify(userData)
       });
@@ -59,7 +59,7 @@ export function useAdminUsersLogic() {
   // Edit user
   const handleEditUser = async (userId, userData) => {
     try {
-      const response = await fetchFromBackend(`/api/user/${userId}`, {
+      const response = await fetchFromBackend(`/user/${userId}`, {
         method: "PUT",
         body: JSON.stringify(userData)
       });
@@ -81,7 +81,7 @@ export function useAdminUsersLogic() {
   // Delete user
   const handleDeleteUser = async (userId) => {
     try {
-      const response = await fetchFromBackend(`/api/user/${userId}`, {
+      const response = await fetchFromBackend(`/user/${userId}`, {
         method: "DELETE"
       });
       

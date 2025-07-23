@@ -214,27 +214,89 @@ class Server {
     // Cleanup old pending device commands setiap 30 detik
     setInterval(async () => {
       try {
+        // Test database connection first
+        const isHealthy = await MySQLDatabase.healthCheck();
+        if (!isHealthy) {
+          console.log("🔄 Database unhealthy, attempting reconnection...");
+          this.db = MySQLDatabase.forceReconnect();
+        }
+        
         const commandService = new DeviceCommandService(this.db);
         const affected = await commandService.markOldCommandsAsFailed(0.17); // 10 seconds timeout
         if (affected > 0) {
           console.log(`🧹 Marked ${affected} old device commands as failed`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error cleaning up device commands:", error);
+        
+        // Check if it's a connection error
+        if (error.code === "PROTOCOL_CONNECTION_LOST" || 
+            error.code === "ER_CONNECTION_LOST" || 
+            error.code === "ECONNRESET" ||
+            error.code === "ENOTFOUND" ||
+            error.code === "ETIMEDOUT") {
+          console.log("🔄 Database connection error detected, forcing reconnection...");
+          try {
+            // Force reconnection
+            this.db = MySQLDatabase.forceReconnect();
+            console.log("✅ Database connection restored for command cleanup");
+          } catch (reconnectError) {
+            console.error("❌ Failed to reconnect to database:", reconnectError);
+          }
+        }
       }
     }, 30000); // 30 seconds interval
 
     // Refresh variabel secret semua device setiap 5 menit
     setInterval(async () => {
       try {
+        // Test database connection first
+        const isHealthy = await MySQLDatabase.healthCheck();
+        if (!isHealthy) {
+          console.log("🔄 Database unhealthy, attempting reconnection...");
+          this.db = MySQLDatabase.forceReconnect();
+          
+          // Reinitialize device service with new db connection
+          this.deviceService = new DeviceService(
+            this.db,
+            this.otaaService,
+            this.mqttService.subscribeTopic.bind(this.mqttService),
+            this.mqttService.unSubscribeTopic.bind(this.mqttService)
+          );
+        }
+        
         await this.deviceService.refreshAllDeviceSecrets();
         console.log("🔄 Berhasil me-refresh secret dari semua device ");
         broadcastToUsers({
           type: "device_secret_refreshed",
           message: "Secret perangkat telah diperbarui",
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Gagal refresh secret:", error);
+        
+        // Check if it's a connection error
+        if (error.code === "PROTOCOL_CONNECTION_LOST" || 
+            error.code === "ER_CONNECTION_LOST" || 
+            error.code === "ECONNRESET" ||
+            error.code === "ENOTFOUND" ||
+            error.code === "ETIMEDOUT") {
+          console.log("🔄 Database connection error during secret refresh, forcing reconnection...");
+          try {
+            // Force reconnection
+            this.db = MySQLDatabase.forceReconnect();
+            
+            // Reinitialize device service with new db connection
+            this.deviceService = new DeviceService(
+              this.db,
+              this.otaaService,
+              this.mqttService.subscribeTopic.bind(this.mqttService),
+              this.mqttService.unSubscribeTopic.bind(this.mqttService)
+            );
+            console.log("✅ Database connection and device service restored for secret refresh");
+          } catch (reconnectError) {
+            console.error("❌ Failed to reconnect to database:", reconnectError);
+          }
+        }
         return;
       }
     }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000);

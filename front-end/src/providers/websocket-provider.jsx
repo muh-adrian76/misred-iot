@@ -147,7 +147,24 @@ export function WebSocketProvider({ children }) {
     }, connectionTimeout);
 
     try {
-      const socket = new WebSocket(`${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user`);
+      // Build WebSocket URL with fallback
+      const backendWsUrl = process.env.NEXT_PUBLIC_BACKEND_WS;
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      
+      let wsUrl;
+      if (backendWsUrl) {
+        wsUrl = `${backendWsUrl}/ws/user`;
+      } else if (backendUrl) {
+        // Convert HTTP to WS URL
+        wsUrl = backendUrl.replace(/^https?:/, backendUrl.startsWith('https:') ? 'wss:' : 'ws:') + '/ws/user';
+      } else {
+        // Fallback to default development URL
+        wsUrl = 'ws://localhost:7601/ws/user';
+      }
+
+      console.log(`🔗 Connecting to WebSocket: ${wsUrl}`);
+      
+      const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
       setWs(socket);
 
@@ -211,18 +228,28 @@ export function WebSocketProvider({ children }) {
         setWs(null);
         connectionAttemptRef.current = false;
 
+        console.log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+
         // Only reconnect for abnormal closures and if user still exists
         if (event.code !== 1000 && isUserLoggedIn(user) && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current += 1;
-          console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s...`);
+          console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
           
           reconnectTimeoutRef.current = setTimeout(createWebSocketConnection, reconnectDelay);
+        } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+          console.error("❌ Max reconnection attempts reached. Please check your connection and backend server.");
         }
       };
 
-      socket.onerror = () => {
+      socket.onerror = (error) => {
         clearTimeout(connectionTimer);
         connectionAttemptRef.current = false;
+        console.error("🚨 WebSocket error:", error);
+        console.error("💡 Possible causes:");
+        console.error("   1. Backend server is not running");
+        console.error("   2. CORS configuration issue");
+        console.error("   3. Network connectivity problem");
+        console.error("   4. Incorrect WebSocket URL");
       };
 
     } catch (error) {

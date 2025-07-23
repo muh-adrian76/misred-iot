@@ -61,10 +61,16 @@ export class AlarmNotificationService {
   constructor(database: Pool) {
     this.db = database;
     
-    // Check if WhatsApp should be disabled (e.g., in test environment)
-    const disableWhatsApp = process.env.DISABLE_WHATSAPP === 'true';
+    // Check if WhatsApp should be disabled (e.g., in test environment or missing dependencies)
+    const disableWhatsApp = process.env.DISABLE_WHATSAPP === 'true' || this.checkSystemCompatibility();
     if (disableWhatsApp) {
-      console.log('⚠️ Notifikasi WhatsApp dinonaktifkan, ubah variabel .env untuk mengaktifkan kembali');
+      console.log('⚠️ Notifikasi WhatsApp dinonaktifkan');
+      if (process.env.DISABLE_WHATSAPP === 'true') {
+        console.log('📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true');
+      } else {
+        console.log('📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia');
+      }
+      console.log('📧 Notifikasi alarm akan menggunakan browser/WebSocket saja');
       this.whatsAppDisabled = true;
       return;
     }
@@ -74,6 +80,62 @@ export class AlarmNotificationService {
     
     // Start health monitoring
     this.startHealthMonitoring();
+  }
+
+  /**
+   * Check if system is compatible with WhatsApp Web (Puppeteer/Chrome)
+   */
+  private checkSystemCompatibility(): boolean {
+    try {
+      // Check if we're in a minimal container environment
+      const fs = require('fs');
+      
+      // Common paths where Chrome dependencies should be
+      const requiredLibs = [
+        '/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0',
+        '/lib/x86_64-linux-gnu/libatk-1.0.so.0',
+        '/usr/lib/libatk-1.0.so.0',
+        '/lib/libatk-1.0.so.0'
+      ];
+      
+      // Check if any of the required libraries exist
+      const hasRequiredLibs = requiredLibs.some(path => {
+        try {
+          fs.accessSync(path);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+      
+      if (!hasRequiredLibs) {
+        console.log('❌ Sistem tidak memiliki dependencies yang dibutuhkan untuk WhatsApp Web');
+        console.log('💡 Untuk mengaktifkan WhatsApp di VPS Linux, install dependencies:');
+        console.log('   sudo apt-get update');
+        console.log('   sudo apt-get install -y wget gnupg ca-certificates');
+        console.log('   sudo apt-get install -y fonts-liberation libasound2 libatk-bridge2.0-0');
+        console.log('   sudo apt-get install -y libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3');
+        console.log('   sudo apt-get install -y libexpat1 libfontconfig1 libgcc1 libgconf-2-4');
+        console.log('   sudo apt-get install -y libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0');
+        console.log('   sudo apt-get install -y libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0');
+        console.log('   sudo apt-get install -y libstdc++6 libx11-6 libx11-xcb1 libxcb1');
+        console.log('   sudo apt-get install -y libxcomposite1 libxcursor1 libxdamage1 libxext6');
+        console.log('   sudo apt-get install -y libxfixes3 libxi6 libxrandr2 libxrender1');
+        console.log('   sudo apt-get install -y libxss1 libxtst6 libxinerama1 xdg-utils');
+        return true; // Disable WhatsApp
+      }
+      
+      // Check if we have display capabilities (X11)
+      const hasDisplay = process.env.DISPLAY || process.env.WAYLAND_DISPLAY;
+      if (!hasDisplay) {
+        console.log('ℹ️ Tidak ada display server, WhatsApp Web akan berjalan dalam mode headless');
+      }
+      
+      return false; // System is compatible
+    } catch (error) {
+      console.log('⚠️ Error checking system compatibility:', error);
+      return true; // Disable WhatsApp on error
+    }
   }
 
   /**
@@ -126,20 +188,55 @@ export class AlarmNotificationService {
     try {
       console.log('📱 Creating WhatsApp client...');
       
+      // Enhanced Puppeteer configuration for Linux VPS
+      const puppeteerConfig = {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process', // Important for containers
+          '--disable-gpu',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-web-security',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--disable-extensions',
+          '--disable-default-apps',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--metrics-recording-only',
+          '--no-default-browser-check',
+          '--mute-audio',
+          '--disable-notifications',
+          '--disable-logging',
+          '--silent'
+        ],
+        timeout: 120000, // Increase timeout for slower VPS
+        defaultViewport: null,
+        ignoreDefaultArgs: ['--disable-extensions'],
+        executablePath: this.findChromiumExecutable()
+      };
+
       // Create client with LocalAuth for persistent sessions
       this.whatsAppClient = new Client({
         authStrategy: new LocalAuth({
           clientId: 'misred-iot-server',
           dataPath: './wwebjs_auth'
         }),
-        puppeteer: {
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-          timeout: 90000
+        puppeteer: puppeteerConfig,
+        webVersionCache: {
+          type: 'remote',
+          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
         }
       });
 
-      console.log('📱 WhatsApp client created with session path: ./wwebjs_auth');
+      console.log('📱 WhatsApp client created with enhanced Linux configuration');
 
       this.setupWhatsAppEventHandlers();
       
@@ -147,12 +244,47 @@ export class AlarmNotificationService {
       this.startWhatsAppInitialization().catch(error => {
         console.error('❌ Failed to initialize WhatsApp Web in constructor:', error);
         console.log('⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality.');
+        this.whatsAppDisabled = true;
         // Don't throw error to prevent service crash
       });
     } catch (error) {
       console.error('❌ Error creating WhatsApp client:', error);
       this.whatsAppDisabled = true;
     }
+  }
+
+  /**
+   * Find available Chromium/Chrome executable on the system
+   */
+  private findChromiumExecutable(): string | undefined {
+    const fs = require('fs');
+    
+    // Common Chrome/Chromium paths on Linux
+    const possiblePaths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/snap/bin/chromium',
+      '/usr/bin/chrome',
+      '/opt/google/chrome/chrome',
+      process.env.CHROME_BIN,
+      process.env.CHROMIUM_BIN
+    ].filter(Boolean);
+
+    for (const path of possiblePaths) {
+      try {
+        if (path && fs.existsSync(path)) {
+          console.log(`🔍 Found Chrome/Chromium executable: ${path}`);
+          return path;
+        }
+      } catch (error) {
+        // Continue to next path
+      }
+    }
+
+    console.log('⚠️ No system Chrome/Chromium found, using Puppeteer bundled version');
+    return undefined; // Let Puppeteer use its bundled version
   }
 
   /**
@@ -1181,5 +1313,45 @@ export class AlarmNotificationService {
       console.error("❌ Error deleting all notifications:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get system health and WhatsApp status
+   */
+  public getSystemHealth() {
+    return {
+      whatsapp_ready: this.isWhatsAppReady,
+      whatsapp_initializing: this.isWhatsAppInitializing,
+      whatsapp_disabled: this.whatsAppDisabled,
+      system_compatible: true, // Will be set during system check
+      chrome_found: true // Will be determined during initialization
+    };
+  }
+
+  /**
+   * Toggle WhatsApp service on/off (admin only)
+   */
+  public async toggleWhatsAppService(enabled: boolean): Promise<void> {
+    if (enabled) {
+      this.whatsAppDisabled = false;
+      await this.initializeWhatsAppClient();
+    } else {
+      this.whatsAppDisabled = true;
+      await this.resetWhatsApp();
+    }
+  }
+
+  /**
+   * Check if WhatsApp is disabled
+   */
+  public isWhatsAppDisabled(): boolean {
+    return this.whatsAppDisabled;
+  }
+
+  /**
+   * Manual restart WhatsApp (admin only)
+   */
+  public async restartWhatsApp(): Promise<void> {
+    await this.resetWhatsApp();
   }
 }

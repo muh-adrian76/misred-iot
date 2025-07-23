@@ -3,7 +3,7 @@ import mysql, { Pool } from "mysql2/promise";
 
 // MySQL
 export class MySQLDatabase {
-  private static instance: Pool;
+  private static instance: Pool | null = null;
 
   static getInstance(): Pool {
     if (!MySQLDatabase.instance) {
@@ -17,14 +17,54 @@ export class MySQLDatabase {
           waitForConnections: true,
           connectionLimit: 10,
           queueLimit: 0,
+          idleTimeout: 300000, // 5 minutes
+          maxIdle: 5
         });
-        console.log("✅ Terkoneksi ke Database MySQL.");
+        
+        // Test initial connection
+        MySQLDatabase.instance.execute("SELECT 1")
+          .then(() => {
+            console.log("✅ Terkoneksi ke Database MySQL.");
+          })
+          .catch((err) => {
+            console.error("❌ Initial MySQL connection test failed:", err);
+            // Reset instance on connection failure
+            MySQLDatabase.instance = null;
+          });
+          
       } catch (err) {
         console.error("❌ Gagal konek ke database:", err);
+        MySQLDatabase.instance = null;
         throw err;
       }
     }
     return MySQLDatabase.instance;
+  }
+
+  // Method to force reconnection
+  static forceReconnect(): Pool {
+    if (MySQLDatabase.instance) {
+      console.log("🔄 Forcing MySQL reconnection...");
+      try {
+        MySQLDatabase.instance.end();
+      } catch (err) {
+        console.warn("⚠️ Error closing existing pool:", err);
+      }
+      MySQLDatabase.instance = null;
+    }
+    return MySQLDatabase.getInstance();
+  }
+
+  // Health check method
+  static async healthCheck(): Promise<boolean> {
+    try {
+      const pool = MySQLDatabase.getInstance();
+      await pool.execute("SELECT 1");
+      return true;
+    } catch (error) {
+      console.error("❌ MySQL health check failed:", error);
+      return false;
+    }
   }
 }
 

@@ -45,37 +45,37 @@ export class AdminService {
   async getOverviewStats(): Promise<AdminStats> {
     try {
       // Get total users
-      const totalUsersResult = await this.db.query("SELECT COUNT(*) as count FROM users").get();
-      const totalUsers = totalUsersResult?.count || 0;
+      const [totalUsersResult] = await this.db.execute("SELECT COUNT(*) as count FROM users");
+      const totalUsers = totalUsersResult[0]?.count || 0;
 
       // Get total devices
-      const totalDevicesResult = await this.db.query("SELECT COUNT(*) as count FROM devices").get();
-      const totalDevices = totalDevicesResult?.count || 0;
+      const [totalDevicesResult] = await this.db.execute("SELECT COUNT(*) as count FROM devices");
+      const totalDevices = totalDevicesResult[0]?.count || 0;
 
       // Get total dashboards
-      const totalDashboardsResult = await this.db.query("SELECT COUNT(*) as count FROM dashboards").get();
-      const totalDashboards = totalDashboardsResult?.count || 0;
+      const [totalDashboardsResult] = await this.db.execute("SELECT COUNT(*) as count FROM dashboards");
+      const totalDashboards = totalDashboardsResult[0]?.count || 0;
 
       // Get active users (logged in within last 24 hours)
-      const activeUsersResult = await this.db.query(`
+      const [activeUsersResult] = await this.db.execute(`
         SELECT COUNT(*) as count FROM users 
         WHERE last_login >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
-      `).get();
-      const activeUsers = activeUsersResult?.count || 0;
+      `);
+      const activeUsers = activeUsersResult[0]?.count || 0;
 
       // Get online devices
-      const onlineDevicesResult = await this.db.query(`
+      const [onlineDevicesResult] = await this.db.execute(`
         SELECT COUNT(*) as count FROM devices WHERE status = 'online'
-      `).get();
-      const onlineDevices = onlineDevicesResult?.count || 0;
+      `);
+      const onlineDevices = onlineDevicesResult[0]?.count || 0;
 
       // Get total alarms
-      const totalAlarmsResult = await this.db.query("SELECT COUNT(*) as count FROM alarms").get();
-      const totalAlarms = totalAlarmsResult?.count || 0;
+      const [totalAlarmsResult] = await this.db.execute("SELECT COUNT(*) as count FROM alarms");
+      const totalAlarms = totalAlarmsResult[0]?.count || 0;
 
       // Get total payloads
-      const totalPayloadsResult = await this.db.query("SELECT COUNT(*) as count FROM payloads").get();
-      const totalPayloads = totalPayloadsResult?.count || 0;
+      const [totalPayloadsResult] = await this.db.execute("SELECT COUNT(*) as count FROM payloads");
+      const totalPayloads = totalPayloadsResult[0]?.count || 0;
 
       return {
         totalUsers,
@@ -101,7 +101,7 @@ export class AdminService {
         LIMIT ?
       `;
       
-      const users = await this.db.query(query).all(limit);
+      const [users] = await this.db.execute(query, [limit]);
       return users;
     } catch (error) {
       console.error("Error getting recent users:", error);
@@ -137,7 +137,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const devices = await this.db.query(query).all();
+      const [devices] = await this.db.execute(query);
       return devices;
     } catch (error) {
       console.error("Error getting device locations:", error);
@@ -153,7 +153,7 @@ export class AdminService {
         WHERE id = ?
       `;
       
-      const result = await this.db.query(query).run(latitude, longitude, address || null, deviceId);
+      const [result] = await this.db.execute(query, [latitude, longitude, address || null, deviceId]);
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating device location:", error);
@@ -166,7 +166,7 @@ export class AdminService {
       // Test database connection
       let database = true;
       try {
-        await this.db.query("SELECT 1").get();
+        await this.db.execute("SELECT 1");
       } catch {
         database = false;
       }
@@ -230,7 +230,7 @@ export class AdminService {
         ORDER BY u.created_at DESC
       `;
       
-      const users = await this.db.query(query).all();
+      const [users] = await this.db.execute(query);
       return users;
     } catch (error) {
       console.error("Error getting users with stats:", error);
@@ -264,7 +264,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const devices = await this.db.query(query).all();
+      const [devices] = await this.db.execute(query);
       return devices;
     } catch (error) {
       console.error("Error getting devices with stats:", error);

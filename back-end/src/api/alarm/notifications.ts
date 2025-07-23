@@ -511,6 +511,7 @@ export function alarmNotificationRoutes(
         try {
           const status = notificationService.getWhatsAppStatus();
           const sessionExists = await notificationService.checkSessionExists();
+          const healthStatus = notificationService.getSystemHealth();
           
           return {
             success: true,
@@ -518,6 +519,8 @@ export function alarmNotificationRoutes(
               ready: status.ready,
               initializing: status.initializing,
               session_exists: sessionExists,
+              disabled: healthStatus.whatsapp_disabled,
+              system_health: healthStatus,
               message: status.ready 
                 ? "WhatsApp Web is ready" 
                 : status.initializing 
@@ -531,6 +534,84 @@ export function alarmNotificationRoutes(
           return {
             success: false,
             message: "Failed to get WhatsApp status"
+          };
+        }
+      }
+    )
+
+    // 🔄 WhatsApp Toggle (Admin only)
+    .post(
+      "/whatsapp/toggle",
+      //@ts-ignore
+      async ({ jwt, cookie, body, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          
+          // Check admin access
+          const userService = new (require("../../services/UserService")).UserService(notificationService.db);
+          const user = await userService.getUserById(decoded.sub);
+          
+          if (!user?.is_admin) {
+            set.status = 403;
+            return {
+              success: false,
+              message: "Admin access required"
+            };
+          }
+
+          const { enabled } = body as { enabled: boolean };
+          
+          await notificationService.toggleWhatsAppService(enabled);
+          
+          return {
+            success: true,
+            message: enabled 
+              ? "WhatsApp service enabled. Check server logs for initialization status."
+              : "WhatsApp service disabled."
+          };
+        } catch (error) {
+          console.error("Error toggling WhatsApp:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Failed to toggle WhatsApp service"
+          };
+        }
+      }
+    )
+
+    // 🔄 WhatsApp Restart (Admin only)
+    .post(
+      "/whatsapp/restart",
+      //@ts-ignore
+      async ({ jwt, cookie, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          
+          // Check admin access
+          const userService = new (require("../../services/UserService")).UserService(notificationService.db);
+          const user = await userService.getUserById(decoded.sub);
+          
+          if (!user?.is_admin) {
+            set.status = 403;
+            return {
+              success: false,
+              message: "Admin access required"
+            };
+          }
+          
+          await notificationService.restartWhatsApp();
+          
+          return {
+            success: true,
+            message: "WhatsApp Web restart initiated. Check server logs for QR code."
+          };
+        } catch (error) {
+          console.error("Error restarting WhatsApp:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Failed to restart WhatsApp Web"
           };
         }
       }

@@ -4,7 +4,7 @@ import { useAuth } from "./use-auth";
 import { fetchFromBackend } from "@/lib/helper";
 
 export function useAdminAuth() {
-  const { isAuthenticated, loading: authLoading } = useAuth(true); // Skip redirect to handle it ourselves
+  const { isAuthenticated, loading: authLoading } = useAuth(true); // Skip redirect untuk handle manual
   const [isAdmin, setIsAdmin] = useState(undefined); // undefined = belum dicek
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,10 +17,12 @@ export function useAdminAuth() {
       }
 
       if (!isAuthenticated) {
-        console.log("useAdminAuth: Not authenticated");
+        console.log("useAdminAuth: Not authenticated - redirecting to 401");
         setIsAdmin(false);
         setUser(null);
         setLoading(false);
+        // Redirect ke 401 karena tidak terautentikasi
+        window.location.href = "/401";
         return;
       }
 
@@ -29,30 +31,38 @@ export function useAdminAuth() {
         const response = await fetchFromBackend("/auth/check-admin");
         
         console.log("useAdminAuth: Response status:", response.status);
-        console.log("useAdminAuth: Response ok:", response.ok);
         
         if (response.ok) {
           const data = await response.json();
           console.log("useAdminAuth: Admin check result -", { 
             isAdmin: data.isAdmin, 
-            user: data.user?.name, 
-            fullData: data,
-            dataType: typeof data.isAdmin,
-            booleanValue: Boolean(data.isAdmin)
+            user: data.user?.name 
           });
+          
           setIsAdmin(data.isAdmin || false);
           setUser(data.user || null);
+          
+          // Jika bukan admin, redirect ke halaman utama atau 401
+          if (!data.isAdmin) {
+            console.log("useAdminAuth: User is not admin - redirecting to 401");
+            window.location.href = "/401";
+            return;
+          }
         } else {
           console.log("useAdminAuth: Admin check failed with status:", response.status);
-          const errorText = await response.text();
-          console.log("useAdminAuth: Error response:", errorText);
           setIsAdmin(false);
           setUser(null);
+          // Jika check admin gagal, redirect ke 401
+          window.location.href = "/401";
+          return;
         }
       } catch (error) {
         console.error("useAdminAuth: Error checking admin status:", error);
         setIsAdmin(false);
         setUser(null);
+        // Error juga redirect ke 401
+        window.location.href = "/401";
+        return;
       } finally {
         setLoading(false);
       }
