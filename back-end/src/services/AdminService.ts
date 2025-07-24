@@ -8,6 +8,7 @@ interface AdminStats {
   onlineDevices: number;
   totalAlarms: number;
   totalPayloads: number;
+  recentUsers?: RecentUser[];
 }
 
 interface RecentUser {
@@ -45,36 +46,36 @@ export class AdminService {
   async getOverviewStats(): Promise<AdminStats> {
     try {
       // Get total users
-      const [totalUsersResult] = await this.db.execute("SELECT COUNT(*) as count FROM users");
+      const [totalUsersResult] = await this.db.query("SELECT COUNT(*) as count FROM users");
       const totalUsers = totalUsersResult[0]?.count || 0;
 
       // Get total devices
-      const [totalDevicesResult] = await this.db.execute("SELECT COUNT(*) as count FROM devices");
+      const [totalDevicesResult] = await this.db.query("SELECT COUNT(*) as count FROM devices");
       const totalDevices = totalDevicesResult[0]?.count || 0;
 
       // Get total dashboards
-      const [totalDashboardsResult] = await this.db.execute("SELECT COUNT(*) as count FROM dashboards");
+      const [totalDashboardsResult] = await this.db.query("SELECT COUNT(*) as count FROM dashboards");
       const totalDashboards = totalDashboardsResult[0]?.count || 0;
 
       // Get active users (logged in within last 24 hours)
-      const [activeUsersResult] = await this.db.execute(`
+      const [activeUsersResult] = await this.db.query(`
         SELECT COUNT(*) as count FROM users 
         WHERE last_login >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
       `);
       const activeUsers = activeUsersResult[0]?.count || 0;
 
       // Get online devices
-      const [onlineDevicesResult] = await this.db.execute(`
+      const [onlineDevicesResult] = await this.db.query(`
         SELECT COUNT(*) as count FROM devices WHERE status = 'online'
       `);
       const onlineDevices = onlineDevicesResult[0]?.count || 0;
 
       // Get total alarms
-      const [totalAlarmsResult] = await this.db.execute("SELECT COUNT(*) as count FROM alarms");
+      const [totalAlarmsResult] = await this.db.query("SELECT COUNT(*) as count FROM alarms");
       const totalAlarms = totalAlarmsResult[0]?.count || 0;
 
       // Get total payloads
-      const [totalPayloadsResult] = await this.db.execute("SELECT COUNT(*) as count FROM payloads");
+      const [totalPayloadsResult] = await this.db.query("SELECT COUNT(*) as count FROM payloads");
       const totalPayloads = totalPayloadsResult[0]?.count || 0;
 
       return {
@@ -101,7 +102,7 @@ export class AdminService {
         LIMIT ?
       `;
       
-      const [users] = await this.db.execute(query, [limit]);
+      const [users] = await this.db.query(query, [limit]);
       return users;
     } catch (error) {
       console.error("Error getting recent users:", error);
@@ -137,7 +138,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const [devices] = await this.db.execute(query);
+      const [devices] = await this.db.query(query);
       return devices;
     } catch (error) {
       console.error("Error getting device locations:", error);
@@ -153,7 +154,7 @@ export class AdminService {
         WHERE id = ?
       `;
       
-      const [result] = await this.db.execute(query, [latitude, longitude, address || null, deviceId]);
+      const [result] = await this.db.query(query, [latitude, longitude, address || null, deviceId]);
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating device location:", error);
@@ -166,7 +167,7 @@ export class AdminService {
       // Test database connection
       let database = true;
       try {
-        await this.db.execute("SELECT 1");
+        await this.db.query("SELECT 1");
       } catch {
         database = false;
       }
@@ -208,33 +209,54 @@ export class AdminService {
 
   async getAllUsersWithStats(): Promise<any[]> {
     try {
-      const query = `
-        SELECT 
-          u.id,
-          u.name,
-          u.email,
-          u.is_admin,
-          u.created_at,
-          u.last_login,
-          u.phone,
-          u.whatsapp_notif,
-          u.onboarding_completed,
-          COUNT(DISTINCT d.id) as device_count,
-          COUNT(DISTINCT dash.id) as dashboard_count,
-          COUNT(DISTINCT a.id) as alarm_count
-        FROM users u
-        LEFT JOIN devices d ON u.id = d.user_id
-        LEFT JOIN dashboards dash ON u.id = dash.user_id
-        LEFT JOIN alarms a ON u.id = a.user_id
-        GROUP BY u.id
-        ORDER BY u.created_at DESC
-      `;
+      // First, try a simple query to get all users
+      const simpleQuery = `SELECT * FROM users ORDER BY created_at DESC`;
+      const [simpleUsers] = await this.db.query(simpleQuery);
       
-      const [users] = await this.db.execute(query);
-      return users;
+      if (simpleUsers && simpleUsers.length > 0) {
+        // If simple query works, try the complex one
+        const query = `
+          SELECT 
+            u.id,
+            u.name,
+            u.email,
+            u.is_admin,
+            u.created_at,
+            u.last_login,
+            u.phone,
+            u.whatsapp_notif,
+            u.onboarding_completed,
+            COUNT(DISTINCT d.id) as device_count,
+            COUNT(DISTINCT dash.id) as dashboard_count,
+            COUNT(DISTINCT a.id) as alarm_count
+          FROM users u
+          LEFT JOIN devices d ON u.id = d.user_id
+          LEFT JOIN dashboards dash ON u.id = dash.user_id
+          LEFT JOIN alarms a ON u.id = a.user_id
+          GROUP BY u.id, u.name, u.email, u.is_admin, u.created_at, u.last_login, u.phone, u.whatsapp_notif, u.onboarding_completed
+          ORDER BY u.created_at DESC
+        `;
+        
+        const [users] = await this.db.query(query);
+        return users;
+      } else {
+        return [];
+      }
     } catch (error) {
-      console.error("Error getting users with stats:", error);
-      throw error;
+      console.error("💥 Error getting users with stats:", error);
+      // If complex query fails, return simple users
+      try {
+        const [fallbackUsers] = await this.db.query(`SELECT * FROM users ORDER BY created_at DESC`);
+        return fallbackUsers.map((user: any) => ({
+          ...user,
+          device_count: 0,
+          dashboard_count: 0,
+          alarm_count: 0
+        }));
+      } catch (fallbackError) {
+        console.error("💥 Fallback query also failed:", fallbackError);
+        throw error;
+      }
     }
   }
 
@@ -264,7 +286,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const [devices] = await this.db.execute(query);
+      const [devices] = await this.db.query(query);
       return devices;
     } catch (error) {
       console.error("Error getting devices with stats:", error);

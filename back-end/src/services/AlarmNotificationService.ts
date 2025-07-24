@@ -162,9 +162,6 @@ export class AlarmNotificationService {
       }
 
       if (!this.isWhatsAppReady && !this.isWhatsAppInitializing) {
-        console.log(
-          "🏥 WhatsApp health check: Not ready, attempting restart..."
-        );
         await this.startWhatsAppInitialization();
       } else if (this.isWhatsAppReady) {
         // Try to get client info to verify connection
@@ -175,13 +172,13 @@ export class AlarmNotificationService {
           }
         } catch (infoError) {
           console.log(
-            "🏥 WhatsApp health check: Connection seems stale, restarting..."
+            "🏥 WhatsApp health check: Gagal, Mencoba reset koneksi..."
           );
           await this.resetWhatsApp();
         }
       }
     } catch (error) {
-      console.error("❌ Health check error:", error);
+      console.error("❌ Health check gagal:", error);
     }
   }
 
@@ -393,17 +390,16 @@ export class AlarmNotificationService {
       }
     });
 
-    // Message sent acknowledgment
-    this.whatsAppClient.on("message_ack", (message, ack) => {
-      // Only log important ack states to reduce noise
-      if (ack === 1) {
-        console.log(`📧 Message ${message.id.id} delivered to server`);
-      } else if (ack === 2) {
-        console.log(`📧 Message ${message.id.id} delivered to recipient`);
-      } else if (ack === 3) {
-        console.log(`📧 Message ${message.id.id} read by recipient`);
-      }
-    });
+    // Aktifkan ini untuk memantau pengiriman pesan
+    // this.whatsAppClient.on("message_ack", (message, ack) => {
+    //   if (ack === 1) {
+    //     console.log(`📧 Pesan ${message.id.id} telah dikirim ke server.`);
+    //   } else if (ack === 2) {
+    //     console.log(`📧 Pesan ${message.id.id} telah diterima oleh penerima.`);
+    //   } else if (ack === 3) {
+    //     console.log(`📧 Pesan ${message.id.id} telah dibaca oleh penerima.`);
+    //   }
+    // });
 
     // Remote session saved event
     this.whatsAppClient.on("remote_session_saved", () => {

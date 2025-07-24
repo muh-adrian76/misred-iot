@@ -66,10 +66,10 @@ export const getDeviceLocationsSchema = {
         status: t.String({ description: "Status device", example: "online" }),
         user_id: t.Number({ description: "ID pemilik device", example: 1 }),
         user_name: t.String({ description: "Nama pemilik device", example: "John Doe" }),
-        latitude: t.Optional(t.Number({ description: "Koordinat latitude", example: -7.2575 })),
-        longitude: t.Optional(t.Number({ description: "Koordinat longitude", example: 112.7521 })),
-        address: t.Optional(t.String({ description: "Alamat lokasi", example: "Lab A, Gedung Utama" })),
-        last_seen: t.Optional(t.String({ description: "Terakhir terlihat", example: "2 menit lalu" }))
+        latitude: t.Union([t.Number(), t.Null()], { description: "Koordinat latitude", example: -7.2575 }),
+        longitude: t.Union([t.Number(), t.Null()], { description: "Koordinat longitude", example: 112.7521 }),
+        address: t.Union([t.String(), t.Null()], { description: "Alamat lokasi", example: "Lab A, Gedung Utama" }),
+        last_seen: t.Union([t.String(), t.Null()], { description: "Terakhir terlihat", example: "2 menit lalu" })
       }))
     }),
     403: t.Object({
@@ -90,7 +90,7 @@ export const putDeviceLocationSchema = {
   body: t.Object({
     latitude: t.Number({ description: "Koordinat latitude", example: -7.2575 }),
     longitude: t.Number({ description: "Koordinat longitude", example: 112.7521 }),
-    address: t.Optional(t.String({ description: "Alamat lokasi", example: "Lab A, Gedung Utama" }))
+    address: t.Union([t.String(), t.Null()], { description: "Alamat lokasi", example: "Lab A, Gedung Utama" })
   }),
   response: {
     200: t.Object({
@@ -145,8 +145,8 @@ export const getAllUsersWithStatsSchema = {
         email: t.String({ description: "Email user", example: "john@example.com" }),
         is_admin: t.Boolean({ description: "Status admin", example: false }),
         created_at: t.String({ description: "Tanggal pendaftaran", example: "2025-01-20T10:30:00Z" }),
-        last_login: t.String({ description: "Login terakhir", example: "2025-01-23T15:45:00Z" }),
-        phone: t.Optional(t.String({ description: "Nomor telepon", example: "083117228331" })),
+        last_login: t.Union([t.String(), t.Null()], { description: "Login terakhir", example: "2025-01-23T15:45:00Z" }),
+        phone: t.Union([t.String(), t.Null()], { description: "Nomor telepon", example: "083117228331" }),
         whatsapp_notif: t.Boolean({ description: "Status notifikasi WhatsApp", example: true }),
         onboarding_completed: t.Boolean({ description: "Status onboarding", example: true }),
         device_count: t.Number({ description: "Jumlah devices", example: 3 }),
@@ -172,18 +172,18 @@ export const getAllDevicesWithStatsSchema = {
       data: t.Array(t.Object({
         id: t.Number({ description: "ID device", example: 1 }),
         description: t.String({ description: "Deskripsi device", example: "Sensor Suhu Lab A" }),
-        board_type: t.Optional(t.String({ description: "Tipe board", example: "ESP32" })),
+        board_type: t.Union([t.String(), t.Null()], { description: "Tipe board", example: "ESP32" }),
         protocol: t.String({ description: "Protokol komunikasi", example: "HTTP" }),
         status: t.String({ description: "Status device", example: "online" }),
         created_at: t.String({ description: "Tanggal dibuat", example: "2025-01-20T10:30:00Z" }),
-        latitude: t.Optional(t.Number({ description: "Koordinat latitude", example: -7.2575 })),
-        longitude: t.Optional(t.Number({ description: "Koordinat longitude", example: 112.7521 })),
-        address: t.Optional(t.String({ description: "Alamat lokasi", example: "Lab A, Gedung Utama" })),
+        latitude: t.Union([t.Number(), t.Null()], { description: "Koordinat latitude", example: -7.2575 }),
+        longitude: t.Union([t.Number(), t.Null()], { description: "Koordinat longitude", example: 112.7521 }),
+        address: t.Union([t.String(), t.Null()], { description: "Alamat lokasi", example: "Lab A, Gedung Utama" }),
         user_name: t.String({ description: "Nama pemilik", example: "John Doe" }),
         user_email: t.String({ description: "Email pemilik", example: "john@example.com" }),
         datastream_count: t.Number({ description: "Jumlah datastreams", example: 5 }),
         payload_count: t.Number({ description: "Jumlah data payloads", example: 1024 }),
-        last_data_time: t.Optional(t.String({ description: "Waktu data terakhir", example: "2025-01-23T15:45:00Z" }))
+        last_data_time: t.Union([t.String(), t.Null()], { description: "Waktu data terakhir", example: "2025-01-23T15:45:00Z" })
       }))
     }),
     403: t.Object({

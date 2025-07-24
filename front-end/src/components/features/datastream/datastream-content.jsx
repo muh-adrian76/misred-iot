@@ -123,6 +123,7 @@ export default function DatastreamContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Datastream masih kosong</h2>
+          <p className="text-gray-500 dark:text-gray-400">Datastream digunakan untuk mendefinisikan aliran data masuk dan keluar dari perangkat IoT. Gunakan untuk mencatat data sensor dan aktuator.</p>
           <Button
             onClick={() => setAddFormOpen(true)}
             className="gap-2 transition-all"

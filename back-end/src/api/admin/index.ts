@@ -32,6 +32,14 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }
 
           const stats = await adminService.getOverviewStats();
+          // Jika stats ada recentUsers, format juga
+          if (stats.recentUsers) {
+            stats.recentUsers = stats.recentUsers.map((row) => ({
+              ...row,
+              is_admin: !!row.is_admin,
+              created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString()
+            }));
+          }
           return {
             status: "success",
             data: stats
@@ -65,9 +73,15 @@ export function adminRoutes(adminService: AdminService, userService: UserService
 
           const limit = query.limit ? parseInt(String(query.limit)) : 10;
           const users = await adminService.getRecentUsers(limit);
+          // Format agar is_admin boolean dan created_at string ISO
+          const formattedUsers = users.map((row) => ({
+            ...row,
+            is_admin: !!row.is_admin,
+            created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString()
+          }));
           return {
             status: "success",
-            data: users
+            data: formattedUsers
           };
         } catch (error) {
           console.error("Error getting recent users:", error);
@@ -78,6 +92,87 @@ export function adminRoutes(adminService: AdminService, userService: UserService
         }
       },
       getRecentUsersSchema
+    )
+
+    // Get all users with statistics
+    .get(
+      "/users",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const users = await adminService.getAllUsersWithStats();
+          
+          // Format agar is_admin boolean dan created_at string ISO
+          const formattedUsers = users.map((row) => ({
+            ...row,
+            is_admin: !!row.is_admin,
+            whatsapp_notif: !!row.whatsapp_notif,
+            onboarding_completed: !!row.onboarding_completed,
+            created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
+            last_login: row.last_login ? (typeof row.last_login === "string" ? row.last_login : new Date(row.last_login).toISOString()) : null
+          }));
+          
+          return {
+            status: "success",
+            data: formattedUsers
+          };
+        } catch (error) {
+          console.error("Error getting users with stats:", error);
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Gagal memuat data users"
+          }), { status: 500 });
+        }
+      },
+      getAllUsersWithStatsSchema
+    )
+
+    // Get all devices with statistics
+    .get(
+      "/devices",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const devices = await adminService.getAllDevicesWithStats();
+          // Format agar created_at dan last_data_time string ISO
+          const formattedDevices = devices.map((row) => ({
+            ...row,
+            created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
+            last_data_time: row.last_data_time ? (typeof row.last_data_time === "string" ? row.last_data_time : new Date(row.last_data_time).toISOString()) : null
+          }));
+          return {
+            status: "success",
+            data: formattedDevices
+          };
+        } catch (error) {
+          console.error("Error getting devices with stats:", error);
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Gagal memuat data devices"
+          }), { status: 500 });
+        }
+      },
+      getAllDevicesWithStatsSchema
     )
 
     // Get device locations for maps
@@ -97,9 +192,16 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }
 
           const devices = await adminService.getDeviceLocations();
+          // Format agar latitude/longitude number dan last_seen string
+          const formattedDevices = devices.map((row) => ({
+            ...row,
+            latitude: row.latitude !== undefined ? Number(row.latitude) : undefined,
+            longitude: row.longitude !== undefined ? Number(row.longitude) : undefined,
+            last_seen: row.last_seen ? String(row.last_seen) : undefined
+          }));
           return {
             status: "success",
-            data: devices
+            data: formattedDevices
           };
         } catch (error) {
           console.error("Error getting device locations:", error);
@@ -185,69 +287,5 @@ export function adminRoutes(adminService: AdminService, userService: UserService
         }
       },
       getSystemHealthSchema
-    )
-
-    // Get all users with statistics
-    .get(
-      "/users",
-      // @ts-ignore
-      async ({ jwt, cookie }) => {
-        try {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const adminUser = await userService.getUserById(decoded.sub);
-          
-          if (!adminUser?.is_admin) {
-            return new Response(JSON.stringify({
-              status: "error",
-              message: "Unauthorized: Admin access required"
-            }), { status: 403 });
-          }
-
-          const users = await adminService.getAllUsersWithStats();
-          return {
-            status: "success",
-            data: users
-          };
-        } catch (error) {
-          console.error("Error getting users with stats:", error);
-          return new Response(JSON.stringify({
-            status: "error",
-            message: "Gagal memuat data users"
-          }), { status: 500 });
-        }
-      },
-      getAllUsersWithStatsSchema
-    )
-
-    // Get all devices with statistics
-    .get(
-      "/devices",
-      // @ts-ignore
-      async ({ jwt, cookie }) => {
-        try {
-          const decoded = await authorizeRequest(jwt, cookie);
-          const adminUser = await userService.getUserById(decoded.sub);
-          
-          if (!adminUser?.is_admin) {
-            return new Response(JSON.stringify({
-              status: "error",
-              message: "Unauthorized: Admin access required"
-            }), { status: 403 });
-          }
-
-          const devices = await adminService.getAllDevicesWithStats();
-          return {
-            status: "success",
-            data: devices
-          };
-        } catch (error) {
-          console.error("Error getting devices with stats:", error);
-          return new Response(JSON.stringify({
-            status: "error",
-            message: "Gagal memuat data devices"
-          }), { status: 500 });
-        }
-      },
-      getAllDevicesWithStatsSchema
     );
 }

@@ -205,6 +205,7 @@ export default function DeviceContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Device masih kosong</h2>
+          <p className="text-gray-500 dark:text-gray-400">Device digunakan untuk mendefinisikan perangkat IoT.</p>
           <Button
             onClick={() => setAddFormOpen(true)}
             className="gap-2 transition-all"

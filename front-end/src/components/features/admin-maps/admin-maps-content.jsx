@@ -10,6 +10,7 @@ import {
   Beaker,
   X
 } from "lucide-react";
+import MapView from "@/components/custom/other/MapView";
 
 // Device status icon
 function DeviceStatusIcon({ status, type }) {
@@ -84,7 +85,7 @@ function DeviceInfoPanel({ device, onClose }) {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Location</p>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{device.location.address}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">{device.location?.address || 'Alamat tidak tersedia'}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Last Seen</p>
@@ -93,7 +94,7 @@ function DeviceInfoPanel({ device, onClose }) {
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Coordinates</p>
             <p className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-              {device.location.lat.toFixed(6)}, {device.location.lng.toFixed(6)}
+              {device.location?.lat?.toFixed(6) || '0.000000'}, {device.location?.lng?.toFixed(6) || '0.000000'}
             </p>
           </div>
         </div>
@@ -191,46 +192,21 @@ export default function AdminMapsContent({
         </div>
       </div>
 
-      {/* Map Container */}
+      {/* Map Container - Leaflet integration */}
       <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Map Placeholder - You can integrate with Google Maps or other map services */}
-        <div className="h-96 bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center relative">
-          {/* Map would go here */}
-          <div className="text-center">
-            <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-2">
-              Interactive Map
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400">
-              Integrasi dengan Google Maps atau layanan peta lainnya
-            </p>
-          </div>
-
-          {/* Sample Device Markers */}
-          <div className="absolute inset-0">
-            {devices.map((device, index) => (
-              <button
-                key={device.id}
-                onClick={() => selectDevice(device)}
-                className={`absolute transform -translate-x-1/2 -translate-y-1/2 transition-all hover:scale-110 ${
-                  selectedDevice?.id === device.id ? 'scale-125 z-10' : ''
-                }`}
-                style={{
-                  left: `${30 + index * 20}%`,
-                  top: `${40 + index * 10}%`
-                }}
-              >
-                <div className={`p-2 rounded-full shadow-lg border-2 ${
-                  device.status === 'online'
-                    ? 'bg-green-500 border-green-600 text-white'
-                    : 'bg-red-500 border-red-600 text-white'
-                }`}>
-                  <MapPin className="w-4 h-4" />
-                </div>
-              </button>
-            ))}
-          </div>
-
+        <div className="h-[600px]">
+          <MapView
+            devices={devices.map(device => ({
+              ...device,
+              latitude: device.location?.lat ?? device.latitude,
+              longitude: device.location?.lng ?? device.longitude,
+              description: device.name ?? device.description,
+              address: device.location?.address ?? device.address,
+              status: device.status,
+            }))}
+            onMarkerClick={selectDevice}
+            selectedDeviceId={selectedDevice?.id}
+          />
           {/* Device Info Panel */}
           <DeviceInfoPanel 
             device={selectedDevice} 
@@ -280,7 +256,7 @@ export default function AdminMapsContent({
                         {device.name}
                       </h4>
                       <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {device.location.address}
+                        {device.location?.address || 'Alamat tidak tersedia'}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         {device.status === 'online' ? (

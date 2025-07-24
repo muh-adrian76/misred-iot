@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, User, Mail, Lock, Crown, Users } from "lucide-react";
 
 // Add User Dialog
@@ -123,10 +123,21 @@ function AddUserDialog({ isOpen, onClose, onSubmit }) {
 // Edit User Dialog
 function EditUserDialog({ isOpen, onClose, onSubmit, user }) {
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    is_admin: user?.is_admin || false
+    name: "",
+    email: "",
+    is_admin: false
   });
+
+  // Update form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        email: user.email || "",
+        is_admin: user.is_admin || false
+      });
+    }
+  }, [user]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

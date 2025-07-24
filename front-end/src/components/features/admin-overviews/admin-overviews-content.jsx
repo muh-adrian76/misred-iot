@@ -1,3 +1,4 @@
+import { convertDate } from "@/lib/helper";
 import { 
   Users, 
   Activity, 
@@ -48,11 +49,8 @@ export default function AdminOverviewsContent({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Admin Dashboard
+            Dashboard Admin
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Selamat datang, {user?.name}! Kelola seluruh sistem MiSREd-IoT
-          </p>
         </div>
         <div className="flex items-center gap-2 mt-4 sm:mt-0">
           <button
@@ -89,11 +87,6 @@ export default function AdminOverviewsContent({
               <Users className="w-6 h-6 text-primary" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 dark:text-green-400">+12%</span>
-            <span className="text-gray-600 dark:text-gray-400 ml-1">dari bulan lalu</span>
-          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
@@ -109,11 +102,6 @@ export default function AdminOverviewsContent({
             <div className="bg-green-100 dark:bg-green-900 p-3 rounded-lg">
               <Activity className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm">
-            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            <span className="text-green-600 dark:text-green-400">+8%</span>
-            <span className="text-gray-600 dark:text-gray-400 ml-1">dari bulan lalu</span>
           </div>
         </div>
 
@@ -131,18 +119,18 @@ export default function AdminOverviewsContent({
               <BarChart3 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
+          {/* <div className="mt-4 flex items-center text-sm">
             <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
             <span className="text-green-600 dark:text-green-400">+15%</span>
             <span className="text-gray-600 dark:text-gray-400 ml-1">dari bulan lalu</span>
-          </div>
+          </div> */}
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                Active Users
+                Pengguna Aktif (Online)
               </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
                 {stats.activeUsers}
@@ -152,17 +140,13 @@ export default function AdminOverviewsContent({
               <Eye className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm">
-            <span className="text-green-600 dark:text-green-400">Online sekarang</span>
-          </div>
         </div>
       </div>
 
-      {/* Quick Actions & Recent Users */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Quick Actions
+            Menu
           </h3>
           <div className="space-y-3">
             <Link 
@@ -171,7 +155,7 @@ export default function AdminOverviewsContent({
             >
               <Users className="w-5 h-5 text-blue-600" />
               <div>
-                <p className="font-medium text-gray-900 dark:text-white">Kelola Users</p>
+                <p className="font-medium text-gray-900 dark:text-white">Kelola Data Pengguna</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Tambah, edit, atau hapus akun user</p>
               </div>
             </Link>
@@ -185,19 +169,12 @@ export default function AdminOverviewsContent({
                 <p className="text-sm text-gray-600 dark:text-gray-400">Monitor lokasi semua perangkat</p>
               </div>
             </Link>
-            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <Shield className="w-5 h-5 text-purple-600" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Pengaturan Sistem</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Konfigurasi sistem dan keamanan</p>
-              </div>
-            </button>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Recent Users
+            Pengguna Aktif Baru-Baru Ini
           </h3>
           <div className="space-y-3">
             {stats.recentUsers.map((user, index) => (
@@ -211,33 +188,9 @@ export default function AdminOverviewsContent({
                   <p className="font-medium text-gray-900 dark:text-white">{user.name}</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">{user.email}</p>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{user.created_at}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{convertDate(user.created_at)}</span>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          System Status
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-900 dark:text-white">Database</span>
-            <span className="text-sm text-green-600 dark:text-green-400 ml-auto">Online</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-900 dark:text-white">MQTT Broker</span>
-            <span className="text-sm text-green-600 dark:text-green-400 ml-auto">Online</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span className="text-gray-900 dark:text-white">Email Service</span>
-            <span className="text-sm text-yellow-600 dark:text-yellow-400 ml-auto">Warning</span>
           </div>
         </div>
       </div>

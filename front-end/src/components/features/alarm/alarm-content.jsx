@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import unitOptions from "../datastream/unit.json";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
+import { convertDate } from "@/lib/helper";
 
 export default function AlarmContent({
   alarms,
@@ -90,7 +91,7 @@ export default function AlarmContent({
       label: "Terakhir Dipicu",
       render: (row) =>
         row.last_triggered
-          ? new Date(row.last_triggered).toLocaleString()
+          ? convertDate(row.last_triggered)
           : "-",
     },
   ];
@@ -141,6 +142,7 @@ export default function AlarmContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Alarm masih kosong</h2>
+          <p className="text-gray-500 dark:text-gray-400">Alarm digunakan untuk mendefinisikan kondisi bahaya yang akan memunculkan notifikasi berdasarkan data dari perangkat IoT.</p>
           <Button
             onClick={() => setAddFormOpen(true)}
             className="gap-2 transition-all"
