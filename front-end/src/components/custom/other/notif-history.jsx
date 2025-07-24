@@ -43,6 +43,7 @@ import {
   Smartphone,
   BellRing,
   ChartBar,
+  Trash2,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
@@ -84,12 +85,6 @@ const NotificationHistoryItem = ({ notification }) => {
             <h4 className="font-medium text-foreground">
               {notification.alarm_description}
             </h4>
-            {notification.whatsapp_sent && (
-              <Badge variant="outline" className="text-xs">
-                <Smartphone className="w-3 h-3 mr-1" />
-                WhatsApp
-              </Badge>
-            )}
           </div>
 
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -111,16 +106,6 @@ const NotificationHistoryItem = ({ notification }) => {
             </div>
           </div>
         </div>
-
-        <div className="text-right text-xs text-muted-foreground space-y-1">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {formatTimeAgo(notification.triggered_at)}
-          </div>
-          <div className="text-xs opacity-75">
-            {formatDateTime(notification.triggered_at)}
-          </div>
-        </div>
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t">
@@ -128,17 +113,19 @@ const NotificationHistoryItem = ({ notification }) => {
           {notification.whatsapp_sent ? (
             <div className="flex items-center gap-1 text-green-600">
               <CheckCircle className="w-3 h-3" />
-              <span className="text-xs">WhatsApp terkirim</span>
+              <span className="text-xs">
+                Terkirim pada Browser dan WhatsApp
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-1 text-gray-500">
-              <XCircle className="w-3 h-3" />
-              <span className="text-xs">Hanya browser</span>
+              <CheckCircle className="w-3 h-3" />
+              <span className="text-xs">Browser</span>
             </div>
           )}
         </div>
 
-        <Badge
+        {/* <Badge
           variant={
             notification.notification_type === "all" ? "default" : "secondary"
           }
@@ -147,7 +134,19 @@ const NotificationHistoryItem = ({ notification }) => {
           {notification.notification_type === "all"
             ? "Browser dan WhatsApp"
             : "Hanya Browser"}
-        </Badge>
+        </Badge> */}
+      </div>
+
+      <div className="text-right text-xs text-muted-foreground space-y-1">
+        <div className="flex justify-between items-center gap-1">
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            {formatTimeAgo(notification.triggered_at)}
+          </div>
+          <span className="text-xs opacity-75">
+            {formatDateTime(notification.triggered_at)}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -178,9 +177,9 @@ export default function NotifHistory({ open, setOpen }) {
       const response = await fetchFromBackend(
         `/notifications/history?${params}`
       );
-      
+
       const data = await response.json();
-      
+
       // Handle API errors gracefully
       if (!response.ok) {
         // If backend returns structured error response, use it
@@ -192,14 +191,14 @@ export default function NotifHistory({ open, setOpen }) {
               page: 1,
               limit: pageSize,
               total: 0,
-              pages: 1
+              pages: 1,
             },
-            message: data.message || "Gagal mengambil riwayat notifikasi"
+            message: data.message || "Gagal mengambil riwayat notifikasi",
           };
         }
         throw new Error("Failed to fetch notification history");
       }
-      
+
       return data;
     },
     enabled: open && activeIndex === 0,
@@ -213,11 +212,11 @@ export default function NotifHistory({ open, setOpen }) {
       const response = await fetchFromBackend("/notifications/mark-all-read", {
         method: "POST",
       });
-      
+
       if (!response.ok) {
         throw new Error("Failed to mark all notifications as read");
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -226,6 +225,29 @@ export default function NotifHistory({ open, setOpen }) {
     },
     onError: (error) => {
       alert("Gagal menandai semua notifikasi sebagai dibaca: " + error.message);
+    },
+  });
+
+  // Delete all notifications mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetchFromBackend("/notifications/delete-all", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete all notifications");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Refetch the current page data
+      refetch();
+      alert("Semua riwayat notifikasi berhasil dihapus");
+    },
+    onError: (error) => {
+      alert("Gagal menghapus semua riwayat notifikasi: " + error.message);
     },
   });
 
@@ -369,8 +391,8 @@ export default function NotifHistory({ open, setOpen }) {
               <Select
                 value={pageSize.toString()}
                 onValueChange={(value) => {
-                    setPageSize(parseInt(value));
-                    setCurrentPage(1);
+                  setPageSize(parseInt(value));
+                  setCurrentPage(1);
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -389,33 +411,35 @@ export default function NotifHistory({ open, setOpen }) {
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={!historyData?.notifications?.length || error || isLoading}
+                    disabled={
+                      !historyData?.notifications?.length || error || isLoading
+                    }
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Ekspor
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-min p-1" align="end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="justify-start"
-                      onClick={exportToCSV}
-                      disabled={!historyData?.notifications?.length || error}
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Ekspor CSV
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={exportToPDF}
-                      disabled={!historyData?.notifications?.length || error}
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Ekspor PDF
-                    </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="justify-start"
+                    onClick={exportToCSV}
+                    disabled={!historyData?.notifications?.length || error}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Ekspor CSV
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={exportToPDF}
+                    disabled={!historyData?.notifications?.length || error}
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Ekspor PDF
+                  </Button>
                 </PopoverContent>
               </Popover>
             </div>
@@ -438,11 +462,12 @@ export default function NotifHistory({ open, setOpen }) {
                     Gagal memuat riwayat
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-sm mb-4">
-                    {historyData?.message || "Terjadi kesalahan saat mengambil data riwayat notifikasi."}
+                    {historyData?.message ||
+                      "Terjadi kesalahan saat mengambil data riwayat notifikasi."}
                   </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => refetch()}
                     className="text-sm"
                   >
@@ -473,32 +498,34 @@ export default function NotifHistory({ open, setOpen }) {
             </ScrollArea>
 
             {/* Pagination */}
-            {historyData?.pagination && 
-             !error && 
-             !isLoading && 
-             historyData.pagination.pages > 1 && (
-              <div className="flex flex-col gap-2 items-center justify-between pt-4">
-                <div className="text-sm text-muted-foreground">
-                  Halaman {historyData.pagination.page} dari{" "}
-                  {historyData.pagination.pages} ({historyData.pagination.total}{" "}
-                  total notifikasi)
-                </div>
+            {historyData?.pagination &&
+              !error &&
+              !isLoading &&
+              historyData.pagination.pages > 1 && (
+                <div className="flex flex-col gap-2 items-center justify-between pt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Halaman {historyData.pagination.page} dari{" "}
+                    {historyData.pagination.pages} (
+                    {historyData.pagination.total} total notifikasi)
+                  </div>
 
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          setCurrentPage((prev) => Math.max(1, prev - 1))
-                        }
-                        className={cn(
-                          currentPage === 1 && "pointer-events-none opacity-50"
-                        )}
-                      />
-                    </PaginationItem>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(1, prev - 1))
+                          }
+                          className={cn(
+                            currentPage === 1 &&
+                              "pointer-events-none opacity-50"
+                          )}
+                        />
+                      </PaginationItem>
 
-                    {[...Array(Math.min(5, historyData.pagination.pages))].map(
-                      (_, i) => {
+                      {[
+                        ...Array(Math.min(5, historyData.pagination.pages)),
+                      ].map((_, i) => {
                         const pageNumber = i + 1;
                         return (
                           <PaginationItem key={pageNumber}>
@@ -510,54 +537,55 @@ export default function NotifHistory({ open, setOpen }) {
                             </PaginationLink>
                           </PaginationItem>
                         );
-                      }
-                    )}
+                      })}
 
-                    {historyData.pagination.pages > 5 && (
+                      {historyData.pagination.pages > 5 && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+
                       <PaginationItem>
-                        <PaginationEllipsis />
+                        <PaginationNext
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(historyData.pagination.pages, prev + 1)
+                            )
+                          }
+                          className={cn(
+                            currentPage === historyData.pagination.pages &&
+                              "pointer-events-none opacity-50"
+                          )}
+                        />
                       </PaginationItem>
-                    )}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
 
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          setCurrentPage((prev) =>
-                            Math.min(historyData.pagination.pages, prev + 1)
-                          )
-                        }
-                        className={cn(
-                          currentPage === historyData.pagination.pages &&
-                            "pointer-events-none opacity-50"
-                        )}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-
-            {/* Mark All as Read Button */}
+            {/* Delete All History Button */}
             {historyData?.notifications?.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
                   onClick={() => {
-                    markAllAsReadMutation.mutate();
+                    if (confirm("Apakah Anda yakin ingin menghapus semua riwayat notifikasi? Tindakan ini tidak dapat dibatalkan.")) {
+                      deleteAllMutation.mutate();
+                    }
                   }}
-                  disabled={markAllAsReadMutation.isPending}
+                  disabled={deleteAllMutation.isPending}
                   className="w-full"
                 >
-                  {markAllAsReadMutation.isPending ? (
+                  {deleteAllMutation.isPending ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
-                      Memproses...
+                      Menghapus...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Tandai Semua Sebagai Dibaca
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Hapus Semua Riwayat
                     </>
                   )}
                 </Button>

@@ -20,6 +20,7 @@ import {
   BellRing,
   Check,
   CheckCheck,
+  CheckCircle,
   Filter,
   History,
   X,
@@ -62,6 +63,25 @@ const defaultMarkAllAsRead = async () => {
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
     throw error; // Re-throw to let the mutation handle it
+  }
+};
+
+const defaultDeleteAllNotifications = async () => {
+  try {
+    const response = await fetchFromBackend("/notifications/delete-all", {
+      method: "POST",
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP ${response.status}: Failed to delete all notifications`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error deleting all notifications:", error);
+    throw error;
   }
 };
 
@@ -116,7 +136,7 @@ const NotificationItem = ({
   return (
     <div
       className={cn(
-        "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm cursor-pointer",
+        "group relative flex items-start gap-3 p-4 rounded-lg border transition-all duration-200 hover:bg-muted/30 hover:shadow-sm",
         !notification.isRead &&
           "border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10 dark:border-l-red-400",
         notification.isRead && "border-border hover:border-muted-foreground/20"
@@ -164,11 +184,11 @@ const NotificationItem = ({
               <span className="text-xs text-muted-foreground font-medium">
                 {formatTimeAgo(notification.createdAt)}
               </span>
-              {!notification.isRead && (
+              {/* {!notification.isRead && (
                 <span className="text-xs text-red-600 dark:text-red-400 font-medium">
                   Klik untuk tandai dibaca
                 </span>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -184,10 +204,12 @@ export function NotificationCenter({
   fetchNotifications = defaultFetchNotifications,
   onMarkAsRead = defaultMarkAsRead,
   onMarkAllAsRead = defaultMarkAllAsRead,
+  onDeleteAllNotifications = defaultDeleteAllNotifications,
   onNotificationClick,
   maxHeight = "h-96",
   showFilter = true,
   showMarkAllRead = true,
+  showDeleteAll = true,
   enableRealTimeUpdates = false,
   updateInterval = 30000,
   enableBrowserNotifications = false,
@@ -197,7 +219,6 @@ export function NotificationCenter({
     description: "Alarm yang terpicu akan otomatis ditampilkan disini.",
   },
 }) {
-  const [filter, setFilter] = useState("unread");
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -230,58 +251,68 @@ export function NotificationCenter({
     return () => clearInterval(interval);
   }, [enableRealTimeUpdates, updateInterval, queryClient]);
 
-  // Fetch saved notifications from database
+  // Fetch unread notifications from database (always fetch, no filter needed)
   const {
     data: savedNotifications = [],
     isLoading: isLoadingSaved,
     refetch: refetchSaved,
     error: savedNotificationsError,
   } = useQuery({
-    queryKey: ["saved-notifications"],
+    queryKey: ["unread-notifications"],
     queryFn: async () => {
       try {
+        console.log("🔍 Fetching unread notifications from /notifications/");
         const response = await fetchFromBackend("/notifications/");
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch notifications`);
         }
         const data = await response.json();
+        console.log("📥 Received unread notifications:", data);
         return data.notifications || [];
       } catch (error) {
-        console.error("Error fetching notifications:", error);
+        console.error("Error fetching unread notifications:", error);
         throw error; // Re-throw to let React Query handle it
       }
     },
-    enabled: filter === "all", // Only fetch when viewing "all" filter
     refetchOnWindowFocus: false,
     staleTime: 0, // Always consider data stale to force refetch
     retry: 2, // Retry failed requests up to 2 times
     retryDelay: 1000, // Wait 1 second between retries
   });
 
-  // Effect to refetch saved notifications when filter changes to "all"
-  useEffect(() => {
-    if (filter === "all") {
-      refetchSaved();
-    }
-  }, [filter, refetchSaved]);
-
-  const { data: notifications = [], isLoading } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: fetchNotifications,
-    initialData: staticNotifications,
-    refetchInterval: enableRealTimeUpdates ? updateInterval : false,
-    enabled: !staticNotifications && filter === "all",
-  });
-
-  // Choose notifications based on filter
+  // Display only unread notifications from database (savedNotifications)
+  // WebSocket notifications (alarmNotifications) are temporary until saved to database
   const displayNotifications = useMemo(() => {
-    if (filter === "unread") {
-      return alarmNotifications; // WebSocket notifications (temporary)
-    } else {
-      return savedNotifications; // Database notifications (saved)
-    }
-  }, [filter, alarmNotifications, savedNotifications]);
+    console.log("🔄 Computing displayNotifications...");
+    console.log("📡 WebSocket notifications (alarmNotifications):", alarmNotifications);
+    console.log("💾 Database notifications (savedNotifications):", savedNotifications);
+    
+    // Combine WebSocket notifications (temporary) + Database unread notifications
+    const combinedNotifications = [...alarmNotifications, ...savedNotifications];
+    console.log("🔗 Combined notifications:", combinedNotifications);
+    
+    // Remove duplicates by ID (prefer WebSocket version if exists)
+    const uniqueNotifications = combinedNotifications.reduce((acc, notification) => {
+      const existingIndex = acc.findIndex(n => n.id === notification.id);
+      if (existingIndex === -1) {
+        acc.push(notification);
+      }
+      return acc;
+    }, []);
+    
+    console.log("🎯 Unique notifications:", uniqueNotifications);
+    
+    // Sort by createdAt/triggered_at
+    const sortedNotifications = uniqueNotifications.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.triggered_at);
+      const dateB = new Date(b.createdAt || b.triggered_at);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    console.log("📈 Final sorted notifications:", sortedNotifications);
+    return sortedNotifications;
+  }, [alarmNotifications, savedNotifications]);
 
   const prevDisplayNotificationsRef = React.useRef(null);
 
@@ -314,82 +345,76 @@ export function NotificationCenter({
 
   const markAsReadMutation = useMutation({
     mutationFn: onMarkAsRead,
-    onSuccess: (_, id) => {
+    onSuccess: async (data, id) => {
       if (staticNotifications) return;
 
-      // Update query cache untuk refresh UI
-      queryClient.invalidateQueries({ queryKey: ["saved-notifications"] });
+      console.log(`✅ Notification ${id} marked as read successfully:`, data);
       
-      // Juga hapus dari WebSocket notifications jika ada
+      // Remove from WebSocket notifications if present
       removeAlarmNotification(id);
+      
+      // Invalidate and refetch to ensure fresh data
+      await queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
+      await refetchSaved();
+      
+      // Also invalidate history to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ["notification-history"] });
     },
     onError: (error) => {
       console.error("Failed to mark notification as read:", error);
+      alert(`Gagal menandai notifikasi dibaca: ${error.message || "Unknown error"}`);
     },
   });
 
   // Mark all notifications as read
   const markAllAsReadMutation = useMutation({
     mutationFn: onMarkAllAsRead,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log("✅ Successfully marked all notifications as read:", data);
+      console.log("📊 Current displayNotifications before clear:", displayNotifications);
+      console.log("📊 Current savedNotifications before clear:", savedNotifications);
       
-      // Clear WebSocket notifications
+      // Clear WebSocket notifications immediately
       clearAlarmNotifications();
 
-      // Refresh saved notifications to show updated read status
-      setTimeout(() => {
-        refetchSaved();
-      }, 500); // Small delay to ensure backend processing is complete
+      // Force immediate refetch of unread notifications
+      console.log("🔄 Forcing refetch of unread notifications...");
+      await queryClient.invalidateQueries({ queryKey: ["unread-notifications"] });
+      await queryClient.refetchQueries({ queryKey: ["unread-notifications"] });
+      
+      // Also invalidate history to ensure it updates
+      queryClient.invalidateQueries({ queryKey: ["notification-history"] });
 
-      // Show success feedback (optional - you can add a toast here)
-      console.log(`✅ ${data.affected_rows || 0} notifikasi berhasil ditandai dibaca`);
+      // Show success feedback
+      const affectedRows = data?.affected_rows || 0;
+      console.log("📈 Affected rows:", affectedRows);
+      if (affectedRows > 0) {
+        alert(`✅ Berhasil menandai ${affectedRows} notifikasi sebagai dibaca`);
+      } else {
+        console.warn("⚠️ No rows affected - might be an issue with the update");
+      }
     },
     onError: (error) => {
       console.error("❌ Error marking all notifications as read:", error);
-      
-      // Show error feedback (you can replace this with a toast notification)
       alert(`Gagal menandai notifikasi dibaca: ${error.message || "Unknown error"}`);
     }
   });
 
-  // Function to remove WebSocket notification (for unread notifications)
-  const removeWebSocketNotification = (notificationId) => {
-    setAlarmNotifications((prev) =>
-      prev.filter((notif) => notif.id !== notificationId)
-    );
-  };
-
-  const filteredNotifications = useMemo(
-    () => {
-      if (filter === "unread") {
-        // Gabungkan WebSocket notifications (belum tersimpan) dan database notifications yang belum dibaca
-        const unreadSaved = savedNotifications.filter(n => !n.isRead);
-        const allUnread = [...alarmNotifications, ...unreadSaved];
-        // Remove duplicates by id
-        return allUnread.filter((item, index, arr) => 
-          arr.findIndex(i => i.id === item.id) === index
-        );
-      } else {
-        return savedNotifications; // Database notifications (semua, read & unread)
-      }
-    },
-    [filter, alarmNotifications, savedNotifications]
-  );
-
   const unreadCount = useMemo(
     () => {
-      // Count unread from both WebSocket and database notifications
-      const unreadSaved = savedNotifications.filter(n => !n.isRead).length;
-      const unreadWebSocket = alarmNotifications.length;
-      return unreadSaved + unreadWebSocket;
+      return displayNotifications.filter(n => !n.isRead).length;
     },
-    [alarmNotifications, savedNotifications]
+    [displayNotifications]
+  );
+
+  const totalCount = useMemo(
+    () => displayNotifications.length,
+    [displayNotifications]
   );
 
   const NotificationList = () => (
     <ScrollArea className={cn(maxHeight)}>
-      {isLoading || isLoadingSaved ? (
+      {isLoadingSaved ? (
         <div className="flex items-center justify-center py-12">
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -398,7 +423,7 @@ export function NotificationCenter({
             </p>
           </div>
         </div>
-      ) : savedNotificationsError && filter === "all" ? (
+      ) : savedNotificationsError ? (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <X className="h-16 w-16 text-red-500/40 mb-4" />
           <h3 className="font-semibold text-lg text-foreground mb-2">
@@ -416,28 +441,34 @@ export function NotificationCenter({
             Coba Lagi
           </Button>
         </div>
-      ) : filteredNotifications.length === 0 ? (
+      ) : displayNotifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <BellRing className="h-16 w-16 text-muted-foreground/40 mb-4" />
           <h3 className="font-semibold text-lg text-foreground mb-2">
-            {filter === "unread"
-              ? "Tidak ada notifikasi baru."
-              : "Tidak ada notifikasi tersimpan."}
+            Tidak ada notifikasi baru
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm">
-            {filter === "unread"
-              ? "Notifikasi alarm akan muncul di sini saat terpicu."
-              : "Notifikasi yang tersimpan akan muncul di sini."}
+            Notifikasi alarm akan muncul di sini saat terpicu
           </p>
         </div>
       ) : (
         <div className="space-y-2 px-3">
-          {filteredNotifications.map((notification) => (
+          {displayNotifications.map((notification) => (
             <NotificationItem
               key={notification.id}
               notification={notification}
               onMarkAsRead={
-                staticNotifications ? undefined : markAsReadMutation.mutate
+                staticNotifications 
+                  ? undefined 
+                  : (id) => {
+                      // For WebSocket notifications, just remove them locally
+                      if (alarmNotifications.some(n => n.id === id)) {
+                        removeAlarmNotification(id);
+                      } else {
+                        // For database notifications, call the mutation
+                        markAsReadMutation.mutate(id);
+                      }
+                    }
               }
               onClick={onNotificationClick}
             />
@@ -471,7 +502,7 @@ export function NotificationCenter({
             </PopoverTrigger>
           </DescriptionTooltip>
           <PopoverContent
-            className="w-80 p-0 max-sm:mr-7 shadow-xl border-border/50"
+            className="w-84 p-0 max-sm:mr-3 shadow-xl border-border/50"
             side="bottom"
             align={align}
             sideOffset={8}
@@ -500,53 +531,25 @@ export function NotificationCenter({
             </div>
 
             <div className="px-1 py-3">
-              {(showFilter || (showMarkAllRead && unreadCount > 0)) && (
-                <div className="flex items-center gap-2 mb-3 px-4 justify-between">
-                  {showFilter && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const newFilter = filter === "all" ? "unread" : "all";
-                        setFilter(newFilter);
-                        
-                        // Immediately fetch saved notifications when switching to "all"
-                        if (newFilter === "all") {
-                          setTimeout(() => refetchSaved(), 100);
-                        }
-                      }}
-                      disabled={isLoadingSaved && filter === "all"}
-                    >
-                      <Filter className="mr-1.5 h-3 w-3" />
-                      {filter === "all" ? "Belum dibaca" : "Semua"}
-                      {isLoadingSaved && filter === "all" && (
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current ml-1.5" />
-                      )}
-                    </Button>
-                  )}
-
+              {(showMarkAllRead && unreadCount > 0) && (
+                <div className="flex items-center gap-2 mb-3 px-4 justify-end">
                   {showMarkAllRead && unreadCount > 0 && (
                     <Button
                       variant="outline"
                       size="sm"
                       className="h-8 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markAllAsReadMutation.mutate();
-                      }}
-                      disabled={markAllAsReadMutation.isPending || isLoadingSaved}
+                      onClick={() => markAllAsReadMutation.mutate()}
+                      disabled={markAllAsReadMutation.isPending}
                     >
                       {markAllAsReadMutation.isPending ? (
                         <>
                           <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
-                          Menandai dibaca...
+                          Memproses...
                         </>
                       ) : (
                         <>
-                          <CheckCheck className="mr-1.5 h-3 w-3" />
-                          Tandai semua dibaca
+                          <CheckCircle className="mr-1.5 h-3 w-3" />
+                          Tandai telah dibaca
                         </>
                       )}
                     </Button>
@@ -608,18 +611,6 @@ export function NotificationCenter({
           </CardTitle>
 
           <div className="flex items-center gap-2">
-            {showFilter && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => setFilter(filter === "all" ? "unread" : "all")}
-              >
-                <Filter className="mr-1.5 h-3 w-3" />
-                {filter === "all" ? "Show Unread" : "Show All"}
-              </Button>
-            )}
-
             {showMarkAllRead && unreadCount > 0 && (
               <Button
                 variant="outline"
@@ -629,11 +620,16 @@ export function NotificationCenter({
                 disabled={markAllAsReadMutation.isPending}
               >
                 {markAllAsReadMutation.isPending ? (
-                  <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                    Memproses...
+                  </>
                 ) : (
-                  <CheckCheck className="mr-1.5 h-3 w-3" />
+                  <>
+                    <CheckCircle className="mr-1.5 h-3 w-3" />
+                    Tandai telah dibaca
+                  </>
                 )}
-                Mark All Read
               </Button>
             )}
           </div>

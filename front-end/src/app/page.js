@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import {
   Moon,
   Sun,
@@ -32,13 +33,18 @@ const logoFont = localFont({
 });
 
 const LandingPage = () => {
-  const [isDark, setIsDark] = useState(true);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("beranda");
-
-  // Tambahkan state untuk scroll
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Ensure component is mounted before accessing theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Handle scroll and section detection
   useEffect(() => {
     const handleScroll = () => {
       // Cek jika scroll position > 50px
@@ -66,6 +72,13 @@ const LandingPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
+
+  const isDark = theme === "dark";
+
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
@@ -83,14 +96,13 @@ const LandingPage = () => {
   };
 
   const toggleDarkMode = () => {
-    setIsDark(!isDark);
+    setTheme(isDark ? "light" : "dark");
   };
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const theme = isDark ? "dark" : "light";
   const bgClass = isDark ? "bg-gray-900" : "bg-white";
   const textClass = isDark ? "text-white" : "text-gray-900";
   const cardBgClass = isDark ? "bg-gray-800" : "bg-white";

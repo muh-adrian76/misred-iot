@@ -34,9 +34,9 @@ export default function DeviceContent({
   setUploadFirmwareSheetOpen,
   handleFirmwareUploaded,
 }) {
-  const handleCopy = (text) => {
+  const handleCopy = (text, type = "secret") => {
     navigator.clipboard.writeText(text);
-    successToast("Secret berhasil disalin ke clipboard.");
+    type === "secret" ? successToast("Secret berhasil disalin ke clipboard.") : successToast("UID berhasil disalin ke clipboard.");
   };
 
   const columns = [
@@ -63,6 +63,29 @@ export default function DeviceContent({
           {row.status.charAt(0).toUpperCase() + row.status.slice(1) || "Contoh"}
         </Badge>
       ),
+    },
+    {
+      key: "id",
+      label: "ID Unik",
+      sortable: false,
+      render: (row) => (
+        <span className="flex items-center justify-center gap-2">
+          <span className="truncate max-w-[100px] inline-block">
+            {row.id}
+          </span>
+          <DescriptionTooltip content="Salin" side="right">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => handleCopy(row.id, "uid")}
+              className="p-1 opacity-50 hover:opacity-100"
+            >
+              <Copy className="w-4 h-4" />
+            </Button>
+          </DescriptionTooltip>
+        </span>
+      )
     },
     {
       key: "new_secret",

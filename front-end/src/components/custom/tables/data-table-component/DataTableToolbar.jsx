@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { Link } from "next-view-transitions";
 import {
   Popover,
   PopoverTrigger,
@@ -13,6 +14,7 @@ import {
   Search,
   CloudCog,
   HelpCircle,
+  WifiCog,
 } from "lucide-react";
 import DescriptionTooltip from "../../other/description-tooltip";
 import { useWhatsAppStatusStandalone } from "@/hooks/use-whatsapp-status";
@@ -31,9 +33,10 @@ export default function DataTableToolbar({
 }) {
   const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
   const { isAuthenticated } = useAuth();
-  
+
   // Use the custom hook for WhatsApp status
-  const { whatsappEnabled, loading, refreshWhatsAppStatus } = useWhatsAppStatusStandalone();
+  const { whatsappEnabled, loading, refreshWhatsAppStatus } =
+    useWhatsAppStatusStandalone();
 
   // Listen for custom events to refresh WhatsApp status
   useEffect(() => {
@@ -42,10 +45,16 @@ export default function DataTableToolbar({
     };
 
     // Listen for custom event
-    window.addEventListener('whatsapp-status-updated', handleWhatsAppStatusUpdate);
-    
+    window.addEventListener(
+      "whatsapp-status-updated",
+      handleWhatsAppStatusUpdate
+    );
+
     return () => {
-      window.removeEventListener('whatsapp-status-updated', handleWhatsAppStatusUpdate);
+      window.removeEventListener(
+        "whatsapp-status-updated",
+        handleWhatsAppStatusUpdate
+      );
     };
   }, [refreshWhatsAppStatus]);
 
@@ -73,10 +82,20 @@ export default function DataTableToolbar({
       <div className="flex gap-2">
         {showUploadFirmware && onUploadFirmware && (
           <div className="flex items-center gap-2 sm:px-4 sm:mx-2 sm:border-r">
+            <Link target="_blank" href="https://github.com/ArthZ01/misred-iot-arduino-examples" className="flex sm:border-r sm:pr-4">
+            <Button
+              variant="outline"
+              className="gap-2 transition-all"
+              size={isMobile ? "icon" : "sm"}
+            >
+              <HelpCircle className="w-4 h-4" />
+              {isMobile ? "" : "Panduan Koneksi"}
+            </Button>
+            </Link>
             <Button
               onClick={onUploadFirmware}
               variant="outline"
-              className="gap-2 transition-all"
+              className="ml-2 gap-2 transition-all"
               size={isMobile ? "icon" : "sm"}
             >
               <CloudCog className="w-4 h-4" />
@@ -86,7 +105,10 @@ export default function DataTableToolbar({
         )}
 
         {showNotificationInfo && (
-          <Popover open={openPopoverProfile} onOpenChange={setOpenPopoverProfile}>
+          <Popover
+            open={openPopoverProfile}
+            onOpenChange={setOpenPopoverProfile}
+          >
             <div className="flex items-center gap-2 sm:px-4 sm:mx-2 sm:border-r">
               <DescriptionTooltip content="Status Pengiriman Notifikasi">
                 <PopoverTrigger asChild>
@@ -101,9 +123,14 @@ export default function DataTableToolbar({
                 </PopoverTrigger>
               </DescriptionTooltip>
             </div>
-            <PopoverContent align={isMobile ? "center" : "end"} className="p-3 w-auto max-sm:mr-5">
+            <PopoverContent
+              align={isMobile ? "center" : "end"}
+              className="p-3 w-auto max-sm:mr-5"
+            >
               <div className="flex flex-col gap-3">
-                <h4 className="font-medium text-sm text-center">Status Notifikasi Alarm</h4>
+                <h4 className="font-medium text-sm text-center">
+                  Status Notifikasi Alarm
+                </h4>
                 <div className="flex flex-col gap-2">
                   <DescriptionTooltip
                     content="Notifikasi akan selalu muncul pada browser"
@@ -112,10 +139,12 @@ export default function DataTableToolbar({
                     <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700">
                       <Globe className="w-4 h-4" />
                       <span className="text-sm font-medium">Browser</span>
-                      <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">Aktif</span>
+                      <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">
+                        Aktif
+                      </span>
                     </div>
                   </DescriptionTooltip>
-                  
+
                   <DescriptionTooltip
                     content={
                       whatsappEnabled
@@ -123,19 +152,27 @@ export default function DataTableToolbar({
                         : "WhatsApp non-aktif, aktifkan pada pengaturan akun"
                     }
                   >
-                    <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
-                      whatsappEnabled
-                        ? "bg-green-50 border-green-200 text-green-700"
-                        : "bg-gray-50 border-gray-200 text-gray-700"
-                    }`}>
+                    <div
+                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                        whatsappEnabled
+                          ? "bg-green-50 border-green-200 text-green-700"
+                          : "bg-gray-50 border-gray-200 text-gray-700"
+                      }`}
+                    >
                       <MessageCircle className="w-4 h-4" />
                       <span className="text-sm font-medium">WhatsApp</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        whatsappEnabled
-                          ? "bg-green-100 text-green-700"
-                          : "bg-gray-100 text-gray-600"
-                      }`}>
-                        {loading ? "..." : (whatsappEnabled ? "Aktif" : "Non-aktif")}
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          whatsappEnabled
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {loading
+                          ? "..."
+                          : whatsappEnabled
+                            ? "Aktif"
+                            : "Non-aktif"}
                       </span>
                     </div>
                   </DescriptionTooltip>

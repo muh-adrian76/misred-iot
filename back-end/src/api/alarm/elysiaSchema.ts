@@ -311,8 +311,8 @@ export const getNotificationHistorySchema = {
         notification_type: t.String(),
         whatsapp_message_id: t.Union([t.String(), t.Null()]),
         whatsapp_sent: t.Boolean(),
-        is_saved: t.Boolean(),
-        saved_at: t.String()
+        is_read: t.Boolean(),
+        read_at: t.String()
       })),
       pagination: t.Object({
         page: t.Number(),

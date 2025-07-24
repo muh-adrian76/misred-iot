@@ -1221,7 +1221,7 @@ export class AlarmNotificationService {
         JOIN datastreams ds ON an.datastream_id = ds.id
         JOIN devices dev ON an.device_id = dev.id
         JOIN users u ON an.user_id = u.id
-        WHERE an.user_id = ? 
+        WHERE an.user_id = ? AND COALESCE(an.is_read, 0) = 0
         ORDER BY an.triggered_at DESC
         LIMIT 50
       `,
@@ -1287,11 +1287,11 @@ export class AlarmNotificationService {
           timeCondition = "";
       }
 
-      // Build queries - fix parameter binding issue
+      // Build queries - filter only read notifications for history
       const baseCountQuery = `
         SELECT COUNT(*) as total
         FROM alarm_notifications an
-        WHERE an.user_id = ? 
+        WHERE an.user_id = ? AND an.is_read = 1
       `;
 
       const baseDataQuery = `
@@ -1313,7 +1313,7 @@ export class AlarmNotificationService {
         LEFT JOIN alarms a ON an.alarm_id = a.id
         LEFT JOIN datastreams ds ON an.datastream_id = ds.id
         LEFT JOIN devices dev ON an.device_id = dev.id
-        WHERE an.user_id = ? 
+        WHERE an.user_id = ? AND an.is_read = 1
       `;
 
       const countQuery =
@@ -1326,18 +1326,18 @@ export class AlarmNotificationService {
         LIMIT ? OFFSET ?
       `;
 
-      console.log("🔍 Service Debug SQL Query:", {
-        timeRange: timeRange,
-        timeCondition: timeCondition,
-        countQuery: countQuery,
-        dataQuery: dataQuery,
-        userId: userId,
-        limit: limit,
-        offset: offset,
-      });
+      // console.log("🔍 Service Debug SQL Query:", {
+      //   timeRange: timeRange,
+      //   timeCondition: timeCondition,
+      //   countQuery: countQuery,
+      //   dataQuery: dataQuery,
+      //   userId: userId,
+      //   limit: limit,
+      //   offset: offset,
+      // });
 
       // Execute count query first
-      console.log("🔍 Service executing count query with params:", [userId]);
+      // console.log("🔍 Service executing count query with params:", [userId]);
       const [countResult] = await this.db.execute(countQuery, [
         parseInt(String(userId)),
       ]);
@@ -1349,11 +1349,11 @@ export class AlarmNotificationService {
         parseInt(String(limit)),
         parseInt(String(offset)),
       ];
-      console.log("🔍 Service executing data query with params:", dataParams);
-      console.log(
-        "🔍 Parameter types:",
-        dataParams.map((p) => ({ value: p, type: typeof p }))
-      );
+      // console.log("🔍 Service executing data query with params:", dataParams);
+      // console.log(
+      //   "🔍 Parameter types:",
+      //   dataParams.map((p) => ({ value: p, type: typeof p }))
+      // );
 
       // Additional validation to ensure parameters are valid integers
       if (dataParams.some((p) => isNaN(p) || !Number.isInteger(p))) {
@@ -1380,8 +1380,8 @@ export class AlarmNotificationService {
       const [result] = await this.db.execute(
         `
         UPDATE alarm_notifications 
-        SET is_read = TRUE, read_at = NOW() 
-        WHERE user_id = ? AND COALESCE(is_read, 0) = 0
+        SET is_read = 1, read_at = NOW() 
+        WHERE user_id = ? AND (is_read IS NULL OR is_read = 0)
       `,
         [userId]
       );
@@ -1389,6 +1389,26 @@ export class AlarmNotificationService {
       return (result as any).affectedRows;
     } catch (error) {
       console.error("❌ Error marking all notifications as read:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete all notifications for a user
+   */
+  async deleteAllNotifications(userId: number): Promise<number> {
+    try {
+      const [result] = await this.db.execute(
+        `
+        DELETE FROM alarm_notifications 
+        WHERE user_id = ?
+      `,
+        [userId]
+      );
+
+      return (result as any).affectedRows;
+    } catch (error) {
+      console.error("❌ Error deleting all notifications:", error);
       throw error;
     }
   }

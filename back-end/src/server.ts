@@ -194,10 +194,27 @@ class Server {
 
       // Error handler
       .onError(({ error, code, request }) => {
-        console.error("❌ Terjadi kesalahan:", error, request.url);
-        if (code === "NOT_FOUND")
-          return `Halaman tidak ditemukan: ${request.url}`;
-        if (code === "VALIDATION") return "Invalid user";
+        console.error("❌ Terjadi kesalahan:", error, `Halaman yang dicoba oleh user: ${request.url}`);
+        // Redirect to frontend 404 page
+        if (code === "NOT_FOUND") {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: `${process.env.FRONTEND_URL}/404`
+            }
+          });
+        }
+        // Redirect to frontend 401 page
+        if (typeof code === "string" && code === "VALIDATION") {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: `${process.env.FRONTEND_URL}/401`
+            }
+          });
+        }
+        // Default error message
+        return new Response("Terjadi kesalahan pada server", { status: 500 });
       })
       .listen(
         {

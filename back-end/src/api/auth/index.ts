@@ -224,19 +224,18 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         // @ts-ignore
         async ({ jwt, cookie }) => {
           try {
-            console.log("🔍 Admin check endpoint called");
             const decoded = await authorizeRequest(jwt, cookie);
-            console.log("🔍 Decoded JWT:", { sub: decoded.sub });
+            // console.log("🔍 Decoded JWT:", { sub: decoded.sub });
             
             const user = await userService.getUserById(decoded.sub);
-            console.log("🔍 User from database:", { 
-              id: user?.id, 
-              name: user?.name, 
-              email: user?.email,
-              is_admin: user?.is_admin,
-              is_admin_type: typeof user?.is_admin,
-              boolean_value: Boolean(user?.is_admin)
-            });
+            // console.log("🔍 User from database:", { 
+            //   id: user?.id, 
+            //   name: user?.name, 
+            //   email: user?.email,
+            //   is_admin: user?.is_admin,
+            //   is_admin_type: typeof user?.is_admin,
+            //   boolean_value: Boolean(user?.is_admin)
+            // });
             
             const response = {
               status: 200,
@@ -248,7 +247,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               }
             };
             
-            console.log("🔍 Sending response:", response);
+            // console.log("🔍 Sending response:", response);
             
             return new Response(JSON.stringify(response), { 
               status: 200,

@@ -139,17 +139,17 @@ export function alarmNotificationRoutes(
           const offset = (page - 1) * limit;
           const timeRange = query.timeRange as string || "all";
 
-          console.log("📊 API Debug - Parsed parameters:", {
-            userId: userId,
-            userIdType: typeof userId,
-            page: page,
-            pageType: typeof page,
-            limit: limit,
-            limitType: typeof limit,
-            offset: offset,
-            offsetType: typeof offset,
-            timeRange: timeRange
-          });
+          // console.log("📊 API Debug - Parsed parameters:", {
+          //   userId: userId,
+          //   userIdType: typeof userId,
+          //   page: page,
+          //   pageType: typeof page,
+          //   limit: limit,
+          //   limitType: typeof limit,
+          //   offset: offset,
+          //   offsetType: typeof offset,
+          //   timeRange: timeRange
+          // });
 
           // Validate userId
           if (isNaN(userId) || userId <= 0) {
@@ -299,6 +299,44 @@ export function alarmNotificationRoutes(
           };
         } catch (error) {
           console.error("Error marking all notifications as read:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
+      }
+    )
+
+    // 🗑️ DELETE All Notifications 
+    .post(
+      "/delete-all",
+      //@ts-ignore
+      async ({ jwt, cookie, set }) => {
+        try {
+          const user = await authorizeRequest(jwt, cookie);
+          const userId = parseInt(user.sub);
+
+          // Validate userId
+          if (isNaN(userId) || userId <= 0) {
+            console.error("❌ Invalid user ID:", user.sub);
+            set.status = 400;
+            return {
+              success: false,
+              message: "Invalid user ID"
+            };
+          }
+
+          // Delete all notifications for this user
+          const affectedRows = await notificationService.deleteAllNotifications(userId);
+
+          return {
+            success: true,
+            message: "Semua notifikasi berhasil dihapus",
+            affected_rows: affectedRows
+          };
+        } catch (error) {
+          console.error("Error deleting all notifications:", error);
           set.status = 500;
           return {
             success: false,
