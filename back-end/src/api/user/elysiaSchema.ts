@@ -117,9 +117,20 @@ const putUserSchema = {
     name: t.String({
       example: "contoh yang diperbarui",
     }),
+    email: t.Optional(
+      t.String({
+        example: "contoh@gmail.com",
+      })
+    ),
     phone: t.Optional(
       t.String({
         example: "083117228331",
+      })
+    ),
+    is_admin: t.Optional(
+      t.Boolean({
+        description: "Status admin user",
+        example: false,
       })
     ),
     whatsapp_notif: t.Optional(

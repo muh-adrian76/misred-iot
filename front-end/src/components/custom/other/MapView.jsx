@@ -22,6 +22,48 @@ function FitBounds({ devices }) {
   return null;
 }
 
+// Component to handle dynamic tile layer changes
+function DynamicTileLayer({ mapView }) {
+  const getTileLayer = () => {
+    switch (mapView) {
+      case 'satellite':
+        return (
+          <TileLayer
+            key="satellite"
+            attribution="&copy; <a href='https://www.esri.com/'>Esri</a>"
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          />
+        );
+      case 'hybrid':
+        return (
+          <>
+            <TileLayer
+              key="hybrid-satellite"
+              attribution="&copy; <a href='https://www.esri.com/'>Esri</a>"
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+            />
+            <TileLayer
+              key="hybrid-labels"
+              attribution="&copy; <a href='https://www.esri.com/'>Esri</a>"
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+            />
+          </>
+        );
+      case 'street':
+      default:
+        return (
+          <TileLayer
+            key="street"
+            attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+        );
+    }
+  };
+
+  return getTileLayer();
+}
+
 // Custom marker icons
 const createDeviceIcon = (status) => {
   const color = status === 'online' ? '#10b981' : '#ef4444'; // green for online, red for offline
@@ -39,7 +81,7 @@ const createDeviceIcon = (status) => {
   });
 };
 
-export default function MapView({ devices = [], onMarkerClick, selectedDeviceId }) {
+export default function MapView({ devices = [], onMarkerClick, selectedDeviceId, mapView = 'street' }) {
   // Center peta ke Indonesia jika tidak ada device
   const defaultPosition = [-2.5489, 118.0149];
   // Jika ada device, center ke device pertama
@@ -48,17 +90,15 @@ export default function MapView({ devices = [], onMarkerClick, selectedDeviceId 
     : defaultPosition;
 
   return (
-    <div className="w-full h-full rounded-xl overflow-hidden">
+    <div className="w-full h-full rounded-xl overflow-hidden relative z-0">
       <MapContainer 
         center={center} 
         zoom={5} 
         scrollWheelZoom={true} 
-        style={{ height: '100%', width: '100%' }}
+        style={{ height: '100%', width: '100%', zIndex: 1 }}
+        className="z-[1]"
       >
-        <TileLayer
-          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <DynamicTileLayer mapView={mapView} />
         <FitBounds devices={devices} />
         {devices.map(device => (
           device.latitude && device.longitude ? (

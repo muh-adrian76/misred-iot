@@ -9,6 +9,12 @@ const postRegisterSchema = {
     password: t.String({
       example: "contohpassword123",
     }),
+    name: t.Optional(t.String({
+      example: "Nama User",
+    })),
+    is_admin: t.Optional(t.Boolean({
+      example: false,
+    })),
   }),
   response: {
     201: t.Object(

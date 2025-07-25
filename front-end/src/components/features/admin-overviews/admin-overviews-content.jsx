@@ -61,13 +61,13 @@ export default function AdminOverviewsContent({
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <Link
+          {/* <Link
             href="/users"
             className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             Kelola Users
-          </Link>
+          </Link> */}
         </div>
       </div>
 

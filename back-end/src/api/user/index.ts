@@ -63,8 +63,8 @@ export function userRoutes(userService: UserService) {
           };
         }
         return {
-          status: "success",
           message: "User berhasil diperbarui",
+          id: params.id.toString(),
         };
       },
       putUserSchema
@@ -94,7 +94,6 @@ export function userRoutes(userService: UserService) {
           };
         }
         return {
-          status: "success",
           message: "User berhasil dihapus",
         };
       },

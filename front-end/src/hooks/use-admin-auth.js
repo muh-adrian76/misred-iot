@@ -27,29 +27,19 @@ export function useAdminAuth() {
       }
 
       try {
-        console.log("useAdminAuth: Checking admin status...");
         const response = await fetchFromBackend("/auth/check-admin");
-        
-        console.log("useAdminAuth: Response status:", response.status);
-        
         if (response.ok) {
           const data = await response.json();
-          console.log("useAdminAuth: Admin check result -", { 
-            isAdmin: data.isAdmin, 
-            user: data.user?.name 
-          });
           
           setIsAdmin(data.isAdmin || false);
           setUser(data.user || null);
           
           // Jika bukan admin, redirect ke halaman utama atau 401
           if (!data.isAdmin) {
-            console.log("useAdminAuth: User is not admin - redirecting to 401");
             window.location.href = "/401";
             return;
           }
         } else {
-          console.log("useAdminAuth: Admin check failed with status:", response.status);
           setIsAdmin(false);
           setUser(null);
           // Jika check admin gagal, redirect ke 401

@@ -207,3 +207,21 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Leaflet Map Z-Index Fix */
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-control-container {
+  z-index: 5 !important;
+}
+
+.leaflet-popup {
+  z-index: 6 !important;
+}
+
+.leaflet-control-zoom,
+.leaflet-control-attribution {
+  z-index: 5 !important;
+}

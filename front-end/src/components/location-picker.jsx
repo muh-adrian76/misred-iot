@@ -17,7 +17,7 @@ export function LocationPicker({
   defaultLocation = "",
   onChange,
   variant = 'popover',
-  placeholder = "Enter city, district, or area",
+  placeholder = "Masukkan lokasi atau cari berdasarkan nama",
   theme
 }) {
   const [activeCity, setActiveCity] = useState(defaultLocation)
@@ -208,6 +208,7 @@ export function LocationPicker({
                     setActiveCity('');
                   }
                 }}
+                noInfo
                 onKeyUp={(e) => e.key === 'Enter' && suggestions.length === 0 && searchLocation()}
                 aria-label="Search for location"
                 aria-describedby={suggestions.length > 0 ? "suggestions-list" : undefined}
@@ -311,7 +312,7 @@ export function LocationPicker({
             </div>
           ) : (
             <span className="text-sm font-medium">
-              {activeCity.length > 15 ? activeCity.slice(0, 15) + '...' : activeCity || 'Select Location'}
+              {activeCity.length > 15 ? activeCity.slice(0, 15) + '...' : activeCity || 'Pilih Lokasi'}
             </span>
           )}
         </div>
@@ -330,6 +331,7 @@ export function LocationPicker({
                 onChange={(e) => setLocationSearch(e.target.value)}
                 onKeyUp={(e) => e.key === 'Enter' && suggestions.length === 0 && searchLocation()}
                 aria-label="Search for location"
+                noInfo
                 aria-describedby={suggestions.length > 0 ? "suggestions-list" : undefined}
                 className={appliedTheme.input} />
             </div>
