@@ -17,6 +17,7 @@ import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
 import { PasswordStrengthMeter } from "../../other/strength-meter";
+import OTPInput from "./otp-input";
 
 export default function RegisterForm({
   className,
@@ -31,6 +32,8 @@ export default function RegisterForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showOTPInput, setShowOTPInput] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -38,14 +41,17 @@ export default function RegisterForm({
 
     if (!email || !password) {
       errorToast("Peringatan", "Email dan password tidak boleh kosong!");
+      setIsLoading(false);
       return;
     }
     if (password.length < 6) {
       errorToast("Peringatan", "Password harus lebih dari 6 karakter!");
+      setIsLoading(false);
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
       errorToast("Peringatan", "Email tidak valid!");
+      setIsLoading(false);
       return;
     }
 
@@ -58,36 +64,46 @@ export default function RegisterForm({
       if (!res.ok) {
         const errorMessage = await res.json();
         errorToast(
+          "Registrasi Gagal",
           errorMessage.message || "Gagal registrasi, coba lagi nanti!"
         );
         return;
       }
 
-      successToast("Registrasi berhasil!");
+      const { otp } = await res.json();
 
-      setTimeout(async () => {
-        try {
-          const res = await fetchFromBackend("/auth/login", {
-            method: "POST",
-            body: JSON.stringify({ email, password }),
-          });
+      // Kirim OTP ke email
+      await fetch("/api/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email, 
+          otp, 
+          type: "otp-verification" 
+        }),
+      });
 
-          const data = await res.json();
-          !res.ok
-            ? errorToast("Login gagal!", `${data.message}`)
-            : setTimeout(() => {
-                setUser(data.user);
-                router.push("/dashboards");
-              }, 100);
-        } catch {
-          errorToast("Peringatan", "Gagal melakukan login.");
-        }
-      }, 500);
+      successToast("Registrasi Berhasil!", "Kode verifikasi telah dikirim ke email Anda.");
+      setRegisteredEmail(email);
+      setShowOTPInput(true);
+
     } catch (error) {
-      errorToast("Terjadi kesalahan, coba lagi nanti!");
+      errorToast("Terjadi kesalahan", "Gagal melakukan registrasi, coba lagi nanti!");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOTPVerified = () => {
+    setShowOTPInput(false);
+    setShowRegister(false); // Kembali ke login form
+  };
+
+  const handleBackToRegister = () => {
+    setShowOTPInput(false);
+    setEmail("");
+    setPassword("");
+    setRegisteredEmail("");
   };
 
   return (
@@ -116,11 +132,22 @@ export default function RegisterForm({
       >
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-xl mb-3">Registrasi Akun</CardTitle>
+            <CardTitle className="text-xl mb-3">
+              {showOTPInput ? "Verifikasi Akun" : "Registrasi Akun"}
+            </CardTitle>
             <CardDescription>{""}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleRegister}>
+            {showOTPInput ? (
+              <OTPInput
+                email={registeredEmail}
+                onVerified={handleOTPVerified}
+                onBack={handleBackToRegister}
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+              />
+            ) : (
+              <form onSubmit={handleRegister}>
               <div className="grid gap-6">
                 <div className="grid gap-6">
                   <div className="grid gap-3">
@@ -198,6 +225,7 @@ export default function RegisterForm({
                 </div>
               </div>
             </form>
+            )}
           </CardContent>
         </Card>
       </motion.div>

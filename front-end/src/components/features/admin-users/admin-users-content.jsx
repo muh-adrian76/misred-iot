@@ -3,6 +3,7 @@ import {
   Plus, 
   Crown,
   UserCheck,
+  RefreshCw,
   UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,14 +15,15 @@ import { motion } from "framer-motion";
 
 export default function AdminUsersContent({ 
   users, 
-  loading, 
+  isLoading, 
   search, 
   setSearch, 
   selectedRows,
   setSelectedRows,
   setAddUserOpen,
   openEditDialog,
-  openDeleteDialog 
+  openDeleteDialog,
+  handleRefresh
 }) {
   const { isMobile } = useBreakpoint();
 
@@ -36,7 +38,7 @@ export default function AdminUsersContent({
       openDeleteDialog(selectedUsers);
     }
   };
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse">
@@ -61,7 +63,7 @@ export default function AdminUsersContent({
   }
 
   // Empty state component
-  if (!loading && users.length === 0) {
+  if (!isLoading && users.length === 0) {
     return (
       <div className="p-6 space-y-6">
         {/* Header */}
@@ -121,22 +123,26 @@ export default function AdminUsersContent({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      {/* <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Kelola Users
+      <div className="flex flex-row items-center justify-between gap-4 backdrop-blur-enhanced rounded-2xl">
+        <div className="space-y-2">
+          <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
+              Kelola Users
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Tambah, edit, dan hapus akun user yang terdaftar
-          </p>
+          {/* <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
+            Monitor lokasi dan status semua perangkat IoT secara real-time
+          </p> */}
         </div>
-        <div className="flex items-center gap-2 mt-4 sm:mt-0">
-          <Button onClick={() => setAddUserOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Tambah User
-          </Button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
         </div>
-      </div> */}
+      </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -191,7 +197,7 @@ export default function AdminUsersContent({
         >
           <Card className="relative overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Onboarding Selesai</CardTitle>
+              <CardTitle className="text-sm font-medium">Menyelesaikan Panduan</CardTitle>
               <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <UserCheck className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
@@ -201,7 +207,7 @@ export default function AdminUsersContent({
                 {users.filter(user => user.onboarding_completed).length}
               </div>
               <p className="text-xs text-muted-foreground">
-                User yang sudah setup
+                User yang sudah melakukan
               </p>
             </CardContent>
           </Card>
@@ -249,7 +255,7 @@ export default function AdminUsersContent({
               content="User"
               columns={userColumns}
               data={users}
-              loading={loading}
+              loading={isLoading}
               isMobile={isMobile}
               selectedRows={selectedRows}
               setSelectedRows={setSelectedRows}

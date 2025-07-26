@@ -32,17 +32,29 @@ export class AuthService {
         };
       }
 
+      // Generate OTP 6 digit
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set OTP expiration time (default 10 minutes, configurable via env)
+      const otpExpirationMinutes = parseInt(process.env.OTP_EXPIRATION_MINUTES || "10");
+      const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
+
       // Jika email belum terdaftar, lanjutkan proses insert
       const hashedPassword = await bcrypt.hash(password, 10);
       const name = email.split("@")[0];
 
       const [result] = await this.db.query<ResultSetHeader>(
-        "INSERT INTO users (email, password, name, created_at) VALUES (?, ?, ?, NOW())",
-        [email, hashedPassword, name]
+        "INSERT INTO users (email, password, name, otp, otp_expires_at, is_verified, created_at) VALUES (?, ?, ?, ?, ?, FALSE, NOW())",
+        [email, hashedPassword, name, otp, otpExpiresAt]
       );
 
       if (result.affectedRows > 0) {
-        return { status: 201, message: "User berhasil terdaftar", id: result.insertId };
+        return { 
+          status: 201, 
+          message: "User berhasil terdaftar. Silakan cek email untuk verifikasi.", 
+          id: result.insertId,
+          otp: otp 
+        };
       } else {
         return { status: 400, message: "Gagal menambahkan user." };
       }
@@ -114,7 +126,7 @@ export class AuthService {
     }
 
     const [rows] = await this.db.query<any[]>(
-      "SELECT id, email, password, name, created_at, phone, is_admin FROM users WHERE email = ?",
+      "SELECT id, email, password, name, created_at, phone, is_admin, is_verified FROM users WHERE email = ?",
       [email]
     );
 
@@ -133,6 +145,14 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!user || !isMatch) {
       return { status: 401, message: "Kredensial tidak valid" };
+    }
+
+    // Check if account is verified (skip for Google OAuth users)
+    if (!user.is_verified && user.password !== "GOOGLE_OAUTH_USER") {
+      return { 
+        status: 401, 
+        message: "Akun belum diverifikasi. Silakan cek email Anda untuk melakukan verifikasi." 
+      };
     }
 
     const response = await fetch(
@@ -438,6 +458,115 @@ export class AuthService {
       };
     } catch (error) {
       console.error(error);
+      return { status: 500, message: "Terjadi kesalahan pada server." };
+    }
+  }
+
+  async verifyOTP({ email, otp }: { email: string; otp: string }) {
+    if (!email || !otp) {
+      return {
+        status: 400,
+        message: "Email dan OTP harus diisi.",
+      };
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      return {
+        status: 400,
+        message: "Format OTP tidak valid. OTP harus 6 digit angka.",
+      };
+    }
+
+    try {
+      const [rows] = await this.db.query<any[]>(
+        "SELECT id, otp, otp_expires_at, is_verified FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (!rows || rows.length === 0) {
+        return { status: 404, message: "User tidak ditemukan." };
+      }
+
+      const user = rows[0];
+
+      if (user.is_verified) {
+        return { status: 400, message: "Akun sudah diverifikasi." };
+      }
+
+      if (!user.otp) {
+        return { status: 400, message: "Tidak ada OTP aktif untuk email ini." };
+      }
+
+      if (user.otp !== otp) {
+        return { status: 401, message: "Kode OTP tidak valid." };
+      }
+
+      // Check if OTP is expired
+      const now = new Date();
+      const expiresAt = new Date(user.otp_expires_at);
+      if (now > expiresAt) {
+        return { status: 401, message: "Kode OTP telah kedaluwarsa." };
+      }
+
+      // Verify user and clear OTP
+      await this.db.query(
+        "UPDATE users SET is_verified = TRUE, otp = NULL, otp_expires_at = NULL WHERE email = ?",
+        [email]
+      );
+
+      return {
+        status: 200,
+        message: "Verifikasi berhasil! Akun Anda sekarang aktif.",
+      };
+    } catch (error) {
+      console.error("Error in verifyOTP:", error);
+      return { status: 500, message: "Terjadi kesalahan pada server." };
+    }
+  }
+
+  async resendOTP({ email }: { email: string }) {
+    if (!email) {
+      return {
+        status: 400,
+        message: "Email harus diisi.",
+      };
+    }
+
+    try {
+      const [rows] = await this.db.query<any[]>(
+        "SELECT id, is_verified FROM users WHERE email = ?",
+        [email]
+      );
+
+      if (!rows || rows.length === 0) {
+        return { status: 404, message: "User tidak ditemukan." };
+      }
+
+      const user = rows[0];
+
+      if (user.is_verified) {
+        return { status: 400, message: "Akun sudah diverifikasi." };
+      }
+
+      // Generate new OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Set OTP expiration time (default 10 minutes, configurable via env)
+      const otpExpirationMinutes = parseInt(process.env.OTP_EXPIRATION_MINUTES || "10");
+      const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
+
+      await this.db.query(
+        "UPDATE users SET otp = ?, otp_expires_at = ? WHERE email = ?",
+        [otp, otpExpiresAt, email]
+      );
+
+      return {
+        status: 200,
+        message: "OTP baru telah dikirim ke email Anda.",
+        otp: otp
+      };
+    } catch (error) {
+      console.error("Error in resendOTP:", error);
       return { status: 500, message: "Terjadi kesalahan pada server." };
     }
   }

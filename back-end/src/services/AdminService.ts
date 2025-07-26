@@ -148,16 +148,21 @@ export class AdminService {
 
   async updateDeviceLocation(deviceId: number, latitude: number, longitude: number, address?: string): Promise<boolean> {
     try {
+      console.log("Updating device location:", { deviceId, latitude, longitude, address });
+      
       const query = `
         UPDATE devices 
-        SET latitude = ?, longitude = ?, address = ?, updated_at = NOW()
+        SET latitude = ?, longitude = ?, address = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `;
       
       const [result] = await this.db.query(query, [latitude, longitude, address || null, deviceId]);
+      console.log("Update result:", result);
+      
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating device location:", error);
+      console.error("Query parameters:", { deviceId, latitude, longitude, address });
       throw error;
     }
   }

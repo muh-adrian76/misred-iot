@@ -5,7 +5,7 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 
 export function useAdminUsersLogic() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
   
@@ -23,7 +23,7 @@ export function useAdminUsersLogic() {
   // Fetch all users
   const fetchUsers = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       const response = await fetchFromBackend("/admin/users");
       
       if (!response.ok) {
@@ -44,7 +44,7 @@ export function useAdminUsersLogic() {
       console.error("💥 Error fetching users:", error);
       errorToast("Gagal memuat data users");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -148,6 +148,12 @@ export function useAdminUsersLogic() {
     return matchesSearch;
   });
 
+  // Refresh data
+  const handleRefresh = async () => {
+    await fetchUsers();
+    successToast("Data berhasil diperbarui");
+  };
+
   // Initialize data
   useEffect(() => {
     if (!adminLoading && isAuthenticated && isAdmin) {
@@ -158,7 +164,7 @@ export function useAdminUsersLogic() {
   return {
     // State
     users: filteredUsers,
-    loading: loading || adminLoading,
+    isLoading: isLoading || adminLoading,
     search,
     selectedRows,
     user,
@@ -180,7 +186,7 @@ export function useAdminUsersLogic() {
     setEditUserOpen,
     setDeleteUserOpen,
     setDeleteChecked,
-    fetchUsers,
+    handleRefresh,
     handleAddUser,
     handleEditUser,
     handleDeleteUser,

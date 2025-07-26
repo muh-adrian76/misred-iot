@@ -40,7 +40,11 @@ export default function ForgotPasswordForm({
       await fetch("/api/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: updatedPassword }),
+        body: JSON.stringify({ 
+          email, 
+          password: updatedPassword, 
+          type: "reset-password" 
+        }),
       });
 
       successToast(

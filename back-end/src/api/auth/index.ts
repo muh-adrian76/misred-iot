@@ -34,6 +34,28 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postRegisterSchema
       )
 
+      // Verify OTP
+      .post(
+        "/verify-otp",
+        async ({ body }: any) => {
+          const result = await authService.verifyOTP(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        }
+      )
+
+      // Resend OTP
+      .post(
+        "/resend-otp",
+        async ({ body }: any) => {
+          const result = await authService.resendOTP(body);
+          return new Response(JSON.stringify(result), {
+            status: result.status,
+          });
+        }
+      )
+
       // Admin: Register User
       .post(
         "/admin/register",

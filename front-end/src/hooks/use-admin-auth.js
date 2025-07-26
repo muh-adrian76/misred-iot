@@ -17,12 +17,9 @@ export function useAdminAuth() {
       }
 
       if (!isAuthenticated) {
-        console.log("useAdminAuth: Not authenticated - redirecting to 401");
         setIsAdmin(false);
         setUser(null);
         setLoading(false);
-        // Redirect ke 401 karena tidak terautentikasi
-        window.location.href = "/401";
         return;
       }
 
@@ -33,25 +30,21 @@ export function useAdminAuth() {
           
           setIsAdmin(data.isAdmin || false);
           setUser(data.user || null);
-          
-          // Jika bukan admin, redirect ke halaman utama atau 401
           if (!data.isAdmin) {
-            window.location.href = "/401";
+            // Biarkan client.jsx yang handle tampilan error
             return;
           }
         } else {
           setIsAdmin(false);
           setUser(null);
-          // Jika check admin gagal, redirect ke 401
-          window.location.href = "/401";
+          // Jika check admin gagal, biarkan client.jsx yang handle
           return;
         }
       } catch (error) {
         console.error("useAdminAuth: Error checking admin status:", error);
         setIsAdmin(false);
         setUser(null);
-        // Error juga redirect ke 401
-        window.location.href = "/401";
+        // Error juga biarkan client.jsx yang handle
         return;
       } finally {
         setLoading(false);

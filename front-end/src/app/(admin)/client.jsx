@@ -80,10 +80,10 @@ export default function AdminLayoutClient({ children }) {
   useEffect(() => {
     // Wait for auth to be determined and admin check to complete
     if (!adminLoading && isAuthenticated !== undefined && isAdmin !== undefined) {
-      const timer = setTimeout(() => {
+      // const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 50); // Lebih cepat
-      return () => clearTimeout(timer);
+      // }, 100000); // Lebih cepat
+      // return () => clearTimeout(timer);
     }
   }, [adminLoading, isAuthenticated, isAdmin]);
 
@@ -110,7 +110,6 @@ export default function AdminLayoutClient({ children }) {
 
   // Show access denied if not authenticated
   if (!isAuthenticated) {
-    // console.log("Admin client: Not authenticated, showing login screen");
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
@@ -121,12 +120,20 @@ export default function AdminLayoutClient({ children }) {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             Anda harus login terlebih dahulu untuk mengakses halaman admin.
           </p>
-          <button
-            onClick={() => router.push("/auth")}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
-          >
-            Ke Halaman Login
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => router.push("/auth")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Ke Halaman Login
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Kembali ke Beranda
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -134,9 +141,6 @@ export default function AdminLayoutClient({ children }) {
 
   // Show access denied if authenticated but not admin
   if (isAuthenticated && isAdmin === false) {
-    // console.log(
-    //   "Admin client: Authenticated but definitely not admin, showing access denied"
-    // );
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
@@ -150,19 +154,25 @@ export default function AdminLayoutClient({ children }) {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             Anda tidak memiliki izin admin untuk mengakses halaman ini.
           </p>
-          <button
-            onClick={() => router.push("/dashboards")}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
-          >
-            Ke Dashboard User
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => router.push("/dashboards")}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Ke Dashboard User
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200"
+            >
+              Kembali
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Render admin content if all checks pass
-  // console.log("Admin client: All checks passed, rendering admin content");
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
       {isMobile ? (

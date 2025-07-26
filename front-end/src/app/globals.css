@@ -225,3 +225,237 @@
 .leaflet-control-attribution {
   z-index: 5 !important;
 }
+
+/* Enhanced Maps Component Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.admin-maps-content .device-card {
+  animation: bounceIn 0.5s ease-out;
+}
+
+.admin-maps-content .device-info-panel {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Enhanced scroll behavior for mobile */
+@media (max-width: 768px) {
+  .admin-maps-content {
+    scroll-behavior: smooth;
+  }
+  
+  .device-info-panel {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+/* Enhanced gradient backgrounds */
+.gradient-mesh {
+  background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3), transparent 50%);
+}
+
+/* Enhanced device status indicators with pulse effect */
+.device-status-online {
+  animation: pulse-green 2s infinite;
+}
+
+.device-status-offline {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Improved backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .backdrop-blur-enhanced {
+    backdrop-filter: blur(12px) saturate(180%);
+  }
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  .gradient-mesh {
+    background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.2), transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.2), transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.2), transparent 50%);
+  }
+}
+
+/* Enhanced Maps Component Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.admin-maps-content .device-card {
+  animation: bounceIn 0.5s ease-out;
+}
+
+.admin-maps-content .device-info-panel {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Enhanced scroll behavior for mobile */
+@media (max-width: 768px) {
+  .admin-maps-content {
+    scroll-behavior: smooth;
+  }
+  
+  .device-info-panel {
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+/* Enhanced gradient backgrounds */
+.gradient-mesh {
+  background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3), transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3), transparent 50%);
+}
+
+/* Enhanced device status indicators with pulse effect */
+.device-status-online {
+  animation: pulse-green 2s infinite;
+}
+
+.device-status-offline {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Improved backdrop blur support */
+@supports (backdrop-filter: blur(12px)) {
+  .backdrop-blur-enhanced {
+    backdrop-filter: blur(12px) saturate(180%);
+  }
+}
+
+/* Dark mode improvements */
+@media (prefers-color-scheme: dark) {
+  .gradient-mesh {
+    background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.2), transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.2), transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.2), transparent 50%);
+  }
+}

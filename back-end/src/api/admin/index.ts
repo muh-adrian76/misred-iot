@@ -220,10 +220,15 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       // @ts-ignore
       async ({ jwt, cookie, params, body }) => {
         try {
+          console.log("Received location update request:", { params, body });
+          
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          console.log("User authentication:", { userId: decoded.sub, isAdmin: adminUser?.is_admin });
+          
           if (!adminUser?.is_admin) {
+            console.log("Authorization failed: User is not admin");
             return new Response(JSON.stringify({
               status: "error",
               message: "Unauthorized: Admin access required"
@@ -233,7 +238,26 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const deviceId = parseInt(String(params.id));
           const { latitude, longitude, address } = body as any;
           
+          console.log("Parsed data:", { deviceId, latitude, longitude, address });
+          
+          // Validate input
+          if (!deviceId || isNaN(deviceId)) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "ID device tidak valid"
+            }), { status: 400 });
+          }
+          
+          if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Koordinat latitude dan longitude harus berupa angka"
+            }), { status: 400 });
+          }
+          
           const updated = await adminService.updateDeviceLocation(deviceId, latitude, longitude, address);
+          
+          console.log("Update result:", { updated });
           
           if (!updated) {
             return new Response(JSON.stringify({
@@ -242,15 +266,19 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             }), { status: 400 });
           }
           
+          console.log("Location update successful for device:", deviceId);
+          
           return {
             status: "success",
             message: "Lokasi device berhasil diperbarui"
           };
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error updating device location:", error);
+          console.error("Error stack:", error.stack);
           return new Response(JSON.stringify({
             status: "error",
-            message: "Gagal memperbarui lokasi device"
+            message: "Gagal memperbarui lokasi device",
+            error: error.message
           }), { status: 500 });
         }
       },

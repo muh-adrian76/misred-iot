@@ -24,20 +24,22 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `last_login` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `phone` varchar(15) DEFAULT NULL,
-  -- `otp` int DEFAULT NULL,
   `refresh_token` varchar(255),
   `whatsapp_notif` BOOLEAN DEFAULT FALSE,
   `onboarding_completed` BOOLEAN DEFAULT FALSE,
   `onboarding_progress` JSON DEFAULT NULL,
   `is_admin` BOOLEAN DEFAULT FALSE,
+  `otp` VARCHAR(6) DEFAULT NULL,
+  `otp_expires_at` TIMESTAMP NULL DEFAULT NULL,
+  `is_verified` BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`, `onboarding_completed`, `onboarding_progress`, `is_admin`) VALUES
-('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Admin MiSREd', 'admin@misred.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, TRUE, NULL, TRUE),
-('2', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh User', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, FALSE, NULL, FALSE),
-('3', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE, FALSE, NULL, FALSE),
-('4', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE, FALSE, NULL, FALSE);
+INSERT INTO `users` (`id`, `password`, `name`, `email`, `created_at`, `last_login`, `phone`, `refresh_token`, `whatsapp_notif`, `onboarding_completed`, `onboarding_progress`, `is_admin`, `otp`, `otp_expires_at`, `is_verified`) VALUES
+('1', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Admin MiSREd', 'admin@misred.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, TRUE, NULL, TRUE, NULL, NULL, TRUE),
+('2', '$2b$10$y4hjgM6llmrWg1D/kBjnb.7Mg0nDj05rJLVJj3UqOPJY2zIPolXVq', 'Contoh User', 'contoh@gmail.com', '2025-06-09 13:18:32', '2025-06-11 14:25:10', '6283119720725', 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxYmFmN2M2YyIsImlhdCI6MTc0OTY1MTkxMCwidHlwZSI6InJlZnJlc2gifQ.ZxNZ1zKgPgCwYusAIp8Bwew5VN1XfbKB6tefLCIjTgw', FALSE, FALSE, NULL, FALSE, NULL, NULL, TRUE),
+('3', '$2b$10$drXOCl6FOru0dryqjSPWiur5uKnJ9zfhmZuqqe4NIg3Gjm7fXAwHS', 'muh.adriano76', 'muh.adriano76@gmail.com', '2025-06-08 20:43:10', '2025-06-08 21:09:36', NULL, 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0NjI3MzNmNyIsImlhdCI6MTc0OTQxNjk3NiwidHlwZSI6InJlZnJlc2gifQ.bAhAFne2K9j9QW1VmUDe7f9Fa-EvteAMVuE5IoelfqQ', FALSE, FALSE, NULL, FALSE, NULL, NULL, TRUE),
+('4', 'GOOGLE_OAUTH_USER', 'Muh. Adriano', 'wedoung87@gmail.com', '2025-06-08 20:20:39', '2025-06-08 20:20:39', NULL, '', FALSE, FALSE, NULL, TRUE, NULL, NULL, TRUE);
 
 CREATE TABLE IF NOT EXISTS `dashboards` (
   `id` INT NOT NULL AUTO_INCREMENT,

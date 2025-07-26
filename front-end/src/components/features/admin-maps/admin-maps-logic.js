@@ -5,19 +5,19 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 
 export function useAdminMapsLogic() {
   const [devices, setDevices] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [mapView, setMapView] = useState('satellite'); // satellite, street, hybrid
   const [showAllDevices, setShowAllDevices] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // all, online, offline
 
   // Admin auth state
-  const { user, isAdmin, isAuthenticated, loading: adminLoading } = useAdminAuth();
+  const { user, isAdmin, isAuthenticated, isLoading: adminLoading } = useAdminAuth();
 
   // Fetch all devices with location data
   const fetchDevices = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       
       const response = await fetchFromBackend("/admin/devices/locations");
       const data = await response.json();
@@ -42,12 +42,12 @@ export function useAdminMapsLogic() {
       } else {
         throw new Error(data.message || "Failed to fetch devices");
       }
-      
-      setLoading(false);
+
+      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching devices:", error);
       errorToast("Gagal memuat data lokasi device");
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -77,12 +77,11 @@ export function useAdminMapsLogic() {
       
       const data = await response.json();
       
-      if (data.status === "success") {
-        successToast("Lokasi device berhasil diperbarui");
+      if (response.ok) {
         fetchDevices(); // Refresh data
         return true;
       } else {
-        throw new Error(data.message || "Failed to update device location");
+        throw new Error(data.message);
       }
     } catch (error) {
       console.error("Error updating device location:", error);
@@ -91,6 +90,12 @@ export function useAdminMapsLogic() {
     }
   };
 
+  // Refresh data
+  const handleRefresh = async () => {
+    await fetchDevices();
+    successToast("Data berhasil diperbarui");
+  };
+  
   // Initialize data
   useEffect(() => {
     if (!adminLoading && isAuthenticated && isAdmin) {
@@ -101,7 +106,7 @@ export function useAdminMapsLogic() {
   return {
     // State
     devices: filteredDevices,
-    loading: loading || adminLoading,
+    isLoading: isLoading || adminLoading,
     selectedDevice,
     mapView,
     showAllDevices,
@@ -117,6 +122,7 @@ export function useAdminMapsLogic() {
     selectDevice,
     clearSelection,
     updateDeviceLocation,
+    handleRefresh,
     fetchDevices
   };
 }

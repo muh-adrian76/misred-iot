@@ -37,12 +37,19 @@ export default function LoginForm({
       });
       const data = await res.json();
 
-      !res.ok
-        ? errorToast("Login gagal!", `${data.message}`)
-        : setTimeout(() => {
-            setUser(data.user);
-            router.push("/dashboards");
-          }, 100);
+      if (!res.ok) {
+        // Check jika akun belum diverifikasi
+        if (data.message && data.message.includes("belum diverifikasi")) {
+          errorToast("Akun Belum Aktif", "Akun anda belum aktif, segera cek email anda dan lakukan verifikasi");
+        } else {
+          errorToast("Login gagal!", `${data.message}`);
+        }
+      } else {
+        setTimeout(() => {
+          setUser(data.user);
+          router.push("/dashboards");
+        }, 100);
+      }
     } catch (error) {
       errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
     } finally {

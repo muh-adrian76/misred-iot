@@ -1,9 +1,18 @@
-/** @type {import('next').NextConfig} */
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+})
+
 const nextConfig = {
     devIndicators: false,
     experimental: {
         viewTransition: true,
+    },
+    trailingSlash: true,
+    images: {
+        unoptimized: true
     }
 };
 
-export default nextConfig;
+module.exports = withPWA(nextConfig)

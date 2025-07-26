@@ -46,13 +46,16 @@ export default function AdminOverviewsContent({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard Admin
+      <div className="flex flex-row items-center justify-between gap-4 backdrop-blur-enhanced rounded-2xl">
+        <div className="space-y-2">
+          <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
+              Dashboard Admin
           </h1>
+          {/* <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
+            Monitor lokasi dan status semua perangkat IoT secara real-time
+          </p> */}
         </div>
-        <div className="flex items-center gap-2 mt-4 sm:mt-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -61,13 +64,6 @@ export default function AdminOverviewsContent({
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          {/* <Link
-            href="/users"
-            className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            <UserPlus className="w-4 h-4" />
-            Kelola Users
-          </Link> */}
         </div>
       </div>
 

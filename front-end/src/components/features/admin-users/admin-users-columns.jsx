@@ -84,7 +84,7 @@ export const createUserColumns = (onEdit, onDelete) => [
     render: (user) => (
       <div className="flex items-center space-x-3">
         <UserAvatar user={user} />
-        <div>
+        <div className="flex flex-col items-start">
           <div className="font-medium text-sm">
             {user.name || 'Unknown User'}
           </div>
