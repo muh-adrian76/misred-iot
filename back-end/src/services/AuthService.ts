@@ -36,7 +36,7 @@ export class AuthService {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Set OTP expiration time (default 10 minutes, configurable via env)
-      const otpExpirationMinutes = parseInt(process.env.OTP_EXPIRATION_MINUTES || "10");
+      const otpExpirationMinutes = parseInt(process.env.OTP_TIME || "10");
       const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
 
       // Jika email belum terdaftar, lanjutkan proses insert
@@ -552,7 +552,7 @@ export class AuthService {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Set OTP expiration time (default 10 minutes, configurable via env)
-      const otpExpirationMinutes = parseInt(process.env.OTP_EXPIRATION_MINUTES || "10");
+      const otpExpirationMinutes = parseInt(process.env.OTP_TIME || "10");
       const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
 
       await this.db.query(

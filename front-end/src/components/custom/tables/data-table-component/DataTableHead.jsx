@@ -24,20 +24,22 @@ export default function DataTableHead({
   filterOptions,
   handleFilterChange,
   handleFilterReset,
+  glowingHeaders = false,
 }) {
   return col.sortable ? (
     <DescriptionTooltip key={col.key} content="Urutkan Data">
       <TableHead
-        className={[
+        className={cn([
           idx === 0
-            ? "sticky left-0 bg-accent z-20 border-r min-w-[150px] cursor-pointer select-none"
+            ? "sm:sticky left-0 bg-accent z-20 border-r min-w-[150px] cursor-pointer select-none"
             : "",
           col.filterable || col.sortable === false
             ? "min-w-[100px] border-r select-none bg-accent"
             : ![0, columns.length].includes(idx)
               ? "border-r min-w-[100px] cursor-pointer select-none bg-accent"
               : "",
-        ].join(" ")}
+          glowingHeaders && "glowing-header-effect"
+        ].join(" "))}
         onClick={col.sortable ? () => handleSort(col.key) : undefined}
       >
         <span className="flex items-center justify-center">
@@ -115,7 +117,7 @@ export default function DataTableHead({
   ) : (
     <TableHead
       key={col.key}
-      className={[
+      className={cn([
         idx === 0
           ? "sticky left-0 bg-accent z-20 border-r min-w-[150px] cursor-pointer select-none"
           : "",
@@ -125,7 +127,8 @@ export default function DataTableHead({
           : ![0, columns.length].includes(idx)
             ? "border-r min-w-[100px] cursor-pointer select-none bg-accent"
             : "",
-      ].join(" ")}
+        glowingHeaders && "glowing-header-effect"
+      ].join(" "))}
       onClick={col.sortable ? () => handleSort(col.key) : undefined}
     >
       <span className="flex items-center justify-center">

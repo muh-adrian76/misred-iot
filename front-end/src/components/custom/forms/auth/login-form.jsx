@@ -11,6 +11,7 @@ import { Link } from "next-view-transitions";
 import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
 import { Eye, EyeOff } from "lucide-react";
+import OTPModal from "./otp-modal";
 
 export default function LoginForm({
   className,
@@ -26,6 +27,8 @@ export default function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -40,7 +43,8 @@ export default function LoginForm({
       if (!res.ok) {
         // Check jika akun belum diverifikasi
         if (data.message && data.message.includes("belum diverifikasi")) {
-          errorToast("Akun Belum Aktif", "Akun anda belum aktif, segera cek email anda dan lakukan verifikasi");
+          setUnverifiedEmail(email);
+          setShowOTPModal(true);
         } else {
           errorToast("Login gagal!", `${data.message}`);
         }
@@ -57,8 +61,16 @@ export default function LoginForm({
     }
   };
 
+  const handleOTPVerified = () => {
+    setShowOTPModal(false);
+    setUnverifiedEmail("");
+    // Clear form untuk login ulang
+    setPassword("");
+  };
+
   return (
-    <div className="w-full max-w-sm">
+    <>
+      <div className="w-full max-w-sm z-10">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -150,7 +162,7 @@ export default function LoginForm({
                 {isLoading ? "Memproses..." : "Masuk"}
               </Button>
               <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                <span className="bg-card text-muted-foreground relative z-10 px-2">
+                <span className="bg-transparent text-muted-foreground relative z-10 px-2">
                   Atau
                 </span>
               </div>
@@ -168,5 +180,16 @@ export default function LoginForm({
         </Card>
       </motion.div>
     </div>
+
+    {/* OTP Modal */}
+    <OTPModal
+      isOpen={showOTPModal}
+      onClose={() => setShowOTPModal(false)}
+      email={unverifiedEmail}
+      onVerified={handleOTPVerified}
+      isLoading={isLoading}
+      setIsLoading={setIsLoading}
+    />
+  </>
   );
 }

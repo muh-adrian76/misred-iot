@@ -219,7 +219,7 @@ function createJWTToken(encryptedPayload: string, deviceId: string, secret: stri
   
   const payload = {
     encryptedData: encryptedPayload,
-    deviceId: deviceId,
+    sub: deviceId,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600
   };
@@ -333,8 +333,7 @@ async function testHTTPPayloadWithAES(deviceId: string, secret: string): Promise
     // Step 1: Generate normal sensor data
     const sensorData = generateSensorData();
     const payload = JSON.stringify({
-      ...sensorData,
-      device_id: deviceId
+      ...sensorData
     });
     console.log(`📊 Generated sensor data: ${payload.substring(0, 100)}...`);
     
@@ -352,7 +351,6 @@ async function testHTTPPayloadWithAES(deviceId: string, secret: string): Promise
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': deviceId,
         'Authorization': `Bearer ${jwtToken}`
       },
       body: JSON.stringify({})
@@ -381,8 +379,7 @@ async function testHTTPPayloadWithAlarms(deviceId: string, secret: string): Prom
     // Step 1: Generate ALARM triggering sensor data
     const alarmData = generateAlarmTriggerData();
     const payload = JSON.stringify({
-      ...alarmData,
-      device_id: deviceId
+      ...alarmData
     });
     console.log(`� Generated ALARM data: ${JSON.stringify(alarmData)}`);
     
@@ -400,7 +397,6 @@ async function testHTTPPayloadWithAlarms(deviceId: string, secret: string): Prom
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': deviceId,
         'Authorization': `Bearer ${jwtToken}`
       },
       body: JSON.stringify({})
@@ -573,8 +569,7 @@ async function testMQTTPublishWithAES(deviceId: string, secret: string): Promise
         // Step 1: Generate sensor data
         const sensorData = generateSensorData();
         const payload = JSON.stringify({
-          ...sensorData,
-          device_id: deviceId
+          ...sensorData
         });
         console.log(`📊 Generated sensor data: ${payload.substring(0, 100)}...`);
         
@@ -826,8 +821,7 @@ async function testMQTTPayloadWithAlarms(deviceId: string, secret: string): Prom
         // Step 1: Generate ALARM triggering sensor data
         const alarmData = generateAlarmTriggerData();
         const payload = JSON.stringify({
-          ...alarmData,
-          device_id: deviceId
+          ...alarmData
         });
         // Step 2: AES encrypt the payload
         const encryptedPayload = encryptPayloadAES(payload, secret);
@@ -926,7 +920,6 @@ export async function quickPayloadDebug(): Promise<void> {
     const simplePayload = {
       V0: 8.5,  // pH > 8.0 should trigger alarm
       V1: 12.0, // Flow < 15.0 should trigger alarm
-      device_id: "1",
       timestamp: Date.now()
     };
     const encryptedPayload = encryptPayloadAES(JSON.stringify(simplePayload), HTTP_DEVICE.device_secret);
@@ -937,7 +930,6 @@ export async function quickPayloadDebug(): Promise<void> {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Device-Id': "1",
           'Authorization': `Bearer ${jwtToken}`
         },
         body: JSON.stringify({})

@@ -13,6 +13,20 @@ export class DashboardService {
         "SELECT * FROM dashboards WHERE user_id = ?",
         [userId]
       );
+      
+      // Debug log untuk melihat struktur data
+      // if (Array.isArray(rows)) {
+      //   rows.forEach((dashboard: any) => {
+      //     console.log(`Dashboard ${dashboard.id}:`, {
+      //       description: dashboard.description,
+      //       widget_count: dashboard.widget_count,
+      //       layout_type: typeof dashboard.layout,
+      //       layout_length: dashboard.layout ? dashboard.layout.length : 0,
+      //       layout_preview: dashboard.layout ? dashboard.layout.substring(0, 100) + '...' : null
+      //     });
+      //   });
+      // }
+      
       return rows;
     } catch (error) {
       console.error("Error fetching dashboards by user ID:", error);
@@ -35,10 +49,17 @@ export class DashboardService {
 
   async updateDashboard(userId: string, dashboardId: string, description: string, widgetCount:number, layout?: any) {
     try {
+      if (layout) {
+        // Debug layout
+        // console.log('Layout JSON string:', JSON.stringify(layout));
+        // console.log('Layout JSON string length:', JSON.stringify(layout).length);
+      }
+      
       const [result] = await this.db.query<ResultSetHeader>(
         "UPDATE dashboards SET description = ?, layout = ?, widget_count = ? WHERE id = ? AND user_id = ?",
         [description, layout ? JSON.stringify(layout) : null, widgetCount, dashboardId, userId]
       );
+      
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating dashboard:", error);

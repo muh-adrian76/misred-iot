@@ -15,10 +15,33 @@ export function userRoutes(userService: UserService) {
     .get(
       "",
       // @ts-ignore
-      async ({ jwt, cookie }) => {
-        await authorizeRequest(jwt, cookie.auth);
-        const users = await userService.getAllUsers();
-        return { status: "success", data: users };
+      async ({ jwt, cookie, set }) => {
+        try {
+          await authorizeRequest(jwt, cookie.auth);
+          const users = await userService.getAllUsers();
+          return { status: "success", data: users };
+        } catch (error: any) {
+          console.error("Error in get all users:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed",
+              data: []
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error",
+            data: []
+          };
+        }
       },
       getAllUsersSchema
     )
@@ -27,13 +50,34 @@ export function userRoutes(userService: UserService) {
     .get(
       "/:id",
       // @ts-ignore
-      async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie);
-        const user = await userService.getUserById(params.id);
-        if (!user) {
-          return new Response("User tidak ditemukan", { status: 404 });
+      async ({ jwt, cookie, params, set }) => {
+        try {
+          await authorizeRequest(jwt, cookie);
+          const user = await userService.getUserById(params.id);
+          if (!user) {
+            return new Response("User tidak ditemukan", { status: 404 });
+          }
+          return user;
+        } catch (error: any) {
+          console.error("Error in get user by ID:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
-        return user;
       },
       getUserByIdSchema
     )
@@ -42,30 +86,51 @@ export function userRoutes(userService: UserService) {
     .put(
       "/:id",
       // @ts-ignore
-      async ({ jwt, cookie, params, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        
-        // Check if user is admin
-        const adminUser = await userService.getUserById(decoded.sub);
-        if (!adminUser?.is_admin) {
-          return new Response(JSON.stringify({
-            status: "error",
-            message: "Unauthorized: Admin access required"
-          }), { status: 403 });
-        }
+      async ({ jwt, cookie, params, body, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          
+          // Check if user is admin
+          const adminUser = await userService.getUserById(decoded.sub);
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
 
-        const { name, email, is_admin } = body as any;
-        const updated = await userService.updateUserAdmin(params.id, { name, email, is_admin });
-        if (!updated) {
+          const { name, email, is_admin } = body as any;
+          const updated = await userService.updateUserAdmin(params.id, { name, email, is_admin });
+          if (!updated) {
+            return {
+              status: "error",
+              message: "User gagal diperbarui",
+            };
+          }
           return {
-            status: "error",
-            message: "User gagal diperbarui",
+            message: "User berhasil diperbarui",
+            id: params.id.toString(),
+          };
+        } catch (error: any) {
+          console.error("Error in admin update user:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
           };
         }
-        return {
-          message: "User berhasil diperbarui",
-          id: params.id.toString(),
-        };
       },
       putUserSchema
     )
@@ -74,28 +139,49 @@ export function userRoutes(userService: UserService) {
     .delete(
       "/:id",
       // @ts-ignore
-      async ({ jwt, cookie, params }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        
-        // Check if user is admin
-        const adminUser = await userService.getUserById(decoded.sub);
-        if (!adminUser?.is_admin) {
-          return new Response(JSON.stringify({
-            status: "error",
-            message: "Unauthorized: Admin access required"
-          }), { status: 403 });
-        }
+      async ({ jwt, cookie, params, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          
+          // Check if user is admin
+          const adminUser = await userService.getUserById(decoded.sub);
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
 
-        const deleted = await userService.deleteUser(params.id);
-        if (!deleted) {
+          const deleted = await userService.deleteUser(params.id);
+          if (!deleted) {
+            return {
+              status: "error",
+              message: "User gagal dihapus",
+            };
+          }
           return {
-            status: "error",
-            message: "User gagal dihapus",
+            message: "User berhasil dihapus",
+          };
+        } catch (error: any) {
+          console.error("Error in admin delete user:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
           };
         }
-        return {
-          message: "User berhasil dihapus",
-        };
       },
       deleteUserSchema
     )
@@ -104,16 +190,37 @@ export function userRoutes(userService: UserService) {
     .put(
       "/",
       // @ts-ignore
-      async ({ jwt, cookie, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const { name, phone, whatsapp_notif } = body;
-        const phoneNumber = phone ?? "";
+      async ({ jwt, cookie, body, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const { name, phone, whatsapp_notif } = body;
+          const phoneNumber = phone ?? "";
 
-        const updatedUser = await userService.updateUser(decoded.sub, name, phoneNumber, whatsapp_notif);
-        if (!updatedUser) {
-          return new Response("User gagal diperbarui", { status: 400 });
+          const updatedUser = await userService.updateUser(decoded.sub, name, phoneNumber, whatsapp_notif);
+          if (!updatedUser) {
+            return new Response("User gagal diperbarui", { status: 400 });
+          }
+          return new Response(JSON.stringify(updatedUser), { status: 200 });
+        } catch (error: any) {
+          console.error("Error in update own profile:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
-        return new Response(JSON.stringify(updatedUser), { status: 200 });
       },
       putUserSchema
     )
@@ -122,15 +229,36 @@ export function userRoutes(userService: UserService) {
     .delete(
       "/",
       // @ts-ignore
-      async ({ jwt, cookie }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const deleted = await userService.deleteUser(decoded.sub);
-        if (!deleted) {
-          return new Response("User gagal dihapus", { status: 400 });
+      async ({ jwt, cookie, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const deleted = await userService.deleteUser(decoded.sub);
+          if (!deleted) {
+            return new Response("User gagal dihapus", { status: 400 });
+          }
+          return {
+            message: "User berhasil dihapus",
+          };
+        } catch (error: any) {
+          console.error("Error in delete own account:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
-        return {
-          message: "User berhasil dihapus",
-        };
       },
       deleteUserSchema
     )
@@ -139,13 +267,34 @@ export function userRoutes(userService: UserService) {
     .get(
       "/whatsapp-notifications",
       // @ts-ignore
-      async ({ jwt, cookie }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const enabled = await userService.getWhatsAppNotificationStatus(decoded.sub);
-        return {
-          success: true,
-          whatsapp_notifications_enabled: enabled
-        };
+      async ({ jwt, cookie, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const enabled = await userService.getWhatsAppNotificationStatus(decoded.sub);
+          return {
+            success: true,
+            whatsapp_notifications_enabled: enabled
+          };
+        } catch (error: any) {
+          console.error("Error in get WhatsApp notification status:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
       }
     )
 
@@ -153,22 +302,43 @@ export function userRoutes(userService: UserService) {
     .put(
       "/whatsapp-notifications",
       // @ts-ignore
-      async ({ jwt, cookie, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const { enabled } = body as any;
-        const success = await userService.updateWhatsAppNotifications(decoded.sub, enabled);
-        
-        if (!success) {
-          return new Response(JSON.stringify({
-            success: false,
-            message: "Failed to update WhatsApp notification settings"
-          }), { status: 400 });
-        }
+      async ({ jwt, cookie, body, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const { enabled } = body as any;
+          const success = await userService.updateWhatsAppNotifications(decoded.sub, enabled);
+          
+          if (!success) {
+            return new Response(JSON.stringify({
+              success: false,
+              message: "Failed to update WhatsApp notification settings"
+            }), { status: 400 });
+          }
 
-        return {
-          success: true,
-          message: "WhatsApp notification settings updated successfully"
-        };
+          return {
+            success: true,
+            message: "WhatsApp notification settings updated successfully"
+          };
+        } catch (error: any) {
+          console.error("Error in update WhatsApp notification status:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
       }
     )
 
@@ -176,13 +346,34 @@ export function userRoutes(userService: UserService) {
     .get(
       "/onboarding-progress",
       // @ts-ignore
-      async ({ jwt, cookie }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const progress = await userService.getOnboardingProgress(decoded.sub);
-        return {
-          success: true,
-          ...progress
-        };
+      async ({ jwt, cookie, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const progress = await userService.getOnboardingProgress(decoded.sub);
+          return {
+            success: true,
+            ...progress
+          };
+        } catch (error: any) {
+          console.error("Error in get onboarding progress:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
       }
     )
 
@@ -190,16 +381,37 @@ export function userRoutes(userService: UserService) {
     .get(
       "/onboarding-progress/:userId",
       // @ts-ignore
-      async ({ jwt, cookie, params }) => {
-        await authorizeRequest(jwt, cookie);
-        const progress = await userService.getOnboardingProgress(params.userId);
-        return {
-          success: true,
-          data: {
-            completedTasks: progress.progress,
-            isCompleted: progress.completed
+      async ({ jwt, cookie, params, set }) => {
+        try {
+          await authorizeRequest(jwt, cookie);
+          const progress = await userService.getOnboardingProgress(params.userId);
+          return {
+            success: true,
+            data: {
+              completedTasks: progress.progress,
+              isCompleted: progress.completed
+            }
+          };
+        } catch (error: any) {
+          console.error("Error in get onboarding progress by user ID:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
           }
-        };
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
       }
     )
 
@@ -207,23 +419,44 @@ export function userRoutes(userService: UserService) {
     .post(
       "/onboarding-progress",
       // @ts-ignore
-      async ({ jwt, cookie, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const { taskId, completed } = body as { taskId: number; completed: boolean };
-        
-        const success = await userService.updateOnboardingProgress(decoded.sub, taskId, completed);
-        
-        if (!success) {
-          return new Response(JSON.stringify({
-            success: false,
-            message: "Failed to update onboarding progress"
-          }), { status: 400 });
-        }
+      async ({ jwt, cookie, body, set }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const { taskId, completed } = body as { taskId: number; completed: boolean };
+          
+          const success = await userService.updateOnboardingProgress(decoded.sub, taskId, completed);
+          
+          if (!success) {
+            return new Response(JSON.stringify({
+              success: false,
+              message: "Failed to update onboarding progress"
+            }), { status: 400 });
+          }
 
-        return {
-          success: true,
-          message: "Onboarding progress updated successfully"
-        };
+          return {
+            success: true,
+            message: "Onboarding progress updated successfully"
+          };
+        } catch (error: any) {
+          console.error("Error in update onboarding progress:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
       }
     );
 }

@@ -17,8 +17,13 @@ import {
 } from "@/components/ui/select";
 import MapView from "@/components/custom/other/map-view";
 import { successToast } from "@/components/custom/other/toaster";
-import { DeviceStatusIcon, DeviceInfoPanel } from "@/components/custom/other/map-info";
+import {
+  DeviceStatusIcon,
+  DeviceInfoPanel,
+} from "@/components/custom/other/map-info";
 import { useState } from "react";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { motion } from "framer-motion";
 
 export default function AdminMapsContent({
   devices,
@@ -31,7 +36,7 @@ export default function AdminMapsContent({
   selectDevice,
   clearSelection,
   handleRefresh,
-  fetchDevices
+  fetchDevices,
 }) {
   // State for map functionality
   const [isChangingMapView, setIsChangingMapView] = useState(false);
@@ -57,8 +62,8 @@ export default function AdminMapsContent({
   const handleLocationUpdated = (deviceId, locationData, updatedDevice) => {
     // Refresh devices to get updated data
     fetchDevices();
-        successToast("Lokasi device berhasil diperbarui");
-    
+    successToast("Lokasi device berhasil diperbarui");
+
     // Update selected device with new location untuk update map position
     if (updatedDevice && selectedDevice?.id === deviceId) {
       selectDevice(updatedDevice);
@@ -68,8 +73,8 @@ export default function AdminMapsContent({
   // Function to handle location filter from header LocationPicker
   // const handleLocationFilter = (selectedLocation) => {
   //   console.log("Location filter selected:", selectedLocation);
-    // You can implement location-based filtering here
-    // For example, filter devices by region or zoom map to location
+  // You can implement location-based filtering here
+  // For example, filter devices by region or zoom map to location
   // };
 
   if (isLoading) {
@@ -87,7 +92,12 @@ export default function AdminMapsContent({
   return (
     <div className="space-y-4 lg:space-y-6 admin-maps-content min-h-screen">
       {/* Header */}
-      <div className="flex flex-row items-center justify-between gap-4 backdrop-blur-enhanced rounded-2xl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 1 }}
+        className="flex flex-row items-center justify-between gap-4 backdrop-blur-enhanced rounded-2xl"
+      >
         <div className="space-y-2">
           <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
             Peta Lokasi Device
@@ -102,14 +112,30 @@ export default function AdminMapsContent({
             disabled={isLoading}
             className="flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-4 py-2 rounded-xl font-medium transition-all duration-200 shadow-sm disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{isLoading ? 'Loading...' : 'Refresh'}</span>
+            <RefreshCw
+              className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+            />
+            <span className="hidden sm:inline">
+              {isLoading ? "Loading..." : "Refresh"}
+            </span>
           </Button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Enhanced Controls with shadcn Select components */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-enhanced p-4 lg:px-6 lg:py-4 rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 1.1 }}
+        className="bg-card backdrop-blur-enhanced p-4 lg:px-6 lg:py-4 rounded-2xl shadow-lg border"
+      >
+        <GlowingEffect
+          spread={45}
+          glow={true}
+          disabled={false}
+          proximity={72}
+          inactiveZone={0.02}
+        />
         <div className="lg:flex lg:flex-row grid grid-cols-2 gap-4 lg:gap-6 items-start lg:items-center">
           {/* Map View Selector */}
           <div className="flex max-md:flex-col justify-between items-center gap-3 w-auto">
@@ -189,7 +215,8 @@ export default function AdminMapsContent({
           <div className="flex items-center justify-center lg:justify-end gap-3 w-full lg:flex-1 lg:ml-auto">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                {devices.length} device{devices.length !== 1 ? "s" : ""} ditemukan
+                {devices.length} device{devices.length !== 1 ? "s" : ""}{" "}
+                ditemukan
               </span>
             </div>
             {selectedDevice && (
@@ -205,10 +232,22 @@ export default function AdminMapsContent({
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Enhanced Map Container */}
-      <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-enhanced rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 1.2 }}
+        className="relative bg-card backdrop-blur-enhanced rounded-2xl shadow-lg border overflow-hidden"
+      >
+        <GlowingEffect
+          spread={45}
+          glow={true}
+          disabled={false}
+          proximity={72}
+          inactiveZone={0.02}
+        />
         <div className="h-[500px] lg:h-[600px] relative">
           {isChangingMapView && (
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
@@ -231,25 +270,43 @@ export default function AdminMapsContent({
             }))}
             onMarkerClick={selectDevice}
             selectedDeviceId={selectedDevice?.id}
-            selectedDevice={selectedDevice ? {
-              ...selectedDevice,
-              latitude: selectedDevice.location?.lat ?? selectedDevice.latitude,
-              longitude: selectedDevice.location?.lng ?? selectedDevice.longitude,
-            } : null}
+            selectedDevice={
+              selectedDevice
+                ? {
+                    ...selectedDevice,
+                    latitude:
+                      selectedDevice.location?.lat ?? selectedDevice.latitude,
+                    longitude:
+                      selectedDevice.location?.lng ?? selectedDevice.longitude,
+                  }
+                : null
+            }
             mapView={mapView}
             shouldFitAllDevices={shouldFitAllDevices}
           />
           {/* Device Info Panel */}
-          <DeviceInfoPanel 
-            device={selectedDevice} 
-            onClose={clearSelection} 
+          <DeviceInfoPanel
+            device={selectedDevice}
+            onClose={clearSelection}
             onLocationUpdated={handleLocationUpdated}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Enhanced Device List */}
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-enhanced rounded-2xl shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 1.3 }}
+        className="bg-card backdrop-blur-enhanced rounded-2xl shadow-lg border"
+      >
+        <GlowingEffect
+          spread={45}
+          glow={true}
+          disabled={false}
+          proximity={72}
+          inactiveZone={0.02}
+        />
         <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-700/50 dark:to-gray-600/50">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-pink-600" />
@@ -286,10 +343,12 @@ export default function AdminMapsContent({
                     selectDevice(device);
                     // Scroll ke atas untuk melihat peta jika di mobile
                     if (window.innerWidth < 768) {
-                      document.querySelector('.admin-maps-content')?.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                      });
+                      document
+                        .querySelector(".admin-maps-content")
+                        ?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
                     }
                   }}
                 >
@@ -333,8 +392,7 @@ export default function AdminMapsContent({
             </div>
           )}
         </div>
-      </div>
-
+      </motion.div>
     </div>
   );
 }

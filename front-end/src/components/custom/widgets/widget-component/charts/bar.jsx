@@ -6,8 +6,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-  ChartLegendContent
+  ChartLegendContent,
 } from "@/components/ui/chart";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const chartColors = [
   "var(--chart-1)",
@@ -46,41 +47,38 @@ export function BarChartWidget({
 
     return (
       <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
-        <ChartContainer
-          config={previewChartConfig}
-          className="h-full w-full"
-        >
+        <ChartContainer config={previewChartConfig} className="h-full w-full">
           <BarChart
             accessibilityLayer
             data={dummyData}
             width={undefined}
-          height={undefined}
-          margin={{ left: 12, right: 12 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={(value) => value.slice(0, 3)}
-          />
-          <ChartTooltip
-            cursor={false}
-            content={<ChartTooltipContent indicator="dashed" />}
-          />
-          <Bar
-            dataKey="datastream_1"
-            fill={previewChartConfig.datastream_1.color}
-            radius={4}
-          />
-          <Bar
-            dataKey="datastream_2"
-            fill={previewChartConfig.datastream_2.color}
-            radius={4}
-          />
-        </BarChart>
-      </ChartContainer>
+            height={undefined}
+            margin={{ left: 12, right: 12 }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dashed" />}
+            />
+            <Bar
+              dataKey="datastream_1"
+              fill={previewChartConfig.datastream_1.color}
+              radius={4}
+            />
+            <Bar
+              dataKey="datastream_2"
+              fill={previewChartConfig.datastream_2.color}
+              radius={4}
+            />
+          </BarChart>
+        </ChartContainer>
       </div>
     );
   }
@@ -101,10 +99,16 @@ export function BarChartWidget({
   const pairs =
     Array.isArray(widget?.inputs) && widget.inputs.length > 0
       ? widget.inputs
-      : Array.isArray(widget?.datastream_ids) && widget.datastream_ids.length > 0
+      : Array.isArray(widget?.datastream_ids) &&
+          widget.datastream_ids.length > 0
         ? widget.datastream_ids
         : widget?.datastream_id && widget?.device_id
-          ? [{ device_id: widget.device_id, datastream_id: widget.datastream_id }]
+          ? [
+              {
+                device_id: widget.device_id,
+                datastream_id: widget.datastream_id,
+              },
+            ]
           : [];
 
   // Use real-time data hook (update agar bisa ambil banyak pair)
@@ -123,10 +127,10 @@ export function BarChartWidget({
   const dynamicChartConfig = pairs.reduce((config, pair, idx) => {
     const dataKey = `value_${pair.device_id}_${pair.datastream_id}`;
     const legendItem = legendData?.[idx];
-    const label = legendItem 
+    const label = legendItem
       ? `${legendItem.device_name} - ${legendItem.sensor_name}`
       : `Device ${pair.device_id} - Sensor ${pair.datastream_id}`;
-    
+
     config[dataKey] = {
       label: label,
       color: chartColors[idx % chartColors.length],
@@ -228,7 +232,8 @@ export function BarChartWidget({
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs text-muted-foreground">
-                {widget?.description || "Widget Chart"}: tidak ada data dalam {timeRangeLabel}
+                {widget?.description || "Widget Chart"}: tidak ada data dalam{" "}
+                {timeRangeLabel}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -332,16 +337,16 @@ export function BarChartWidget({
             tick={{ fontSize: 11 }}
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
           {/* Render satu Bar untuk setiap pair */}
           {pairs.map((pair, idx) => (
             <Bar
-              key={idx}
-              dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-              fill={chartColors[idx % chartColors.length]}
-              radius={[4, 4, 0, 0]}
+            key={idx}
+            dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+            fill={chartColors[idx % chartColors.length]}
+            radius={[4, 4, 0, 0]}
             />
           ))}
+          <ChartLegend content={<ChartLegendContent />} />
         </BarChart>
       </ChartContainer>
     </div>

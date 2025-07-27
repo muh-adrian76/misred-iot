@@ -129,11 +129,15 @@ export function useWidgetData(widget, timeRange = "1m", pairsInput) {
   // Set latest value dari semua pair (ambil yang terbaru)
   useEffect(() => {
     if (latestDataRaw && Array.isArray(latestDataRaw)) {
-      // Ambil data terbaru (paling baru server_time)
+      // Ambil data terbaru (prioritas device_time, fallback server_time)
       const all = latestDataRaw.filter(Boolean);
       if (all.length === 0) return;
       const sorted = [...all].sort(
-        (a, b) => new Date(b.server_time) - new Date(a.server_time)
+        (a, b) => {
+          const timeA = new Date(a.device_time || a.server_time);
+          const timeB = new Date(b.device_time || b.server_time);
+          return timeB - timeA;
+        }
       );
       setLatestValue(sorted[0]);
     }
@@ -183,28 +187,63 @@ export function useWidgetData(widget, timeRange = "1m", pairsInput) {
   // Gabungkan time series data semua pair berdasarkan waktu
   let formattedTimeSeriesData = [];
   if (Array.isArray(timeSeriesDataRaw) && timeSeriesDataRaw.length > 0) {
-    // Buat map waktu
-    const timeMap = {};
+    // Kumpulkan SEMUA data dari semua pair tanpa penggabungan
+    const allData = [];
     timeSeriesDataRaw.forEach((pairData, idx) => {
       pairData.forEach((item) => {
-        const key = new Date(item.server_time).toISOString();
-        if (!timeMap[key]) {
-          timeMap[key] = {
-            timestamp: key,
-            time: new Date(item.server_time).toLocaleTimeString("id-ID", {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          };
-        }
-        timeMap[key][`value_${item.device_id}_${item.datastream_id}`] =
-          parseFloat(item.value);
+        // Gunakan timestamp prioritas: device_time -> server_time
+        const timestamp = item.device_time || item.server_time;
+        allData.push({
+          timestamp: new Date(timestamp),
+          originalTimestamp: timestamp, // Simpan timestamp asli untuk tooltip
+          server_time: timestamp,
+          device_id: item.device_id,
+          datastream_id: item.datastream_id,
+          value: parseFloat(item.value),
+          device_name: item.device_name,
+          sensor_name: item.sensor_name,
+          unit: item.unit,
+        });
       });
     });
-    // Urutkan berdasarkan waktu
-    formattedTimeSeriesData = Object.values(timeMap).sort(
+
+    // Urutkan SEMUA data berdasarkan waktu
+    allData.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Buat map waktu yang presisi (tanpa pembulatan)
+    const timeMap = {};
+    const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
+    
+    allData.forEach((item) => {
+      // Gunakan timestamp presisi tanpa pembulatan
+      const key = item.timestamp.toISOString();
+      
+      if (!timeMap[key]) {
+        timeMap[key] = {
+          timestamp: key,
+          originalTimestamp: item.originalTimestamp,
+          time: item.timestamp.toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        // Initialize semua datastream keys dengan null
+        deviceDatastreamKeys.forEach(dsKey => {
+          timeMap[key][dsKey] = null;
+        });
+      }
+      
+      // Set nilai untuk datastream ini
+      timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
+    });
+
+    // Convert ke array dan urutkan
+    const sortedData = Object.values(timeMap).sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
+
+    // TIDAK ADA INTERPOLASI - tampilkan data asli
+    formattedTimeSeriesData = sortedData;
   }
 
   // Legend data untuk chart
@@ -231,9 +270,9 @@ export function useWidgetData(widget, timeRange = "1m", pairsInput) {
   const formattedLatestValue = latestValue
     ? {
         value: parseFloat(latestValue.value),
-        timestamp: latestValue.server_time,
-        timeAgo: latestValue.server_time
-          ? getTimeAgo(latestValue.server_time)
+        timestamp: latestValue.device_time || latestValue.server_time, // Prioritas device_time
+        timeAgo: latestValue.device_time || latestValue.server_time
+          ? getTimeAgo(latestValue.device_time || latestValue.server_time)
           : "Unknown",
         unit: latestValue.unit || "",
         sensor_name: latestValue.sensor_name || "Unknown Sensor",
@@ -293,7 +332,7 @@ function getTimeAgo(timestamp) {
   const diffInSeconds = Math.floor((now - time) / 1000);
 
   if (diffInSeconds < 60) {
-    return 'Live';
+    return 'Baru saja';
     // return 'Baru saja';
   } else if (diffInSeconds < 3600) {
     const minutes = Math.floor(diffInSeconds / 60);

@@ -20,7 +20,7 @@ export default function ProfileDeleteDialog({
       return null;
     }
     try {
-      const res = await fetchFromBackend("/user", {
+      const res = await fetchFromBackend("/user/", {
         method: "DELETE",
       });
 

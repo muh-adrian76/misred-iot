@@ -7,7 +7,13 @@ import { Loader2, WifiOff, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 
-export function SliderWidget({ className, previewMode = false, widget, timeRange = "1h", ...props }) {
+export function SliderWidget({
+  className,
+  previewMode = false,
+  widget,
+  timeRange = "1h",
+  ...props
+}) {
   const [dummyValue, setDummyValue] = useState([50]);
   const [sliderValue, setSliderValue] = useState([0]);
   const [isSending, setIsSending] = useState(false);
@@ -50,7 +56,9 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
         <div className="text-center space-y-2">
           <AlertCircle className="h-6 w-6 text-muted-foreground mx-auto" />
           <p className="text-sm text-muted-foreground">Widget tidak valid</p>
-          <p className="text-xs text-muted-foreground">Device atau datastream tidak ditemukan</p>
+          <p className="text-xs text-muted-foreground">
+            Device atau datastream tidak ditemukan
+          </p>
         </div>
       </div>
     );
@@ -83,26 +91,28 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
 
   // Get current sensor value
   const currentValue = latestValue?.value || 0;
-  
-  // Get datastream info to determine if this is actuator or sensor and get min/max values
-  const currentDatastream = datastreamInfo?.find(ds => 
-    ds.device_id === widget?.device_id && ds.datastream_id === widget?.datastream_id
-  ) || datastreamInfo?.[0]; // Fallback to first datastream for multi-pair widgets
 
-  const isActuatorWidget = currentDatastream ? isActuator(currentDatastream.type) : false;
-  const isSensorWidget = currentDatastream ? isSensor(currentDatastream.type) : true; // Default to sensor
-  
+  // Get datastream info to determine if this is actuator or sensor and get min/max values
+  const currentDatastream =
+    datastreamInfo?.find(
+      (ds) =>
+        ds.device_id === widget?.device_id &&
+        ds.datastream_id === widget?.datastream_id
+    ) || datastreamInfo?.[0]; // Fallback to first datastream for multi-pair widgets
+
+  const isActuatorWidget = currentDatastream
+    ? isActuator(currentDatastream.type)
+    : false;
+  const isSensorWidget = currentDatastream
+    ? isSensor(currentDatastream.type)
+    : true; // Default to sensor
+
   // Determine slider range based on datastream configuration
   const minValue = currentDatastream?.min_value || 0;
   const maxValue = currentDatastream?.max_value || 100;
-  
+
   // Ensure value is within range
   const clampedValue = Math.max(minValue, Math.min(maxValue, currentValue));
-
-  // Update slider value when sensor value changes
-  useEffect(() => {
-    setSliderValue([clampedValue]);
-  }, [clampedValue]);
 
   // Handle slider value change for actuator widgets
   const handleSliderChange = (value) => {
@@ -122,7 +132,7 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
         latestValue?.datastream_id || widget?.datastream_id,
         value[0]
       );
-      
+
       if (!success) {
         // Revert slider if failed
         setSliderValue([clampedValue]);
@@ -135,16 +145,27 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
     }
   };
 
+  // Update slider value when sensor value changes
+  useEffect(() => {
+    setSliderValue([clampedValue]);
+  }, [clampedValue]);
+
   return (
     <div className="flex w-full h-full flex-col justify-center gap-3 px-4">
       {/* Header dengan info sensor */}
       <div className="text-center">
         <h4 className="text-sm font-medium">
-          {latestValue?.sensor_name || currentDatastream?.description || 'Sensor'}
+          {latestValue?.sensor_name ||
+            currentDatastream?.description ||
+            "Sensor"}
         </h4>
-        <p className="text-xs text-muted-foreground">{latestValue?.device_name}</p>
+        <p className="text-xs text-muted-foreground">
+          {latestValue?.device_name}
+        </p>
         {latestValue?.timeAgo && (
-          <p className="text-xs text-muted-foreground">Updated {latestValue.timeAgo}</p>
+          <p className="text-xs text-muted-foreground">
+            Updated {latestValue.timeAgo}
+          </p>
         )}
         {/* Show mode indicator */}
         <p className="text-xs text-blue-500 font-medium">
@@ -164,12 +185,14 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
           onValueCommit={handleSliderCommit} // Send command when drag ends
           className={cn("flex-1", className, {
             "opacity-50": isSending,
-            "opacity-80": isSensorWidget
+            "opacity-80": isSensorWidget,
           })}
           {...props}
         />
         <div className="min-w-[60px] text-right">
-          <SlidingNumber value={isActuatorWidget ? sliderValue[0] : clampedValue} />
+          <SlidingNumber
+            value={isActuatorWidget ? sliderValue[0] : clampedValue}
+          />
           {(latestValue?.unit || currentDatastream?.unit) && (
             <p className="text-xs text-muted-foreground">
               {latestValue?.unit || currentDatastream?.unit}
@@ -181,7 +204,8 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
       {/* Range indicator */}
       <div className="text-center">
         <p className="text-xs text-muted-foreground">
-          Range: {minValue} - {maxValue} {latestValue?.unit || currentDatastream?.unit}
+          Range: {minValue} - {maxValue}{" "}
+          {latestValue?.unit || currentDatastream?.unit}
         </p>
       </div>
 
@@ -205,7 +229,9 @@ export function SliderWidget({ className, previewMode = false, widget, timeRange
           </p>
         )}
         {!latestValue && (
-          <p className="text-xs text-muted-foreground">Tidak ada data terbaru</p>
+          <p className="text-xs text-muted-foreground">
+            Tidak ada data terbaru
+          </p>
         )}
       </div>
     </div>

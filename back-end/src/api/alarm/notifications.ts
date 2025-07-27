@@ -221,6 +221,23 @@ export function alarmNotificationRoutes(
             sql: error.sql
           });
           
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error in notification history:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed",
+              notifications: [],
+              pagination: {
+                page: 1,
+                limit: 20,
+                total: 0,
+                pages: 1
+              }
+            };
+          }
+          
           // Check if it's a database connection error
           if (error.code === 'ER_WRONG_ARGUMENTS' || error.errno === 1210) {
             set.status = 503;
@@ -297,8 +314,20 @@ export function alarmNotificationRoutes(
             message: "Semua notifikasi berhasil ditandai dibaca",
             affected_rows: affectedRows
           };
-        } catch (error) {
-          console.error("Error marking all notifications as read:", error);
+        } catch (error: any) {
+          console.error("Error in mark all notifications as read:", error);
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
+              success: false,
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
           set.status = 500;
           return {
             success: false,

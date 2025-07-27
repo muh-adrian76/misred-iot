@@ -18,9 +18,9 @@ const badgeVariants = cva(
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         online:
-          "text-green-500 bg-green-100 dark:bg-green-600 border-none dark:text-foreground",
+          "device-status-online text-green-500 bg-green-100 dark:bg-green-600 border-none dark:text-foreground",
         offline:
-          "text-red-500 bg-red-100 dark:bg-red-600 border-none dark:text-foreground",
+          "device-status-offline text-red-500 bg-red-100 dark:bg-red-600 border-none dark:text-foreground",
       },
     },
     defaultVariants: {

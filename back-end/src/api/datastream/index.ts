@@ -15,14 +15,37 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .get(
         "/",
         //@ts-ignore
-        async ({ jwt, cookie }) => {
-          const user = await authorizeRequest(jwt, cookie);
-          const datastreams = await datastreamService.getDatastreamsByUserId(
-            user.sub
-          );
-          return new Response(JSON.stringify({ result: datastreams }), {
-            status: 200,
-          });
+        async ({ jwt, cookie, set }) => {
+          try {
+            const user = await authorizeRequest(jwt, cookie);
+            const datastreams = await datastreamService.getDatastreamsByUserId(
+              user.sub
+            );
+            return new Response(JSON.stringify({ result: datastreams }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error in get all datastreams:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed",
+                result: []
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error",
+              result: []
+            };
+          }
         },
         getAllDatastreamsSchema
       )
@@ -31,15 +54,38 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .get(
         "/device/:deviceId",
         //@ts-ignore
-        async ({ jwt, cookie, params }) => {
-          const user = await authorizeRequest(jwt, cookie);
-          const datastreams = await datastreamService.getDatastreamsByDeviceId(
-            params.deviceId,
-            user.sub
-          );
-          return new Response(JSON.stringify({ result: datastreams }), {
-            status: 200,
-          });
+        async ({ jwt, cookie, params, set }) => {
+          try {
+            const user = await authorizeRequest(jwt, cookie);
+            const datastreams = await datastreamService.getDatastreamsByDeviceId(
+              params.deviceId,
+              user.sub
+            );
+            return new Response(JSON.stringify({ result: datastreams }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error in get datastreams by device ID:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed",
+                result: []
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error",
+              result: []
+            };
+          }
         }
       )
 
@@ -47,21 +93,42 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .get(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params }) => {
-          const user = await authorizeRequest(jwt, cookie);
-          const datastream = await datastreamService.getDatastreamById(
-            params.id,
-            user.sub
-          );
-          if (!datastream) {
-            return new Response(
-              JSON.stringify({ message: "Datastream tidak ditemukan" }),
-              { status: 404 }
+        async ({ jwt, cookie, params, set }) => {
+          try {
+            const user = await authorizeRequest(jwt, cookie);
+            const datastream = await datastreamService.getDatastreamById(
+              params.id,
+              user.sub
             );
+            if (!datastream) {
+              return new Response(
+                JSON.stringify({ message: "Datastream tidak ditemukan" }),
+                { status: 404 }
+              );
+            }
+            return new Response(JSON.stringify({ result: datastream }), {
+              status: 200,
+            });
+          } catch (error: any) {
+            console.error("Error in get datastream by ID:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
-          return new Response(JSON.stringify({ result: datastream }), {
-            status: 200,
-          });
         }
       )
 
@@ -69,40 +136,61 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .post(
         "/",
         //@ts-ignore
-        async ({ jwt, cookie, body }) => {
-          const user = await authorizeRequest(jwt, cookie);
-          const {
-            deviceId,
-            pin,
-            type,
-            unit,
-            description,
-            defaultValue,
-            minValue,
-            maxValue,
-            decimalValue,
-            booleanValue,
-          } = body;
-          const datastreamId = await datastreamService.createDatastream({
-            userId: user.sub,
-            deviceId,
-            pin,
-            type,
-            unit,
-            description,
-            defaultValue,
-            minValue,
-            maxValue,
-            decimalValue,
-            booleanValue,
-          });
-          return new Response(
-            JSON.stringify({
-              message: "Datastream berhasil dibuat",
-              id: datastreamId,
-            }),
-            { status: 201 }
-          );
+        async ({ jwt, cookie, body, set }) => {
+          try {
+            const user = await authorizeRequest(jwt, cookie);
+            const {
+              deviceId,
+              pin,
+              type,
+              unit,
+              description,
+              defaultValue,
+              minValue,
+              maxValue,
+              decimalValue,
+              booleanValue,
+            } = body;
+            const datastreamId = await datastreamService.createDatastream({
+              userId: user.sub,
+              deviceId,
+              pin,
+              type,
+              unit,
+              description,
+              defaultValue,
+              minValue,
+              maxValue,
+              decimalValue,
+              booleanValue,
+            });
+            return new Response(
+              JSON.stringify({
+                message: "Datastream berhasil dibuat",
+                id: datastreamId,
+              }),
+              { status: 201 }
+            );
+          } catch (error: any) {
+            console.error("Error in create datastream:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
+          }
         },
         postDatastreamSchema
       )
@@ -111,39 +199,60 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .put(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params, body }) => {
-          await authorizeRequest(jwt, cookie);
-          const {
-            deviceId,
-            pin,
-            type,
-            unit,
-            description,
-            defaultValue,
-            minValue,
-            maxValue,
-            decimalValue,
-            booleanValue,
-          } = body;
-          const updated = await datastreamService.updateDatastream(params.id, {
-            deviceId,
-            pin,
-            type,
-            unit,
-            description,
-            defaultValue,
-            minValue,
-            maxValue,
-            decimalValue,
-            booleanValue,
-          });
-          if (!updated) {
-            return new Response("Datastream gagal diupdate", { status: 400 });
+        async ({ jwt, cookie, params, body, set }) => {
+          try {
+            await authorizeRequest(jwt, cookie);
+            const {
+              deviceId,
+              pin,
+              type,
+              unit,
+              description,
+              defaultValue,
+              minValue,
+              maxValue,
+              decimalValue,
+              booleanValue,
+            } = body;
+            const updated = await datastreamService.updateDatastream(params.id, {
+              deviceId,
+              pin,
+              type,
+              unit,
+              description,
+              defaultValue,
+              minValue,
+              maxValue,
+              decimalValue,
+              booleanValue,
+            });
+            if (!updated) {
+              return new Response("Datastream gagal diupdate", { status: 400 });
+            }
+            return new Response(
+              JSON.stringify({ message: "Datastream berhasil diupdate" }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error in update datastream:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
-          return new Response(
-            JSON.stringify({ message: "Datastream berhasil diupdate" }),
-            { status: 200 }
-          );
         },
         putDatastreamSchema
       )
@@ -152,16 +261,37 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
       .delete(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params }) => {
-          await authorizeRequest(jwt, cookie);
-          const deleted = await datastreamService.deleteDatastream(params.id);
-          if (!deleted) {
-            return new Response("Datastream gagal dihapus", { status: 400 });
+        async ({ jwt, cookie, params, set }) => {
+          try {
+            await authorizeRequest(jwt, cookie);
+            const deleted = await datastreamService.deleteDatastream(params.id);
+            if (!deleted) {
+              return new Response("Datastream gagal dihapus", { status: 400 });
+            }
+            return new Response(
+              JSON.stringify({ message: "Datastream berhasil dihapus" }),
+              { status: 200 }
+            );
+          } catch (error: any) {
+            console.error("Error in delete datastream:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
-          return new Response(
-            JSON.stringify({ message: "Datastream berhasil dihapus" }),
-            { status: 200 }
-          );
         },
         deleteDatastreamSchema
       )

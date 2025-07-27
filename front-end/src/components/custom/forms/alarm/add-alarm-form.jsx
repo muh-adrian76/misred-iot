@@ -44,7 +44,7 @@ export default function AddAlarmForm({
   const [datastreamId, setDatastreamId] = useState("");
   const [conditions, setConditions] = useState([]);
   const [isActive, setIsActive] = useState(true);
-  const [cooldownMinutes, setCooldownMinutes] = useState(1);
+  const [cooldownMinutes, setCooldownMinutes] = useState("1");
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
 
@@ -64,7 +64,7 @@ export default function AddAlarmForm({
       setDeviceId("");
       setDatastreamId("");
       setConditions([]);
-      setCooldownMinutes(1);
+      setCooldownMinutes("1");
       setNewConditionOperator(">");
       setNewConditionThreshold("");
     }
@@ -274,9 +274,10 @@ export default function AddAlarmForm({
           <Label>Tunggu (menit)</Label>
           <Input
             value={cooldownMinutes}
-            onChange={(e) => setCooldownMinutes(parseInt(e.target.value))}
+            onChange={(e) => setCooldownMinutes(e.target.value)}
             type="number"
             min="1"
+            placeholder="1"
             noInfo
           />
         </div>

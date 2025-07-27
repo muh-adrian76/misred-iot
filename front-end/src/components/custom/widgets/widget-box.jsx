@@ -30,7 +30,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
           transition={{ duration: 0.5, delay: 1.5, ease: "easeInOut" }}
-          className="z-10 rounded-md bg-background shadow-lg dark:shadow-[0px_0px_30px_0_rgba(255,255,255,0.15)] p-4"
+          className="z-10 rounded-md bg-card shadow-lg dark:shadow-[0px_0px_30px_0_rgba(255,255,255,0.15)] p-4"
         >
           <div className="flex gap-2 justify-between items-center">
             <div className="flex gap-3 font-semibold">
@@ -98,7 +98,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
         >
           <div
             className={cn(
-              "flex pl-4 pr-3 justify-between items-center bg-background",
+              "flex pl-4 pr-3 justify-between items-center bg-card",
               minimize === true ? "rounded-md border py-2" : "rounded-t-md py-4"
             )}
           >
@@ -143,7 +143,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
           </div>
           <div
             className={cn(
-              "flex flex-row bg-background xl:flex-col w-max xl:w-full h-auto xl:h-max space-x-4 xl:space-x-0 xl:space-y-4 pb-4 px-4",
+              "flex flex-row bg-card xl:flex-col w-max xl:w-full h-auto xl:h-max space-x-4 xl:space-x-0 xl:space-y-4 pb-4 px-4",
               minimize === true ? "hidden" : "block"
             )}
           >

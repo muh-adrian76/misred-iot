@@ -14,7 +14,7 @@ export default function OTPInput({
   setIsLoading 
 }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 menit dalam detik
+  const [timeLeft, setTimeLeft] = useState(parseInt(process.env.NEXT_PUBLIC_OTP_TIME) * 60); // Variabel .env untuk OTP
   const [canResend, setCanResend] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const inputRefs = useRef([]);
@@ -139,9 +139,9 @@ export default function OTPInput({
       });
 
       successToast("OTP Terkirim!", "Kode verifikasi baru telah dikirim ke email Anda.");
-      setTimeLeft(600); // Reset timer ke 10 menit
+      setTimeLeft(parseInt(process.env.NEXT_PUBLIC_OTP_TIME) * 60); // Reset timer OTP
       setCanResend(false);
-      setResendCooldown(60); // Cooldown 60 detik untuk resend
+      setResendCooldown(60); // Cooldown 60 detik untuk meminta ulang
       setOtp(["", "", "", "", "", ""]); // Reset OTP input
     } catch (error) {
       errorToast("Terjadi kesalahan", "Gagal mengirim ulang OTP!");
@@ -153,7 +153,6 @@ export default function OTPInput({
   return (
     <div className="grid gap-6">
       <div className="text-center">
-        <h3 className="text-lg font-semibold mb-2">Verifikasi Akun</h3>
         <p className="text-sm text-muted-foreground mb-4">
           Kode verifikasi telah dikirim ke email:
         </p>
@@ -172,6 +171,7 @@ export default function OTPInput({
                   type="text"
                   inputMode="numeric"
                   maxLength={6}
+                  noInfo
                   value={digit}
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
@@ -220,7 +220,7 @@ export default function OTPInput({
               onClick={onBack}
               className="w-full text-sm"
             >
-              Kembali ke Registrasi
+              Kembali ke Halaman Registrasi
             </Button>
           </div>
         </div>

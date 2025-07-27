@@ -184,6 +184,9 @@ export default function AlarmContent({
             : "Tidak ada alarm yang cocok."
         }
         searchPlaceholder="Cari alarm"
+            glowingTable={true}
+            glowingHeaders={true}
+            glowingCells={true}
       />
     </AnimatePresence>
   );

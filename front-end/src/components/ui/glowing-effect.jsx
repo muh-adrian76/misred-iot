@@ -3,6 +3,13 @@ import { memo, useCallback, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { animate } from "motion/react";
 
+// Spread |	Proximity |	Inactive Zone |	Efek
+// -----------------------------------------
+// 30px |	48px |	0.1  |	Subtle glow
+// 35px |	56px |	0.05 |	Medium glow
+// 40px |	64px |	0.01 |	Strong glow
+// 45px |	72px |	0.02 |	Dynamic glow
+
 const GlowingEffect = memo(({
   blur = 0,
   inactiveZone = 0.7,

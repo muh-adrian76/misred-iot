@@ -133,15 +133,102 @@ export class UserService {
   }
 
   async deleteUser(id: string) {
+    const connection = await this.db.getConnection();
+    
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      // Start transaction untuk memastikan atomicity
+      await connection.beginTransaction();
+
+      // Delete dalam urutan yang benar untuk menghindari foreign key constraint errors
+      // 1. Delete payloads (terhubung ke devices dan datastreams)
+      await connection.query(
+        "DELETE p FROM payloads p INNER JOIN devices d ON p.device_id = d.id WHERE d.user_id = ?",
+        [id]
+      );
+      
+      await connection.query(
+        "DELETE p FROM payloads p INNER JOIN datastreams ds ON p.datastream_id = ds.id WHERE ds.user_id = ?",
+        [id]
+      );
+
+      // 2. Delete raw_payloads (terhubung ke devices)
+      await connection.query(
+        "DELETE rp FROM raw_payloads rp INNER JOIN devices d ON rp.device_id = d.id WHERE d.user_id = ?",
+        [id]
+      );
+
+      // 3. Delete device_commands
+      await connection.query(
+        "DELETE FROM device_commands WHERE user_id = ?",
+        [id]
+      );
+
+      // 4. Delete alarm_notifications
+      await connection.query(
+        "DELETE FROM alarm_notifications WHERE user_id = ?",
+        [id]
+      );
+
+      // 5. Delete alarm_conditions (terhubung ke alarms)
+      await connection.query(
+        "DELETE ac FROM alarm_conditions ac INNER JOIN alarms a ON ac.alarm_id = a.id WHERE a.user_id = ?",
+        [id]
+      );
+
+      // 6. Delete alarms
+      await connection.query(
+        "DELETE FROM alarms WHERE user_id = ?",
+        [id]
+      );
+
+      // 7. Delete widgets (terhubung ke dashboards)
+      await connection.query(
+        "DELETE w FROM widgets w INNER JOIN dashboards d ON w.dashboard_id = d.id WHERE d.user_id = ?",
+        [id]
+      );
+
+      // 8. Delete datastreams
+      await connection.query(
+        "DELETE FROM datastreams WHERE user_id = ?",
+        [id]
+      );
+
+      // 9. Delete devices
+      await connection.query(
+        "DELETE FROM devices WHERE user_id = ?",
+        [id]
+      );
+
+      // 10. Delete dashboards
+      await connection.query(
+        "DELETE FROM dashboards WHERE user_id = ?",
+        [id]
+      );
+
+      // 11. Delete otaa_updates
+      await connection.query(
+        "DELETE FROM otaa_updates WHERE user_id = ?",
+        [id]
+      );
+
+      // 12. Finally, delete the user
+      const [result] = await connection.query<ResultSetHeader>(
         "DELETE FROM users WHERE id = ?",
         [id]
       );
+
+      // Commit transaction
+      await connection.commit();
+      
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error deleting user:", error);
-      throw new Error("Failed to delete user");
+      // Rollback transaction on error
+      await connection.rollback();
+      console.error("Error deleting user and related data:", error);
+      throw new Error("Failed to delete user and related data");
+    } finally {
+      // Release connection
+      connection.release();
     }
   }
 

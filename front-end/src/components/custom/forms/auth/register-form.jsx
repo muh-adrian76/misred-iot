@@ -107,7 +107,7 @@ export default function RegisterForm({
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-6">
+    <div className="flex z-10 w-full max-w-sm flex-col gap-6">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -200,7 +200,7 @@ export default function RegisterForm({
                   </Button>
                 </div>
                 <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                  <span className="bg-card text-muted-foreground relative z-10 px-2">
+                  <span className="bg-transparent text-muted-foreground relative z-10 px-2">
                     Atau
                   </span>
                 </div>

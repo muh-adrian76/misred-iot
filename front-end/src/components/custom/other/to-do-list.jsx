@@ -193,6 +193,7 @@ const ToDoList = () => {
             stroke={size === "small" ? "#fed7d7" : "#fecaca"}
             strokeWidth="3"
             fill="none"
+            className="dark:stroke-gray-600"
           />
           <circle
             cx={svgSize / 2}
@@ -203,14 +204,14 @@ const ToDoList = () => {
             fill="none"
             strokeDasharray={strokeDasharray}
             strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-500 ease-out"
+            className="transition-all duration-500 ease-out dark:stroke-red-400"
             strokeLinecap="round"
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           {percentage === 100 ? (
             <Sparkles
-              className={`${size === "small" ? "w-3 h-3" : "w-4 h-4"} text-red-600`}
+              className={`${size === "small" ? "w-3 h-3" : "w-4 h-4"} text-red-600 dark:text-red-400`}
             />
           ) : (
             <span
@@ -264,28 +265,28 @@ const ToDoList = () => {
       exit={{ opacity: 0, y: 50 }}
       transition={{ duration: .5, delay: .5, ease: "easeInOut" }}
     >
-      <div className="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-2xl border border-red-100 overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+      <div className="bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl border border-red-100 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-red-500 to-red-600 text-white">
+        <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white">
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="bg-white/20 p-1.5 sm:p-2 rounded-full">
+            <div className="bg-white/20 dark:bg-white/25 p-1.5 sm:p-2 rounded-full">
               <Goal className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
               <h2 className="text-base sm:text-md font-bold">Panduan Pengguna Baru!</h2>
-              <p className="text-red-100 text-xs sm:text-sm">
+              <p className="text-red-100 dark:text-red-200 text-xs sm:text-sm">
                 {completedTasks.length}/{tasks.length} langkah sudah selesai
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="bg-white/20 p-0.5 sm:p-1 rounded-full">
+            <div className="bg-white/20 dark:bg-white/25 p-0.5 sm:p-1 rounded-full">
               <CircularProgress percentage={completionPercentage} />
             </div>
             <button
               onClick={toggleMinimize}
-              className="p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
+              className="p-1 hover:bg-white/20 dark:hover:bg-white/25 rounded-full transition-colors duration-200"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -297,16 +298,16 @@ const ToDoList = () => {
           {/* Progress Bar */}
           <div className="mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs sm:text-sm font-medium text-gray-700">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                 Progress
               </span>
-              <span className="text-xs sm:text-sm font-semibold text-red-600">
+              <span className="text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">
                 {completionPercentage.toFixed(0)}%
               </span>
             </div>
-            <div className="w-full bg-red-100 rounded-full h-2 sm:h-2.5">
+            <div className="w-full bg-red-100 dark:bg-gray-700 rounded-full h-2 sm:h-2.5">
               <div
-                className="bg-gradient-to-r from-red-500 to-red-600 h-2 sm:h-2.5 rounded-full transition-all duration-500 ease-out"
+                className="bg-gradient-to-r from-red-500 to-red-600 dark:from-red-400 dark:to-red-500 h-2 sm:h-2.5 rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${completionPercentage}%` }}
               ></div>
             </div>
@@ -325,8 +326,8 @@ const ToDoList = () => {
                   <div
                     className={`group relative flex items-center p-3 sm:p-4 rounded-xl border transition-all duration-300 cursor-pointer hover:shadow-lg ${
                       isCompleted
-                        ? "bg-gradient-to-r from-red-50 to-red-100 border-red-200 shadow-md"
-                        : "bg-white border-gray-200 hover:border-red-300 hover:bg-red-50"
+                        ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-700 shadow-md"
+                        : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/10"
                     }`}
                     style={{
                       animationDelay: `${index * 100}ms`,
@@ -337,14 +338,14 @@ const ToDoList = () => {
                     <div
                       className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
                         isCompleted
-                          ? "bg-red-600 text-white shadow-lg transform scale-110"
-                          : "bg-white border-2 border-gray-300 group-hover:border-red-300"
+                          ? "bg-red-600 dark:bg-red-500 text-white shadow-lg transform scale-110"
+                          : "bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-500 group-hover:border-red-300 dark:group-hover:border-red-500"
                       }`}
                     >
                       {isCompleted ? (
                         <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                       ) : (
-                        <span className="text-xs font-bold text-gray-600">
+                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
                           {task.id}
                         </span>
                       )}
@@ -358,8 +359,8 @@ const ToDoList = () => {
                       <h3
                         className={`text-sm sm:text-base font-semibold transition-all duration-200 ${
                           isCompleted
-                            ? "text-red-800 line-through"
-                            : "text-gray-900"
+                            ? "text-red-800 dark:text-red-300 line-through"
+                            : "text-gray-900 dark:text-gray-100"
                         }`}
                       >
                         {task.title}
@@ -367,7 +368,7 @@ const ToDoList = () => {
                     </div>
                     <p
                       className={`text-xs sm:text-sm transition-all duration-200 ${
-                        isCompleted ? "text-red-600" : "text-gray-600"
+                        isCompleted ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"
                       }`}
                     >
                       {task.description}
@@ -377,9 +378,9 @@ const ToDoList = () => {
                   {/* Arrow - Status indicator only */}
                   <div className="flex-shrink-0 ml-3">
                     {isCompleted ? (
-                      <ClipboardCheck className="w-5 h-5 text-red-600" />
+                      <ClipboardCheck className="w-5 h-5 text-red-600 dark:text-red-400" />
                     ) : (
-                      <ClipboardList className="w-5 h-5 text-gray-600"/>
+                      <ClipboardList className="w-5 h-5 text-gray-600 dark:text-gray-400"/>
                     )}
                   </div>
                 </div>
@@ -390,14 +391,14 @@ const ToDoList = () => {
 
           {/* Completion Message */}
           {completionPercentage === 100 && (
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-xl border border-red-200 animate-pulse">
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl border border-red-200 dark:border-red-700 animate-pulse">
               <div className="flex items-center justify-center space-x-2">
-                <div className="bg-red-600 p-1.5 sm:p-2 rounded-full">
+                <div className="bg-red-600 dark:bg-red-500 p-1.5 sm:p-2 rounded-full">
                   <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                 </div>
                 <div className="text-center">
-                  <h4 className="text-sm sm:text-base font-bold text-red-800">Selamat! 🎉</h4>
-                  <p className="text-xs sm:text-sm text-red-600">
+                  <h4 className="text-sm sm:text-base font-bold text-red-800 dark:text-red-300">Selamat! 🎉</h4>
+                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">
                     Anda telah menyelesaikan semua tugas onboarding.
                   </p>
                 </div>

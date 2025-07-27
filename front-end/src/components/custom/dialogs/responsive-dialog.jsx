@@ -18,7 +18,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
 export default function ResponsiveDialog({
@@ -82,7 +82,14 @@ export default function ResponsiveDialog({
   }
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[625px] rounded-2xl px-6 py-6">
+      <DialogContent className="sm:max-w-[625px] rounded-2xl px-6 py-6 border">
+        <GlowingEffect
+          spread={45}
+          glow={true}
+          disabled={false}
+          proximity={72}
+          inactiveZone={0.02}
+        />
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">{title}</DialogTitle>
           <DialogDescription className="text-muted-foreground text-balance">

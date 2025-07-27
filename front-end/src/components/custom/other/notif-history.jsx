@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@/providers/user-provider";
 import {
   Sheet,
   SheetContent,
@@ -158,8 +159,14 @@ export default function NotifHistory({ open, setOpen }) {
   const [timeRange, setTimeRange] = useState("all");
   const [pageSize, setPageSize] = useState(10);
   const queryClient = useQueryClient();
+  const { user } = useUser(); // Add user context
 
-  // Fetch notification history
+  // Helper function to check if user is logged in
+  const isUserLoggedIn = (user) => {
+    return user && user.id && user.email && user.id !== "" && user.email !== "";
+  };
+
+  // Fetch notification history - ONLY when user is logged in
   const {
     data: historyData,
     isLoading,
@@ -201,7 +208,7 @@ export default function NotifHistory({ open, setOpen }) {
 
       return data;
     },
-    enabled: open && activeIndex === 0,
+    enabled: Boolean(open && activeIndex === 0 && user && isUserLoggedIn(user)), // Ensure it always returns a boolean
     retry: 1, // Only retry once
     refetchOnWindowFocus: false,
   });
@@ -209,6 +216,10 @@ export default function NotifHistory({ open, setOpen }) {
   // Mark all notifications as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
+      if (!isUserLoggedIn(user)) {
+        throw new Error("User not authenticated");
+      }
+      
       const response = await fetchFromBackend("/notifications/mark-all-read", {
         method: "POST",
       });
@@ -220,8 +231,10 @@ export default function NotifHistory({ open, setOpen }) {
       return response.json();
     },
     onSuccess: () => {
-      // Refetch the current page data
-      refetch();
+      // Refetch the current page data only if user is still logged in
+      if (isUserLoggedIn(user)) {
+        refetch();
+      }
     },
     onError: (error) => {
       alert("Gagal menandai semua notifikasi sebagai dibaca: " + error.message);
@@ -231,6 +244,10 @@ export default function NotifHistory({ open, setOpen }) {
   // Delete all notifications mutation
   const deleteAllMutation = useMutation({
     mutationFn: async () => {
+      if (!isUserLoggedIn(user)) {
+        throw new Error("User not authenticated");
+      }
+      
       const response = await fetchFromBackend("/notifications/delete-all", {
         method: "POST",
       });

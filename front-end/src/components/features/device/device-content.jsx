@@ -9,6 +9,9 @@ import {
   Trash2,
   Plus,
   FileBox,
+  Clock,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { successToast } from "@/components/custom/other/toaster";
 import DataTable from "@/components/custom/tables/data-table";
@@ -17,6 +20,8 @@ import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
 import { convertDate } from "@/lib/helper";
 import OtaaForm from "@/components/custom/forms/otaa/otaa-form";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { useDeviceStatus } from "@/hooks/use-device-status";
 
 export default function DeviceContent({
   devices,
@@ -34,35 +39,58 @@ export default function DeviceContent({
   setUploadFirmwareSheetOpen,
   handleFirmwareUploaded,
 }) {
+  const {
+    getDeviceStatus,
+    formatTimeSinceLastSeen,
+    isConnected,
+    refreshDeviceStatuses,
+  } = useDeviceStatus(devices);
+
   const handleCopy = (text, type = "secret") => {
     navigator.clipboard.writeText(text);
-    type === "secret" ? successToast("Secret berhasil disalin ke clipboard.") : successToast("UID berhasil disalin ke clipboard.");
+    type === "secret"
+      ? successToast("Secret berhasil disalin ke clipboard.")
+      : successToast("UID berhasil disalin ke clipboard.");
+  };
+
+  // Simple status badge component
+  const StatusBadge = ({ device }) => {
+    const deviceStatus = getDeviceStatus(device.id);
+    const isOnline = deviceStatus.status === 'online';
+    
+    return (
+      <Badge 
+        variant={isOnline ? "online" : "offline"}
+      >
+        {isOnline ? (
+          <Power className="w-4 h-4 mr-1" />
+        ) : (
+          <PowerOff className="w-4 h-4 mr-1" />
+        )}
+        <span className="capitalize">{deviceStatus.status}</span>
+        {!isConnected && <span className="ml-1 text-xs opacity-75">●</span>}
+      </Badge>
+    );
   };
 
   const columns = [
-    { key: "description", label: "Nama", sortable: true,
+    {
+      key: "description",
+      label: "Nama",
+      sortable: true,
       render: (row) => (
         <DescriptionTooltip content={row.description} side="right">
-        <span className="truncate max-w-[300px] max-sm:max-w-[100px] max-sm:underline max-sm:underline-offset-2 inline-block">
-          {row.description || row.name}
-        </span>
+          <span className="truncate max-w-[300px] max-sm:max-w-[100px] max-sm:underline max-sm:underline-offset-2 inline-block">
+            {row.description || row.name}
+          </span>
         </DescriptionTooltip>
       ),
-     },
+    },
     {
       key: "status",
       label: "Status",
       filterable: true,
-      render: (row) => (
-        <Badge variant={row.status || "online"}>
-          {row.status === "online" ? (
-            <Power className="w-5 h-5" />
-          ) : (
-            <PowerOff className="w-5 h-5" />
-          )}
-          {row.status.charAt(0).toUpperCase() + row.status.slice(1) || "Contoh"}
-        </Badge>
-      ),
+      render: (row) => <StatusBadge device={row} />,
     },
     {
       key: "id",
@@ -70,9 +98,7 @@ export default function DeviceContent({
       sortable: false,
       render: (row) => (
         <span className="flex items-center justify-center gap-2">
-          <span className="truncate max-w-[100px] inline-block">
-            {row.id}
-          </span>
+          <span className="truncate max-w-[100px] inline-block">{row.id}</span>
           <DescriptionTooltip content="Salin" side="right">
             <Button
               type="button"
@@ -85,7 +111,7 @@ export default function DeviceContent({
             </Button>
           </DescriptionTooltip>
         </span>
-      )
+      ),
     },
     {
       key: "new_secret",
@@ -205,7 +231,9 @@ export default function DeviceContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Device masih kosong</h2>
-          <p className="text-gray-500 dark:text-gray-400">Device digunakan untuk mendefinisikan perangkat IoT.</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            Device digunakan untuk mendefinisikan perangkat IoT.
+          </p>
           <Button
             onClick={() => setAddFormOpen(true)}
             className="gap-2 transition-all"
@@ -222,36 +250,47 @@ export default function DeviceContent({
     <>
       {/* Section DataTable */}
       <AnimatePresence mode="wait">
-        <DataTable
-          content="Device"
-          columns={columns}
-          data={devices}
-          loading={loading}
-          isMobile={isMobile}
-          selectedRows={selectedRows}
-          setSelectedRows={setSelectedRows}
-          onAdd={() => setAddFormOpen(true)}
-          onUploadFirmware={() => setUploadFirmwareSheetOpen(true)} 
-          showUploadFirmware={true}
-          rowActions={rowActions}
-          onDelete={(selected) => {
-            if (Array.isArray(selected)) {
-              setDeviceToDelete(
-                selected.map((id) => devices.find((d) => d.id === id))
-              );
-            } else {
-              setDeviceToDelete(selected);
-            }
-            setDeleteFormOpen(true);
-          }}
-          noDataText={
-            !devices || devices.length === 0
-              ? "Anda belum menambahkan device."
-              : "Tidak ada device yang cocok."
-          }
-          // limit={5}
-          searchPlaceholder="Cari device"
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <div className="border-0 rounded-xl">
+            <DataTable
+              content="Device"
+              columns={columns}
+              data={devices}
+              loading={loading}
+              isMobile={isMobile}
+              selectedRows={selectedRows}
+              setSelectedRows={setSelectedRows}
+              onAdd={() => setAddFormOpen(true)}
+              onUploadFirmware={() => setUploadFirmwareSheetOpen(true)}
+              showUploadFirmware={true}
+              rowActions={rowActions}
+              onDelete={(selected) => {
+                if (Array.isArray(selected)) {
+                  setDeviceToDelete(
+                    selected.map((id) => devices.find((d) => d.id === id))
+                  );
+                } else {
+                  setDeviceToDelete(selected);
+                }
+                setDeleteFormOpen(true);
+              }}
+              noDataText={
+                !devices || devices.length === 0
+                  ? "Anda belum menambahkan device."
+                  : "Tidak ada device yang cocok."
+              }
+              // limit={5}
+              searchPlaceholder="Cari device"
+              glowingTable={true}
+              glowingHeaders={true}
+              glowingCells={true}
+            />
+          </div>
+        </motion.div>
       </AnimatePresence>
 
       {/* Section OTAA */}

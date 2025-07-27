@@ -6,8 +6,70 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-  ChartLegendContent
+  ChartLegendContent,
 } from "@/components/ui/chart";
+
+// Custom Tooltip Component dengan timestamp lengkap
+const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  // Ambil timestamp asli dari data pertama
+  const firstPayload = payload[0]?.payload;
+  const fullTimestamp =
+    firstPayload?.originalTimestamp || firstPayload?.timestamp;
+
+  // Format timestamp lengkap
+  const fullTimeFormatted = fullTimestamp
+    ? new Date(fullTimestamp).toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : label;
+
+  return (
+    <div className="bg-background border border-border rounded-lg shadow-lg p-3 min-w-[200px]">
+      <p className="text-sm font-medium text-foreground mb-2">
+        {fullTimeFormatted}
+      </p>
+      <div className="space-y-1">
+        {payload.map((entry, index) => {
+          // Ambil label dari chartConfig berdasarkan dataKey
+          const displayLabel =
+            chartConfig?.[entry.dataKey]?.label || entry.name;
+
+          return (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {displayLabel}
+                </span>
+              </div>
+              <span className="text-sm font-medium">
+                {entry.value !== null && entry.value !== undefined
+                  ? entry.value.toLocaleString("id-ID", {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 2,
+                    })
+                  : "-"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const chartColors = [
   "var(--chart-1)",
@@ -75,49 +137,46 @@ export function LineChartWidget({
 
     return (
       <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
-        <ChartContainer
-          config={previewChartConfig}
-          className="h-full w-full"
-        >
+        <ChartContainer config={previewChartConfig} className="h-full w-full">
           <LineChart
             accessibilityLayer
             data={chartData}
             width={undefined}
             height={undefined}
-          margin={{ left: 12, right: 12 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={(value) => value.slice(0, 3)}
-          />
-          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <Line
-            dataKey="datastream_1"
-            type="monotone"
-            stroke={previewChartConfig.datastream_1.color}
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            dataKey="datastream_2"
-            type="monotone"
-            stroke={previewChartConfig.datastream_2.color}
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            dataKey="datastream_3"
-            type="monotone"
-            stroke={previewChartConfig.datastream_3.color}
-            strokeWidth={2}
-            dot={false}
-          />
-        </LineChart>
-      </ChartContainer>
+            margin={{ left: 12, right: 12 }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <Line
+              dataKey="datastream_1"
+              type="monotone"
+              stroke={previewChartConfig.datastream_1.color}
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              dataKey="datastream_2"
+              type="monotone"
+              stroke={previewChartConfig.datastream_2.color}
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              dataKey="datastream_3"
+              type="monotone"
+              stroke={previewChartConfig.datastream_3.color}
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ChartContainer>
       </div>
     );
   }
@@ -138,10 +197,16 @@ export function LineChartWidget({
   const pairs =
     Array.isArray(widget?.inputs) && widget.inputs.length > 0
       ? widget.inputs
-      : Array.isArray(widget?.datastream_ids) && widget.datastream_ids.length > 0
+      : Array.isArray(widget?.datastream_ids) &&
+          widget.datastream_ids.length > 0
         ? widget.datastream_ids
         : widget?.datastream_id && widget?.device_id
-          ? [{ device_id: widget.device_id, datastream_id: widget.datastream_id }]
+          ? [
+              {
+                device_id: widget.device_id,
+                datastream_id: widget.datastream_id,
+              },
+            ]
           : [];
 
   // Debug log untuk melihat data widget
@@ -169,10 +234,10 @@ export function LineChartWidget({
   const dynamicChartConfig = pairs.reduce((config, pair, idx) => {
     const dataKey = `value_${pair.device_id}_${pair.datastream_id}`;
     const legendItem = legendData?.[idx];
-    const label = legendItem 
+    const label = legendItem
       ? `${legendItem.device_name} - ${legendItem.sensor_name}`
       : `Device ${pair.device_id} - Sensor ${pair.datastream_id}`;
-    
+
     config[dataKey] = {
       label: label,
       color: chartColors[idx % chartColors.length],
@@ -223,19 +288,20 @@ export function LineChartWidget({
   // No data state - show empty chart with message
   if (!timeSeriesData || timeSeriesData.length === 0) {
     return (
-      <div className="h-full w-full min-h-[150px] space-y-2">
+      <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
         {/* Header dengan info tidak ada data */}
-        <div className="px-2 pt-2">
+        <div className="px-2 pt-2 flex-shrink-0">
           <div className="flex justify-between items-center">
             <div>
               <p className="text-xs text-muted-foreground">
-                {widget?.description || "Widget Chart"}: tidak ada data dalam {timeRangeLabel}
+                {widget?.description || "Widget Chart"}: tidak ada data dalam{" "}
+                {timeRangeLabel}
               </p>
             </div>
             <div className="flex items-center gap-2">
               {!isRealTimeConnected && (
                 <div className="flex items-center gap-1 text-xs text-orange-500">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
                   Offline
                 </div>
               )}
@@ -243,16 +309,108 @@ export function LineChartWidget({
           </div>
         </div>
 
-        {/* Empty Chart */}
+        {/* Empty Chart Container */}
+        <div className="flex-1 min-h-0">
+          <ChartContainer config={dynamicChartConfig} className="h-full w-full">
+            <LineChart
+              accessibilityLayer
+              data={[]} // Empty data untuk chart kosong
+              width={undefined}
+              height={undefined}
+              margin={{ left: 12, right: 12, top: 10, bottom: 40 }}
+            >
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="time"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+                tickFormatter={(value) => value}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={5}
+                tickCount={4}
+                tick={{ fontSize: 11 }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={(props) => (
+                  <CustomTooltipContent
+                    {...props}
+                    chartConfig={dynamicChartConfig}
+                  />
+                )}
+              />
+              {/* Render lines untuk setiap pair meski data kosong */}
+              {pairs.map((pair, idx) => (
+                <Line
+                  key={idx}
+                  dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+                  type="monotone"
+                  stroke={chartColors[idx % chartColors.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls={false}
+                  activeDot={{
+                    r: 4,
+                    stroke: chartColors[idx % chartColors.length],
+                    strokeWidth: 2,
+                  }}
+                />
+              ))}
+              <ChartLegend content={<ChartLegendContent />} />
+            </LineChart>
+          </ChartContainer>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
+      {/* Header dengan info widget */}
+      <div className="px-4 pt-2 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-bold sm:text-lg">
+              {widget?.description || "Line Chart"}
+              {/* {widget?.description || "Line Chart"}: data {timeRangeLabel} */}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
+              {latestValue?.timeAgo || timeRangeLabel}
+            </p>
+            {/* {isRealTimeConnected && (
+              <div className="flex items-center gap-1 text-xs text-green-600">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                Live
+              </div>
+            )} */}
+          </div>
+        </div>
+      </div>
+
+      {/* Chart Container - dengan tinggi yang fleksibel */}
+      <div className="flex-1 min-h-auto">
         <ChartContainer config={dynamicChartConfig} className="h-full w-full">
           <LineChart
             accessibilityLayer
-            data={[]} // Empty data untuk chart kosong
+            data={timeSeriesData}
             width={undefined}
             height={undefined}
-            margin={{ left: 12, right: 12, top: 5, bottom: 5 }}
+            margin={{ left: -15, right: 30, top: 10, bottom: 15 }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid
+              vertical={true}
+              verticalPoints={[
+                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+                1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+              ]}
+            />
             <XAxis
               dataKey="time"
               tickLine={false}
@@ -268,16 +426,27 @@ export function LineChartWidget({
               tickCount={4}
               tick={{ fontSize: 11 }}
             />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            {/* Render lines untuk setiap pair meski data kosong */}
+            <ChartTooltip
+              cursor={false}
+              content={(props) => (
+                <CustomTooltipContent
+                  {...props}
+                  chartConfig={dynamicChartConfig}
+                />
+              )}
+            />
+            {/* Render satu Line untuk setiap pair */}
             {pairs.map((pair, idx) => (
               <Line
                 key={idx}
                 dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-                type="monotone"
+                type="natural"
                 stroke={chartColors[idx % chartColors.length]}
                 strokeWidth={2}
                 dot={false}
+                connectNulls={true}
+                isAnimationActive={true}
+                animateNewValues={true}
                 activeDot={{
                   r: 4,
                   stroke: chartColors[idx % chartColors.length],
@@ -285,83 +454,10 @@ export function LineChartWidget({
                 }}
               />
             ))}
+            <ChartLegend content={<ChartLegendContent className={"ml-11"} />} />
           </LineChart>
-          
         </ChartContainer>
       </div>
-    );
-  }
-
-  return (
-    <div className="h-full w-full min-h-[150px] space-y-2">
-      {/* Header dengan info widget */}
-      <div className="px-2 pt-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-xs text-muted-foreground">
-              {widget?.description || "Widget Chart"}: data {timeRangeLabel}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-muted-foreground">
-              {latestValue?.timeAgo || timeRangeLabel}
-            </p>
-            {isRealTimeConnected && (
-              <div className="flex items-center gap-1 text-xs text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                Live
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Chart */}
-      <ChartContainer config={dynamicChartConfig} className="h-full w-full">
-        <LineChart
-          accessibilityLayer
-          data={timeSeriesData}
-          width={undefined}
-          height={undefined}
-          margin={{ left: 12, right: 12, top: 5, bottom: 5 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="time"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tick={{ fontSize: 11 }}
-            tickFormatter={(value) => value}
-          />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            tickMargin={5}
-            tickCount={4}
-            tick={{ fontSize: 11 }}
-          />
-          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <ChartLegend content={<ChartLegendContent />} />
-          {/* Render satu Line untuk setiap pair */}
-          {pairs.map((pair, idx) => (
-            <Line
-              key={idx}
-              dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-              type="monotone"
-              stroke={chartColors[idx % chartColors.length]}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{
-                r: 4,
-                stroke: chartColors[idx % chartColors.length],
-                strokeWidth: 2,
-              }}
-            />
-          ))}
-          {/* <ChartLegend content={<ChartLegendContent />} /> */}
-        </LineChart>
-      </ChartContainer>
     </div>
   );
 }

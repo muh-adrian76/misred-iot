@@ -54,12 +54,6 @@ const SENSOR_RANGES = {
   V5: { min: 1.0, max: 20.0 }   // NTU
 };
 
-/**
- * Generate sensor data with ALARM TRIGGER values
- * - V0 (pH): Set to 8.5 (trigger alarm > 8.0)
- * - V1 (Flow): Set to 12.0 (trigger alarm < 15.0)
- * - Other sensors: normal values
- */
 function generateAlarmTriggerData(): any {
   return {
     V0: 8.5,  // pH > 8.0 → TRIGGER ALARM 1
@@ -107,7 +101,7 @@ function createJWTToken(encryptedPayload: string, deviceId: string, secret: stri
   
   const payload = {
     encryptedData: encryptedPayload,
-    deviceId: deviceId,
+    sub: deviceId,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600
   };
@@ -256,8 +250,7 @@ async function testHTTPPayload(deviceId: string, secret: string): Promise<boolea
     
     const sensorData = generateSensorData();
     const payload = JSON.stringify({
-      ...sensorData,
-      device_id: deviceId
+      ...sensorData
     });
     
     const encryptedPayload = encryptPayload(payload, secret);
@@ -267,7 +260,6 @@ async function testHTTPPayload(deviceId: string, secret: string): Promise<boolea
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': deviceId,
         'Authorization': `Bearer ${jwtToken}`
       },
       body: JSON.stringify({})
@@ -296,8 +288,7 @@ async function testHTTPPayloadWithAlarms(deviceId: string, secret: string): Prom
     // Step 1: Generate ALARM triggering sensor data
     const alarmData = generateAlarmTriggerData();
     const payload = JSON.stringify({
-      ...alarmData,
-      device_id: deviceId
+      ...alarmData
     });
     console.log(`🚨 Generated ALARM data: ${JSON.stringify(alarmData)}`);
     
@@ -315,7 +306,6 @@ async function testHTTPPayloadWithAlarms(deviceId: string, secret: string): Prom
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': deviceId,
         'Authorization': `Bearer ${jwtToken}`
       },
       body: JSON.stringify({})
@@ -360,14 +350,12 @@ async function testMQTTPublish(deviceId: string, secret: string): Promise<boolea
         const sensorData = generateSensorData();
         const payload = JSON.stringify({
           ...sensorData,
-          device_id: deviceId
         });
         
         const encryptedPayload = encryptPayload(payload, secret);
         const jwtToken = createJWTToken(encryptedPayload, deviceId, secret);
         
         const mqttMessage = JSON.stringify({
-          device_id: deviceId,
           jwt: jwtToken,
           timestamp: Date.now()
         });
@@ -628,25 +616,7 @@ async function testAlarmAPIEndpoints(): Promise<void> {
   console.log('═'.repeat(60));
   
   try {
-    // Test 1: Test API Connection endpoint
-    console.log('\n🔍 Step 1: Testing /notifications/test/api endpoint...');
-    const testApiResponse = await fetch(`${SERVER_URL}/notifications/test/api`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (testApiResponse.ok) {
-      const apiResult = await testApiResponse.json();
-      console.log('✅ API connection test successful:', apiResult);
-    } else {
-      const apiError = await testApiResponse.text();
-      console.log('❌ API connection test failed:', apiError);
-    }
-    
-    // Test 2: Test Send Notification endpoint
-    console.log('\n📤 Step 2: Testing /notifications/test/send endpoint...');
+    console.log('\n📤 Testing /notifications/test/send endpoint...');
     const testPhone = '6283119720725';
     const testMessage = `🧪 TEST API WhatsApp Notification\n\nTime: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n\nAPI is working properly! ✅`;
 
@@ -691,7 +661,7 @@ async function runCompleteTest(): Promise<void> {
   console.log('📋 Test Plan:');
   console.log('  1. Check current device secrets from database');
   console.log('  2. Check alarms configuration');
-  console.log('  3. Test alarm API endpoints (/test/api and /test/send)');
+  console.log('  3. Test alarm API endpoints (/test/send)');
   console.log('  4. Test HTTP payload with normal values');
   console.log('  5. Test HTTP payload with ALARM triggering values');
   console.log('  6. Test MQTT with normal values');

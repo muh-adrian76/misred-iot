@@ -57,10 +57,12 @@ export class AdminService {
       const [totalDashboardsResult] = await this.db.query("SELECT COUNT(*) as count FROM dashboards");
       const totalDashboards = totalDashboardsResult[0]?.count || 0;
 
-      // Get active users (logged in within last 24 hours)
+      // Get active users (have refresh_token and logged in within last 24 hours)
       const [activeUsersResult] = await this.db.query(`
         SELECT COUNT(*) as count FROM users 
-        WHERE last_login >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        WHERE refresh_token IS NOT NULL 
+        AND refresh_token != '' 
+        AND last_login >= DATE_SUB(NOW(), INTERVAL 1 DAY)
       `);
       const activeUsers = activeUsersResult[0]?.count || 0;
 
@@ -106,6 +108,26 @@ export class AdminService {
       return users;
     } catch (error) {
       console.error("Error getting recent users:", error);
+      throw error;
+    }
+  }
+
+  async getActiveUsers(limit: number = 10): Promise<RecentUser[]> {
+    try {
+      const query = `
+        SELECT id, name, email, created_at, is_admin, last_login
+        FROM users 
+        WHERE refresh_token IS NOT NULL 
+        AND refresh_token != '' 
+        AND last_login >= DATE_SUB(NOW(), INTERVAL 1 DAY)
+        ORDER BY last_login DESC 
+        LIMIT ?
+      `;
+      
+      const [users] = await this.db.query(query, [limit]);
+      return users;
+    } catch (error) {
+      console.error("Error getting active users:", error);
       throw error;
     }
   }

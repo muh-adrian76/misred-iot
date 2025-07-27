@@ -61,15 +61,16 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `protocol` varchar(10) NOT NULL,
   `mqtt_topic` varchar(255) DEFAULT NULL,
   -- `mqtt_qos` enum('0','1','2') DEFAULT '0',
-  `dev_eui` varchar(255) DEFAULT NULL,
-  `app_eui` varchar(255) DEFAULT NULL,
-  `app_key` varchar(255) DEFAULT NULL,
+  -- `dev_eui` varchar(255) DEFAULT NULL,
+  -- `app_eui` varchar(255) DEFAULT NULL,
+  -- `app_key` varchar(255) DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `old_secret` varchar(255) DEFAULT NULL,
   `new_secret` varchar(255) NOT NULL,
   `firmware_version` varchar(50) DEFAULT NULL,
   `status` enum('offline','online') DEFAULT 'offline',
+  `last_seen_at` TIMESTAMP NULL DEFAULT NULL,
   `user_id` INT NOT NULL,
   `latitude` DECIMAL(10, 8) DEFAULT NULL,
   `longitude` DECIMAL(11, 8) DEFAULT NULL,
@@ -82,12 +83,12 @@ CREATE TABLE IF NOT EXISTS `datastreams` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `description` varchar(255) NOT NULL,
   `pin` VARCHAR(10) NOT NULL,
-  `type` VARCHAR(10) NOT NULL,
+  `type` ENUM('integer', 'double', 'string', 'boolean') NOT NULL,
   `unit` VARCHAR(50) NOT NULL,
   `default_value` VARCHAR(255) NOT NULL,
   `min_value` DOUBLE NOT NULL,
   `max_value` DOUBLE NOT NULL,
-  `decimal_value` VARCHAR(10) NOT NULL,
+  `decimal_value` ENUM('0.0', '0.00', '0.000', '0.0000') NOT NULL,
   `device_id` INT NOT NULL,
   `user_id` INT NOT NULL,
   PRIMARY KEY (`id`),
@@ -211,29 +212,29 @@ INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, n
 
 INSERT IGNORE INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
 -- Device 1 (HTTP) - Sensors
-(1, 'pH Sensor', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 1, 1),
-(2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 1, 1),
-(3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 1, 1),
-(4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 1, 1),
-(5, 'NH3N Sensor', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 1, 1),
-(6, 'Turbidity Sensor', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 1, 1),
+(1, 'pH Sensor', 'V0', 'double', '', '7.0', 0.0, 14.0, '0.0', 1, 1),
+(2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 1, 1),
+(3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '0.00', 1, 1),
+(4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '0.00', 1, 1),
+(5, 'NH3N Sensor', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '0.00', 1, 1),
+(6, 'Turbidity Sensor', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '0.00', 1, 1),
 -- Device 1 (HTTP) - Actuators
-(13, 'LED Control', 'D0', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
-(14, 'Pump Control', 'D1', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
-(15, 'Fan Speed', 'D2', 'string', '%', '50', 0.0, 100.0, '0', 1, 1),
-(16, 'Valve Position', 'D3', 'string', 'degrees', '90', 0.0, 180.0, '0', 1, 1),
+(13, 'LED Control', 'V6', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
+(14, 'Pump Control', 'V7', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
+(15, 'Fan Speed', 'V8', 'string', '%', '50', 0.0, 100.0, '0', 1, 1),
+(16, 'Valve Position', 'V9', 'string', 'degrees', '90', 0.0, 180.0, '0', 1, 1),
 -- Device 2 (MQTT) - Sensors
-(7, 'pH Sensor MQTT', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '2', 2, 1),
-(8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '2', 2, 1),
-(9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '1', 2, 1),
-(10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '1', 2, 1),
-(11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '2', 2, 1),
-(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '1', 2, 1),
+(7, 'pH Sensor MQTT', 'V0', 'double', '', '7.0', 0.0, 14.0, '0.0', 2, 1),
+(8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 2, 1),
+(9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '0.00', 2, 1),
+(10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '0.00', 2, 1),
+(11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '0.00', 2, 1),
+(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '0.00', 2, 1),
 -- Device 2 (MQTT) - Actuators
-(17, 'LED Control MQTT', 'D0', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
-(18, 'Pump Control MQTT', 'D1', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
-(19, 'Fan Speed MQTT', 'D2', 'string', '%', '50', 0.0, 100.0, '0', 2, 1),
-(20, 'Valve Position MQTT', 'D3', 'string', 'degrees', '90', 0.0, 180.0, '0', 2, 1);
+(17, 'LED Control MQTT', 'V6', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
+(18, 'Pump Control MQTT', 'V7', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
+(19, 'Fan Speed MQTT', 'V8', 'string', '%', '50', 0.0, 100.0, '0', 2, 1),
+(20, 'Valve Position MQTT', 'V9', 'string', 'degrees', '90', 0.0, 180.0, '0', 2, 1);
 
 INSERT IGNORE INTO alarms (id, description, user_id, device_id, datastream_id, is_active, cooldown_minutes) VALUES
 (1, 'pH Level Too High Alert', 1, 1, 1, TRUE, 1),
@@ -253,12 +254,9 @@ CREATE INDEX idx_payloads_device_time ON payloads(device_id, server_time);
 CREATE INDEX idx_payloads_datastream_time ON payloads(datastream_id, server_time);
 CREATE INDEX idx_payloads_device_datastream_time ON payloads(device_id, datastream_id, server_time);
 CREATE INDEX idx_device_commands_status ON device_commands(status, sent_at);
-
--- Add location fields to devices table if not exists
-ALTER TABLE devices 
-ADD COLUMN IF NOT EXISTS latitude DECIMAL(10, 8) DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS longitude DECIMAL(11, 8) DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS address TEXT DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_devices_last_seen (last_seen_at);
+CREATE INDEX IF NOT EXISTS idx_devices_status (status);
+CREATE INDEX IF NOT EXISTS idx_devices_user_status (user_id, status);
 
 -- View untuk dashboard sensor data yang sudah dinormalisasi
 CREATE OR REPLACE VIEW dashboard_sensor_data AS

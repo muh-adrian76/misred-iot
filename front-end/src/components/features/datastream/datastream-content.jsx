@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 export default function DatastreamContent({
   datastreams,
@@ -27,7 +28,13 @@ export default function DatastreamContent({
       sortable: true,
       render: (row) => {
         const dev = devices?.find((d) => d.id === row.device_id);
-        return dev?.description || dev?.name || row.device_id;
+        return (
+          <DescriptionTooltip content={"UID: " + dev?.id || ""}>
+            <span className="underline underline-offset-2 cursor-help">
+              {dev?.description}
+            </span>
+          </DescriptionTooltip>
+        );
       },
     },
     { key: "pin", label: "Virtual Pin", sortable: true },
@@ -39,7 +46,9 @@ export default function DatastreamContent({
         const typeLabel = row.type.charAt(0).toUpperCase() + row.type.slice(1);
         if (row.type === "double") {
           return (
-            <DescriptionTooltip content={row.decimal_value || ""}>
+            <DescriptionTooltip
+              content={"Format Desimal: " + row.decimal_value || ""}
+            >
               <span className="underline underline-offset-2 cursor-help">
                 {typeLabel}
               </span>
@@ -56,7 +65,7 @@ export default function DatastreamContent({
       render: (row) => {
         const option = unitOptions?.find((u) => u.value === row.unit);
         return (
-          <DescriptionTooltip content={option?.label || ""}>
+          <DescriptionTooltip content={option?.label || "Tidak ada satuan"}>
             <span className="underline underline-offset-2 cursor-help">
               {row.unit}
             </span>
@@ -123,7 +132,11 @@ export default function DatastreamContent({
             transition={{ duration: 0.5, ease: "easeInOut" }}
           />
           <h2 className="text-xl font-semibold">Datastream masih kosong</h2>
-          <p className="text-gray-500 dark:text-gray-400">Datastream digunakan untuk mendefinisikan aliran data masuk dan keluar dari perangkat IoT. Gunakan untuk mencatat data sensor dan aktuator.</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            Datastream digunakan untuk mendefinisikan aliran data masuk dan
+            keluar dari perangkat IoT. Gunakan untuk mencatat data sensor dan
+            aktuator.
+          </p>
           <Button
             onClick={() => setAddFormOpen(true)}
             className="gap-2 transition-all"
@@ -138,34 +151,45 @@ export default function DatastreamContent({
 
   return (
     <AnimatePresence mode="wait">
-      <DataTable
-        content="Datastream"
-        columns={columns}
-        data={datastreams}
-        loading={loading}
-        selectedRows={selectedRows}
-        setSelectedRows={setSelectedRows}
-        onAdd={() => setAddFormOpen(true)}
-        rowActions={rowActions}
-        onDelete={(selected) => {
-          if (Array.isArray(selected)) {
-            setDatastreamToDelete(
-              selected.map((id) => datastreams.find((ds) => ds.id === id))
-            );
-          } else {
-            setDatastreamToDelete([selected]);
-          }
-          setDeleteFormOpen(true);
-        }}
-        noDataText={
-          !datastreams || datastreams.length === 0
-            ? "Anda belum menambahkan datastream."
-            : "Tidak ada datastream yang cocok."
-        }
-        // limit={5}
-        searchPlaceholder="Cari datastream..."
-        isMobile={isMobile}
-      />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <div className="border-0 rounded-xl">
+          <DataTable
+            content="Datastream"
+            columns={columns}
+            data={datastreams}
+            loading={loading}
+            selectedRows={selectedRows}
+            setSelectedRows={setSelectedRows}
+            onAdd={() => setAddFormOpen(true)}
+            rowActions={rowActions}
+            onDelete={(selected) => {
+              if (Array.isArray(selected)) {
+                setDatastreamToDelete(
+                  selected.map((id) => datastreams.find((ds) => ds.id === id))
+                );
+              } else {
+                setDatastreamToDelete([selected]);
+              }
+              setDeleteFormOpen(true);
+            }}
+            noDataText={
+              !datastreams || datastreams.length === 0
+                ? "Anda belum menambahkan datastream."
+                : "Tidak ada datastream yang cocok."
+            }
+            // limit={5}
+            searchPlaceholder="Cari datastream..."
+            isMobile={isMobile}
+            glowingTable={true}
+            glowingHeaders={true}
+            glowingCells={true}
+          />
+        </div>
+      </motion.div>
     </AnimatePresence>
   );
 }

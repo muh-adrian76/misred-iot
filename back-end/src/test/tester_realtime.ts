@@ -42,12 +42,12 @@ let MQTT_DEVICE = {
 
 // Realistic sensor ranges with slow variations
 const SENSOR_RANGES = {
-  V0: { min: 6.8, max: 7.5, current: 7.1 },   // pH (slowly varying)
-  V1: { min: 25.0, max: 35.0, current: 30.0 }, // Flow L/min
-  V2: { min: 40.0, max: 60.0, current: 50.0 }, // COD mg/L
-  V3: { min: 24.0, max: 28.0, current: 26.0 }, // Temperature °C
-  V4: { min: 1.5, max: 3.5, current: 2.5 },   // NH3N mg/L
-  V5: { min: 5.0, max: 15.0, current: 10.0 }   // NTU
+  V0: { min: 0, max: 14, current: 7.1 },   // pH (slowly varying)
+  V1: { min: 0, max: 100.0, current: 30.0 }, // Flow L/min
+  V2: { min: 0, max: 200.0, current: 50.0 }, // COD mg/L
+  V3: { min: -10.0, max: 60.0, current: 26.0 }, // Temperature °C
+  V4: { min: 0, max: 20, current: 2.5 },   // NH3N mg/L
+  V5: { min: 0, max: 100.0, current: 10.0 }   // NTU
 };
 
 // Global counters for monitoring
@@ -142,7 +142,7 @@ function createJWTToken(encryptedPayload: string, deviceId: string, secret: stri
   
   const payload = {
     encryptedData: encryptedPayload,
-    deviceId: deviceId,
+    sub: deviceId,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600
   };
@@ -165,8 +165,7 @@ async function sendHTTPPayload(): Promise<boolean> {
     
     const sensorData = generateRealtimeSensorData();
     const payload = JSON.stringify({
-      ...sensorData,
-      device_id: HTTP_DEVICE.device_id
+      ...sensorData
     });
     
     const encryptedPayload = encryptPayload(payload);
@@ -176,7 +175,6 @@ async function sendHTTPPayload(): Promise<boolean> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Device-Id': HTTP_DEVICE.device_id,
         'Authorization': `Bearer ${jwtToken}`
       },
       body: JSON.stringify({})
@@ -206,14 +204,12 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
       const sensorData = generateRealtimeSensorData();
       const payload = JSON.stringify({
         ...sensorData,
-        device_id: MQTT_DEVICE.device_id
       });
       
       const encryptedPayload = encryptPayload(payload);
       const jwtToken = createJWTToken(encryptedPayload, MQTT_DEVICE.device_id, MQTT_DEVICE.device_secret);
       
       const mqttMessage = JSON.stringify({
-        device_id: MQTT_DEVICE.device_id,
         jwt: jwtToken,
         timestamp: Date.now()
       });
@@ -319,9 +315,9 @@ async function runRealtimeTest(): Promise<void> {
       console.log(''); // New line
       printStats();
     }
-    
-  }, 1000); // Every 1 second
-  
+
+  }, 5000); // Every 5 seconds
+
   // Setup graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n\n🛑 Stopping real-time test...');

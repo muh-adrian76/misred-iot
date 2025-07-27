@@ -8,6 +8,7 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 const chartColors = [
   "var(--chart-1)",
@@ -74,53 +75,88 @@ export function AreaChartWidget({
     };
 
     return (
-      <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2">
-        <ChartContainer
-          config={previewChartConfig}
-          className="h-full w-full"
-        >
+      <div className="h-full w-full min-h-[150px] min-w-[250px] space-y-2 ">
+        <ChartContainer config={previewChartConfig} className="h-full w-full">
           <AreaChart
             accessibilityLayer
             width={undefined}
             height={undefined}
             data={dummyData}
-          margin={{ left: 12, right: 12 }}
-        >
-          <CartesianGrid vertical={false} />
-          <XAxis
-            dataKey="month"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tickFormatter={(value) => value.slice(0, 3)}
-          />
-          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          <Area
-            dataKey="datastream_1"
-            type="natural"
-            fill="var(--color-datastream_1)"
-            fillOpacity={0.4}
-            stroke="var(--color-datastream_1)"
-            stackId="a"
-          />
-          <Area
-            dataKey="datastream_2"
-            type="natural"
-            fill="var(--color-datastream_2)"
-            fillOpacity={0.4}
-            stroke="var(--color-datastream_2)"
-            stackId="a"
-          />
-          <Area
-            dataKey="datastream_3"
-            type="natural"
-            fill="var(--color-datastream_3)"
-            fillOpacity={0.4}
-            stroke="var(--color-datastream_3)"
-            stackId="a"
-          />
-        </AreaChart>
-      </ChartContainer>
+            margin={{ left: 12, right: 12 }}
+          >
+            <defs>
+              <linearGradient id="fillDatastream1" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--chart-1)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--chart-1)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+              <linearGradient id="fillDatastream2" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--chart-5)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--chart-5)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+              <linearGradient id="fillDatastream3" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--chart-3)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--chart-3)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="month"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={(value) => value.slice(0, 3)}
+            />
+            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <Area
+              dataKey="datastream_1"
+              type="natural"
+              fill="url(#fillDatastream1)"
+              stroke="var(--chart-1)"
+              strokeWidth={1}
+              stackId="1"
+            />
+            <Area
+              dataKey="datastream_2"
+              type="natural"
+              fill="url(#fillDatastream2)"
+              stroke="var(--chart-5)"
+              strokeWidth={1}
+              stackId="1"
+            />
+            <Area
+              dataKey="datastream_3"
+              type="natural"
+              fill="url(#fillDatastream3)"
+              stroke="var(--chart-3)"
+              strokeWidth={1}
+              stackId="1"
+            />
+          </AreaChart>
+        </ChartContainer>
       </div>
     );
   }
@@ -228,17 +264,20 @@ export function AreaChartWidget({
         <div className="px-2 pt-2">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-xs text-muted-foreground">
-                {widget?.description || "Widget Chart"}: tidak ada data dalam {timeRangeLabel}
+              <p className="text-sm font-bold sm:text-lg">
+                {widget?.description || "Line Chart"}
+                {/* {widget?.description || "Area Chart"}: data {timeRangeLabel} */}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {!isRealTimeConnected && (
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                {latestValue?.timeAgo || timeRangeLabel}
+              </p>
+              {/* {!isRealTimeConnected && (
                 <div className="flex items-center gap-1 text-xs text-orange-500">
                   <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                  Offline
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -279,7 +318,6 @@ export function AreaChartWidget({
                 fillOpacity={0.3}
                 stroke={chartColors[idx % chartColors.length]}
                 strokeWidth={2}
-                stackId="1"
               />
             ))}
           </AreaChart>
@@ -293,18 +331,23 @@ export function AreaChartWidget({
       {/* Header dengan info widget */}
       <div className="px-2 pt-2">
         <div className="flex justify-between mx-2 font-semibold items-center">
-          {widget?.description || "Widget Chart"}
           <div className="flex items-center gap-2">
-            {latestValue?.timeAgo === "Live" ? (
-              <div className="flex items-center gap-1 text-xs text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                Live
-              </div>
-            ) : (
-            <p className="text-xs text-muted-foreground">
+            <div>
+              <p className="text-sm font-bold sm:text-lg">
+                {widget?.description || "Area Chart"}
+                {/* {widget?.description || "Area Chart"}: data {timeRangeLabel} */}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
               {latestValue?.timeAgo || timeRangeLabel}
             </p>
-            )}
+            {/* {!isRealTimeConnected && (
+                <div className="flex items-center gap-1 text-xs text-orange-500">
+                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                </div>
+              )} */}
           </div>
         </div>
       </div>
@@ -316,9 +359,35 @@ export function AreaChartWidget({
           width={undefined}
           height={undefined}
           data={timeSeriesData}
-          margin={{ left: 0, right: 12, top: 5, bottom: 5 }}
+          margin={{ left: -15, right: 30, top: 10, bottom: 20 }}
         >
-          <CartesianGrid vertical={false} />
+          <defs>
+            {/* Generate gradient untuk setiap pair */}
+            {pairs.map((pair, idx) => {
+              const gradientId = `fill_${pair.device_id}_${pair.datastream_id}`;
+              const color = chartColors[idx % chartColors.length];
+              return (
+                <linearGradient
+                  key={gradientId}
+                  id={gradientId}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={color} stopOpacity={0.1} />
+                </linearGradient>
+              );
+            })}
+          </defs>
+          <CartesianGrid
+            vertical={true}
+            verticalPoints={[
+              100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+              1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+            ]}
+          />
           <XAxis
             dataKey="time"
             tickLine={false}
@@ -335,17 +404,29 @@ export function AreaChartWidget({
           />
           <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
           {/* Render satu Area untuk setiap pair */}
-          {pairs.map((pair, idx) => (
-            <Area
-            key={idx}
-            dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-            type="natural"
-            fill={chartColors[idx % chartColors.length]}
-            fillOpacity={0.4}
-            stroke={chartColors[idx % chartColors.length]}
-            stackId="a"
-            />
-          ))}
+          {pairs.map((pair, idx) => {
+            const gradientId = `fill_${pair.device_id}_${pair.datastream_id}`;
+            return (
+              <Area
+                key={idx}
+                dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+                type="natural"
+                fill={`url(#${gradientId})`}
+                stroke={chartColors[idx % chartColors.length]}
+                strokeWidth={1}
+                connectNulls={true}
+                dot={false}
+                isAnimationActive={true}
+                animateNewValues={true}
+                activeDot={{
+                  r: 4,
+                  stroke: chartColors[idx % chartColors.length],
+                  strokeWidth: 2,
+                }}
+                stackId="1"
+              />
+            );
+          })}
           <ChartLegend content={<ChartLegendContent />} />
         </AreaChart>
       </ChartContainer>

@@ -3,17 +3,17 @@ import { type DeviceCommand, type CommandStatus } from "../lib/types";
 import { MQTTClient } from "../lib/middleware";
 
 // Lazy import to avoid circular dependency
-let broadcastToUsers: any = null;
+let broadcastToUsersByDevice: any = null;
 let sendToDevice: any = null;
 
 // Initialize broadcast functions
 const initializeBroadcasting = async () => {
-  if (!broadcastToUsers) {
+  if (!broadcastToUsersByDevice) {
     try {
       const userWs = await import("../api/ws/user-ws");
-      broadcastToUsers = userWs.broadcastToUsers;
+      broadcastToUsersByDevice = userWs.broadcastToUsersByDevice;
     } catch (error) {
-      console.warn("Failed to import broadcastToUsers:", error);
+      console.warn("Failed to import broadcastToUsersByDevice:", error);
     }
   }
   
@@ -93,9 +93,9 @@ export class DeviceCommandService {
       // Send command to device via appropriate protocol
       await this.sendCommandToDevice(commandId, deviceId, datastream, commandType, value);
 
-      // Broadcast command status to frontend
-      if (broadcastToUsers) {
-        broadcastToUsers({
+      // Broadcast command status to frontend ONLY to device owner
+      if (broadcastToUsersByDevice) {
+        await broadcastToUsersByDevice(this.db, deviceId, {
           type: "command_status",
           command_id: commandId,
           device_id: deviceId,

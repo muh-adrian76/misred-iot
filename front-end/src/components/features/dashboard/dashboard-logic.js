@@ -5,44 +5,12 @@ import { useDashboard } from "@/providers/dashboard-provider";
 import { fetchFromBackend } from "@/lib/helper";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { markDashboardCreated, markWidgetCreated } from "@/lib/onboarding-utils";
+import { getWidgetConstraints } from "@/lib/dashboard-utils"; // Import dari central location
 
 // Helper function to get dashboard description from ID
 const getDashboardDescription = (id, dashboards) => {
   const dashboard = dashboards.find(d => d.id === id);
   return dashboard ? dashboard.description : "";
-};
-
-// Widget constraints helper
-const getWidgetConstraints = (widgetType) => {
-  const chartTypes = ['area', 'bar', 'line', 'pie'];
-  const controlTypes = ['switch', 'slider'];
-  
-  if (chartTypes.includes(widgetType)) {
-    return {
-      minW: 6,    
-      minH: 6,    
-      maxW: 12,   
-      maxH: 12,   
-      isResizable: true
-    };
-  } else if (controlTypes.includes(widgetType)) {
-    return {
-      minW: 3,   
-      minH: 3,   
-      maxW: 6,   
-      maxH: 3,    
-      isResizable: true
-    };
-  }
-  
-  // Default constraints
-  return {
-    minW: 4,
-    minH: 4,
-    maxW: 12,
-    maxH: 10,
-    isResizable: true
-  };
 };
 
 export function useDashboardLogic() {
@@ -66,10 +34,9 @@ export function useDashboardLogic() {
   const [datastreams, setDatastreams] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
-  
-  // Time range state untuk mengontrol rentang waktu data widget
+  const [deleteChecked, setDeleteChecked] = useState(false);
   const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
-
+  
   // Dashboard provider
   const {
     tabItems,
@@ -253,94 +220,52 @@ export function useDashboardLogic() {
       
       dashboards.forEach((dashboard) => {
         const dashboardWidgets = widgets[dashboard.id] || [];
-        // console.log(`Dashboard ${dashboard.id} (${dashboard.description}):`, {
-        //   widgetCount: dashboardWidgets.length,
-        //   layoutRaw: dashboard.layout,
-        //   layoutType: typeof dashboard.layout,
-        //   widgetIds: dashboardWidgets.map(w => ({ id: w.id, idType: typeof w.id, description: w.description }))
-        // });
-        
         // Use dashboard ID as key for items
         items[dashboard.id] = dashboardWidgets;
         
-        // Debug: Log widget data to see if inputs are properly parsed
-        // console.log(`Dashboard ${dashboard.id} widgets:`, dashboardWidgets.map(w => ({
-        //   id: w.id,
-        //   description: w.description,
-        //   inputs: w.inputs,
-        //   type: w.type
-        // })));
-        
-        // Generate or parse layouts
+        // Generate or parse layouts - PRIORITIZE database layouts
         let dashboardLayouts = {};
         
         if (dashboard.layout) {
           try {
-            // console.log(`Parsing layout for dashboard ${dashboard.id}:`, dashboard.layout);
             
             // First parse - might still be a string if double-encoded
             let parsedLayout = typeof dashboard.layout === "string" 
               ? JSON.parse(dashboard.layout) 
               : dashboard.layout;
             
-            // console.log(`After first parse:`, { type: typeof parsedLayout, value: parsedLayout });
-            
             // Check if it's still a string after first parse (double-encoded case)
             if (typeof parsedLayout === 'string') {
-              // console.log('Layout is double-encoded, parsing again');
               parsedLayout = JSON.parse(parsedLayout);
-              // console.log(`After second parse:`, { type: typeof parsedLayout, value: parsedLayout });
             }
             
             // Final validation - ensure it's an object
             if (typeof parsedLayout === 'object' && parsedLayout !== null) {
               dashboardLayouts = parsedLayout;
-              // console.log(`Dashboard ${dashboard.id} layouts parsed successfully:`, Object.keys(dashboardLayouts));
             } else {
-              console.warn('Dashboard layout is not a valid object after parsing, resetting to empty');
+              console.warn('Dashboard layout is not a valid object after parsing, will generate new');
               dashboardLayouts = {};
             }
           } catch (e) {
             console.warn('Failed to parse dashboard layout:', e);
             dashboardLayouts = {};
           }
-        } else {
-          // console.log(`Dashboard ${dashboard.id} has no layout data`);
         }
         
-        // Ensure all breakpoints exist and generate missing layouts
-        const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
-        const defaultWidths = { lg: 3, md: 4, sm: 6, xs: 12, xxs: 12 };
-        
-        breakpoints.forEach(bp => {
-          // Ensure this breakpoint exists and is an array
-          if (!dashboardLayouts[bp] || !Array.isArray(dashboardLayouts[bp])) {
-            // console.log(`Creating empty layout array for breakpoint ${bp} on dashboard ${dashboard.id}`);
-            // If it's a string, try to parse it
-            if (typeof dashboardLayouts[bp] === 'string') {
-              try {
-                dashboardLayouts[bp] = JSON.parse(dashboardLayouts[bp]);
-              } catch (e) {
-                console.warn(`Failed to parse layout for breakpoint ${bp}:`, e);
-                dashboardLayouts[bp] = [];
-              }
-            } else {
-              dashboardLayouts[bp] = [];
-            }
-          }
+        // Only generate missing layouts if widgets exist but layout is empty/missing
+        // This prevents overriding database layouts with auto-generated ones
+        const hasValidLayouts = Object.keys(dashboardLayouts).length > 0;
+        if (dashboardWidgets.length > 0 && !hasValidLayouts) {
+          // Generate layouts for all breakpoints
+          const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
+          const defaultWidths = { lg: 4, md: 6, sm: 12, xs: 12, xxs: 12 };
           
-          // console.log(`Dashboard ${dashboard.id} ${bp} layout before processing:`, {
-          //   length: dashboardLayouts[bp].length,
-          //   items: dashboardLayouts[bp].map(item => ({ i: item.i, x: item.x, y: item.y, w: item.w, h: item.h }))
-          // });
-          
-          // Add missing widgets to layout (only if there are widgets)
-          dashboardWidgets.forEach((widget, idx) => {
-            const widgetIdString = widget.id.toString();
-            const existingLayout = dashboardLayouts[bp].find(item => item.i === widgetIdString);
-            if (!existingLayout) {
-              // console.log(`Widget ${widget.id} (string: ${widgetIdString}) not found in ${bp} layout, creating new layout item`);
-              const constraints = getWidgetConstraints(widget.type);
+          breakpoints.forEach(bp => {
+            dashboardLayouts[bp] = [];
+            
+            // Create layout items for each widget
+            dashboardWidgets.forEach((widget, idx) => {
+              const constraints = getWidgetConstraints(widget.type, bp);
               const w = Math.max(constraints.minW, defaultWidths[bp] || constraints.minW);
               const h = Math.max(constraints.minH, 4);
               const cols = 12;
@@ -348,94 +273,38 @@ export function useDashboardLogic() {
               const y = Math.floor(idx / (cols / w)) * h;
               
               dashboardLayouts[bp].push({
-                i: widgetIdString,
-                x,
-                y,
-                w,
-                h,
+                i: widget.id.toString(),
+                x: x,
+                y: y,
+                w: w,
+                h: h,
                 minW: constraints.minW,
                 minH: constraints.minH,
                 maxW: constraints.maxW,
                 maxH: constraints.maxH,
-                isResizable: constraints.isResizable
+                isResizable: constraints.isResizable,
+                isDraggable: true,
+                static: false,
               });
-            } else {
-              // console.log(`Widget ${widget.id} (string: ${widgetIdString}) found in ${bp} layout, updating constraints`);
-              // Apply current constraints and ensure minimum dimensions
-              const constraints = getWidgetConstraints(widget.type);
-              
-              // Fix null/undefined values in existing layout
-              existingLayout.x = Number.isFinite(existingLayout.x) ? existingLayout.x : 0;
-              existingLayout.y = Number.isFinite(existingLayout.y) ? existingLayout.y : 0;
-              existingLayout.w = Number.isFinite(existingLayout.w) ? existingLayout.w : constraints.minW;
-              existingLayout.h = Number.isFinite(existingLayout.h) ? existingLayout.h : constraints.minH;
-              
-              existingLayout.minW = constraints.minW;
-              existingLayout.minH = constraints.minH;
-              existingLayout.maxW = constraints.maxW;
-              existingLayout.maxH = constraints.maxH;
-              existingLayout.isResizable = constraints.isResizable;
-              
-              // Ensure current dimensions meet minimum requirements
-              existingLayout.w = Math.max(constraints.minW, existingLayout.w);
-              existingLayout.h = Math.max(constraints.minH, existingLayout.h);
-              
-              // console.log(`Updated layout for widget ${widget.id}:`, existingLayout);
-            }
-          });
-          
-          // Remove layouts for non-existent widgets
-          const initialLength = dashboardLayouts[bp].length;
-          dashboardLayouts[bp] = dashboardLayouts[bp].filter(layoutItem => {
-            const widgetExists = dashboardWidgets.some(widget => {
-              const widgetIdString = widget.id.toString();
-              const layoutIdString = layoutItem.i.toString();
-              return widgetIdString === layoutIdString;
             });
-            if (!widgetExists) {
-              // console.log(`Removing layout item for widget ${layoutItem.i} - widget not found in:`, 
-              //   dashboardWidgets.map(w => ({ id: w.id, idString: w.id.toString(), type: typeof w.id })));
-            }
-            return widgetExists;
           });
-          
-          // console.log(`Dashboard ${dashboard.id} ${bp} layout after processing:`, {
-          //   initialLength,
-          //   finalLength: dashboardLayouts[bp].length,
-          //   removedCount: initialLength - dashboardLayouts[bp].length,
-          //   items: dashboardLayouts[bp].map(item => ({ i: item.i, x: item.x, y: item.y, w: item.w, h: item.h }))
-          // });
-        });
-        
-        // console.log(`Dashboard ${dashboard.id} processed layouts:`, {
-        //   type: typeof dashboardLayouts,
-        //   breakpoints: Object.keys(dashboardLayouts),
-        //   structure: dashboardLayouts
-        // });
-        
-        // Ensure layouts is an object before assignment
-        if (typeof layouts !== 'object' || layouts === null) {
-          console.error('Layouts object is not valid, resetting');
-          layouts = {};
-        }
+        } 
         
         layouts[dashboard.id] = dashboardLayouts;
       });
-      
+
+      // Set all data to provider - this ensures layouts from database take precedence
       setAllTabItems(items);
       setAllTabLayouts(layouts);
       
-      // console.log('Setting tab items and layouts:', { items, layouts });
-      
-      // Set active tab to first dashboard if current activeTab doesn't exist
-      if (!dashboards.some(d => d.id === activeTab)) {
-        const newActiveTab = dashboards[0]?.id || "";
-        // console.log('Setting new active tab:', newActiveTab);
-        updateActiveTab(newActiveTab);
+      // Set the active tab if needed
+      if (activeTab) {
+        updateActiveTab(activeTab);
+      } else if (dashboards.length > 0 && !activeTab) {
+        updateActiveTab(dashboards[0].id);
       }
     } else {
-      // console.log('No dashboards, clearing active tab');
-      updateActiveTab("");
+      clearDashboardData();
     }
   }, [dashboards, widgets, activeTab, setAllTabItems, setAllTabLayouts, updateActiveTab]);
 
@@ -532,6 +401,7 @@ export function useDashboardLogic() {
       errorToast("Gagal menghapus dashboard");
     } finally {
       setIsEditing(false);
+      setDeleteChecked(false);
     }
   };
 
@@ -661,6 +531,13 @@ export function useDashboardLogic() {
       const allItems = tabItems[dashboardId] || [];
       const realWidgetCount = allItems.filter(item => !item.isStaged).length;
       
+      console.log('=== SAVING LAYOUT TO DB ===');
+      console.log('Dashboard ID:', dashboardId);
+      console.log('Layout data structure:', Object.keys(layoutData));
+      console.log('Layout data details:', layoutData);
+      console.log('Widget count:', realWidgetCount);
+      console.log('========================');
+      
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -676,7 +553,8 @@ export function useDashboardLogic() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // console.log('Layout saved successfully');
+      console.log('Layout saved successfully to database');
+      successToast("Layout berhasil disimpan");
     } catch (error) {
       console.error('Error saving layout:', error);
       errorToast("Gagal menyimpan layout");
@@ -883,8 +761,8 @@ export function useDashboardLogic() {
     if (newWidgetData?.layoutItem) {
       await stageLayoutUpdate(tempId, newWidgetData.layoutItem, formData.chartType);
     } else {
-      // Auto-position widget with proper constraints
-      const constraints = getWidgetConstraints(formData.chartType);
+      // Auto-position widget with proper constraints for current breakpoint
+      const constraints = getWidgetConstraints(formData.chartType, currentBreakpoint);
       const autoLayoutItem = {
         x: 0,
         y: Infinity, // Place at bottom
@@ -902,28 +780,23 @@ export function useDashboardLogic() {
   const stageLayoutUpdate = async (widgetId, layoutItem, widgetType) => {
     const dashboardId = activeTab;
     const currentLayouts = tabLayouts[dashboardId] || {};
-    const constraints = getWidgetConstraints(widgetType);
     
     const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
     const updatedLayouts = { ...currentLayouts };
     
-    // Ensure dimensions meet minimum requirements
-    const finalWidth = Math.max(constraints.minW, layoutItem.w || constraints.minW);
-    const finalHeight = Math.max(constraints.minH, layoutItem.h || constraints.minH);
-    
-    // console.log('Staging layout update:', {
-    //   widgetType,
-    //   constraints,
-    //   originalLayout: layoutItem,
-    //   finalDimensions: { w: finalWidth, h: finalHeight }
-    // });
-    
-    breakpoints.forEach(bp => {
-      if (!updatedLayouts[bp]) {
-        updatedLayouts[bp] = [];
+    // Generate responsive layouts for all breakpoints
+    breakpoints.forEach(breakpoint => {
+      const constraints = getWidgetConstraints(widgetType, breakpoint);
+      
+      // Ensure dimensions meet minimum requirements for this breakpoint
+      const finalWidth = Math.max(constraints.minW, layoutItem.w || constraints.minW);
+      const finalHeight = Math.max(constraints.minH, layoutItem.h || constraints.minH);
+      
+      if (!updatedLayouts[breakpoint]) {
+        updatedLayouts[breakpoint] = [];
       }
       
-      updatedLayouts[bp].push({
+      updatedLayouts[breakpoint].push({
         i: widgetId.toString(),
         x: layoutItem.x || 0,
         y: layoutItem.y || 0,
@@ -957,50 +830,16 @@ export function useDashboardLogic() {
   const handleLayoutChange = useCallback(async (layout, allLayouts) => {
     if (!activeTab) return;
     
-    // console.log('=== DASHBOARD LOGIC LAYOUT CHANGE ===');
-    // console.log('Active tab:', activeTab);
-    // console.log('Layout items received:', layout.length);
-    // console.log('All layouts keys:', Object.keys(allLayouts));
-    // console.log('Layout details:', layout.map(item => ({ 
-    //   i: item.i, 
-    //   x: item.x, 
-    //   y: item.y, 
-    //   w: item.w, 
-    //   h: item.h 
-    // })));
-    
-    // Validate and fix layout items to prevent NaN values
-    const validatedLayout = layout.map(item => ({
-      ...item,
-      x: Number.isFinite(item.x) ? item.x : 0,
-      y: Number.isFinite(item.y) ? item.y : 0,
-      w: Number.isFinite(item.w) && item.w > 0 ? item.w : 6,
-      h: Number.isFinite(item.h) && item.h > 0 ? item.h : 4,
-      minW: Number.isFinite(item.minW) && item.minW > 0 ? item.minW : 3,
-      minH: Number.isFinite(item.minH) && item.minH > 0 ? item.minH : 3,
-      maxW: Number.isFinite(item.maxW) && item.maxW > 0 ? item.maxW : 12,
-      maxH: Number.isFinite(item.maxH) && item.maxH > 0 ? item.maxH : 12,
-    }));
-
-    // Also validate allLayouts
+    // Simple validation - trust the grid-layout component's validation
+    // Only ensure the data structure is correct
     const validatedAllLayouts = {};
     Object.keys(allLayouts).forEach(breakpoint => {
-      validatedAllLayouts[breakpoint] = allLayouts[breakpoint].map(item => ({
-        ...item,
-        x: Number.isFinite(item.x) ? item.x : 0,
-        y: Number.isFinite(item.y) ? item.y : 0,
-        w: Number.isFinite(item.w) && item.w > 0 ? item.w : 6,
-        h: Number.isFinite(item.h) && item.h > 0 ? item.h : 4,
-        minW: Number.isFinite(item.minW) && item.minW > 0 ? item.minW : 3,
-        minH: Number.isFinite(item.minH) && item.minH > 0 ? item.minH : 3,
-        maxW: Number.isFinite(item.maxW) && item.maxW > 0 ? item.maxW : 12,
-        maxH: Number.isFinite(item.maxH) && item.maxH > 0 ? item.maxH : 12,
-      }));
+      if (Array.isArray(allLayouts[breakpoint])) {
+        validatedAllLayouts[breakpoint] = allLayouts[breakpoint];
+      } else {
+        validatedAllLayouts[breakpoint] = [];
+      }
     });
-    
-    // console.log('Updating tab layouts for:', activeTab);
-    // console.log('Validated layouts:', validatedAllLayouts);
-    // console.log('=====================================');
     
     updateTabLayouts(activeTab, validatedAllLayouts);
     setHasUnsavedChanges(true);
@@ -1081,15 +920,8 @@ export function useDashboardLogic() {
       // First: Remove widgets marked for removal
       for (const widget of widgetsToRemove) {
         try {
-          // console.log(`Processing widget for removal:`, {
-          //   id: widget.id,
-          //   isStaged: widget.isStaged,
-          //   description: widget.description
-          // });
-          
           // Only delete if it's not a staged widget (has real database ID)
           if (!widget.isStaged) {
-            // console.log(`Deleting widget ${widget.id} from database...`);
             const res = await fetchFromBackend(`/widget/${widget.id}`, {
               method: "DELETE",
             });
@@ -1098,7 +930,6 @@ export function useDashboardLogic() {
               const errorText = await res.text();
               throw new Error(`Failed to delete widget ${widget.id}: ${res.status} - ${errorText}`);
             }
-            // console.log(`Widget ${widget.id} deleted successfully from database`);
           } else {
             // console.log(`Widget ${widget.id} is staged, skipping database deletion`);
           }
@@ -1193,12 +1024,6 @@ export function useDashboardLogic() {
       // Update layout: remove deleted widgets and update IDs for new widgets
       let finalLayoutData = tabLayouts[dashboardId] || {};
       
-      // console.log('Layout data before processing:', {
-      //   type: typeof finalLayoutData,
-      //   keys: Object.keys(finalLayoutData),
-      //   structure: finalLayoutData
-      // });
-      
       // Ensure finalLayoutData is an object, not a string
       if (typeof finalLayoutData === 'string') {
         try {
@@ -1235,9 +1060,6 @@ export function useDashboardLogic() {
           // Remove layouts for deleted widgets
           updatedLayouts[breakpoint] = updatedLayouts[breakpoint].filter(layoutItem => {
             const shouldKeep = !removedWidgetIds.includes(layoutItem.i);
-            if (!shouldKeep) {
-              // console.log(`Removing layout item for widget ${layoutItem.i} from breakpoint ${breakpoint}`);
-            }
             return shouldKeep;
           });
           
@@ -1248,7 +1070,6 @@ export function useDashboardLogic() {
           updatedLayouts[breakpoint] = updatedLayouts[breakpoint].map(layoutItem => {
             const realId = widgetIdMapping[layoutItem.i];
             if (realId) {
-              // console.log(`Updating layout ID: ${layoutItem.i} -> ${realId}`);
               return { ...layoutItem, i: realId.toString() };
             }
             return layoutItem;
@@ -1259,22 +1080,15 @@ export function useDashboardLogic() {
       });
       
       finalLayoutData = updatedLayouts;
-      // console.log('Final layout data after processing:', {
-      //   structure: finalLayoutData,
-      //   breakpointCounts: Object.keys(finalLayoutData).map(bp => ({
-      //     breakpoint: bp,
-      //     count: finalLayoutData[bp]?.length || 0
-      //   }))
-      // });
       
       // Calculate final widget count (existing + edited + new - removed)
       const finalWidgetCount = existingWidgets.length + widgetEditedCount + widgetCreatedCount;
       
-      // console.log('Saving dashboard with:', {
-      //   description: finalDescription,
-      //   widget_count: finalWidgetCount,
-      //   layout_string_length: JSON.stringify(finalLayoutData).length
-      // });
+      // Debug log Simpan layout ke DB
+      // console.log('=== SAVING LAYOUT TO DATABASE ===');
+      // console.log('Dashboard ID:', dashboard.id);
+      // console.log('Final layout data:', finalLayoutData);
+      // console.log('Layout JSON string length:', JSON.stringify(finalLayoutData).length);
       
       // Save dashboard with layout
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
@@ -1291,8 +1105,6 @@ export function useDashboardLogic() {
         console.error('Backend response error:', errorData);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      // console.log('Dashboard saved successfully to database');
       
       // Clean up local state: remove widgets marked for removal and clean edit flags
       const cleanedItems = existingWidgets.concat(
@@ -1311,22 +1123,11 @@ export function useDashboardLogic() {
         })
       );
       
-      // console.log('Cleaned items for local state:', cleanedItems.map(item => ({
-      //   id: item.id,
-      //   description: item.description,
-      //   isStaged: item.isStaged || false,
-      //   hasEditedChanges: item.hasEditedChanges || false
-      // })));
-      
       // Update local state with cleaned data
-      // console.log('Updating local state...');
       updateTabItems(dashboardId, cleanedItems);
       updateTabLayouts(dashboardId, finalLayoutData);
       
-      // console.log('Local state updated successfully');
-      
       // Refresh data to get latest state
-      // console.log('Refreshing dashboard data from server...');
       await fetchDashboards();
       
       // console.log('=== SAVE COMPLETED SUCCESSFULLY ===');
@@ -1352,11 +1153,9 @@ export function useDashboardLogic() {
     }
   }, [activeTab, dashboards, editDashboardValue, tabItems, tabLayouts, updateTabLayouts, fetchDashboards]);
 
-  // Handler untuk perubahan time range
+  // Trigger refresh widgets dengan time range baru
   const handleTimeRangeChange = useCallback((newTimeRange) => {
     setCurrentTimeRange(newTimeRange);
-    // Optional: Trigger refresh widgets dengan time range baru
-    // console.log('📅 Time range changed to:', newTimeRange);
   }, []);
 
   // Return all the required state and functions
@@ -1404,6 +1203,8 @@ export function useDashboardLogic() {
     isAuthenticated, // Add this missing property!
     layoutKey,
     currentTimeRange,
+    deleteChecked,
+    setDeleteChecked,
     
     // Functions
     handleAddDashboard,

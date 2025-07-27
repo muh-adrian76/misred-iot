@@ -78,7 +78,7 @@ function Toast(props) {
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </p>
-        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           {description}
         </p>
       </div>

@@ -33,6 +33,7 @@ import { AlarmNotificationService } from "./services/AlarmNotificationService";
 import { DashboardService } from "./services/DashboardService";
 import { DatastreamService } from "./services/DatastreamService";
 import { DeviceCommandService } from "./services/DeviceCommandService";
+import { DeviceStatusService } from "./services/DeviceStatusService";
 import { OtaaUpdateService } from "./services/OtaaUpdateService";
 import { AdminService } from "./services/AdminService";
 import { MQTTService } from "./services/MiddlewareService";
@@ -52,6 +53,7 @@ class Server {
   private dashboardService!: DashboardService;
   private datastreamService!: DatastreamService;
   private otaaService!: OtaaUpdateService;
+  private deviceStatusService!: DeviceStatusService;
   private adminService!: AdminService;
   private mqttService!: MQTTService;
 
@@ -73,9 +75,10 @@ class Server {
     this.datastreamService = new DatastreamService(this.db);
     this.otaaService = new OtaaUpdateService(this.db);
     this.adminService = new AdminService(this.db);
+    this.deviceStatusService = new DeviceStatusService(this.db);
 
     // Init MQTT service dengan alarm notification
-    this.mqttService = new MQTTService(this.db, this.alarmNotificationService);
+    this.mqttService = new MQTTService(this.db, this.alarmNotificationService, this.deviceStatusService);
 
     // Init device service dengan MQTT callbacks
     this.deviceService = new DeviceService(
@@ -92,7 +95,8 @@ class Server {
     this.payloadService = new PayloadService(
       this.db,
       this.deviceService,
-      this.alarmNotificationService
+      this.alarmNotificationService,
+      this.deviceStatusService
     );
 
     // Create JWT instance
@@ -101,9 +105,6 @@ class Server {
       secret: process.env.JWT_SECRET!,
       exp: process.env.ACCESS_TOKEN_AGE,
     });
-
-    // Set JWT instance ke MQTT service
-    this.mqttService.setJWTInstance(jwtInstance);
 
     // Start MQTT listener
     this.mqttService.listen();
@@ -120,7 +121,7 @@ class Server {
       // API
       .use(authRoutes(this.authService, this.userService))
       .use(userRoutes(this.userService))
-      .use(deviceRoutes(this.deviceService))
+      .use(deviceRoutes(this.deviceService, this.deviceStatusService))
       .use(deviceCommandRoutes(this.db))
       .use(payloadRoutes(this.payloadService))
       .use(widgetRoutes(this.widgetService))
@@ -309,7 +310,6 @@ class Server {
               this.mqttService.subscribeTopic.bind(this.mqttService),
               this.mqttService.unSubscribeTopic.bind(this.mqttService)
             );
-            console.log("✅ Database connection and device service restored for secret refresh");
           } catch (reconnectError) {
             console.error("❌ Failed to reconnect to database:", reconnectError);
           }

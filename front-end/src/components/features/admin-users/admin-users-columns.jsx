@@ -12,7 +12,7 @@ import {
 // User Avatar Component
 function UserAvatar({ user }) {
   return (
-    <Avatar className="h-10 w-10">
+    <Avatar className="h-10 w-10 hidden sm:block">
       <AvatarFallback className="bg-primary/10 text-primary">
         {user.name?.charAt(0) || 'U'}
       </AvatarFallback>

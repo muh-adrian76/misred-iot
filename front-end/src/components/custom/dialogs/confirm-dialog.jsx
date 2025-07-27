@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
 
 export default function ConfirmDialog({
   open,
@@ -22,21 +23,28 @@ export default function ConfirmDialog({
 }) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogContent className="w-96">
+      <AlertDialogContent className="w-96 border rounded-2xl">
+        <GlowingEffect
+          spread={45}
+          glow={true}
+          disabled={false}
+          proximity={72}
+          inactiveZone={0.02}
+        />
         <AlertDialogHeader>
           <AlertDialogTitle className="text-balance">{title}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {description}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
-            {checkbox}
+        {checkbox}
         <AlertDialogFooter>
-          <AlertDialogAction className="cursor-pointer transition-all duration-500" onClick={confirmHandle} disabled={confirmDisabled}>
+          <AlertDialogAction
+            className="cursor-pointer transition-all duration-500"
+            onClick={confirmHandle}
+            disabled={confirmDisabled}
+          >
             {confirmText}
           </AlertDialogAction>
-          <AlertDialogCancel
-            className="cursor-pointer transition-all duration-500"
-          >
+          <AlertDialogCancel className="cursor-pointer transition-all duration-500">
             {cancelText}
           </AlertDialogCancel>
         </AlertDialogFooter>

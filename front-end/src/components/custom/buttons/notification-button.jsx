@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { NotificationCenter } from "@/components/custom/other/notification-center";
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useBreakpoint } from "@/hooks/use-mobile";
 import { useWebSocket } from "@/providers/websocket-provider";
 
@@ -23,9 +22,7 @@ const deleteNotification = async (id) => {
 };
 // --- End of API Functions ---
 
-// Use the global QueryClient instead of creating a local one
-
-// Component that uses useQueryClient
+// Component that uses NotificationCenter
 function NotificationContent() {
   const { isMobile } = useBreakpoint();
   const { alarmNotifications = [] } = useWebSocket(); // Get notifications dari WebSocket + localStorage

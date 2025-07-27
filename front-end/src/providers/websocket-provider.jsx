@@ -11,7 +11,7 @@ export function WebSocketProvider({ children }) {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttemptsRef = useRef(0);
   const connectionAttemptRef = useRef(false);
-  const maxReconnectAttempts = 3;
+  const maxReconnectAttempts = 10;
   const reconnectDelay = 2000; // 2 seconds
   const connectionTimeout = 10000; // 10 seconds
   const [ws, setWs] = useState(null);
@@ -54,9 +54,7 @@ export function WebSocketProvider({ children }) {
   // Helper function to verify authentication with backend
   const verifyAuthentication = async () => {
     try {
-      const response = await fetchFromBackend("/auth/verify-token", {
-        method: "GET",
-      });
+      const response = await fetchFromBackend("/auth/verify-token");
       return response.ok;
     } catch (error) {
       console.error("Auth verification failed:", error);
@@ -121,7 +119,7 @@ export function WebSocketProvider({ children }) {
   }, [user, isInitialized]);
 
   // Safe and reliable WebSocket connection
-  const createWebSocketConnection = () => {
+  const createWebSocketConnection = async () => {
     // Prevent multiple simultaneous connection attempts
     if (connectionAttemptRef.current || !isUserLoggedIn(user)) {
       // if (!isUserLoggedIn(user)) {
@@ -137,8 +135,7 @@ export function WebSocketProvider({ children }) {
       wsRef.current.close(1000, "Reconnecting");
     }
 
-    console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
-
+    // console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
     const connectionTimer = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
         console.warn("⏰ Connection timeout - closing socket");
@@ -151,18 +148,50 @@ export function WebSocketProvider({ children }) {
       const backendWsUrl = process.env.NEXT_PUBLIC_BACKEND_WS;
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       
-      let wsUrl;
+      let wsBaseUrl;
       if (backendWsUrl) {
-        wsUrl = `${backendWsUrl}/ws/user`;
+        wsBaseUrl = `${backendWsUrl}/ws/user`;
       } else if (backendUrl) {
         // Convert HTTP to WS URL
-        wsUrl = backendUrl.replace(/^https?:/, backendUrl.startsWith('https:') ? 'wss:' : 'ws:') + '/ws/user';
+        wsBaseUrl = backendUrl.replace(/^https?:/, backendUrl.startsWith('https:') ? 'wss:' : 'ws:') + '/ws/user';
       } else {
         // Fallback to default development URL
-        wsUrl = 'ws://localhost:7601/ws/user';
+        wsBaseUrl = 'ws://localhost:7601/ws/user';
       }
 
-      console.log(`🔗 Connecting to WebSocket: ${wsUrl}`);
+      // Generate WebSocket token melalui backend API
+      // Karena HttpOnly cookies tidak bisa diakses JavaScript
+      let wsToken = null;
+      try {
+        const tokenResponse = await fetchFromBackend("/auth/ws-token", {
+          method: "GET",
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          wsToken = tokenData.ws_token;
+        } else {
+          console.error("❌ Failed to get WebSocket token:", tokenResponse.status);
+          connectionAttemptRef.current = false;
+          return;
+        }
+      } catch (error) {
+        console.error("❌ Error getting WebSocket token:", error);
+        connectionAttemptRef.current = false;
+        return;
+      }
+      
+      // Tambahkan token ke WebSocket URL sebagai path parameter
+      let wsUrl;
+      if (wsToken) {
+        wsUrl = `${wsBaseUrl}/${encodeURIComponent(wsToken)}`;
+      } else {
+        console.warn("❌ No WebSocket token available, cannot connect");
+        connectionAttemptRef.current = false;
+        return;
+      }
+
+      // console.log(`🔗 Mencoba memulai koneksi WebSocket ke alamat: ${wsUrl.replace(/\/[^\/]*$/, '/[hidden_token]')}`);
       
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
@@ -170,7 +199,7 @@ export function WebSocketProvider({ children }) {
 
       socket.onopen = () => {
         clearTimeout(connectionTimer);
-        console.log("✅ Koneksi websocket berhasil!");
+        console.log("✅ Terkoneksi ke server via websocket!");
         setIsConnected(true);
         reconnectAttemptsRef.current = 0;
         connectionAttemptRef.current = false;
@@ -179,7 +208,9 @@ export function WebSocketProvider({ children }) {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-
+          // Debug websocket
+          // console.log("📥 Pesan diterima:", data);
+          
           if (data.type === "status_update") {
             setDeviceStatuses(prev => {
               const newMap = new Map(prev);
@@ -230,12 +261,34 @@ export function WebSocketProvider({ children }) {
 
         console.log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
 
+        // Handle specific authentication failures - don't reconnect immediately
+        if (event.code === 1008 && event.reason?.includes("Authentication")) {
+          console.error("🚨 Authentication failed - will retry after verifying credentials");
+          
+          // Verify authentication before attempting reconnection
+          if (isUserLoggedIn(user)) {
+            setTimeout(async () => {
+              const isAuthenticated = await verifyAuthentication();
+              if (isAuthenticated && reconnectAttemptsRef.current < maxReconnectAttempts) {
+                reconnectAttemptsRef.current += 1;
+                // console.log(`🔄 Auth verified, reconnecting... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+                await createWebSocketConnection();
+              } else {
+                console.error("❌ Authentication verification failed or max attempts reached");
+              }
+            }, reconnectDelay * 2); // Longer delay for auth failures
+          }
+          return;
+        }
+
         // Only reconnect for abnormal closures and if user still exists
         if (event.code !== 1000 && isUserLoggedIn(user) && reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current += 1;
-          console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
+          // console.log(`🔄 Reconnecting in ${reconnectDelay/1000}s... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
           
-          reconnectTimeoutRef.current = setTimeout(createWebSocketConnection, reconnectDelay);
+          reconnectTimeoutRef.current = setTimeout(async () => {
+            await createWebSocketConnection();
+          }, reconnectDelay);
         } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
           console.error("❌ Max reconnection attempts reached. Please check your connection and backend server.");
         }
@@ -268,6 +321,13 @@ export function WebSocketProvider({ children }) {
       // Verify authentication with backend before proceeding
       const initializeWebSocketAndNotifications = async () => {
         try {
+          // Double check user is still logged in before making any API calls
+          if (!isUserLoggedIn(user)) {
+            console.log("❌ User logged out during initialization, aborting");
+            setHasAuthChecked(true);
+            return;
+          }
+
           const isAuthenticated = await verifyAuthentication();
           
           if (!isAuthenticated) {
@@ -282,6 +342,12 @@ export function WebSocketProvider({ children }) {
           // Fetch notifications dari backend (hanya sekali setelah auth verified)
           const fetchLoginNotifications = async () => {
             try {
+              // Final check before fetching - ensure user is still logged in
+              if (!isUserLoggedIn(user)) {
+                console.log("❌ User logged out before fetch, skipping notifications fetch");
+                return;
+              }
+
               // console.log("🔍 Fetching notifications from backend...");
               const response = await fetchFromBackend("/notifications/");
               
@@ -289,6 +355,12 @@ export function WebSocketProvider({ children }) {
                 const data = await response.json();
                 // console.log("✅ Notifications fetched successfully");
                 if (data.success && data.notifications) {
+                  // Final check before updating state
+                  if (!isUserLoggedIn(user)) {
+                    console.log("❌ User logged out during fetch, discarding notifications");
+                    return;
+                  }
+                  
                   // Merge dengan notifications yang sudah ada di localStorage
                   setAlarmNotifications(prev => {
                     const combined = [...data.notifications, ...prev];
@@ -304,25 +376,41 @@ export function WebSocketProvider({ children }) {
                 console.log("❌ Failed to fetch notifications:", response.status);
               }
             } catch (error) {
-              console.error('Error fetching recent notifications:', error);
+              // Only log error if user is still logged in (avoid spam during logout)
+              if (isUserLoggedIn(user)) {
+                console.error('Error fetching recent notifications:', error);
+              }
             }
           };
 
-          fetchLoginNotifications();
+          // Only fetch notifications if user is still logged in
+          if (isUserLoggedIn(user)) {
+            fetchLoginNotifications();
+          }
           
           // Reset connection state
           reconnectAttemptsRef.current = 0;
           connectionAttemptRef.current = false;
           
-          // Delayed connection to ensure backend is ready
-          const connectTimer = setTimeout(createWebSocketConnection, 2000);
-          
-          return () => {
-            clearTimeout(connectTimer);
-          };
+          // Delayed connection to ensure backend is ready (only if user still logged in)
+          if (isUserLoggedIn(user)) {
+            const connectTimer = setTimeout(async () => {
+              // Final check before connecting
+              if (isUserLoggedIn(user)) {
+                await createWebSocketConnection();
+              }
+            }, 2000);
+            
+            return () => {
+              clearTimeout(connectTimer);
+            };
+          }
           
         } catch (error) {
-          console.error('Error during initialization:', error);
+          // Only log error if user is still logged in
+          if (isUserLoggedIn(user)) {
+            console.error('Error during initialization:', error);
+          }
           setHasAuthChecked(true);
         }
       };
@@ -331,6 +419,14 @@ export function WebSocketProvider({ children }) {
     } else if (isInitialized && !isUserLoggedIn(user)) {
       // console.log("❌ User not logged in, skipping WebSocket initialization");
       setHasAuthChecked(false);
+      
+      // Clean up any pending connections or operations
+      if (wsRef.current) {
+        wsRef.current.close(1000, "User logged out");
+        wsRef.current = null;
+        setWs(null);
+        setIsConnected(false);
+      }
     }
 
     // Cleanup function
@@ -352,7 +448,7 @@ export function WebSocketProvider({ children }) {
   // Manual reconnection
   const reconnectWebSocket = async () => {
     if (isUserLoggedIn(user) && !connectionAttemptRef.current) {
-      console.log("🔄 Manual reconnection...");
+      // console.log("🔄 Mencoba reconnect...");
       
       // Verify auth before reconnecting
       const isAuthenticated = await verifyAuthentication();
@@ -362,7 +458,7 @@ export function WebSocketProvider({ children }) {
       }
       
       reconnectAttemptsRef.current = 0;
-      createWebSocketConnection();
+      await createWebSocketConnection();
     }
   };
 

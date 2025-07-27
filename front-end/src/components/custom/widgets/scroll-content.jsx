@@ -14,41 +14,40 @@ const widgetList = [
     key: "switch",
     label: "Switch",
     component: SwitchWidget,
-    tooltip: "Cocok untuk menghidupkan/mematikan sesuatu",
+    width: "w-50",
+    tooltip: "Gunakan untuk menghidupkan/mematikan sesuatu",
   },
   {
     key: "slider",
     label: "Slider",
     component: SliderWidget,
-    tooltip: "Cocok untuk mengatur nilai dalam rentang tertentu",
+    width: "w-50",
+    tooltip: "Gunakan untuk mengatur nilai dalam rentang tertentu",
   },
   {
     key: "line",
     label: "Line Chart",
     component: LineChartWidget,
-    width: "w-50 max-sm:w-full",
-    tooltip: "Cocok untuk melihat tren data dari waktu ke waktu",
+    width: "lg:w-50 w-full",
+    tooltip: "Gunakan untuk melihat tren data dari waktu ke waktu",
   },
-  // {
-  //   key: "bar",
-  //   label: "Bar Chart",
-  //   component: BarChartWidget,
-  //   width: "w-50 max-sm:w-full",
-  //   tooltip: "Cocok untuk membandingkan nilai antar kategori",
-  // },
+  {
+    key: "bar",
+    label: "Bar Chart",
+    component: BarChartWidget,
+    tooltip: "Gunakan untuk membandingkan nilai antar kategori",
+  },
   {
     key: "area",
     label: "Area Chart",
     component: AreaChartWidget,
-    width: "w-50 max-sm:w-full",
-    tooltip: "Cocok untuk melihat total kumulatif atau volume dari data",
+    tooltip: "Gunakan untuk melihat total kumulatif atau volume dari data",
   },
   // {
   //   key: "pie",
   //   label: "Pie Chart",
   //   component: PieChartWidget,
-  //   height: "h-40",
-  //   tooltip: "Cocok untuk melihat proporsi antar kategori",
+  //   tooltip: "Gunakan untuk melihat proporsi antar kategori",
   // },
 ];
 
@@ -114,8 +113,8 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
           </div>
           <div
             className={cn(
-              "flex items-center h-40 justify-center",
-              w.width ? w.width : "w-full"
+              "flex items-center h-40 justify-center w-full",
+              w.width ? w.width : ""
             )}
           >
             <w.component previewMode />

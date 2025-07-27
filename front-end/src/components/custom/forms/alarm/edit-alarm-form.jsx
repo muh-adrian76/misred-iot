@@ -43,7 +43,7 @@ export default function EditAlarmForm({
   const [deviceId, setDeviceId] = useState("");
   const [datastreamId, setDatastreamId] = useState("");
   const [conditions, setConditions] = useState([]);
-  const [cooldownMinutes, setCooldownMinutes] = useState(1);
+  const [cooldownMinutes, setCooldownMinutes] = useState("1");
   const [isActive, setIsActive] = useState(true);
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
@@ -87,7 +87,7 @@ export default function EditAlarmForm({
         setConditions([]);
       }
 
-      setCooldownMinutes(editAlarm.cooldown_minutes || 1);
+      setCooldownMinutes(editAlarm.cooldown_minutes || "1");
       setNewConditionOperator(">");
       setNewConditionThreshold("");
     }
@@ -302,7 +302,7 @@ export default function EditAlarmForm({
           <Label>Tunggu (menit)</Label>
           <Input
             value={cooldownMinutes}
-            onChange={(e) => setCooldownMinutes(parseInt(e.target.value))}
+            onChange={(e) => setCooldownMinutes(e.target.value)}
             type="number"
             min="1"
             placeholder="1"

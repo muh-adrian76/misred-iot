@@ -16,12 +16,12 @@ export function alarmRoutes(alarmService: AlarmService) {
     .post(
       "/",
       //@ts-ignore
-      async ({ jwt, cookie, body }) => {
-        const decoded = await authorizeRequest(jwt, cookie);
-        const { description, device_id, datastream_id, is_active, conditions, cooldown_minutes } = body;
-        const user_id = decoded.sub;
-        
+      async ({ jwt, cookie, body, set }) => {
         try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const { description, device_id, datastream_id, is_active, conditions, cooldown_minutes } = body;
+          const user_id = decoded.sub;
+          
           const insertId = await alarmService.createAlarm({
             description,
             user_id: Number(user_id),
@@ -39,15 +39,25 @@ export function alarmRoutes(alarmService: AlarmService) {
             }),
             { status: 200 }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error creating alarm:", error);
-          return new Response(
-            JSON.stringify({
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
               success: false,
-              message: "Gagal menambah data alarm",
-            }),
-            { status: 400 }
-          );
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
       },
       createAlarmSchema
@@ -57,7 +67,7 @@ export function alarmRoutes(alarmService: AlarmService) {
     .get(
       "/",
       //@ts-ignore
-      async ({ jwt, cookie }) => {
+      async ({ jwt, cookie, set }) => {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
           const data = await alarmService.getAllAlarms(decoded.sub);
@@ -68,15 +78,27 @@ export function alarmRoutes(alarmService: AlarmService) {
             }), 
             { status: 200 }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching alarms:", error);
-          return new Response(
-            JSON.stringify({
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
               success: false,
-              message: "Gagal mengambil data alarm",
-            }),
-            { status: 400 }
-          );
+              message: "Authentication failed",
+              alarms: []
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error",
+            alarms: []
+          };
         }
       },
       getAlarmsSchema
@@ -86,7 +108,7 @@ export function alarmRoutes(alarmService: AlarmService) {
     .get(
       "/:alarmId",
       //@ts-ignore
-      async ({ jwt, cookie, params }) => {
+      async ({ jwt, cookie, params, set }) => {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
           const data = await alarmService.getAlarmById(Number(params.alarmId), Number(decoded.sub));
@@ -108,15 +130,25 @@ export function alarmRoutes(alarmService: AlarmService) {
             }), 
             { status: 200 }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error fetching alarm:", error);
-          return new Response(
-            JSON.stringify({
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
               success: false,
-              message: "Gagal mengambil data alarm",
-            }),
-            { status: 400 }
-          );
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
       },
       getAlarmByIdSchema
@@ -126,7 +158,7 @@ export function alarmRoutes(alarmService: AlarmService) {
     .put(
       "/:alarmId",
       //@ts-ignore
-      async ({ jwt, cookie, params, body }) => {
+      async ({ jwt, cookie, params, body, set }) => {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
           const updated = await alarmService.updateAlarm(Number(params.alarmId), Number(decoded.sub), body);
@@ -148,15 +180,25 @@ export function alarmRoutes(alarmService: AlarmService) {
             }),
             { status: 200 }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error updating alarm:", error);
-          return new Response(
-            JSON.stringify({
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
               success: false,
-              message: "Gagal mengupdate data alarm",
-            }),
-            { status: 400 }
-          );
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
       },
       updateAlarmSchema
@@ -166,7 +208,7 @@ export function alarmRoutes(alarmService: AlarmService) {
     .delete(
       "/:alarmId",
       //@ts-ignore
-      async ({ jwt, cookie, params }) => {
+      async ({ jwt, cookie, params, set }) => {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
           const deleted = await alarmService.deleteAlarm(Number(params.alarmId), Number(decoded.sub));
@@ -188,17 +230,27 @@ export function alarmRoutes(alarmService: AlarmService) {
             }),
             { status: 200 }
           );
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error deleting alarm:", error);
-          return new Response(
-            JSON.stringify({
+          
+          // Check if it's an authentication error from authorizeRequest
+          if (error.message && error.message.includes('Unauthorized')) {
+            console.error("❌ Authentication error:", error.message);
+            set.status = 401;
+            return {
               success: false,
-              message: "Gagal menghapus data alarm",
-            }),
-            { status: 400 }
-          );
+              message: "Authentication failed"
+            };
+          }
+          
+          // Handle other errors
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
         }
       },
       deleteAlarmSchema
-    )
+    );
 }

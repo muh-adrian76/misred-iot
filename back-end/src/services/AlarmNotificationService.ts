@@ -1,7 +1,7 @@
 import { Pool } from "mysql2/promise";
 import { Client, LocalAuth } from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
-import { broadcastToUsers } from "../api/ws/user-ws";
+import { broadcastToSpecificUser } from "../api/ws/user-ws";
 
 export interface AlarmData {
   id: number;
@@ -60,33 +60,7 @@ export class AlarmNotificationService {
 
   constructor(database: Pool) {
     this.db = database;
-
-    // Check if WhatsApp should be disabled (e.g., in test environment or missing dependencies)
-    // const disableWhatsApp =
-    //   process.env.DISABLE_WHATSAPP === "true" ||
-    //   this.checkSystemCompatibility();
-    // if (disableWhatsApp) {
-    //   console.log("⚠️ Notifikasi WhatsApp dinonaktifkan");
-    //   if (process.env.DISABLE_WHATSAPP === "true") {
-    //     console.log(
-    //       "📝 Alasan: Dinonaktifkan melalui environment variable DISABLE_WHATSAPP=true"
-    //     );
-    //   } else {
-    //     console.log(
-    //       "📝 Alasan: Sistem tidak kompatibel atau dependencies tidak tersedia"
-    //     );
-    //   }
-    //   console.log(
-    //     "📧 Notifikasi alarm akan menggunakan browser/WebSocket saja"
-    //   );
-    //   this.whatsAppDisabled = true;
-    //   return;
-    // }
-
-    // Initialize WhatsApp Web client
     this.initializeWhatsAppClient();
-
-    // Start health monitoring
     this.startHealthMonitoring();
   }
 
@@ -123,17 +97,9 @@ export class AlarmNotificationService {
         return true; // Disable WhatsApp
       }
 
-      // Check if we have display capabilities (X11)
-      const hasDisplay = process.env.DISPLAY || process.env.WAYLAND_DISPLAY;
-      if (!hasDisplay) {
-        console.log(
-          "ℹ️ Tidak ada display server, WhatsApp Web akan berjalan dalam mode headless"
-        );
-      }
-
       return false; // System is compatible
     } catch (error) {
-      console.log("⚠️ Error checking system compatibility:", error);
+      console.log("⚠️ Error saat memeriksa kompatibilitas sistem:", error);
       return true; // Disable WhatsApp on error
     }
   }
@@ -147,7 +113,7 @@ export class AlarmNotificationService {
       try {
         await this.healthCheck();
       } catch (error) {
-        console.error("❌ WhatsApp health check failed:", error);
+        console.error("❌ WhatsApp health check gagal:", error);
       }
     }, 5 * 60 * 1000); // 5 minutes
   }
@@ -187,9 +153,6 @@ export class AlarmNotificationService {
    */
   private initializeWhatsAppClient(): void {
     try {
-      console.log("📱 Creating WhatsApp client...");
-
-      // Enhanced Puppeteer configuration for Linux VPS
       const puppeteerConfig = {
         // Konfigurasi khusus untuk VPS
         headless: true,
@@ -230,20 +193,13 @@ export class AlarmNotificationService {
         },
       });
 
-      console.log(
-        "📱 WhatsApp client created with enhanced Linux configuration"
-      );
-
       this.setupWhatsAppEventHandlers();
 
       // Start initialization asynchronously dengan error handling
       this.startWhatsAppInitialization().catch((error) => {
         console.error(
-          "❌ Failed to initialize WhatsApp Web in constructor:",
+          "❌ Gagal menginisialisasi WhatsApp Web:",
           error
-        );
-        console.log(
-          "⚠️ WhatsApp notifications will be disabled. Service will continue without WhatsApp functionality."
         );
         this.whatsAppDisabled = true;
         // Don't throw error to prevent service crash
@@ -276,18 +232,14 @@ export class AlarmNotificationService {
     for (const path of possiblePaths) {
       try {
         if (path && fs.existsSync(path)) {
-          console.log(`🔍 Found Chrome/Chromium executable: ${path}`);
+          // console.log(`🔍 Chrome/Chromium path: ${path}`);
           return path;
         }
       } catch (error) {
         // Continue to next path
       }
     }
-
-    console.log(
-      "⚠️ No system Chrome/Chromium found, using Puppeteer bundled version"
-    );
-    return undefined; // Let Puppeteer use its bundled version
+    return undefined; // Default Puppeteer
   }
 
   /**
@@ -297,14 +249,8 @@ export class AlarmNotificationService {
     // Loading event - shows session loading status
     this.whatsAppClient.on("loading_screen", (percent: number, message) => {
       console.log(`📱 WhatsApp Web loading: ${percent}% - ${message}`);
-
-      // Provide more detailed feedback during loading
-      if (percent === 0) {
-        console.log("🚀 WhatsApp Web starting...");
-      } else if (percent >= 50 && percent < 100) {
-        console.log("⏳ WhatsApp Web loading session data...");
-      } else if (percent === 100) {
-        console.log("✅ WhatsApp Web loading completed, waiting for ready...");
+      if (percent === 100) {
+        console.log("⏳ Berhasil memulai ulang session dari cache...");
       }
     });
 
@@ -315,9 +261,8 @@ export class AlarmNotificationService {
       this.isWhatsAppInitializing = false;
 
       // Clean up corrupted session on auth failure
-      console.log("🗑️ Cleaning up corrupted session after auth failure...");
       this.cleanupSessionFiles().then(() => {
-        console.log("✅ Session cleaned up, restart will generate new QR");
+        console.log("✅ Session telah di-reset karena kegagalan otentikasi");
       });
     });
 
@@ -330,7 +275,7 @@ export class AlarmNotificationService {
 
     // QR Code event - display QR for initial setup
     this.whatsAppClient.on("qr", (qr) => {
-      console.log("📱 WhatsApp Web QR Code Generated:");
+      console.log("📱 WhatsApp Web QR Code:");
       console.log("Silakan scan QR code ini dengan aplikasi WhatsApp anda");
       console.log("═".repeat(60));
       qrcode.generate(qr, { small: true });
@@ -342,7 +287,6 @@ export class AlarmNotificationService {
     this.whatsAppClient.on("authenticated", (session) => {
       console.log("✅ WhatsApp Web berhasil terautentikasi!");
       console.log("💾 Session tersimpan dengan clientId: misred-iot-server");
-      console.log("🔗 Session akan persist setelah restart server");
     });
 
     // Disconnected event
@@ -436,9 +380,9 @@ export class AlarmNotificationService {
       console.log(`� Session exists: ${sessionExists ? "YES" : "NO"}`);
 
       if (sessionExists) {
-        console.log("📱 Loading existing session...");
+        console.log("📱 Mencari session yang ada...");
       } else {
-        console.log("📱 No session found, will need QR scan...");
+        console.log("📱 Tidak ada session yang ditemukan.");
       }
 
       // Initialize with extended timeout for WhatsApp Web
@@ -671,10 +615,11 @@ export class AlarmNotificationService {
         },
       };
 
-      // Broadcast ke semua user yang sedang online via WebSocket
-      broadcastToUsers(notificationPayload);
+      // Broadcast ONLY to the user who owns the alarm via WebSocket
+      broadcastToSpecificUser(alarm.user_id.toString(), notificationPayload);
 
-      console.log(`📱 Browser notification sent for alarm ${alarm.id}`);
+      // Debug log untuk notifikasi browser
+      // console.log(`📱 Notifikasi browser berhasil dikirim untuk alarm ${alarm.id}`);
 
       return {
         success: true,
@@ -851,8 +796,6 @@ export class AlarmNotificationService {
 
             // Kirim notifikasi WhatsApp jika user memiliki nomor WhatsApp
             if (alarm.whatsapp_number) {
-              // console.log(`📱 Sending WhatsApp notification to: ${alarm.whatsapp_number}`);
-
               // Format pesan alarm dengan data yang relevan
               const message =
                 `🚨 PERINGATAN SENSOR ALARM 🚨\n\n` +
@@ -895,12 +838,12 @@ export class AlarmNotificationService {
                 // console.log(`✅ WhatsApp notification sent successfully for alarm ${alarm.id}`);
               } else {
                 console.log(
-                  `❌ WhatsApp notification failed for alarm ${alarm.id}: ${notificationResult.error_message}`
+                  `❌ Pengiriman notifikasi WhatsApp untuk alarm ${alarm.id} gagal: ${notificationResult.error_message}`
                 );
               }
             } else {
               console.log(
-                `ℹ️ Alarm ${alarm.id} has no WhatsApp number configured`
+                `ℹ️ Alarm ${alarm.id} tidak memiliki nomor WhatsApp yang dikonfigurasi`
               );
             }
 
@@ -913,29 +856,29 @@ export class AlarmNotificationService {
               );
 
               if (browserResult.success) {
-                console.log(
-                  `✅ Browser notification sent successfully for alarm ${alarm.id}`
-                );
+                // console.log(
+                //   `✅ Notifikasi browser berhasil dikirim untuk alarm ${alarm.id}`
+                // );
               } else {
                 console.log(
-                  `❌ Browser notification failed for alarm ${alarm.id}: ${browserResult.error_message}`
+                  `❌ Notifikasi browser gagal untuk alarm ${alarm.id}: ${browserResult.error_message}`
                 );
               }
             } catch (browserError) {
               console.error(
-                `❌ Error sending browser notification for alarm ${alarm.id}:`,
+                `❌ Gagal mengirimkan notifikasi browser untuk alarm ${alarm.id}:`,
                 browserError
               );
             }
           } else {
-            console.log(`✅ Condition not met for alarm ${alarm.id}`);
+            // console.log(`✅ Kondisi tidak terpenuhi untuk alarm ${alarm.id}`);
           }
         } catch (alarmError) {
-          console.error(`❌ Error processing alarm ${alarm.id}:`, alarmError);
+          console.error(`❌ Error memproses alarm ${alarm.id}:`, alarmError);
         }
       }
     } catch (error) {
-      console.error("❌ Error in checkAlarms:", error);
+      console.error("❌ Error dalam memeriksa alarm:", error);
       throw error;
     }
   }

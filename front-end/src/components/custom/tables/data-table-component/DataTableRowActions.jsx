@@ -19,7 +19,7 @@ export default function DataTableRowActions({
         <Button
           size="iconSm"
           variant="link"
-          className="text-foreground hover:text-primary dark:"
+          className="text-foreground hover:text-foreground hover:border-foreground"
         >
           <Settings2 className="w-6 h-6" />
         </Button>

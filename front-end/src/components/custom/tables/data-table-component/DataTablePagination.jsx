@@ -30,9 +30,9 @@ export default function DataTablePagination({
           onClick={() => setPage(page - 1)}
           disabled={page === 1}
         >
-          Sebelumnya
+          <span className="text-xs sm:text-sm">Sebelumnya</span>
         </Button>
-        <span className="text-sm px-2">
+        <span className="text-xs sm:text-sm px-2">
           {page} / {totalPages}
         </span>
         <Button
@@ -41,7 +41,7 @@ export default function DataTablePagination({
           onClick={() => setPage(page + 1)}
           disabled={page === totalPages}
         >
-          Berikutnya
+          <span className="text-xs sm:text-sm">Berikutnya</span>
         </Button>
       </div>
     </div>

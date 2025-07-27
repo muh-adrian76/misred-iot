@@ -66,7 +66,7 @@ export default function ForgotPasswordForm({
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-6">
+    <div className="flex w-full z-10 max-w-sm flex-col gap-6">
       <motion.div
         initial={{ opacity: 0, y: 100 }}
         animate={{ opacity: 1, y: 0 }}

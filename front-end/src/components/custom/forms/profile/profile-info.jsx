@@ -26,7 +26,7 @@ export default function ProfileInfoSection({
         phone: phoneNumber || "",
         whatsapp_notif: whatsappNotif,
       };
-      const res = await fetchFromBackend("/user", {
+      const res = await fetchFromBackend("/user/", {
         method: "PUT",
         body: JSON.stringify(payload),
       });

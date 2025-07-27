@@ -4,7 +4,7 @@ const postPayloadHttpSchema = {
   type: "json",
   // Tidak ada body validation karena data ada di JWT token
   headers: t.Object({
-    "x-device-id": t.String({ description: "Device ID in header" }),
+    "x-device-id": t.Optional(t.String({ description: "Device ID in header" })),
     "authorization": t.String({ description: "Bearer JWT token with sensor data" })
   }),
   response: {
@@ -15,7 +15,7 @@ const postPayloadHttpSchema = {
     }),
     400: t.Object({
       error: t.String({ example: "Header tidak lengkap" }),
-      message: t.String({ example: "x-device-id and authorization headers are required" }),
+      message: t.String({ example: "Tidak ada header Authorization" }),
     }),
     401: t.Object({
       error: t.String({ example: "Format token tidak valid" }),

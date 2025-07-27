@@ -7,7 +7,7 @@ export const metadata = {
 
 export default async function Page() {
   return (
-    <div className="px-8 py-2 no-scrollbar overflow-x-hidden h-full">
+    <div className="px-4 sm:px-8 py-2 no-scrollbar overflow-x-hidden h-full">
       <AdminMapsLayout />
     </div>
   );

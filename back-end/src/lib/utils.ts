@@ -211,6 +211,22 @@ function decryptAES(
   return decrypted.toString("utf8");
 }
 
+// Fungsi untuk mengekstraksi device_id dari JWT payload
+function extractDeviceIdFromJWT(token: string): string | null {
+  try {
+    const [header, payload, signature] = token.split('.');
+    if (!header || !payload || !signature) {
+      return null;
+    }
+    
+    const decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    return decodedPayload.sub || null;
+  } catch (error) {
+    console.warn("Failed to extract device_id from JWT:", error);
+    return null;
+  }
+}
+
 // Fungsi verifikasi JWT dan dekripsi payload untuk device
 async function verifyDeviceJWTAndDecrypt({
   deviceService,
@@ -297,7 +313,69 @@ async function verifyDeviceJWTAndDecrypt({
     console.error("JWT verification failed:", error);
     throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
   }
-}// Fungsi untuk parsing dan normalisasi payload ke database
+}
+
+// Fungsi untuk validasi dan normalisasi nilai sensor
+function validateAndNormalizeValue(
+  value: any,
+  datastream: any
+): { validatedValue: number; hasWarning: boolean; warningMessage?: string } {
+  let numericValue: number;
+  let hasWarning = false;
+  let warningMessage = '';
+
+  // Konversi ke number jika belum
+  if (typeof value === 'string') {
+    numericValue = parseFloat(value);
+    if (isNaN(numericValue)) {
+      throw new Error(`Invalid numeric value: ${value}`);
+    }
+  } else if (typeof value === 'number') {
+    numericValue = value;
+  } else if (typeof value === 'boolean') {
+    numericValue = value ? 1 : 0;
+  } else {
+    throw new Error(`Unsupported value type: ${typeof value}`);
+  }
+
+  // Validasi untuk tipe data tertentu
+  if (datastream.type === 'integer') {
+    numericValue = Math.round(numericValue);
+  } else if (datastream.type === 'boolean') {
+    numericValue = numericValue ? 1 : 0;
+  }
+
+  // Clamping untuk min/max values
+  const originalValue = numericValue;
+  if (numericValue < datastream.min_value) {
+    numericValue = datastream.min_value;
+    hasWarning = true;
+    warningMessage = `Value ${originalValue} clamped to minimum ${datastream.min_value}`;
+  } else if (numericValue > datastream.max_value) {
+    numericValue = datastream.max_value;
+    hasWarning = true;
+    warningMessage = `Value ${originalValue} clamped to maximum ${datastream.max_value}`;
+  }
+
+  // Pembulatan sesuai decimal_value untuk tipe double
+  if (datastream.type === 'double' && datastream.decimal_value) {
+    // decimal_value format: '0.0', '0.00', '0.000', '0.0000'
+    const decimalStr = datastream.decimal_value.toString();
+    const decimalPlaces = decimalStr.includes('.') ? decimalStr.split('.')[1].length : 0;
+    
+    if (decimalPlaces > 0) {
+      const factor = Math.pow(10, decimalPlaces);
+      numericValue = Math.round(numericValue * factor) / factor;
+    } else {
+      // Jika decimal_value adalah '0' atau tidak ada desimal
+      numericValue = Math.round(numericValue);
+    }
+  }
+
+  return { validatedValue: numericValue, hasWarning, warningMessage };
+}
+
+// Fungsi untuk parsing dan normalisasi payload ke database
 async function parseAndNormalizePayload(
   db: any,
   deviceId: number, 
@@ -305,13 +383,15 @@ async function parseAndNormalizePayload(
   rawPayloadId: number
 ): Promise<number[]> {
   try {
-    // Ambil datastreams yang ada untuk device ini
+    // Ambil datastreams yang ada untuk device ini dengan informasi validasi
     const [datastreams]: any = await db.query(
-      `SELECT id, pin, type, unit FROM datastreams WHERE device_id = ?`,
+      `SELECT id, pin, type, unit, min_value, max_value, decimal_value, description 
+       FROM datastreams WHERE device_id = ?`,
       [deviceId]
     );
     
     const insertedIds: number[] = [];
+    const validationWarnings: string[] = [];
     
     // Ekstrak dan konversi timestamp dari raw data
     let deviceTime = null;
@@ -322,21 +402,35 @@ async function parseAndNormalizePayload(
     
     // Parse setiap pin di raw data
     for (const [pin, value] of Object.entries(rawData)) {
-      if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
+      if ((typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') 
+          && pin !== 'timestamp' && pin !== 'device_id') {
         
         // Cari datastream yang cocok dengan pin
         const datastream = datastreams.find((ds: any) => ds.pin === pin);
         if (datastream) {
           try {
-            // Insert ke tabel payloads yang sudah ada dengan device_time
+            // Validasi dan normalisasi nilai
+            const { validatedValue, hasWarning, warningMessage } = validateAndNormalizeValue(value, datastream);
+            
+            if (hasWarning && warningMessage) {
+              validationWarnings.push(`Pin ${pin} (${datastream.description}): ${warningMessage}`);
+            }
+
+            // Insert ke tabel payloads dengan nilai yang sudah divalidasi
             const [result] = await db.query(
               `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
               VALUES (?, ?, ?, ?, ?, NOW())`,
               [
                 deviceId, 
                 datastream.id, 
-                value,
-                JSON.stringify({ raw_payload_id: rawPayloadId, pin, value }),
+                validatedValue, // Gunakan nilai yang sudah divalidasi
+                JSON.stringify({ 
+                  raw_payload_id: rawPayloadId, 
+                  pin, 
+                  original_value: value,
+                  validated_value: validatedValue,
+                  validation_applied: hasWarning
+                }),
                 deviceTime
               ]
             );
@@ -344,11 +438,17 @@ async function parseAndNormalizePayload(
             
           } catch (error) {
             console.error(`Error saving sensor data for pin ${pin}:`, error);
+            // Continue processing other pins even if one fails
           }
         } else {
-          console.warn(`⚠️ No datastream found for pin ${pin}`);
+          console.warn(`⚠️ No datastream found for pin ${pin} on device ${deviceId}`);
         }
       }
+    }
+    
+    // Log validation warnings if any
+    if (validationWarnings.length > 0) {
+      console.warn(`📊 Data validation applied for device ${deviceId}:`, validationWarnings);
     }
     
     return insertedIds;
@@ -358,7 +458,7 @@ async function parseAndNormalizePayload(
   }
 }
 
-// Fungsi untuk broadcasting real-time sensor updates
+// Fungsi untuk broadcasting real-time sensor updates HANYA ke pemilik device
 async function broadcastSensorUpdates(
   db: any,
   broadcastFunction: any,
@@ -395,7 +495,7 @@ async function broadcastSensorUpdates(
         const datastream = datastreams.find((ds: any) => ds.pin === pin);
         
         if (datastream) {
-          // Broadcast real-time sensor update to all users
+          // Broadcast real-time sensor update HANYA ke pemilik device
           const broadcastData: any = {
             type: "sensor_update",
             device_id: deviceId,
@@ -413,7 +513,13 @@ async function broadcastSensorUpdates(
             broadcastData.protocol = protocol;
           }
 
-          broadcastFunction(broadcastData);
+          // Gunakan broadcastFunction yang aman (harus broadcastToUsersByDevice)
+          if (typeof broadcastFunction === 'function' && broadcastFunction.name === 'broadcastToUsersByDevice') {
+            await broadcastFunction(db, deviceId, broadcastData);
+          } else {
+            console.warn("⚠️ Using legacy broadcast function. Please update to use broadcastToUsersByDevice for security.");
+            broadcastFunction(broadcastData);
+          }
         }
       }
     }
@@ -432,7 +538,9 @@ export {
   renewToken,
   decryptAES,
   ageConverter,
+  extractDeviceIdFromJWT,
   verifyDeviceJWTAndDecrypt,
   parseAndNormalizePayload,
   broadcastSensorUpdates,
+  validateAndNormalizeValue,
 };

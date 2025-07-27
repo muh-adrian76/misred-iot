@@ -10,6 +10,7 @@ import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import NotifHistory from "@/components/custom/other/notif-history";
 import { useWebSocket } from "@/providers/websocket-provider";
+import { useUser } from "@/providers/user-provider";
 import {
   Popover,
   PopoverContent,
@@ -222,12 +223,18 @@ export function NotificationCenter({
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useUser(); // Add user context
   const {
     ws,
     alarmNotifications = [],
     removeAlarmNotification,
     clearAlarmNotifications,
   } = useWebSocket();
+
+  // Helper function to check if user is logged in
+  const isUserLoggedIn = (user) => {
+    return user && user.id && user.email && user.id !== "" && user.email !== "";
+  };
 
   useEffect(() => {
     if (
@@ -251,7 +258,7 @@ export function NotificationCenter({
     return () => clearInterval(interval);
   }, [enableRealTimeUpdates, updateInterval, queryClient]);
 
-  // Fetch unread notifications from database (always fetch, no filter needed)
+  // Fetch unread notifications from database - ONLY when user is logged in
   const {
     data: savedNotifications = [],
     isLoading: isLoadingSaved,
@@ -275,6 +282,7 @@ export function NotificationCenter({
         throw error; // Re-throw to let React Query handle it
       }
     },
+    enabled: Boolean(user && isUserLoggedIn(user)), // Ensure it always returns a boolean
     refetchOnWindowFocus: false,
     staleTime: 0, // Always consider data stale to force refetch
     retry: 2, // Retry failed requests up to 2 times
@@ -346,7 +354,7 @@ export function NotificationCenter({
   const markAsReadMutation = useMutation({
     mutationFn: onMarkAsRead,
     onSuccess: async (data, id) => {
-      if (staticNotifications) return;
+      if (staticNotifications || !isUserLoggedIn(user)) return;
 
       console.log(`✅ Notification ${id} marked as read successfully:`, data);
       
@@ -370,6 +378,8 @@ export function NotificationCenter({
   const markAllAsReadMutation = useMutation({
     mutationFn: onMarkAllAsRead,
     onSuccess: async (data) => {
+      if (!isUserLoggedIn(user)) return;
+      
       console.log("✅ Successfully marked all notifications as read:", data);
       console.log("📊 Current displayNotifications before clear:", displayNotifications);
       console.log("📊 Current savedNotifications before clear:", savedNotifications);

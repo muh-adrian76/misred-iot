@@ -320,8 +320,8 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                     theme={{
                       container: "space-y-3",
                       input: "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white",
-                      searchButton: "rounded-lg h-10 w-10 p-0 bg-blue-600 hover:bg-blue-700 text-white",
-                      locateButton: "rounded-lg h-10 w-10 p-0 bg-gray-600 hover:bg-gray-700 text-white",
+                      searchButton: "rounded-lg h-10 w-10 p-0 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white hover:text-white",
+                      locateButton: "rounded-lg h-10 w-10 p-0 bg-gray-600 hover:bg-gray-700 dark:bg-gray-300 dark:hover:bg-gray-300 text-white hover:text-white dark:text-black dark:hover:text-black",
                       suggestionsContainer: "w-full bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 shadow-lg max-h-60 overflow-y-auto",
                       suggestionItem: "px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-0 transition-colors",
                       suggestionLocation: "text-sm font-medium text-gray-900 dark:text-white",

@@ -10,6 +10,7 @@ import { join } from "path";
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { DeviceService } from "../../services/DeviceService";
+import { DeviceStatusService } from "../../services/DeviceStatusService";
 // import { chirpstackService } from "../../lib/middleware";
 import {
   deleteDeviceSchema,
@@ -27,7 +28,7 @@ import {
 } from "./elysiaSchema";
 import { datastreamRoutes } from "../datastream";
 
-export function deviceRoutes(deviceService: DeviceService) {
+export function deviceRoutes(deviceService: DeviceService, deviceStatusService?: DeviceStatusService) {
   return (
     new Elysia({ prefix: "/device" })
 
@@ -61,7 +62,7 @@ export function deviceRoutes(deviceService: DeviceService) {
       .post(
         "/",
         //@ts-ignore
-        async ({ jwt, cookie, body }) => {
+        async ({ jwt, cookie, body, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
             const {
@@ -103,13 +104,23 @@ export function deviceRoutes(deviceService: DeviceService) {
             );
           } catch (error: any) {
             console.error("Error creating device:", error);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to create device",
-                message: error.message || "Internal server error",
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
         },
         postDeviceSchema
@@ -119,22 +130,41 @@ export function deviceRoutes(deviceService: DeviceService) {
       .get(
         "/",
         //@ts-ignore
-        async ({ jwt, cookie }) => {
+        async ({ jwt, cookie, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            const data = await deviceService.getAllUserDevices(decoded.sub);
-            return new Response(JSON.stringify({ result: data }), {
+            const devices = await deviceService.getAllUserDevices(decoded.sub);
+            
+            // Tambahkan status information jika DeviceStatusService tersedia
+            let devicesWithStatus = devices;
+            if (deviceStatusService) {
+              devicesWithStatus = await deviceStatusService.getUserDevicesWithStatus(decoded.sub);
+            }
+            
+            return new Response(JSON.stringify({ result: devicesWithStatus }), {
               status: 200,
             });
           } catch (error: any) {
             console.error("Error fetching all devices:", error);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to fetch devices",
-                message: error.message || "Internal server error",
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed",
+                result: []
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error",
+              result: []
+            };
           }
         },
         getAllDevicesSchema
@@ -144,7 +174,7 @@ export function deviceRoutes(deviceService: DeviceService) {
       .get(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params }) => {
+        async ({ jwt, cookie, params, set }) => {
           try {
             await authorizeRequest(jwt, cookie);
             const data = await deviceService.getDeviceById(params.id);
@@ -159,13 +189,23 @@ export function deviceRoutes(deviceService: DeviceService) {
             });
           } catch (error: any) {
             console.error("Error fetching device by ID:", error);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to fetch device",
-                message: error.message || "Internal server error",
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
         },
         getDeviceByIdSchema
@@ -260,10 +300,22 @@ export function deviceRoutes(deviceService: DeviceService) {
             );
           } catch (error: any) {
             console.error("Error uploading firmware:", error);
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
             set.status = 500;
             return {
-              error: "Failed to upload firmware",
-              message: error.message || "Internal server error",
+              success: false,
+              message: "Internal server error"
             };
           }
         },
@@ -466,7 +518,7 @@ export function deviceRoutes(deviceService: DeviceService) {
       .put(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params, body }) => {
+        async ({ jwt, cookie, params, body, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
             const updated = await deviceService.updateDevice(
@@ -492,13 +544,23 @@ export function deviceRoutes(deviceService: DeviceService) {
             );
           } catch (error: any) {
             console.error("Error updating device:", error);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to update device",
-                message: error.message || "Internal server error",
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
         },
         putDeviceSchema
@@ -508,7 +570,7 @@ export function deviceRoutes(deviceService: DeviceService) {
       .delete(
         "/:id",
         //@ts-ignore
-        async ({ jwt, cookie, params }) => {
+        async ({ jwt, cookie, params, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await deviceService.deleteDevice(
@@ -530,13 +592,23 @@ export function deviceRoutes(deviceService: DeviceService) {
             );
           } catch (error: any) {
             console.error("Error deleting device:", error);
-            return new Response(
-              JSON.stringify({
-                error: "Failed to delete device",
-                message: error.message || "Internal server error",
-              }),
-              { status: 500, headers: { "Content-Type": "application/json" } }
-            );
+            
+            // Check if it's an authentication error from authorizeRequest
+            if (error.message && error.message.includes('Unauthorized')) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            // Handle other errors
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
           }
         },
         deleteDeviceSchema
