@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
 import {
   Moon,
   Sun,
@@ -26,6 +25,7 @@ import {
   BellRing,
 } from "lucide-react";
 import { Link } from "next-view-transitions";
+import ThemeButton from "@/components/custom/buttons/theme-button";
 import localFont from "next/font/local";
 
 const logoFont = localFont({
@@ -33,7 +33,6 @@ const logoFont = localFont({
 });
 
 const LandingPage = () => {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("beranda");
@@ -77,8 +76,6 @@ const LandingPage = () => {
     return null;
   }
 
-  const isDark = theme === "dark";
-
   const scrollToSection = (sectionId) => {
     setActiveSection(sectionId);
     const element = document.getElementById(sectionId);
@@ -95,21 +92,17 @@ const LandingPage = () => {
     setIsMobileMenuOpen(false);
   };
 
-  const toggleDarkMode = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
-
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const bgClass = isDark ? "bg-gray-900" : "bg-white";
-  const textClass = isDark ? "text-white" : "text-gray-900";
-  const cardBgClass = isDark ? "bg-gray-800" : "bg-white";
+  const bgClass = theme === "dark" ? "dark:bg-gray-900" : "bg-white";
+  const textClass = theme === "dark" ? "dark:text-white" : "text-gray-900";
+  const cardBgClass = theme === "dark" ? "dark:bg-gray-800" : "bg-white";
 
   return (
     <div
-      className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}
+      className={`min-h-screen bg-white dark:bg-gray-900 ${textClass} transition-colors duration-300`}
     >
       {/* Navbar */}
       <nav
@@ -155,24 +148,12 @@ const LandingPage = () => {
 
             {/* Right side - Dark Mode Toggle */}
             <div className="hidden md:flex items-center">
-              <button
-                onClick={toggleDarkMode}
-                className={`${isDark ? "text-white hover:text-gray-300" : "text-gray-900 hover:text-gray-600"} p-2 rounded-md transition-colors duration-200`}
-                aria-label="Toggle dark mode"
-              >
-                {isDark ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
+              <ThemeButton variant="ghost" />
             </div>
 
             {/* Mobile menu button */}
             <div className="md:hidden flex items-center gap-2 ml-auto">
-              <button
-                onClick={toggleDarkMode}
-                className={`${isDark ? "text-white hover:text-gray-300" : "text-gray-900 hover:text-gray-600"} p-2 rounded-md transition-colors duration-200`}
-                aria-label="Toggle dark mode"
-              >
-                {isDark ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
+              <ThemeButton variant="ghost" />
               <button
                 onClick={toggleMobileMenu}
                 className={`${isDark ? "text-white hover:text-gray-300" : "text-gray-900 hover:text-gray-600"} p-2 rounded-md transition-colors duration-200`}
@@ -258,7 +239,7 @@ const LandingPage = () => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Link
                   href="/auth"
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-[var(--primary)] to-[var(--destructive)] text-[var(--primary-foreground)] px-8 py-3 rounded-lg text-lg font-semibold transition-all duration-200 transform hover:scale-105 hover:brightness-110"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-gradient-to-r from-[var(--primary)] to-[var(--destructive)] text-[var(--primary-foreground)] px-8 py-3 rounded-lg text-lg font-semibold transition-all duration-200 transform hover:scale-105 hover:brightness-110"
                 >
                   Mulai Sekarang
                   <ArrowRight
@@ -268,7 +249,7 @@ const LandingPage = () => {
                 </Link>
                 <button
                   onClick={() => scrollToSection("tentang")}
-                  className="flex items-center justify-center gap-3 border-2 border-white/30 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm w-full sm:w-auto min-w-[200px]"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 border-2 border-white/30 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm"
                 >
                   Pelajari Lebih Lanjut
                 </button>
@@ -467,7 +448,7 @@ const LandingPage = () => {
         </section>
 
         {/* Kontak Section */}
-        <section id="kontak" className={`py-20 ${bgClass}`}>
+        <section id="kontak" className={`py-20 bg-white dark:bg-gray-900`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">

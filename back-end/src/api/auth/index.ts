@@ -1,8 +1,9 @@
-import { Elysia } from "elysia";
+import { Elysia, redirect } from "elysia";
 import {
   authorizeRequest,
   clearAuthCookie,
   setAuthCookie,
+  getWIBUnixTimestamp,
 } from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import { UserService } from "../../services/UserService";
@@ -187,6 +188,48 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postGoogleLoginSchema
       )
 
+      .get("/google/callback", 
+        // @ts-ignore
+        async ({ request, cookie, jwt }) => {
+        const url = new URL(request.url);
+        const code = url.searchParams.get("code");
+        if (!code) {
+          return new Response(
+            JSON.stringify({ message: "Authorization code not provided" }),
+            { status: 400 }
+          );
+        }
+        
+        try {
+          const result = await authService.googleLogin({ code, mode: "redirect" });
+          
+          if (result.status === 200 && result.user?.id && result.refreshToken) {
+            await setAuthCookie(
+              cookie,
+              jwt,
+              result.user.id.toString(),
+              result.refreshToken
+            );
+            
+            // Generate JWT token untuk redirect ke aplikasi Android
+            const token = await jwt.sign({
+              sub: result.user.id,
+              iat: getWIBUnixTimestamp(),
+              type: "access",
+            });
+            
+            // Redirect ke aplikasi Android WebView
+            return redirect(`misredapp://callback?token=${token}`);
+          } else {
+            // Jika login gagal, redirect ke halaman error
+            return redirect(`${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(result.message || "Authentication failed")}`);
+          }
+        } catch (error) {
+          console.error("Google callback error:", error);
+          return redirect(`${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent("Authentication failed")}`);
+        }
+      })
+
       // Reset-forgotten-password
       .put(
         "/reset-forgotten-password",
@@ -306,7 +349,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             const wsTokenPayload = { 
               sub: decoded.sub,
               type: "websocket",
-              exp: Math.floor(Date.now() / 1000) + (30 * 60) // 30 minutes
+              exp: getWIBUnixTimestamp() + (30 * 60) // 30 minutes
             };
             
             // Debug token websocket (server-side)

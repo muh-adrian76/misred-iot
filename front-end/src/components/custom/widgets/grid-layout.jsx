@@ -116,6 +116,8 @@ export default function GridLayoutOptimized({
   onBreakpointChange,
   isEditing = true,
   currentTimeRange = "1h",
+  currentDataCount = "100",
+  filterType = "time",
   stageWidgetRemoval,
   removeWidgetFromDatabase,
   handleEditWidget,
@@ -509,6 +511,9 @@ export default function GridLayoutOptimized({
                   <WidgetComponent
                     widget={widget}
                     timeRange={currentTimeRange}
+                    dataCount={currentDataCount}
+                    filterType={filterType}
+                    isEditing={isEditing}
                   />
                 </div>
               </div>
@@ -523,6 +528,8 @@ export default function GridLayoutOptimized({
     items,
     isEditing,
     currentTimeRange,
+    currentDataCount,
+    filterType,
     handleEditWidget,
     handleRemoveWidget,
   ]);

@@ -9,6 +9,8 @@ export function SwitchWidget({
   previewMode = false,
   widget,
   timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
 }) {
   const [dummyChecked, setDummyChecked] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -21,7 +23,7 @@ export function SwitchWidget({
     isValidWidget,
     isRealTimeConnected,
     datastreamInfo,
-  } = useWidgetData(widget, timeRange);
+  } = useWidgetData(widget, timeRange, dataCount, filterType);
 
   // Use device control hook
   const { sendToggleCommand, isActuator, isSensor } = useDeviceControl();

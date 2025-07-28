@@ -72,6 +72,19 @@ function ageConverter(input: string): number {
   }
 }
 
+// Fungsi untuk mendapatkan timestamp GMT+7 (WIB - Waktu Indonesia Barat)
+function getWIBTimestamp(): number {
+  const now = new Date();
+  // GMT+7 = UTC + 7 hours = UTC + 7 * 60 * 60 * 1000 milliseconds
+  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+  return wibTime.getTime();
+}
+
+// Fungsi untuk mendapatkan Unix timestamp dalam detik dengan timezone GMT+7
+function getWIBUnixTimestamp(): number {
+  return Math.floor(getWIBTimestamp() / 1000);
+}
+
 // Fungsi untuk membuat cookie user
 async function setAuthCookie(
   cookie: any,
@@ -81,7 +94,7 @@ async function setAuthCookie(
 ) {
   const value = await jwt.sign({
     sub: userId,
-    iat: Math.floor(Date.now() / 1000),
+    iat: getWIBUnixTimestamp(),
     type: "access",
   });
 
@@ -277,7 +290,7 @@ async function verifyDeviceJWTAndDecrypt({
     }
     
     // Check expiration
-    if (decodedPayload.exp && Date.now() / 1000 > decodedPayload.exp) {
+    if (decodedPayload.exp && getWIBUnixTimestamp() > decodedPayload.exp) {
       throw new Error("JWT expired");
     }
     
@@ -538,6 +551,8 @@ export {
   renewToken,
   decryptAES,
   ageConverter,
+  getWIBTimestamp,
+  getWIBUnixTimestamp,
   extractDeviceIdFromJWT,
   verifyDeviceJWTAndDecrypt,
   parseAndNormalizePayload,

@@ -39,9 +39,13 @@ export default function DashboardLayout() {
         saveAllLayoutChanges={logic.saveAllLayoutChanges}
         hasUnsavedChanges={logic.hasUnsavedChanges}
         currentTimeRange={logic.currentTimeRange}
+        currentDataCount={logic.currentDataCount}
+        filterType={logic.filterType}
         onTimeRangeChange={logic.handleTimeRangeChange}
+        onDataCountChange={logic.handleDataCountChange}
+        onFilterTypeChange={logic.handleFilterTypeChange}
       />
-      <div className="overflow-x-hidden min-h-screen">
+      <div>
         <DashboardContent 
           {...logic}
           handleLayoutChange={logic.handleLayoutChange}
@@ -50,6 +54,8 @@ export default function DashboardLayout() {
           currentBreakpoint={logic.currentBreakpoint}
           layoutKey={logic.layoutKey}
           currentTimeRange={logic.currentTimeRange}
+          currentDataCount={logic.currentDataCount}
+          filterType={logic.filterType}
         />
       </div>
       <DashboardDialogs {...logic} />

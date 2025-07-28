@@ -22,6 +22,8 @@ export function BarChartWidget({
   previewMode = false,
   widget,
   timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
 }) {
   // Preview mode dengan data dummy
   if (previewMode) {
@@ -121,7 +123,7 @@ export function BarChartWidget({
     isRealTimeConnected,
     timeRangeLabel,
     legendData,
-  } = useWidgetData(widget, timeRange, pairs);
+  } = useWidgetData(widget, timeRange, dataCount, filterType, pairs);
 
   // Generate dynamic chart config based on pairs
   const dynamicChartConfig = pairs.reduce((config, pair, idx) => {

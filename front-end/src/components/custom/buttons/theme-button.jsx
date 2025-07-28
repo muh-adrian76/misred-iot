@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import DescriptionTooltip from "../other/description-tooltip";
 
-export default function ThemeButton() {
+export default function ThemeButton({variant = "outline"}) {
   const { setTheme, theme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -40,7 +40,7 @@ export default function ThemeButton() {
   return (
     <DescriptionTooltip content="Ganti Tema">
       <Button
-        variant="outline"
+        variant={variant}
         size="icon"
         className="rounded-full hover:scale-105 cursor-pointer transition-all duration-500"
         onClick={handleThemeToggle}

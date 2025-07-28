@@ -24,6 +24,7 @@ import {
 import { useState } from "react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { motion } from "framer-motion";
+import { useMobile } from "@/hooks/use-mobile";
 
 export default function AdminMapsContent({
   devices,
@@ -41,6 +42,9 @@ export default function AdminMapsContent({
   // State for map functionality
   const [isChangingMapView, setIsChangingMapView] = useState(false);
   const [shouldFitAllDevices, setShouldFitAllDevices] = useState(false);
+  
+  // Use mobile hook for SSR safety
+  const isMobile = useMobile();
 
   // Function to handle map view change with loading
   const handleMapViewChange = (newView) => {
@@ -342,7 +346,7 @@ export default function AdminMapsContent({
                   onClick={() => {
                     selectDevice(device);
                     // Scroll ke atas untuk melihat peta jika di mobile
-                    if (window.innerWidth < 768) {
+                    if (isMobile) {
                       document
                         .querySelector(".admin-maps-content")
                         ?.scrollIntoView({

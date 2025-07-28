@@ -35,8 +35,10 @@ export function useDashboardLogic() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
   const [deleteChecked, setDeleteChecked] = useState(false);
-  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
-  
+  const [currentTimeRange, setCurrentTimeRange] = useState("1m"); // Default 1 menit
+  const [currentDataCount, setCurrentDataCount] = useState("100"); // Default 100 data
+  const [filterType, setFilterType] = useState("time"); // Default filter by time
+
   // Dashboard provider
   const {
     tabItems,
@@ -1158,6 +1160,16 @@ export function useDashboardLogic() {
     setCurrentTimeRange(newTimeRange);
   }, []);
 
+  // Trigger refresh widgets dengan data count baru
+  const handleDataCountChange = useCallback((newDataCount) => {
+    setCurrentDataCount(newDataCount);
+  }, []);
+
+  // Trigger refresh widgets dengan filter type baru
+  const handleFilterTypeChange = useCallback((newFilterType) => {
+    setFilterType(newFilterType);
+  }, []);
+
   // Return all the required state and functions
   return {
     // State
@@ -1203,6 +1215,8 @@ export function useDashboardLogic() {
     isAuthenticated, // Add this missing property!
     layoutKey,
     currentTimeRange,
+    currentDataCount,
+    filterType,
     deleteChecked,
     setDeleteChecked,
     
@@ -1228,6 +1242,8 @@ export function useDashboardLogic() {
     cancelEditMode,
     saveAllLayoutChanges,
     handleTimeRangeChange,
+    handleDataCountChange,
+    handleFilterTypeChange,
     
     // Responsive
     isMobile,

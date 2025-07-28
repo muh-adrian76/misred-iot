@@ -16,9 +16,35 @@ export function useBreakpoint() {
 
   React.useEffect(() => {
     const onResize = () => setStatus(getStatus());
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", onResize);
+      return () => window.removeEventListener("resize", onResize);
+    }
   }, []);
 
   return status;
+}
+
+// Hook khusus untuk cek mobile dengan SSR safety
+export function useMobile() {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 768);
+      }
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Add resize listener
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", checkMobile);
+      return () => window.removeEventListener("resize", checkMobile);
+    }
+  }, []);
+
+  return isMobile;
 }

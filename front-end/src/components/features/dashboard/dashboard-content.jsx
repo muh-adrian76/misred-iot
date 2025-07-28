@@ -28,6 +28,8 @@ export default function DashboardContent(props) {
     currentBreakpoint,
     layoutKey,
     currentTimeRange,
+    currentDataCount,
+    filterType,
     // Staging functions
     stageWidgetRemoval,
     removeWidgetFromDatabase,
@@ -191,6 +193,8 @@ export default function DashboardContent(props) {
             onBreakpointChange={handleBreakpointChange}
             isEditing={false}
             currentTimeRange={currentTimeRange}
+            currentDataCount={currentDataCount}
+            filterType={filterType}
             stageWidgetRemoval={stageWidgetRemoval}
             removeWidgetFromDatabase={removeWidgetFromDatabase}
             handleEditWidget={handleEditWidget}
@@ -198,7 +202,7 @@ export default function DashboardContent(props) {
         </motion.div>
       )}
       {activeTab && isEditing && (
-        <div className="flex flex-col lg:flex-row h-full gap-4 w-full pl-4 pr-4 lg:pr-5.5">
+        <div className="dashboard-editing-container flex flex-col lg:flex-row gap-4 w-full px-4 lg:pr-5.5">
           {/* Drag & Drop di kiri */}
           <div className="flex-1">
             <motion.div
@@ -206,6 +210,7 @@ export default function DashboardContent(props) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
+              className="pb-4 lg:pb-0"
             >
               <GridLayout
                 items={currentItems}
@@ -217,17 +222,33 @@ export default function DashboardContent(props) {
                 onBreakpointChange={handleBreakpointChange}
                 isEditing={true}
                 currentTimeRange={currentTimeRange}
+                currentDataCount={currentDataCount}
+                filterType={filterType}
                 stageWidgetRemoval={stageWidgetRemoval}
                 removeWidgetFromDatabase={removeWidgetFromDatabase}
                 handleEditWidget={handleEditWidget}
               />
             </motion.div>
           </div>
-          <WidgetBox 
-            breakpoint={isMobile || isMedium || isTablet} 
-            onChartDrag={handleChartDrop}
-            onAddWidget={handleAddWidgetFromBox}
-          />
+          {/* WidgetBox hanya ditampilkan pada breakpoint mobile/tablet, 
+              untuk desktop menggunakan fixed positioning di WidgetBox */}
+          {(isMobile || isMedium || isTablet) && (
+            <div className="lg:w-80 lg:flex-shrink-0">
+              <WidgetBox 
+                breakpoint={true} 
+                onChartDrag={handleChartDrop}
+                onAddWidget={handleAddWidgetFromBox}
+              />
+            </div>
+          )}
+          {/* Untuk desktop, WidgetBox menggunakan fixed positioning */}
+          {!(isMobile || isMedium || isTablet) && (
+            <WidgetBox 
+              breakpoint={false} 
+              onChartDrag={handleChartDrop}
+              onAddWidget={handleAddWidgetFromBox}
+            />
+          )}
         </div>
       )}
     </>

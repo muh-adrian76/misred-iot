@@ -103,7 +103,7 @@ class Server {
     const jwtInstance = jwt({
       name: "jwt",
       secret: process.env.JWT_SECRET!,
-      exp: process.env.ACCESS_TOKEN_AGE,
+      exp: process.env.ACCESS_TOKEN_AGE!,
     });
 
     // Start MQTT listener

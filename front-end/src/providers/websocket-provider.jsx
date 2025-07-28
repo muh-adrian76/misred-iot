@@ -209,7 +209,7 @@ export function WebSocketProvider({ children }) {
         try {
           const data = JSON.parse(event.data);
           // Debug websocket
-          // console.log("📥 Pesan diterima:", data);
+          console.log("📥 Pesan diterima:", data);
           
           if (data.type === "status_update") {
             setDeviceStatuses(prev => {

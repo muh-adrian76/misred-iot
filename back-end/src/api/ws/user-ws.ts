@@ -200,7 +200,7 @@ export async function broadcastToUsersByDevice(db: any, deviceId: number, data: 
     
     const ownerId = deviceRows[0].user_id.toString();
     
-    // Broadcast hanya ke user pemilik device
+    // Broadcast hanya ke user pemilik devicek
     const userSockets = userClients.get(ownerId);
     if (userSockets && userSockets.size > 0) {
       for (const ws of userSockets) {
@@ -211,7 +211,8 @@ export async function broadcastToUsersByDevice(db: any, deviceId: number, data: 
         }
       }
     } else {
-      console.log(`📭 User ${ownerId} not connected via WebSocket`);
+      // Debug koneksi websocket user
+      // console.log(`📭 User ${ownerId} tidak terhubung via WebSocket`);
     }
   } catch (error) {
     console.error("Error in broadcastToUsersByDevice:", error);

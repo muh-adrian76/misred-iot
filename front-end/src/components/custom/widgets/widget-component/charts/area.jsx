@@ -8,7 +8,68 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from "@/components/ui/chart";
-import { GlowingEffect } from "@/components/ui/glowing-effect";
+
+// Custom Tooltip Component dengan timestamp lengkap
+const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  // Ambil timestamp asli dari data pertama
+  const firstPayload = payload[0]?.payload;
+  const fullTimestamp =
+    firstPayload?.originalTimestamp || firstPayload?.timestamp;
+
+  // Format timestamp lengkap
+  const fullTimeFormatted = fullTimestamp
+    ? new Date(fullTimestamp).toLocaleString("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : label;
+
+  return (
+    <div className="bg-background border border-border rounded-lg shadow-lg p-3 min-w-[200px]">
+      <p className="text-sm font-medium text-foreground mb-2">
+        {fullTimeFormatted}
+      </p>
+      <div className="space-y-1">
+        {payload.map((entry, index) => {
+          // Ambil label dari chartConfig berdasarkan dataKey
+          const displayLabel =
+            chartConfig?.[entry.dataKey]?.label || entry.name;
+
+          return (
+            <div
+              key={index}
+              className="flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {displayLabel}
+                </span>
+              </div>
+              <span className="text-sm font-medium">
+                {entry.value !== null && entry.value !== undefined
+                  ? entry.value.toLocaleString("id-ID", {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 2,
+                    })
+                  : "-"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const chartColors = [
   "var(--chart-1)",
@@ -22,6 +83,9 @@ export function AreaChartWidget({
   previewMode = false,
   widget,
   timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
+  isEditing,
 }) {
   // Preview mode dengan data dummy
   if (previewMode) {
@@ -199,7 +263,7 @@ export function AreaChartWidget({
     isRealTimeConnected,
     timeRangeLabel,
     legendData,
-  } = useWidgetData(widget, timeRange, pairs);
+  } = useWidgetData(widget, timeRange, dataCount, filterType, pairs);
 
   // Generate dynamic chart config based on pairs
   const dynamicChartConfig = pairs.reduce((config, pair, idx) => {
@@ -259,85 +323,111 @@ export function AreaChartWidget({
   // No data state - show empty chart with message
   if (!timeSeriesData || timeSeriesData.length === 0) {
     return (
-      <div className="h-full w-full min-h-[150px] space-y-2">
+      <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
         {/* Header dengan info tidak ada data */}
-        <div className="px-2 pt-2">
+        <div className="px-4 pt-2 flex-shrink-0">
           <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm font-bold sm:text-lg">
-                {widget?.description || "Line Chart"}
-                {/* {widget?.description || "Area Chart"}: data {timeRangeLabel} */}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
-                {latestValue?.timeAgo || timeRangeLabel}
-              </p>
-              {/* {!isRealTimeConnected && (
-                <div className="flex items-center gap-1 text-xs text-orange-500">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                </div>
-              )} */}
-            </div>
-          </div>
-        </div>
-
-        {/* Empty Chart */}
-        <ChartContainer config={dynamicChartConfig} className="h-full w-full">
-          <AreaChart
-            accessibilityLayer
-            data={[]} // Empty data untuk chart kosong
-            width={undefined}
-            height={undefined}
-            margin={{ left: 0, right: 12, top: 5, bottom: 5 }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="time"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tick={{ fontSize: 11 }}
-            />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tickMargin={5}
-              tickCount={4}
-              tick={{ fontSize: 11 }}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            {/* Render areas untuk setiap pair meski data kosong */}
-            {pairs.map((pair, idx) => (
-              <Area
-                key={idx}
-                dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-                type="monotone"
-                fill={chartColors[idx % chartColors.length]}
-                fillOpacity={0.3}
-                stroke={chartColors[idx % chartColors.length]}
-                strokeWidth={2}
-              />
-            ))}
-          </AreaChart>
-        </ChartContainer>
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full w-full space-y-2">
-      {/* Header dengan info widget */}
-      <div className="px-2 pt-2">
-        <div className="flex justify-between mx-2 font-semibold items-center">
-          <div className="flex items-center gap-2">
             <div>
               <p className="text-sm font-bold sm:text-lg">
                 {widget?.description || "Area Chart"}
                 {/* {widget?.description || "Area Chart"}: data {timeRangeLabel} */}
               </p>
             </div>
+            <div className="flex items-center gap-2">
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                {timeRangeLabel}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty Chart */}
+        <div className="flex-1 min-h-0 relative">
+          <ChartContainer config={dynamicChartConfig} className="h-full w-full">
+            <AreaChart
+              accessibilityLayer
+              data={[]} // Empty data untuk chart kosong
+              width={undefined}
+              height={undefined}
+              margin={{ left: -15, right: 30, top: 0, bottom: 15 }}
+            >
+              <CartesianGrid
+                vertical={true}
+                verticalPoints={[
+                  100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+                  1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+                ]}
+              />
+              <XAxis
+                dataKey="time"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={5}
+                tickCount={4}
+                tick={{ fontSize: 11 }}
+              />
+
+              <ChartTooltip
+                cursor={false}
+                content={(props) => (
+                  <CustomTooltipContent
+                    {...props}
+                    chartConfig={dynamicChartConfig}
+                  />
+                )}
+              />
+              {/* Render areas untuk setiap pair meski data kosong */}
+              {pairs.map((pair, idx) => (
+                <Area
+                  key={idx}
+                  dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+                  type="monotone"
+                  fill={chartColors[idx % chartColors.length]}
+                  fillOpacity={0.3}
+                  stroke={chartColors[idx % chartColors.length]}
+                  strokeWidth={2}
+                />
+              ))}
+              <ChartLegend
+                content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />}
+              />
+            </AreaChart>
+          </ChartContainer>
+        </div>
+        {/* Overlay text di tengah chart kosong */}
+        <div
+          className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-none ${isEditing ? "opacity-25" : ""}`}
+        >
+          <div className="text-center space-y-2">
+            <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto opacity-50" />
+            <p className="text-sm text-muted-foreground font-medium">
+              Tidak ada data dalam {timeRangeLabel}
+            </p>
+            <p className="text-xs text-muted-foreground opacity-75">
+              Data akan muncul saat sensor mulai mengirim data
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
+      {/* Header dengan info widget */}
+      <div className="px-4 pt-2 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-bold sm:text-lg">
+              {widget?.description || "Area Chart"}
+              {/* {widget?.description || "Area Chart"}: data {timeRangeLabel} */}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
@@ -353,83 +443,94 @@ export function AreaChartWidget({
       </div>
 
       {/* Chart */}
-      <ChartContainer config={dynamicChartConfig} className="max-h-8/9 w-full">
-        <AreaChart
-          accessibilityLayer
-          width={undefined}
-          height={undefined}
-          data={timeSeriesData}
-          margin={{ left: -15, right: 30, top: 10, bottom: 20 }}
-        >
-          <defs>
-            {/* Generate gradient untuk setiap pair */}
+      <div className="flex-1 min-h-auto">
+        <ChartContainer config={dynamicChartConfig} className="h-full w-full">
+          <AreaChart
+            accessibilityLayer
+            width={undefined}
+            height={undefined}
+            data={timeSeriesData}
+            margin={{ left: -15, right: 30, top: 10, bottom: 15 }}
+          >
+            <defs>
+              {/* Generate gradient untuk setiap pair */}
+              {pairs.map((pair, idx) => {
+                const gradientId = `fill_${pair.device_id}_${pair.datastream_id}`;
+                const color = chartColors[idx % chartColors.length];
+                return (
+                  <linearGradient
+                    key={gradientId}
+                    id={gradientId}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={color} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={color} stopOpacity={0.1} />
+                  </linearGradient>
+                );
+              })}
+            </defs>
+            <CartesianGrid
+              vertical={true}
+              verticalPoints={[
+                100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+                1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+              ]}
+            />
+            <XAxis
+              dataKey="time"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fontSize: 11 }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={5}
+              tickCount={4}
+              tick={{ fontSize: 11 }}
+            />
+
+            <ChartTooltip
+              cursor={false}
+              content={(props) => (
+                <CustomTooltipContent
+                  {...props}
+                  chartConfig={dynamicChartConfig}
+                />
+              )}
+            />
+            {/* Render satu Area untuk setiap pair */}
             {pairs.map((pair, idx) => {
               const gradientId = `fill_${pair.device_id}_${pair.datastream_id}`;
-              const color = chartColors[idx % chartColors.length];
               return (
-                <linearGradient
-                  key={gradientId}
-                  id={gradientId}
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="5%" stopColor={color} stopOpacity={0.8} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0.1} />
-                </linearGradient>
+                <Area
+                  key={idx}
+                  dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
+                  type="natural"
+                  fill={`url(#${gradientId})`}
+                  stroke={chartColors[idx % chartColors.length]}
+                  strokeWidth={1}
+                  connectNulls={true}
+                  dot={false}
+                  isAnimationActive={true}
+                  animateNewValues={true}
+                  activeDot={{
+                    r: 4,
+                    stroke: chartColors[idx % chartColors.length],
+                    strokeWidth: 2,
+                  }}
+                  stackId="a"
+                />
               );
             })}
-          </defs>
-          <CartesianGrid
-            vertical={true}
-            verticalPoints={[
-              100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
-              1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
-            ]}
-          />
-          <XAxis
-            dataKey="time"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            tick={{ fontSize: 11 }}
-          />
-          <YAxis
-            tickLine={false}
-            axisLine={false}
-            tickMargin={5}
-            tickCount={4}
-            tick={{ fontSize: 11 }}
-          />
-          <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-          {/* Render satu Area untuk setiap pair */}
-          {pairs.map((pair, idx) => {
-            const gradientId = `fill_${pair.device_id}_${pair.datastream_id}`;
-            return (
-              <Area
-                key={idx}
-                dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-                type="natural"
-                fill={`url(#${gradientId})`}
-                stroke={chartColors[idx % chartColors.length]}
-                strokeWidth={1}
-                connectNulls={true}
-                dot={false}
-                isAnimationActive={true}
-                animateNewValues={true}
-                activeDot={{
-                  r: 4,
-                  stroke: chartColors[idx % chartColors.length],
-                  strokeWidth: 2,
-                }}
-                stackId="1"
-              />
-            );
-          })}
-          <ChartLegend content={<ChartLegendContent />} />
-        </AreaChart>
-      </ChartContainer>
+            <ChartLegend content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />} />
+          </AreaChart>
+        </ChartContainer>
+      </div>
     </div>
   );
 }

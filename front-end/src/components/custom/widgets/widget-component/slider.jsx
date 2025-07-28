@@ -12,6 +12,8 @@ export function SliderWidget({
   previewMode = false,
   widget,
   timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
   ...props
 }) {
   const [dummyValue, setDummyValue] = useState([50]);
@@ -26,7 +28,7 @@ export function SliderWidget({
     isValidWidget,
     isRealTimeConnected,
     datastreamInfo,
-  } = useWidgetData(widget, timeRange);
+  } = useWidgetData(widget, timeRange, dataCount, filterType);
 
   // Use device control hook
   const { sendValueCommand, isActuator, isSensor } = useDeviceControl();

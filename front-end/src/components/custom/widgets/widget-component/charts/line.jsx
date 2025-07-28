@@ -83,6 +83,9 @@ export function LineChartWidget({
   previewMode = false,
   widget,
   timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
+  isEditing,
 }) {
   // Preview mode dengan data dummy
   if (previewMode) {
@@ -228,7 +231,7 @@ export function LineChartWidget({
     isRealTimeConnected,
     timeRangeLabel,
     legendData,
-  } = useWidgetData(widget, timeRange, pairs);
+  } = useWidgetData(widget, timeRange, dataCount, filterType, pairs);
 
   // Generate dynamic chart config based on pairs
   const dynamicChartConfig = pairs.reduce((config, pair, idx) => {
@@ -290,36 +293,38 @@ export function LineChartWidget({
     return (
       <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
         {/* Header dengan info tidak ada data */}
-        <div className="px-2 pt-2 flex-shrink-0">
+        <div className="px-4 pt-2 flex-shrink-0">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-xs text-muted-foreground">
-                {widget?.description || "Widget Chart"}: tidak ada data dalam{" "}
-                {timeRangeLabel}
+              <p className="text-sm font-bold sm:text-lg">
+                {widget?.description || "Line Chart"}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {!isRealTimeConnected && (
-                <div className="flex items-center gap-1 text-xs text-orange-500">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                  Offline
-                </div>
-              )}
+              <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
+                {timeRangeLabel}
+              </p>
             </div>
           </div>
         </div>
 
         {/* Empty Chart Container */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 relative">
           <ChartContainer config={dynamicChartConfig} className="h-full w-full">
             <LineChart
               accessibilityLayer
-              data={[]} // Empty data untuk chart kosong
+              data={[]}
               width={undefined}
               height={undefined}
-              margin={{ left: 12, right: 12, top: 10, bottom: 40 }}
+              margin={{ left: -15, right: 30, top: 10, bottom: 15 }}
             >
-              <CartesianGrid vertical={false} />
+              <CartesianGrid
+                vertical={true}
+                verticalPoints={[
+                  100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200,
+                  1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000,
+                ]}
+              />
               <XAxis
                 dataKey="time"
                 tickLine={false}
@@ -361,9 +366,25 @@ export function LineChartWidget({
                   }}
                 />
               ))}
-              <ChartLegend content={<ChartLegendContent />} />
+              <ChartLegend
+                content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />}
+              />
             </LineChart>
           </ChartContainer>
+        </div>
+        {/* Overlay text di tengah chart kosong */}
+        <div
+          className={`absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center z-10 pointer-events-none ${isEditing ? "opacity-25" : ""}`}
+        >
+          <div className="text-center space-y-2">
+            <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto opacity-50" />
+            <p className="text-sm text-muted-foreground font-medium">
+              Tidak ada data dalam {timeRangeLabel}
+            </p>
+            <p className="text-xs text-muted-foreground opacity-75">
+              Data akan muncul saat sensor mulai mengirim data
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -374,12 +395,10 @@ export function LineChartWidget({
       {/* Header dengan info widget */}
       <div className="px-4 pt-2 flex-shrink-0">
         <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm font-bold sm:text-lg">
-              {widget?.description || "Line Chart"}
-              {/* {widget?.description || "Line Chart"}: data {timeRangeLabel} */}
-            </p>
-          </div>
+          <p className="text-sm font-bold sm:text-lg">
+            {widget?.description || "Line Chart"}
+            {/* {widget?.description || "Line Chart"}: data {timeRangeLabel} */}
+          </p>
           <div className="flex items-center gap-2">
             <p className="text-xs sm:text-sm font-semibold text-muted-foreground">
               {latestValue?.timeAgo || timeRangeLabel}
@@ -454,7 +473,7 @@ export function LineChartWidget({
                 }}
               />
             ))}
-            <ChartLegend content={<ChartLegendContent className={"ml-11"} />} />
+            <ChartLegend content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />} />
           </LineChart>
         </ChartContainer>
       </div>

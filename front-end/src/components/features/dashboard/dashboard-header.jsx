@@ -24,7 +24,11 @@ export default function DashboardHeader(props) {
     setOpenChartSheet,
     handleSaveEditDashboard,
     currentTimeRange,
+    currentDataCount,
+    filterType,
     onTimeRangeChange,
+    onDataCountChange,
+    onFilterTypeChange,
     
     // New staging functions
     startEditMode,
@@ -99,7 +103,11 @@ export default function DashboardHeader(props) {
             saveEdit={saveAllLayoutChanges}
             hasUnsavedChanges={hasUnsavedChanges}
             currentTimeRange={currentTimeRange}
+            currentDataCount={currentDataCount}
+            filterType={filterType}
             onTimeRangeChange={onTimeRangeChange}
+            onDataCountChange={onDataCountChange}
+            onFilterTypeChange={onFilterTypeChange}
           />
         </div>
       ) : (
@@ -114,7 +122,11 @@ export default function DashboardHeader(props) {
             saveEdit={saveAllLayoutChanges}
             hasUnsavedChanges={hasUnsavedChanges}
             currentTimeRange={currentTimeRange}
+            currentDataCount={currentDataCount}
+            filterType={filterType}
             onTimeRangeChange={onTimeRangeChange}
+            onDataCountChange={onDataCountChange}
+            onFilterTypeChange={onFilterTypeChange}
           />
         </div>
       )}

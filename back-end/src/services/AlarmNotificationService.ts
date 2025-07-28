@@ -395,7 +395,6 @@ export class AlarmNotificationService {
       );
 
       await Promise.race([initPromise, timeoutPromise]);
-      console.log("✅ WhatsApp Web initialization completed successfully");
     } catch (error) {
       console.error("❌ WhatsApp initialization failed:", error);
       this.isWhatsAppInitializing = false;
@@ -423,11 +422,7 @@ export class AlarmNotificationService {
           // Wait for initialization with longer timeout
           const isReady = await this.waitForWhatsAppReady(120000); // 2 minutes
 
-          if (isReady) {
-            console.log(
-              "✅ WhatsApp Web initialization completed after cleanup"
-            );
-          } else {
+          if (!isReady) {
             throw new Error("WhatsApp Web still not ready after retry");
           }
         } catch (retryError) {

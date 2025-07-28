@@ -6,48 +6,48 @@
  * - Uses Base64 encryption (NO AES for simplicity)
  */
 
-import crypto from 'crypto';
-import mqtt, { MqttClient } from 'mqtt';
-import mysql from 'mysql2/promise';
+import crypto from "crypto";
+import mqtt, { MqttClient } from "mqtt";
+import mysql from "mysql2/promise";
 
-const SERVER_URL = 'http://localhost:7601';
+const SERVER_URL = "http://localhost:7601";
 const MQTT_CONFIG = {
-  host: 'localhost',
+  host: "localhost",
   port: 1883,
-  clientId: 'Realtime_Test_Client'
+  clientId: "Realtime_Test_Client",
 };
 
 // Database configuration
 const DB_CONFIG = {
-  host: process.env.MYSQL_HOST || 'localhost',
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || '',
-  database: process.env.MYSQL_NAME || 'misred_iot',
-  port: Number(process.env.MYSQL_PORT) || 3306
+  host: process.env.MYSQL_HOST || "localhost",
+  user: process.env.MYSQL_USER || "root",
+  password: process.env.MYSQL_PASSWORD || "",
+  database: process.env.MYSQL_NAME || "misred_iot",
+  port: Number(process.env.MYSQL_PORT) || 3306,
 };
 
 // Device configurations (will be loaded from database)
 let HTTP_DEVICE = {
-  device_id: '1',
-  device_secret: '',
-  name: 'HTTP Real-time Device'
+  device_id: "1",
+  device_secret: "",
+  name: "HTTP Real-time Device",
 };
 
 let MQTT_DEVICE = {
-  device_id: '2',
-  device_secret: '',
-  name: 'MQTT Real-time Device',
-  topic: 'device/data'
+  device_id: "2",
+  device_secret: "",
+  name: "MQTT Real-time Device",
+  topic: "device/data",
 };
 
 // Realistic sensor ranges with slow variations
 const SENSOR_RANGES = {
-  V0: { min: 0, max: 14, current: 7.1 },   // pH (slowly varying)
+  V0: { min: 0, max: 14, current: 7.1 }, // pH (slowly varying)
   V1: { min: 0, max: 100.0, current: 30.0 }, // Flow L/min
   V2: { min: 0, max: 200.0, current: 50.0 }, // COD mg/L
   V3: { min: -10.0, max: 60.0, current: 26.0 }, // Temperature °C
-  V4: { min: 0, max: 20, current: 2.5 },   // NH3N mg/L
-  V5: { min: 0, max: 100.0, current: 10.0 }   // NTU
+  V4: { min: 0, max: 20, current: 2.5 }, // NH3N mg/L
+  V5: { min: 0, max: 100.0, current: 10.0 }, // NTU
 };
 
 // Global counters for monitoring
@@ -61,24 +61,24 @@ let mqttSuccessCount = 0;
  */
 function generateRealtimeSensorData(): any {
   const data: any = {
-    timestamp: Date.now()
+    timestamp: new Date().toLocaleTimeString("id-ID"),
   };
-  
+
   // Generate gradual variations (±5% change from current value)
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
     const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
     let newValue = range.current * (1 + variation);
-    
+
     // Keep within realistic bounds
     newValue = Math.max(range.min, Math.min(range.max, newValue));
-    
+
     // Update current value for next iteration
     range.current = newValue;
-    
+
     // Round to 2 decimal places
     data[pin] = Math.round(newValue * 100) / 100;
   });
-  
+
   return data;
 }
 
@@ -89,18 +89,18 @@ async function loadDeviceSecrets(): Promise<boolean> {
   let connection;
   try {
     connection = await mysql.createConnection(DB_CONFIG);
-    
+
     const [rows] = await connection.execute(
-      'SELECT id, description, new_secret FROM devices WHERE id IN (1, 2)'
+      "SELECT id, description, new_secret FROM devices WHERE id IN (1, 2)"
     );
-    
+
     const devices = rows as any[];
-    
+
     if (devices.length === 0) {
-      console.error('❌ No devices found in database');
+      console.error("❌ No devices found in database");
       return false;
     }
-    
+
     devices.forEach((device: any) => {
       if (device.id === 1) {
         HTTP_DEVICE.device_secret = device.new_secret;
@@ -110,12 +110,11 @@ async function loadDeviceSecrets(): Promise<boolean> {
         MQTT_DEVICE.name = device.description;
       }
     });
-    
+
     // console.log(`🔑 Loaded secrets for devices 1 and 2`);
     return !!(HTTP_DEVICE.device_secret && MQTT_DEVICE.device_secret);
-    
   } catch (error) {
-    console.error('❌ Database error:', error);
+    console.error("❌ Database error:", error);
     return false;
   } finally {
     if (connection) {
@@ -128,31 +127,42 @@ async function loadDeviceSecrets(): Promise<boolean> {
  * Encrypt payload using Base64 (NO AES)
  */
 function encryptPayload(payload: string): string {
-  return Buffer.from(payload).toString('base64');
+  return Buffer.from(payload).toString("base64");
 }
 
 /**
  * Create JWT token with HMAC-SHA256
  */
-function createJWTToken(encryptedPayload: string, deviceId: string, secret: string): string {
+function createJWTToken(
+  encryptedPayload: string,
+  deviceId: string,
+  secret: string
+): string {
   const header = {
     alg: "HS256",
-    typ: "JWT"
+    typ: "JWT",
   };
-  
+
   const payload = {
     encryptedData: encryptedPayload,
     sub: deviceId,
     iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600
+    exp: Math.floor(Date.now() / 1000) + 3600,
   };
-  
-  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  
+
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
+    "base64url"
+  );
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+    "base64url"
+  );
+
   const data = `${encodedHeader}.${encodedPayload}`;
-  const signature = crypto.createHmac('sha256', secret).update(data).digest('base64url');
-  
+  const signature = crypto
+    .createHmac("sha256", secret)
+    .update(data)
+    .digest("base64url");
+
   return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
 
@@ -162,24 +172,28 @@ function createJWTToken(encryptedPayload: string, deviceId: string, secret: stri
 async function sendHTTPPayload(): Promise<boolean> {
   try {
     httpCount++;
-    
+
     const sensorData = generateRealtimeSensorData();
     const payload = JSON.stringify({
-      ...sensorData
+      ...sensorData,
     });
-    
+
     const encryptedPayload = encryptPayload(payload);
-    const jwtToken = createJWTToken(encryptedPayload, HTTP_DEVICE.device_id, HTTP_DEVICE.device_secret);
-    
+    const jwtToken = createJWTToken(
+      encryptedPayload,
+      HTTP_DEVICE.device_id,
+      HTTP_DEVICE.device_secret
+    );
+
     const response = await fetch(`${SERVER_URL}/payload/http`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${jwtToken}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${jwtToken}`,
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({}),
     });
-    
+
     if (response.ok) {
       httpSuccessCount++;
       return true;
@@ -188,7 +202,10 @@ async function sendHTTPPayload(): Promise<boolean> {
       return false;
     }
   } catch (error) {
-    console.error(`❌ HTTP error:`, error instanceof Error ? error.message : String(error));
+    console.error(
+      `❌ HTTP error:`,
+      error instanceof Error ? error.message : String(error)
+    );
     return false;
   }
 }
@@ -200,20 +217,24 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
   return new Promise((resolve) => {
     try {
       mqttCount++;
-      
+
       const sensorData = generateRealtimeSensorData();
       const payload = JSON.stringify({
         ...sensorData,
       });
-      
+
       const encryptedPayload = encryptPayload(payload);
-      const jwtToken = createJWTToken(encryptedPayload, MQTT_DEVICE.device_id, MQTT_DEVICE.device_secret);
-      
+      const jwtToken = createJWTToken(
+        encryptedPayload,
+        MQTT_DEVICE.device_id,
+        MQTT_DEVICE.device_secret
+      );
+
       const mqttMessage = JSON.stringify({
         jwt: jwtToken,
-        timestamp: Date.now()
+        timestamp: new Date().toLocaleTimeString("id-ID"),
       });
-      
+
       mqttClient.publish(MQTT_DEVICE.topic, mqttMessage, (error) => {
         if (error) {
           console.error(`❌ MQTT error:`, error.message);
@@ -223,7 +244,6 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
           resolve(true);
         }
       });
-      
     } catch (error) {
       console.error(`❌ MQTT payload error:`, error);
       resolve(false);
@@ -235,105 +255,121 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
  * Print statistics
  */
 function printStats(): void {
-  const httpSuccessRate = httpCount > 0 ? Math.round((httpSuccessCount / httpCount) * 100) : 0;
-  const mqttSuccessRate = mqttCount > 0 ? Math.round((mqttSuccessCount / mqttCount) * 100) : 0;
-  
-  console.log(`📊 Stats: HTTP ${httpSuccessCount}/${httpCount} (${httpSuccessRate}%) | MQTT ${mqttSuccessCount}/${mqttCount} (${mqttSuccessRate}%)`);
+  const httpSuccessRate =
+    httpCount > 0 ? Math.round((httpSuccessCount / httpCount) * 100) : 0;
+  const mqttSuccessRate =
+    mqttCount > 0 ? Math.round((mqttSuccessCount / mqttCount) * 100) : 0;
+
+  console.log(
+    `📊 Stats: HTTP ${httpSuccessCount}/${httpCount} (${httpSuccessRate}%) | MQTT ${mqttSuccessCount}/${mqttCount} (${mqttSuccessRate}%)`
+  );
 }
 
 /**
  * Main real-time testing function
  */
 async function runRealtimeTest(): Promise<void> {
-  console.log('🚀 REAL-TIME TESTER - Continuous Dashboard Monitoring Test');
-  console.log('=========================================================');
-  console.log('📡 Sending HTTP and MQTT payloads every second...');
-  console.log('🎯 Purpose: Test real-time dashboard monitoring');
-  console.log('⏹️  Press Ctrl+C to stop');
-  console.log('');
-  
+  console.log("🚀 REAL-TIME TESTER - Continuous Dashboard Monitoring Test");
+  console.log("=========================================================");
+  console.log("📡 Sending HTTP and MQTT payloads every second...");
+  console.log("🎯 Purpose: Test real-time dashboard monitoring");
+  console.log("⏹️  Press Ctrl+C to stop");
+  console.log("");
+
   // Load device secrets
   const secretsLoaded = await loadDeviceSecrets();
   if (!secretsLoaded) {
-    console.error('❌ Cannot load device secrets. Exiting...');
+    console.error("❌ Cannot load device secrets. Exiting...");
     return;
   }
-  
-  console.log(`🔑 HTTP Device: ${HTTP_DEVICE.name} (ID: ${HTTP_DEVICE.device_id})`);
-  console.log(`🔑 MQTT Device: ${MQTT_DEVICE.name} (ID: ${MQTT_DEVICE.device_id})`);
-  console.log('');
-  
+
+  console.log(
+    `🔑 HTTP Device: ${HTTP_DEVICE.name} (ID: ${HTTP_DEVICE.device_id})`
+  );
+  console.log(
+    `🔑 MQTT Device: ${MQTT_DEVICE.name} (ID: ${MQTT_DEVICE.device_id})`
+  );
+  console.log("");
+
   // Setup MQTT client
-  const mqttClient: MqttClient = mqtt.connect(`mqtt://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}`, {
-    clientId: MQTT_CONFIG.clientId
-  });
-  
+  const mqttClient: MqttClient = mqtt.connect(
+    `mqtt://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}`,
+    {
+      clientId: MQTT_CONFIG.clientId,
+    }
+  );
+
   let mqttConnected = false;
-  
-  mqttClient.on('connect', () => {
-    console.log('✅ MQTT connected');
+
+  mqttClient.on("connect", () => {
+    console.log("✅ MQTT connected");
     mqttConnected = true;
   });
-  
-  mqttClient.on('error', (error) => {
-    console.error('❌ MQTT connection error:', error.message);
+
+  mqttClient.on("error", (error) => {
+    console.error("❌ MQTT connection error:", error.message);
   });
-  
-  mqttClient.on('close', () => {
-    console.log('🔌 MQTT disconnected');
+
+  mqttClient.on("close", () => {
+    console.log("🔌 MQTT disconnected");
     mqttConnected = false;
   });
-  
+
   // Wait for MQTT connection
   while (!mqttConnected) {
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  
-  console.log('🎬 Starting real-time payload transmission...\n');
-  
+
+  console.log("🎬 Starting real-time payload transmission...\n");
+
   // Setup interval for sending data every second
   const interval = setInterval(async () => {
-    const timestamp = new Date().toLocaleTimeString('id-ID');
-    
+    const timestamp = new Date().toLocaleTimeString("id-ID");
+
     // Send HTTP payload
     const httpSuccess = await sendHTTPPayload();
-    
+
     // Send MQTT payload (only if connected)
     let mqttSuccess = false;
     if (mqttConnected) {
       mqttSuccess = await sendMQTTPayload(mqttClient);
     }
-    
+
     // Print real-time status
-    const httpStatus = httpSuccess ? '✅' : '❌';
-    const mqttStatus = mqttSuccess ? '✅' : '❌';
-    
-    process.stdout.write(`\r[${timestamp}] HTTP ${httpStatus} | MQTT ${mqttStatus} | Total: ${httpCount + mqttCount}`);
-    
+    const httpStatus = httpSuccess ? "✅" : "❌";
+    const mqttStatus = mqttSuccess ? "✅" : "❌";
+
+    process.stdout.write(
+      `\r[${timestamp}] HTTP ${httpStatus} | MQTT ${mqttStatus} | Total: ${
+        httpCount + mqttCount
+      }`
+    );
+
     // Print detailed stats every 10 seconds
     if ((httpCount + mqttCount) % 10 === 0) {
-      console.log(''); // New line
+      console.log(""); // New line
       printStats();
     }
-
   }, 5000); // Every 5 seconds
 
   // Setup graceful shutdown
-  process.on('SIGINT', () => {
-    console.log('\n\n🛑 Stopping real-time test...');
+  process.on("SIGINT", () => {
+    console.log("\n\n🛑 Stopping real-time test...");
     clearInterval(interval);
-    
+
     if (mqttClient) {
       mqttClient.end();
     }
-    
-    console.log('\n📊 Final Statistics:');
+
+    console.log("\n📊 Final Statistics:");
     printStats();
-    
-    console.log('\n🎯 Test completed. Check your dashboard for real-time updates!');
+
+    console.log(
+      "\n🎯 Test completed. Check your dashboard for real-time updates!"
+    );
     process.exit(0);
   });
-  
+
   // Keep the process running
   await new Promise(() => {}); // Run indefinitely
 }
@@ -342,33 +378,40 @@ async function runRealtimeTest(): Promise<void> {
  * Quick functions for testing individual components
  */
 export async function quickHTTPRealtime(): Promise<void> {
-  console.log('🚀 Quick HTTP Real-time Test');
+  console.log("🚀 Quick HTTP Real-time Test");
   const secretsLoaded = await loadDeviceSecrets();
   if (!secretsLoaded) return;
-  
-  console.log('📡 Sending HTTP payload...');
+
+  console.log("📡 Sending HTTP payload...");
   const success = await sendHTTPPayload();
-  console.log(success ? '✅ HTTP payload sent successfully' : '❌ HTTP payload failed');
+  console.log(
+    success ? "✅ HTTP payload sent successfully" : "❌ HTTP payload failed"
+  );
 }
 
 export async function quickMQTTRealtime(): Promise<void> {
-  console.log('🚀 Quick MQTT Real-time Test');
+  console.log("🚀 Quick MQTT Real-time Test");
   const secretsLoaded = await loadDeviceSecrets();
   if (!secretsLoaded) return;
-  
-  const client = mqtt.connect(`mqtt://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}`, {
-    clientId: `${MQTT_CONFIG.clientId}_Quick`
-  });
-  
-  client.on('connect', async () => {
-    console.log('📡 Sending MQTT payload...');
+
+  const client = mqtt.connect(
+    `mqtt://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}`,
+    {
+      clientId: `${MQTT_CONFIG.clientId}_Quick`,
+    }
+  );
+
+  client.on("connect", async () => {
+    console.log("📡 Sending MQTT payload...");
     const success = await sendMQTTPayload(client);
-    console.log(success ? '✅ MQTT payload sent successfully' : '❌ MQTT payload failed');
+    console.log(
+      success ? "✅ MQTT payload sent successfully" : "❌ MQTT payload failed"
+    );
     client.end();
   });
-  
-  client.on('error', (error) => {
-    console.error('❌ MQTT connection error:', error.message);
+
+  client.on("error", (error) => {
+    console.error("❌ MQTT connection error:", error.message);
   });
 }
 
@@ -376,18 +419,20 @@ export async function quickMQTTRealtime(): Promise<void> {
  * Show current sensor values
  */
 export async function showCurrentSensorValues(): Promise<void> {
-  console.log('📊 Current Sensor Values:');
-  console.log('========================');
-  
+  console.log("📊 Current Sensor Values:");
+  console.log("========================");
+
   const data = generateRealtimeSensorData();
-  
+
   console.log(`🧪 V0 (pH): ${data.V0}`);
   console.log(`💧 V1 (Flow): ${data.V1} L/min`);
   console.log(`🔬 V2 (COD): ${data.V2} mg/L`);
   console.log(`🌡️ V3 (Temp): ${data.V3} °C`);
   console.log(`⚗️ V4 (NH3N): ${data.V4} mg/L`);
   console.log(`🌊 V5 (NTU): ${data.V5}`);
-  console.log(`⏰ Timestamp: ${new Date(data.timestamp).toLocaleString('id-ID')}`);
+  console.log(
+    `⏰ Timestamp: ${new Date(data.timestamp).toLocaleString("id-ID")}`
+  );
 }
 
 // Run real-time test if called directly
@@ -396,10 +441,10 @@ if (import.meta.main) {
 }
 
 // Export main functions
-export { 
+export {
   runRealtimeTest,
   generateRealtimeSensorData,
   sendHTTPPayload,
   sendMQTTPayload,
-  loadDeviceSecrets
+  loadDeviceSecrets,
 };
