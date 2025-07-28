@@ -398,7 +398,7 @@ async function parseAndNormalizePayload(
     let deviceTime = null;
     if (rawData.timestamp && typeof rawData.timestamp === 'number') {
       // Konversi dari Unix timestamp (milliseconds) ke MySQL DATETIME
-      deviceTime = new Date(rawData.timestamp).toISOString().slice(0, 19).replace('T', ' ');
+      deviceTime = new Date(rawData.timestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
       console.log(rawData.timestamp, deviceTime);
     }
     
