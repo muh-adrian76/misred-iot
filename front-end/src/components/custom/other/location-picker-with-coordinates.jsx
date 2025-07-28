@@ -16,6 +16,15 @@ export function LocationPickerWithCoordinates({
   const lastLocationRef = useRef(null);
   const debounceTimerRef = useRef(null);
 
+  // Early return jika di server-side environment
+  if (typeof window === 'undefined') {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
+        <span className="text-sm text-gray-600 dark:text-gray-400">Loading location picker...</span>
+      </div>
+    );
+  }
+
   const handleLocationChange = async (selectedLocation) => {
     if (!selectedLocation || typeof selectedLocation !== 'string') {
       return;
@@ -134,9 +143,16 @@ export function LocationPickerWithCoordinates({
 
   // Custom hook untuk menangkap geolocation dari LocationPicker
   useEffect(() => {
-    // Override navigator.geolocation untuk menangkap hasil getCurrentPosition
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      const originalGetCurrentPosition = navigator.geolocation.getCurrentPosition;
+    // Pastikan kita di browser environment dan semua API tersedia
+    if (typeof window === 'undefined' || typeof navigator === 'undefined' || !navigator.geolocation) {
+      return;
+    }
+
+    let originalGetCurrentPosition = null;
+    
+    try {
+      // Override navigator.geolocation untuk menangkap hasil getCurrentPosition
+      originalGetCurrentPosition = navigator.geolocation.getCurrentPosition;
       
       navigator.geolocation.getCurrentPosition = function(successCallback, errorCallback, options) {
         const wrappedSuccessCallback = async (position) => {
@@ -220,12 +236,20 @@ export function LocationPickerWithCoordinates({
         
         originalGetCurrentPosition.call(this, wrappedSuccessCallback, errorCallback, options);
       };
-      
-      // Cleanup function untuk mengembalikan fungsi asli
-      return () => {
-        navigator.geolocation.getCurrentPosition = originalGetCurrentPosition;
-      };
+    } catch (error) {
+      console.error("Error setting up geolocation override:", error);
     }
+    
+    // Cleanup function untuk mengembalikan fungsi asli
+    return () => {
+      if (originalGetCurrentPosition && typeof navigator !== 'undefined' && navigator.geolocation) {
+        try {
+          navigator.geolocation.getCurrentPosition = originalGetCurrentPosition;
+        } catch (error) {
+          console.error("Error restoring geolocation:", error);
+        }
+      }
+    };
   }, []);
 
   return (

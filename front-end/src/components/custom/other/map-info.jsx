@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LocationPickerWithCoordinates } from "@/components/custom/other/location-picker-with-coordinates";
+import { LocationPickerClient } from "@/components/custom/other/location-picker-client";
 import { useState } from "react";
 import { fetchFromBackend } from "@/lib/helper";
 
@@ -297,7 +297,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Alamat
                   </label>
-                  <LocationPickerWithCoordinates
+                  <LocationPickerClient
                     variant="inline"
                     placeholder="Cari lokasi atau klik tombol lokasi"
                     defaultLocation={addressInput} // Set default value untuk sinkronisasi

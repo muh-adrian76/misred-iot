@@ -94,6 +94,12 @@ export function LocationPicker({
   }
 
   const getCurrentLocation = useCallback(() => {
+    // Pastikan kita di browser environment
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      setError("Geolocation is only available in browser environment")
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
@@ -181,7 +187,8 @@ export function LocationPicker({
   }, [isPopoverOpen]);
 
   useEffect(() => {
-    if (autoDetectOnLoad && !activeCity) {
+    // Pastikan auto detect hanya berjalan di browser environment
+    if (autoDetectOnLoad && !activeCity && typeof window !== 'undefined') {
       getCurrentLocation();
     }
   }, [autoDetectOnLoad, activeCity, getCurrentLocation]);

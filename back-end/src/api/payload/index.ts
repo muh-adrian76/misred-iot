@@ -64,7 +64,6 @@ export function payloadRoutes(payloadService: PayloadService) {
 
             return {
               message: "Berhasil menambah data sensor",
-              id: insertId,
               device_id: deviceId,
             };
           } catch (error: any) {
@@ -103,7 +102,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             set.status = 201;
             return {
               message: "Berhasil menambah data sensor dari LoRa",
-              id: insertId,
+              device_id: dev_eui,
             };
           } catch (e: any) {
             console.error("Error processing LoRa payload:", e);

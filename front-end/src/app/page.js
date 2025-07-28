@@ -96,18 +96,10 @@ const LandingPage = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const bgClass = theme === "dark" ? "dark:bg-gray-900" : "bg-white";
-  const textClass = theme === "dark" ? "dark:text-white" : "text-gray-900";
-  const cardBgClass = theme === "dark" ? "dark:bg-gray-800" : "bg-white";
-
   return (
-    <div
-      className={`min-h-screen bg-white dark:bg-gray-900 ${textClass} transition-colors duration-300`}
-    >
+    <div className="min-h-screen bg-white dark:bg-gray-900 dark:text-white text-gray-900 transition-colors duration-300">
       {/* Navbar */}
-      <nav
-        className={`${isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"} border-b sticky top-0 z-50 transition-all duration-300 ${isScrolled ? (isDark ? "shadow-lg bg-opacity-95 backdrop-blur-sm" : "shadow-md bg-opacity-95 backdrop-blur-sm") : ""}`}
-      >
+      <nav className="dark:bg-gray-900 dark:border-gray-800 bg-white border-gray-200 border-b sticky top-0 z-50 transition-all duration-300 dark:shadow-lg dark:bg-opacity-95 dark:backdrop-blur-sm shadow-md bg-opacity-95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             {/* Logo */}
@@ -127,19 +119,19 @@ const LandingPage = () => {
               <div className="flex space-x-8">
                 <button
                   onClick={() => scrollToSection("beranda")}
-                  className={`${activeSection === "beranda" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400" : "text-gray-900 hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
+                  className={`${activeSection === "beranda" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-400 dark:text-white dark:hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
                 >
                   Beranda
                 </button>
                 <button
                   onClick={() => scrollToSection("tentang")}
-                  className={`${activeSection === "tentang" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400" : "text-gray-900 hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
+                  className={`${activeSection === "tentang" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-400 dark:text-white dark:hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
                 >
                   Tentang
                 </button>
                 <button
                   onClick={() => scrollToSection("kontak")}
-                  className={`${activeSection === "kontak" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400" : "text-gray-900 hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
+                  className={`${activeSection === "kontak" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-400 dark:text-white dark:hover:text-red-400"} px-3 py-2 text-sm font-medium transition-colors duration-200`}
                 >
                   Kontak
                 </button>
@@ -156,7 +148,7 @@ const LandingPage = () => {
               <ThemeButton variant="ghost" />
               <button
                 onClick={toggleMobileMenu}
-                className={`${isDark ? "text-white hover:text-gray-300" : "text-gray-900 hover:text-gray-600"} p-2 rounded-md transition-colors duration-200`}
+                className="text-gray-900 hover:text-gray-600 dark:text-white dark:hover:text-gray-300 p-2 rounded-md transition-colors duration-200"
                 aria-label="Toggle mobile menu"
               >
                 {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -167,25 +159,23 @@ const LandingPage = () => {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div
-            className={`md:hidden ${isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"} border-t`}
-          >
+          <div className="md:hidden bg-white border-gray-200 dark:bg-gray-900 dark:border-gray-800 border-t">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
               <button
                 onClick={() => scrollToSection("beranda")}
-                className={`${activeSection === "beranda" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400 hover:bg-gray-800" : "text-gray-900 hover:text-red-600 hover:bg-gray-50"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
+                className={`${activeSection === "beranda" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-600 hover:bg-gray-50 dark:text-white dark:hover:text-red-400 dark:hover:bg-gray-800"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
               >
                 Beranda
               </button>
               <button
                 onClick={() => scrollToSection("tentang")}
-                className={`${activeSection === "tentang" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400 hover:bg-gray-800" : "text-gray-900 hover:text-red-600 hover:bg-gray-50"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
+                className={`${activeSection === "tentang" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-600 hover:bg-gray-50 dark:text-white dark:hover:text-red-400 dark:hover:bg-gray-800"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
               >
                 Tentang
               </button>
               <button
                 onClick={() => scrollToSection("kontak")}
-                className={`${activeSection === "kontak" ? "text-[color:var(--primary)]" : isDark ? "text-white hover:text-red-400 hover:bg-gray-800" : "text-gray-900 hover:text-red-600 hover:bg-gray-50"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
+                className={`${activeSection === "kontak" ? "text-[color:var(--primary)]" : "text-gray-900 hover:text-red-600 hover:bg-gray-50 dark:text-white dark:hover:text-red-400 dark:hover:bg-gray-800"} block px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 w-full text-left`}
               >
                 Kontak
               </button>
@@ -226,9 +216,7 @@ const LandingPage = () => {
                 </h1>
 
                 {/* Enhanced Description */}
-                <p
-                  className={`text-xl md:text-2xl mb-8 text-gray-300 max-w-3xl mx-auto`}
-                >
+                <p className="text-xl md:text-2xl mb-8 text-gray-300 max-w-3xl mx-auto">
                   Solusi monitoring dan kontrol perangkat IoT terdepan untuk
                   bisnis modern. Pantau, analisis, dan kelola semua perangkat
                   IoT Anda dalam satu platform terintegrasi.
@@ -261,16 +249,14 @@ const LandingPage = () => {
         {/* Tentang Section */}
         <section
           id="tentang"
-          className={`scroll-mt-16 py-20 ${isDark ? "bg-gray-800" : "bg-gray-50"}`}
+          className="scroll-mt-16 py-20 bg-gray-50 dark:bg-gray-800"
         >
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Tentang MiSREd IoT
               </h2>
-              <p
-                className={`text-xl ${isDark ? "text-gray-300" : "text-gray-600"} max-w-2xl mx-auto`}
-              >
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                 Platform monitoring IoT yang dirancang khusus untuk memenuhi
                 kebutuhan bisnis modern dengan teknologi terdepan
               </p>
@@ -278,18 +264,14 @@ const LandingPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
               {/* Card 1 - Multi-Protocol Support */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-gray-600" : "border-gray-200 hover:border-gray-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <FileStack size={28} className="text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-green-500 transition-colors duration-300">
                   Multi-Protocol Support
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-6 text-lg leading-relaxed`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
                   Dukungan multi-protokol untuk integrasi perangkat IoT yang
                   fleksibel dan mudah dikonfigurasi.
                 </p>
@@ -307,18 +289,14 @@ const LandingPage = () => {
               </div>
 
               {/* Card 2 - Real-time Notification */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-gray-600" : "border-gray-200 hover:border-gray-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600">
                 <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <BellRing size={28} className="text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-red-500 transition-colors duration-300">
                   Real-time Notification
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-6 text-lg leading-relaxed`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
                   Sistem notifikasi real-time untuk alert monitoring perangkat
                   IoT dengan berbagai channel komunikasi.
                 </p>
@@ -329,23 +307,18 @@ const LandingPage = () => {
                   <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                     WhatsApp
                   </span>
-                  {/* <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">Push Notification</span> */}
                 </div>
               </div>
 
               {/* Card 3 - JWT Powered Security */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-gray-600" : "border-gray-200 hover:border-gray-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600">
                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Shield size={28} className="text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-blue-500 transition-colors duration-300">
                   JWT Powered Security
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-6 text-lg leading-relaxed`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
                   Proteksi data dengan autentikasi JWT yang aman, dilengkapi
                   enkripsi end-to-end dan sistem monitoring real-time.
                 </p>
@@ -363,18 +336,14 @@ const LandingPage = () => {
               </div>
 
               {/* Card 4 - Real-time Processing */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-gray-600" : "border-gray-200 hover:border-gray-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600">
                 <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Zap size={28} className="text-white" />
                 </div>
                 <h3 className="text-2xl font-bold mb-4 group-hover:text-teal-500 transition-colors duration-300">
                   Real-time Processing
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-6 text-lg leading-relaxed`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
                   Pemrosesan data real-time dengan performa tinggi untuk respons
                   yang cepat dan akurat dalam skala enterprise.
                 </p>
@@ -403,9 +372,7 @@ const LandingPage = () => {
                     <Globe size={24} className="text-white" />
                   </div>
                   <h4 className="font-semibold mb-2">Akses Global</h4>
-                  <p
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Monitoring dari mana saja
                   </p>
                 </div>
@@ -414,9 +381,7 @@ const LandingPage = () => {
                     <Users size={24} className="text-white" />
                   </div>
                   <h4 className="font-semibold mb-2">User-Friendly</h4>
-                  <p
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Mudah digunakan
                   </p>
                 </div>
@@ -425,9 +390,7 @@ const LandingPage = () => {
                     <BarChart3 size={24} className="text-white" />
                   </div>
                   <h4 className="font-semibold mb-2">Analytics</h4>
-                  <p
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Laporan detail & insights
                   </p>
                 </div>
@@ -436,9 +399,7 @@ const LandingPage = () => {
                     <Award size={24} className="text-white" />
                   </div>
                   <h4 className="font-semibold mb-2">Reliable</h4>
-                  <p
-                    className={`text-sm ${isDark ? "text-gray-400" : "text-gray-600"}`}
-                  >
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     Uptime 99.9% guaranteed
                   </p>
                 </div>
@@ -448,15 +409,13 @@ const LandingPage = () => {
         </section>
 
         {/* Kontak Section */}
-        <section id="kontak" className={`py-20 bg-white dark:bg-gray-900`}>
+        <section id="kontak" className="py-20 bg-white dark:bg-gray-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
                 Hubungi Kami
               </h2>
-              <p
-                className={`text-xl ${isDark ? "text-gray-300" : "text-gray-600"} max-w-2xl mx-auto`}
-              >
+              <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
                 Siap membantu Anda mengimplementasikan solusi IoT monitoring
                 yang tepat untuk bisnis Anda
               </p>
@@ -465,18 +424,14 @@ const LandingPage = () => {
             {/* Contact Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
               {/* Phone */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-green-500/50" : "border-gray-200 hover:border-green-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-green-300 dark:border-gray-700 dark:hover:border-green-500/50">
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Phone size={28} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 group-hover:text-green-500 transition-colors duration-300">
                   Telepon
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm mb-4`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   Hubungi kami langsung untuk konsultasi
                 </p>
                 <a
@@ -492,18 +447,14 @@ const LandingPage = () => {
               </div>
 
               {/* Email */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-blue-500/50" : "border-gray-200 hover:border-blue-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-blue-300 dark:border-gray-700 dark:hover:border-blue-500/50">
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Mail size={28} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 group-hover:text-blue-500 transition-colors duration-300">
                   Email
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm mb-4`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   Kirim pertanyaan detail via email
                 </p>
                 <a
@@ -519,18 +470,14 @@ const LandingPage = () => {
               </div>
 
               {/* Social Media */}
-              <div
-                className={`group ${cardBgClass} p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border ${isDark ? "border-gray-700 hover:border-purple-500/50" : "border-gray-200 hover:border-purple-300"}`}
-              >
+              <div className="group bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-200 hover:border-purple-300 dark:border-gray-700 dark:hover:border-purple-500/50">
                 <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Instagram size={28} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-3 group-hover:text-purple-500 transition-colors duration-300">
                   Media Sosial
                 </h3>
-                <p
-                  className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm mb-4`}
-                >
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
                   Ikuti update terbaru kami
                 </p>
                 <div className="flex justify-center space-x-4">
@@ -564,15 +511,13 @@ const LandingPage = () => {
 
             {/* Enhanced Partner Card */}
             <div className="max-w-4xl mx-auto">
-              <div
-                className={`${cardBgClass} p-8 lg:p-12 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border ${isDark ? "border-gray-700" : "border-gray-200"} relative overflow-hidden`}
-              >
+              <div className="bg-white dark:bg-gray-800 p-8 lg:p-12 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border border-gray-200 dark:border-gray-700 relative overflow-hidden">
                 {/* Background Pattern for Partner Card */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-16 translate-x-16"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-500/10 to-orange-500/10 rounded-full translate-y-12 -translate-x-12"></div>
 
                 <div className="flex flex-col lg:flex-row items-center gap-8 relative z-10">
-                  <div className="w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0 flex items-center justify-center bg-white rounded-3xl shadow-xl p-6">
+                  <div className="w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6">
                     <img
                       src="logo-polines.webp"
                       alt="Logo Polines"
@@ -586,9 +531,7 @@ const LandingPage = () => {
                         Mitra Resmi
                       </h3>
                     </div>
-                    <p
-                      className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-6 text-lg leading-relaxed`}
-                    >
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 text-lg leading-relaxed">
                       Kolaborasi dengan{" "}
                       <span className="font-semibold text-blue-500">
                         Politeknik Negeri Semarang
@@ -621,9 +564,7 @@ const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer
-        className={`${isDark ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"} border-t py-8`}
-      >
+      <footer className="bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center mb-4">
@@ -632,13 +573,11 @@ const LandingPage = () => {
               </div>
               <span className="text-xl font-bold">MiSREd IoT</span>
             </div>
-            <p className={`${isDark ? "text-gray-400" : "text-gray-600"} mb-4`}>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               Gedung MST Polines - Jl.Prof. Soedarto, Tembalang, Semarang, Jawa
               Tengah 50275
             </p>
-            <p
-              className={`${isDark ? "text-gray-500" : "text-gray-500"} text-sm`}
-            >
+            <p className="text-gray-500 dark:text-gray-500 text-sm">
               © 2025 MiSREd IoT. All rights reserved.
             </p>
           </div>
