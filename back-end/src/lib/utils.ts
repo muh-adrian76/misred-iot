@@ -399,6 +399,7 @@ async function parseAndNormalizePayload(
     if (rawData.timestamp && typeof rawData.timestamp === 'number') {
       // Konversi dari Unix timestamp (milliseconds) ke MySQL DATETIME
       deviceTime = new Date(rawData.timestamp).toISOString().slice(0, 19).replace('T', ' ');
+      console.log(rawData.timestamp, deviceTime);
     }
     
     // Parse setiap pin di raw data
