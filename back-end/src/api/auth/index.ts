@@ -3,7 +3,6 @@ import {
   authorizeRequest,
   clearAuthCookie,
   setAuthCookie,
-  getWIBUnixTimestamp,
 } from "../../lib/utils";
 import { AuthService } from "../../services/AuthService";
 import { UserService } from "../../services/UserService";
@@ -214,7 +213,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             // Generate JWT token untuk redirect ke aplikasi Android
             const token = await jwt.sign({
               sub: result.user.id,
-              iat: getWIBUnixTimestamp(),
+              iat: Date.now(),
               type: "access",
             });
             
@@ -349,7 +348,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             const wsTokenPayload = { 
               sub: decoded.sub,
               type: "websocket",
-              exp: getWIBUnixTimestamp() + (30 * 60) // 30 minutes
+              exp: Date.now() + (30 * 60 * 1000) // 30 minutes
             };
             
             // Debug token websocket (server-side)

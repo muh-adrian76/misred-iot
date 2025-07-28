@@ -203,17 +203,21 @@ export function payloadRoutes(payloadService: PayloadService) {
         async ({ jwt, cookie, params, query }) => {
           try {
             // await authorizeRequest(jwt, cookie);
-            const timeRange = query.range || "1h"; // Default 24 jam
+            const timeRange = query.range || "1h"; // Default 1 jam
+            const count = query.count; // Parameter count untuk filter berdasarkan jumlah data
             const data = await payloadService.getTimeSeriesData(
               params.device_id,
               params.datastream_id,
-              timeRange
+              timeRange,
+              count
             );
             return new Response(
               JSON.stringify({
                 result: data,
                 timeRange: timeRange,
-                count: Array.isArray(data) ? data.length : 0,
+                count: count || null,
+                filterType: count ? 'count' : 'time',
+                dataCount: Array.isArray(data) ? data.length : 0,
               }),
               {
                 status: 200,

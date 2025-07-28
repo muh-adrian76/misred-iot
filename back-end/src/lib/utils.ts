@@ -72,19 +72,6 @@ function ageConverter(input: string): number {
   }
 }
 
-// Fungsi untuk mendapatkan timestamp GMT+7 (WIB - Waktu Indonesia Barat)
-function getWIBTimestamp(): number {
-  const now = new Date();
-  // GMT+7 = UTC + 7 hours = UTC + 7 * 60 * 60 * 1000 milliseconds
-  const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-  return wibTime.getTime();
-}
-
-// Fungsi untuk mendapatkan Unix timestamp dalam detik dengan timezone GMT+7
-function getWIBUnixTimestamp(): number {
-  return Math.floor(getWIBTimestamp() / 1000);
-}
-
 // Fungsi untuk membuat cookie user
 async function setAuthCookie(
   cookie: any,
@@ -94,7 +81,7 @@ async function setAuthCookie(
 ) {
   const value = await jwt.sign({
     sub: userId,
-    iat: getWIBUnixTimestamp(),
+    iat: Math.floor(Date.now() / 1000), // UTC timestamp (JWT standard)
     type: "access",
   });
 
@@ -289,8 +276,9 @@ async function verifyDeviceJWTAndDecrypt({
       throw new Error("Invalid JWT payload encoding");
     }
     
-    // Check expiration
-    if (decodedPayload.exp && getWIBUnixTimestamp() > decodedPayload.exp) {
+    // Check expiration (use UTC timestamp to match JWT standard)
+    const currentUtcTimestamp = Math.floor(Date.now() / 1000);
+    if (decodedPayload.exp && currentUtcTimestamp > decodedPayload.exp) {
       throw new Error("JWT expired");
     }
     
@@ -551,8 +539,6 @@ export {
   renewToken,
   decryptAES,
   ageConverter,
-  getWIBTimestamp,
-  getWIBUnixTimestamp,
   extractDeviceIdFromJWT,
   verifyDeviceJWTAndDecrypt,
   parseAndNormalizePayload,

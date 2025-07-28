@@ -118,14 +118,14 @@ export class PayloadService {
       const [rows] = await this.db.query(
         `SELECT 
           p.id, p.device_id, p.datastream_id, p.value, 
-          COALESCE(p.device_time, p.server_time) as timestamp,
-          p.device_time, p.server_time,
+          p.device_time as timestamp,
+          p.device_time,
           ds.description as sensor_name, ds.pin, ds.unit, ds.type,
           ds.min_value, ds.max_value
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
-        WHERE p.device_id = ? AND p.datastream_id = ?
-        ORDER BY COALESCE(p.device_time, p.server_time) DESC 
+        WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL
+        ORDER BY p.device_time DESC 
         LIMIT 500`, // Tingkatkan limit untuk memastikan semua data terambil
         [device_id, datastream_id]
       );
@@ -151,40 +151,67 @@ export class PayloadService {
   }
 
   // Fungsi untuk mendapatkan time series data untuk chart
-  async getTimeSeriesData(device_id: string, datastream_id: string, timeRange: string = '24h') {
+  async getTimeSeriesData(device_id: string, datastream_id: string, timeRange: string = '1h', count?: string) {
     try {
-      let timeCondition = '';
-      // Gunakan COALESCE untuk prioritas device_time, fallback ke server_time
-      switch (timeRange) {
-        case '1m': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 1 MINUTE'; break;
-        case '1h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 1 HOUR'; break;
-        case '6h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 6 HOUR'; break;
-        case '12h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 12 HOUR'; break;
-        case '24h':
-        case '1d': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 1 DAY'; break;
-        case '7d':
-        case '1w': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 7 DAY'; break;
-        case '30d':
-        case '1M': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 30 DAY'; break;
-        case '1y': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 1 YEAR'; break;
-        case 'all': timeCondition = ''; break; // Semua data
-        default: timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= NOW() - INTERVAL 1 DAY';
+      let query = '';
+      let queryParams: any[] = [device_id, datastream_id];
+
+      // Jika filter berdasarkan count (jumlah data terakhir)
+      if (count && count !== 'all') {
+        const limitCount = parseInt(count);
+        if (!isNaN(limitCount) && limitCount > 0) {
+          query = `SELECT 
+            p.value, 
+            p.device_time as timestamp,
+            p.device_time,
+            ds.unit, ds.description as sensor_name,
+            d.description as device_name
+          FROM payloads p
+          LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
+          LEFT JOIN devices d ON p.device_id = d.id
+          WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL
+          ORDER BY p.device_time DESC
+          LIMIT ?`;
+          queryParams.push(limitCount);
+        } else {
+          // Invalid count, fallback to time-based
+          count = undefined;
+        }
       }
 
-      const [rows] = await this.db.query(
-        `SELECT 
+      // Jika filter berdasarkan time range (atau fallback dari count invalid)
+      if (!count || count === 'all') {
+        let timeCondition = '';
+        // Gunakan device_time sebagai timestamp utama
+        switch (timeRange) {
+          case '1h': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 HOUR'; break;
+          case '12h': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 12 HOUR'; break;
+          case '1d': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 DAY'; break;
+          case '1w': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 7 DAY'; break;
+          case 'all': timeCondition = ''; break; // Semua data
+          default: timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 HOUR';
+        }
+
+        query = `SELECT 
           p.value, 
-          COALESCE(p.device_time, p.server_time) as server_time,
-          p.device_time, p.server_time as actual_server_time,
+          p.device_time as timestamp,
+          p.device_time,
           ds.unit, ds.description as sensor_name,
           d.description as device_name
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
         LEFT JOIN devices d ON p.device_id = d.id
-        WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
-        ORDER BY COALESCE(p.device_time, p.server_time) ASC`,
-        [device_id, datastream_id]
-      );
+        WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL ${timeCondition}
+        ORDER BY p.device_time ASC`;
+      }
+
+      const [rows] = await this.db.query(query, queryParams);
+      
+      // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
+      if (count && count !== 'all') {
+        return (rows as any[]).reverse();
+      }
+      
       return rows;
     } catch (error) {
       console.error("Error fetching time series data:", error);

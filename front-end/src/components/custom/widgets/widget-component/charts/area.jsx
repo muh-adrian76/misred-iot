@@ -1,6 +1,7 @@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useWidgetData } from "@/hooks/use-widget-data";
 import { Loader2, WifiOff, AlertCircle } from "lucide-react";
+import { timezoneConfig } from "@/lib/helper";
 import {
   ChartContainer,
   ChartTooltip,
@@ -18,7 +19,7 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
   const fullTimestamp =
     firstPayload?.originalTimestamp || firstPayload?.timestamp;
 
-  // Format timestamp lengkap
+  // Format timestamp lengkap dengan timezone yang dikonfigurasi
   const fullTimeFormatted = fullTimestamp
     ? new Date(fullTimestamp).toLocaleString("id-ID", {
         year: "numeric",
@@ -27,7 +28,8 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-      })
+        timeZone: timezoneConfig.timezone,
+      }) + ` (${timezoneConfig.display})`
     : label;
 
   return (

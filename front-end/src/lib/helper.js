@@ -114,10 +114,59 @@ export async function fetchFromBackend(endpoint, options = {}) {
 // Direktori logo
 export const brandLogo = `/${process.env.NEXT_PUBLIC_LOGO}`;
 
-// Fungsi untuk konversi tanggal ke zona waktu Jakarta
+// Timezone Configuration
+const getTimezoneConfig = () => {
+  const gmtZone = process.env.NEXT_PUBLIC_GMT_ZONE || '+7';
+  const zoneNumber = parseInt(gmtZone.replace('+', '').replace('-', ''));
+  const isPositive = gmtZone.startsWith('+') || !gmtZone.startsWith('-');
+  
+  return {
+    offset: isPositive ? zoneNumber : -zoneNumber,
+    offsetMs: (isPositive ? zoneNumber : -zoneNumber) * 60 * 60 * 1000,
+    display: `GMT ${gmtZone}`,
+    timezone: zoneNumber === 7 ? 'Asia/Jakarta' : 
+              zoneNumber === 8 ? 'Asia/Singapore' :
+              zoneNumber === 9 ? 'Asia/Tokyo' :
+              zoneNumber === 0 ? 'UTC' :
+              zoneNumber === -5 ? 'America/New_York' :
+              zoneNumber === -8 ? 'America/Los_Angeles' :
+              'UTC' // fallback
+  };
+};
+
+// Export timezone config untuk digunakan di file lain
+export const timezoneConfig = getTimezoneConfig();
+
+// Fungsi untuk konversi UTC ke timezone yang dikonfigurasi
+export function convertUTCToLocalTime(utcTimestamp) {
+  if (!utcTimestamp) return null;
+  
+  let utcTime;
+  if (typeof utcTimestamp === 'string') {
+    // Pastikan string diparsing sebagai UTC
+    if (!utcTimestamp.includes('Z') && !utcTimestamp.includes('+') && !utcTimestamp.includes('-')) {
+      utcTime = new Date(utcTimestamp + 'Z');
+    } else {
+      utcTime = new Date(utcTimestamp);
+    }
+  } else {
+    utcTime = new Date(utcTimestamp);
+  }
+  
+  if (isNaN(utcTime.getTime())) {
+    console.warn('Invalid timestamp for convertUTCToLocalTime:', utcTimestamp);
+    return null;
+  }
+  
+  // Konversi UTC ke timezone yang dikonfigurasi
+  const localTime = new Date(utcTime.getTime() + timezoneConfig.offsetMs);
+  return localTime;
+}
+
+// Fungsi untuk konversi tanggal ke zona waktu yang dikonfigurasi
 export function convertDate(dateString) {
   const date = new Date(dateString).toLocaleString("id-ID", {
-    timeZone: "Asia/Jakarta", // GMT+7
+    timeZone: timezoneConfig.timezone,
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -126,5 +175,5 @@ export function convertDate(dateString) {
     second: "2-digit",
   });
 
-  return `${date} (GMT +7)`;
+  return `${date} (${timezoneConfig.display})`;
 }

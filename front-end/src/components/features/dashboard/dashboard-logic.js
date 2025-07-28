@@ -35,8 +35,8 @@ export function useDashboardLogic() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
   const [deleteChecked, setDeleteChecked] = useState(false);
-  const [currentTimeRange, setCurrentTimeRange] = useState("1m"); // Default 1 menit
-  const [currentDataCount, setCurrentDataCount] = useState("100"); // Default 100 data
+  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
+  const [currentDataCount, setCurrentDataCount] = useState("10"); // Default 10 data
   const [filterType, setFilterType] = useState("time"); // Default filter by time
 
   // Dashboard provider

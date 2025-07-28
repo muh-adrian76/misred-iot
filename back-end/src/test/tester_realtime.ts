@@ -61,7 +61,7 @@ let mqttSuccessCount = 0;
  */
 function generateRealtimeSensorData(): any {
   const data: any = {
-    timestamp: new Date().toLocaleTimeString("id-ID"),
+    timestamp: Date.now(), // Unix timestamp in milliseconds for device_time
   };
 
   // Generate gradual variations (±5% change from current value)
@@ -232,7 +232,6 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
 
       const mqttMessage = JSON.stringify({
         jwt: jwtToken,
-        timestamp: new Date().toLocaleTimeString("id-ID"),
       });
 
       mqttClient.publish(MQTT_DEVICE.topic, mqttMessage, (error) => {
@@ -324,7 +323,7 @@ async function runRealtimeTest(): Promise<void> {
 
   // Setup interval for sending data every second
   const interval = setInterval(async () => {
-    const timestamp = new Date().toLocaleTimeString("id-ID");
+    const timestamp = new Date().toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta" });
 
     // Send HTTP payload
     const httpSuccess = await sendHTTPPayload();
@@ -431,7 +430,7 @@ export async function showCurrentSensorValues(): Promise<void> {
   console.log(`⚗️ V4 (NH3N): ${data.V4} mg/L`);
   console.log(`🌊 V5 (NTU): ${data.V5}`);
   console.log(
-    `⏰ Timestamp: ${new Date(data.timestamp).toLocaleString("id-ID")}`
+    `⏰ Timestamp: ${new Date(data.timestamp).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`
   );
 }
 

@@ -12,29 +12,22 @@ import { useBreakpoint } from "@/hooks/use-mobile";
 import { TransitionPanel } from "@/components/ui/transition-panel";
 
 const timeRangeOptions = [
-  { value: "1m", label: "1 Menit Terakhir", description: "Data dalam 1 menit terakhir" },
   { value: "1h", label: "1 Jam Terakhir", description: "Data dalam 1 jam terakhir" },
   { value: "12h", label: "12 Jam Terakhir", description: "Data dalam 12 jam terakhir" },
   { value: "1d", label: "1 Hari Terakhir", description: "Data dalam 1 hari terakhir" },
   { value: "1w", label: "1 Minggu Terakhir", description: "Data dalam 1 minggu terakhir" },
-  { value: "1M", label: "1 Bulan Terakhir", description: "Data dalam 1 bulan terakhir" },
-  { value: "1y", label: "1 Tahun Terakhir", description: "Data dalam 1 tahun terakhir" },
-  { value: "allTime", label: "Semua Waktu", description: "Semua data yang tersedia" },
 ];
 
 const dataCountOptions = [
-  { value: "10", label: "10 Data Terakhir", description: "10 data terakhir" },
-  { value: "50", label: "50 Data Terakhir", description: "50 data terakhir" },
-  { value: "100", label: "100 Data Terakhir", description: "100 data terakhir" },
-  { value: "500", label: "500 Data Terakhir", description: "500 data terakhir" },
-  { value: "1000", label: "1000 Data Terakhir", description: "1000 data terakhir" },
-  { value: "5000", label: "5000 Data Terakhir", description: "5000 data terakhir" },
-  { value: "allCount", label: "Semua Data", description: "Semua data yang tersedia" },
+  { value: "10", label: "10 Data Terakhir", description: "Menampilkan 10 data terakhir" },
+  { value: "20", label: "20 Data Terakhir", description: "Menampilkan 20 data terakhir" },
+  { value: "50", label: "50 Data Terakhir", description: "Menampilkan 50 data terakhir" },
+  { value: "100", label: "100 Data Terakhir", description: "Menampilkan 100 data terakhir" },
 ];
 
 export default function DashboardTimeFilter({ 
-  currentTimeRange = "1m", 
-  currentDataCount = "100",
+  currentTimeRange = "1h", 
+  currentDataCount = "10",
   filterType = "time", // "time" atau "count"
   onTimeRangeChange,
   onDataCountChange,

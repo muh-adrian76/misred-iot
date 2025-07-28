@@ -58,7 +58,7 @@ function generateAlarmTriggerData(): any {
     V3: 28.3, // Temperature normal
     V4: 2.1, // NH3N normal
     V5: 8.7, // NTU normal
-    timestamp: new Date().toLocaleTimeString("id-ID"),
+    timestamp: Date.now(),
   };
 }
 
@@ -67,7 +67,7 @@ function generateAlarmTriggerData(): any {
  */
 function generateSensorData(): any {
   const data: any = {
-    timestamp: new Date().toLocaleTimeString("id-ID"),
+    timestamp: Date.now(),
   };
 
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
@@ -186,7 +186,7 @@ function testAESEncryptionDecryption(): boolean {
       V3: 28.3,
       V4: 2.1,
       V5: 8.7,
-      timestamp: new Date().toLocaleTimeString("id-ID"),
+      timestamp: Date.now(),
       device_id: "1",
     });
 
@@ -657,7 +657,6 @@ async function testMQTTPublishWithAES(
         const mqttMessage = JSON.stringify({
           device_id: deviceId,
           jwt: jwtToken,
-          timestamp: new Date().toLocaleTimeString("id-ID"),
         });
 
         // Step 5: Publish to MQTT
@@ -999,7 +998,6 @@ async function testMQTTPayloadWithAlarms(
         const mqttMessage = JSON.stringify({
           device_id: deviceId,
           jwt: jwtToken,
-          timestamp: new Date().toLocaleTimeString("id-ID"),
           test_type: "alarm_trigger",
         });
 
@@ -1094,7 +1092,7 @@ export async function quickPayloadDebug(): Promise<void> {
     const simplePayload = {
       V0: 8.5, // pH > 8.0 should trigger alarm
       V1: 12.0, // Flow < 15.0 should trigger alarm
-      timestamp: new Date().toLocaleTimeString("id-ID"),
+      timestamp: Date.now(),
     };
     const encryptedPayload = encryptPayloadAES(
       JSON.stringify(simplePayload),

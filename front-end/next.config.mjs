@@ -5,6 +5,7 @@ const withPWA = require('next-pwa')({
 })
 
 const nextConfig = {
+    allowedDevOrigins: ['local-origin.dev', '*.local-origin.dev'],
     devIndicators: false,
     experimental: {
         viewTransition: true,
