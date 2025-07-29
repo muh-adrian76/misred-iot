@@ -17,7 +17,7 @@ export function payloadRoutes(payloadService: PayloadService) {
       .post(
         "/http",
         //@ts-ignore
-        async ({ jwt, headers, set }) => {
+        async ({ headers, set }) => {
           try {
             let deviceId = headers["x-device-id"];
             const authHeader = headers["authorization"];

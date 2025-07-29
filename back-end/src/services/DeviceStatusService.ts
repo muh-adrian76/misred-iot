@@ -25,6 +25,13 @@ export class DeviceStatusService {
    */
   async updateDeviceLastSeen(deviceId: number): Promise<void> {
     try {
+      // Check database connection first
+      const isConnected = await this.checkDbConnection();
+      if (!isConnected) {
+        console.warn(`Database connection not available, skipping status update for device ${deviceId}`);
+        return;
+      }
+
       const query = `
         UPDATE devices 
         SET last_seen_at = NOW(), status = 'online'
@@ -46,6 +53,24 @@ export class DeviceStatusService {
       
     } catch (error) {
       console.error(`Error updating device ${deviceId} last seen:`, error);
+      // If it's a connection error, try to stop and restart monitoring
+      if (error instanceof Error && error.message && error.message.includes('Pool is closed')) {
+        console.warn('Database pool is closed, attempting to restart status monitoring...');
+        this.restartStatusMonitoring();
+      }
+    }
+  }
+
+  /**
+   * Check if database connection is healthy
+   */
+  private async checkDbConnection(): Promise<boolean> {
+    try {
+      await this.db.query('SELECT 1');
+      return true;
+    } catch (error) {
+      console.error('Database connection check failed:', error);
+      return false;
     }
   }
 
@@ -55,6 +80,13 @@ export class DeviceStatusService {
    */
   async updateAllDeviceStatuses(): Promise<{ updated: number; offline: number; online: number }> {
     try {
+      // Check database connection first
+      const isConnected = await this.checkDbConnection();
+      if (!isConnected) {
+        console.warn('Database connection is not available, skipping status update');
+        return { updated: 0, offline: 0, online: 0 };
+      }
+
       // Set offline devices yang tidak mengirim data > 1 menit
       const offlineQuery = `
         UPDATE devices 
@@ -111,6 +143,11 @@ export class DeviceStatusService {
       return result;
     } catch (error) {
       console.error('Error updating device statuses:', error);
+      // If it's a connection error, try to restart monitoring
+      if (error instanceof Error && error.message && error.message.includes('Pool is closed')) {
+        console.warn('Database pool is closed during status update, attempting to restart monitoring...');
+        this.restartStatusMonitoring();
+      }
       return { updated: 0, offline: 0, online: 0 };
     }
   }
@@ -120,6 +157,13 @@ export class DeviceStatusService {
    */
   async getDeviceStatusInfo(deviceId: number): Promise<any> {
     try {
+      // Check database connection first
+      const isConnected = await this.checkDbConnection();
+      if (!isConnected) {
+        console.warn(`Database connection not available for device ${deviceId} status check`);
+        return null;
+      }
+
       const query = `
         SELECT 
           d.id,
@@ -151,6 +195,13 @@ export class DeviceStatusService {
    */
   async getUserDevicesWithStatus(userId: number): Promise<any[]> {
     try {
+      // Check database connection first
+      const isConnected = await this.checkDbConnection();
+      if (!isConnected) {
+        console.warn(`Database connection not available for user ${userId} devices check`);
+        return [];
+      }
+
       const query = `
         SELECT 
           d.*,
@@ -187,6 +238,20 @@ export class DeviceStatusService {
   }
 
   /**
+   * Restart status monitoring (stop and start again)
+   */
+  private restartStatusMonitoring(): void {
+    console.log('Restarting status monitoring...');
+    this.stopStatusMonitoring();
+    
+    // Wait a bit before restarting
+    setTimeout(() => {
+      this.startStatusMonitoring();
+      console.log('Status monitoring restarted successfully');
+    }, 5000); // Wait 5 seconds before restart
+  }
+
+  /**
    * Stop monitoring
    */
   stopStatusMonitoring(): void {
@@ -208,6 +273,13 @@ export class DeviceStatusService {
    */
   async getStatusStatistics(): Promise<any> {
     try {
+      // Check database connection first
+      const isConnected = await this.checkDbConnection();
+      if (!isConnected) {
+        console.warn('Database connection not available for status statistics');
+        return null;
+      }
+
       const query = `
         SELECT 
           COUNT(*) as total_devices,
