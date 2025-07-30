@@ -51,6 +51,9 @@ export class PayloadService {
     decrypted: any;
   }): Promise<number> {
     try {
+      console.log(`📡 [HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
+      console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
+      
       // STEP 1: Simpan raw data untuk backup dan debugging
       const [rawResult] = await this.db.query<ResultSetHeader>(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
@@ -58,10 +61,10 @@ export class PayloadService {
         [deviceId, JSON.stringify(decrypted)]
       );
 
-      // Debug log untuk raw payload
-      // console.log(`📥 Raw payload saved with ID: ${rawResult.insertId}`);
+      console.log(`� [DATABASE] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
       
       // STEP 2: Parse dan normalisasi data ke tabel payloads
+      console.log(`🔄 [PARSING] Memulai parsing dan normalisasi data sensor...`);
       const normalizedPayloads = await parseAndNormalizePayload(
         this.db,
         Number(deviceId), 
@@ -69,25 +72,31 @@ export class PayloadService {
         rawResult.insertId
       );
       
-      // console.log(`✅ Parsed ${normalizedPayloads.length} sensor readings`);
+      console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} sensor readings ke database`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
+      console.log(`📡 [BROADCAST] Mengirim data real-time ke user via WebSocket...`);
       await broadcastSensorUpdates(this.db, broadcastToUsersByDevice, Number(deviceId), decrypted, "http");
+      console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
       // STEP 4: Update device status to online (real-time)
       if (this.deviceStatusService) {
+        console.log(`⏰ [DEVICE STATUS] Memperbarui status device terakhir dilihat...`);
         await this.deviceStatusService.updateDeviceLastSeen(Number(deviceId));
+        console.log(`✅ [DEVICE STATUS] Status device berhasil diperbarui`);
       }
 
       // STEP 5: Check alarms setelah payload disimpan
       if (this.alarmNotificationService) {
-        // console.log(`🔍 Checking alarms for device ${deviceId}`);
+        console.log(`� [ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
         await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
+        console.log(`✅ [ALARM] Pemeriksaan alarm selesai`);
       }
 
+      console.log(`🎉 [HTTP PAYLOAD] Semua proses payload berhasil diselesaikan untuk device ${deviceId}`);
       return rawResult.insertId;
     } catch (error) {
-      console.error("Error saving HTTP payload:", error);
+      console.error("❌ [HTTP PAYLOAD] Error dalam menyimpan HTTP payload:", error);
       throw new Error("Failed to save HTTP payload");
     }
   }
@@ -156,6 +165,14 @@ export class PayloadService {
       let query = '';
       let queryParams: any[] = [device_id, datastream_id];
 
+      console.log(`🔍 [TIME SERIES] Mengambil data time series:`, {
+        device_id, 
+        datastream_id, 
+        timeRange, 
+        count,
+        serverTime: new Date().toISOString()
+      });
+
       // Jika filter berdasarkan count (jumlah data terakhir)
       if (count && count !== 'all') {
         const limitCount = parseInt(count);
@@ -182,14 +199,15 @@ export class PayloadService {
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
         let timeCondition = '';
-        // Gunakan device_time sebagai timestamp utama
+        // PERBAIKAN: Gunakan UTC_TIMESTAMP() untuk konsistensi dengan frontend
+        // dan pastikan perbandingan timezone yang tepat
         switch (timeRange) {
-          case '1h': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 HOUR'; break;
-          case '12h': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 12 HOUR'; break;
-          case '1d': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 DAY'; break;
-          case '1w': timeCondition = 'AND p.device_time >= NOW() - INTERVAL 7 DAY'; break;
+          case '1h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
+          case '12h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
+          case '1d': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
+          case '1w': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
           case 'all': timeCondition = ''; break; // Semua data
-          default: timeCondition = 'AND p.device_time >= NOW() - INTERVAL 1 HOUR';
+          default: timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
         }
 
         query = `SELECT 
@@ -206,6 +224,8 @@ export class PayloadService {
       }
 
       const [rows] = await this.db.query(query, queryParams);
+      
+      console.log(`✅ [TIME SERIES] Berhasil mengambil ${(rows as any[]).length} data points`);
       
       // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
       if (count && count !== 'all') {

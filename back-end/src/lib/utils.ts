@@ -237,26 +237,37 @@ async function verifyDeviceJWTAndDecrypt({
   deviceId: string;
   token: string;
 }) {
+  console.log(`🔐 [JWT VERIFY] Memulai verifikasi JWT untuk device: ${deviceId}`);
+  
   // Ambil secret dari database
   const devices = await deviceService.getDeviceById(deviceId);
   //@ts-ignore
   if (!devices || devices.length === 0) {
+    console.error(`❌ [JWT VERIFY] Device ${deviceId} tidak terdaftar di database`);
     throw new Error("Device tidak terdaftar");
   }
   
   //@ts-ignore
   const device = devices[0]; // getDeviceById returns array
   const secret = device.new_secret;
-  if (!secret) throw new Error("Device secret tidak valid");
+  if (!secret) {
+    console.error(`❌ [JWT VERIFY] Device secret tidak valid untuk device ${deviceId}`);
+    throw new Error("Device secret tidak valid");
+  }
+
+  console.log(`✅ [JWT VERIFY] Device ditemukan: ${device.description || deviceId}`);
+  console.log(`🔑 [JWT VERIFY] Secret berhasil diambil untuk verifikasi`);
 
   try {
     // Manual JWT verification dengan device-specific secret
     const [header, payload, signature] = token.split('.');
     
     if (!header || !payload || !signature) {
+      console.error(`❌ [JWT VERIFY] Format JWT tidak valid`);
       throw new Error("Invalid JWT format");
     }
     
+    console.log(`🔍 [JWT VERIFY] Memverifikasi signature JWT...`);
     // Verify signature menggunakan device secret
     const data = `${header}.${payload}`;
     const crypto = require('crypto');
@@ -264,54 +275,68 @@ async function verifyDeviceJWTAndDecrypt({
     
     // console.log(signature, expectedSignature);
     if (signature !== expectedSignature) {
+      console.error(`❌ [JWT VERIFY] Signature JWT tidak cocok`);
       throw new Error("Invalid JWT signature");
     }
+    
+    console.log(`✅ [JWT VERIFY] Signature JWT valid`);
     
     // Decode payload
     let decodedPayload;
     try {
       decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
+      console.log(`📄 [JWT VERIFY] Payload JWT berhasil didecode:`, decodedPayload);
     } catch (decodeError) {
-      console.error("❌ Failed to decode JWT payload:", decodeError);
+      console.error("❌ [JWT VERIFY] Gagal decode JWT payload:", decodeError);
       throw new Error("Invalid JWT payload encoding");
     }
     
     // Check expiration (use UTC timestamp to match JWT standard)
     const currentUtcTimestamp = Math.floor(Date.now() / 1000);
     if (decodedPayload.exp && currentUtcTimestamp > decodedPayload.exp) {
+      console.error(`❌ [JWT VERIFY] JWT sudah expired. Current: ${currentUtcTimestamp}, Exp: ${decodedPayload.exp}`);
       throw new Error("JWT expired");
     }
     
+    console.log(`✅ [JWT VERIFY] JWT belum expired`);
+    
     if (!decodedPayload.encryptedData) {
+      console.error(`❌ [JWT VERIFY] encryptedData tidak ditemukan di JWT`);
       throw new Error("Missing encryptedData in JWT");
     }
     
+    console.log(`🔓 [DECRYPT] Memulai proses dekripsi data...`);
     // Handle different encryption methods
     let decrypted;
     try {
       // Method 1: Try parsing as JSON directly (for CustomJWT)
       decrypted = JSON.parse(decodedPayload.encryptedData);
+      console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan JSON parsing`);
     } catch (parseError) {
       try {
         // Method 2: Try base64 decode
         const decodedData = Buffer.from(decodedPayload.encryptedData, 'base64').toString();
         decrypted = JSON.parse(decodedData);
+        console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan base64 decode`);
       } catch (base64Error) {
         // Method 3: Fallback to AES decryption for backward compatibility
         try {
           const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
           decrypted = JSON.parse(decryptedString);
+          console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan AES decryption`);
         } catch (aesError) {
-          console.error("❌ All decryption methods failed:", aesError);
+          console.error("❌ [DECRYPT] Semua metode dekripsi gagal:", aesError);
           throw new Error("Unable to decrypt payload data");
         }
       }
     }
     
+    console.log(`🎉 [JWT VERIFY] Verifikasi dan dekripsi berhasil untuk device ${deviceId}`);
+    console.log(`📊 [DECRYPT] Data hasil dekripsi:`, decrypted);
     return decrypted;
     
   } catch (error) {
-    console.error("JWT verification failed:", error);
+    console.error("❌ [JWT VERIFY] JWT verification failed:", error);
     throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -397,10 +422,18 @@ async function parseAndNormalizePayload(
     // Ekstrak dan konversi timestamp dari raw data
     let deviceTime = null;
     if (rawData.timestamp && typeof rawData.timestamp === 'number') {
-      // Konversi dari Unix timestamp (milliseconds) ke MySQL DATETIME
-      deviceTime = new Date(rawData.timestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
+      let timestamp = rawData.timestamp;
+      
+      // Jika timestamp dalam seconds, konversi ke milliseconds
+      if (timestamp < 10000000000) {
+        timestamp = timestamp * 1000;
+      }
+      
+      // Konversi ke MySQL DATETIME format
+      deviceTime = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ');
+      
       // Debug log untuk timestamp
-      console.log(rawData.timestamp, deviceTime);
+      // console.log(`Raw timestamp: ${rawData.timestamp}, Detected format: ${rawData.timestamp < 10000000000 ? 'seconds' : 'milliseconds'}, Converted: ${deviceTime}`);
     }
     
     // Parse setiap pin di raw data
@@ -414,11 +447,8 @@ async function parseAndNormalizePayload(
           try {
             // Validasi dan normalisasi nilai
             const { validatedValue, hasWarning, warningMessage } = validateAndNormalizeValue(value, datastream);
+            console.log(`💾 [PARSE] Menyimpan data ke database: Pin "${pin}" → Value: ${validatedValue}`);
             
-            if (hasWarning && warningMessage) {
-              validationWarnings.push(`Pin ${pin} (${datastream.description}): ${warningMessage}`);
-            }
-
             // Insert ke tabel payloads dengan nilai yang sudah divalidasi
             const [result] = await db.query(
               `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
@@ -437,23 +467,27 @@ async function parseAndNormalizePayload(
                 deviceTime
               ]
             );
-            insertedIds.push(result.insertId);
             
-          } catch (error) {
-            console.error(`Error saving sensor data for pin ${pin}:`, error);
+            insertedIds.push((result as any).insertId);
+            console.log(`✅ [PARSE] Data berhasil disimpan dengan ID: ${(result as any).insertId}`);
+            
+          } catch (insertError) {
+            console.error(`❌ [PARSE] Error menyimpan data untuk pin "${pin}":`, insertError);
             // Continue processing other pins even if one fails
           }
         } else {
-          console.warn(`⚠️ No datastream found for pin ${pin} on device ${deviceId}`);
+          console.warn(`⚠️ [PARSE] Datastream tidak ditemukan untuk pin "${pin}" - data diabaikan`);
         }
       }
     }
     
     // Log validation warnings if any
     if (validationWarnings.length > 0) {
-      console.warn(`📊 Data validation applied for device ${deviceId}:`, validationWarnings);
+      console.warn(`⚠️ [PARSE] Validation warnings ditemukan:`);
+      validationWarnings.forEach(warning => console.warn(`   • ${warning}`));
     }
     
+    console.log(`🎉 [PARSE] Parsing selesai. Total ${insertedIds.length} payload berhasil disimpan`);
     return insertedIds;
   } catch (error) {
     console.error("Error in parseAndNormalizePayload:", error);
@@ -470,6 +504,8 @@ async function broadcastSensorUpdates(
   protocol?: string
 ) {
   try {
+    console.log(`📡 [BROADCAST] Memulai broadcast data real-time untuk device ${deviceId}`);
+    
     // Get device info and owner
     const [deviceRows]: any = await db.query(
       `SELECT d.id, d.description as device_name, d.user_id, u.name as user_name
@@ -480,11 +516,12 @@ async function broadcastSensorUpdates(
     );
 
     if (!deviceRows.length) {
-      console.warn(`Device ${deviceId} not found for broadcasting`);
+      console.warn(`⚠️ [BROADCAST] Device ${deviceId} tidak ditemukan untuk broadcast`);
       return;
     }
 
     const device = deviceRows[0];
+    console.log(`✅ [BROADCAST] Device ditemukan: ${device.device_name} (Owner: ${device.user_name || 'Unknown'})`);
     
     // Get datastreams for this device to map pin data
     const [datastreams]: any = await db.query(
@@ -492,12 +529,17 @@ async function broadcastSensorUpdates(
       [deviceId]
     );
 
+    console.log(`🔍 [BROADCAST] Ditemukan ${datastreams.length} datastream untuk broadcast`);
+
     // Broadcast each sensor value with datastream info
+    let broadcastCount = 0;
     for (const [pin, value] of Object.entries(rawData)) {
       if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
         const datastream = datastreams.find((ds: any) => ds.pin === pin);
         
         if (datastream) {
+          console.log(`📤 [BROADCAST] Mengirim data sensor: Pin "${pin}" → ${datastream.description} = ${value} ${datastream.unit || ''}`);
+          
           // Broadcast real-time sensor update HANYA ke pemilik device
           const broadcastData: any = {
             type: "sensor_update",
@@ -519,15 +561,21 @@ async function broadcastSensorUpdates(
           // Gunakan broadcastFunction yang aman (harus broadcastToUsersByDevice)
           if (typeof broadcastFunction === 'function' && broadcastFunction.name === 'broadcastToUsersByDevice') {
             await broadcastFunction(db, deviceId, broadcastData);
+            console.log(`✅ [BROADCAST] Data berhasil dikirim ke WebSocket user ${device.user_id}`);
           } else {
-            console.warn("⚠️ Using legacy broadcast function. Please update to use broadcastToUsersByDevice for security.");
+            console.warn("⚠️ [BROADCAST] Menggunakan legacy broadcast function. Harap update ke broadcastToUsersByDevice untuk keamanan.");
             broadcastFunction(broadcastData);
           }
+          broadcastCount++;
+        } else {
+          console.warn(`⚠️ [BROADCAST] Datastream tidak ditemukan untuk pin "${pin}" - tidak di-broadcast`);
         }
       }
     }
+    
+    console.log(`🎉 [BROADCAST] Selesai broadcast ${broadcastCount} sensor data ke user ${device.user_id}`);
   } catch (error) {
-    console.error("Error broadcasting sensor updates:", error);
+    console.error("❌ [BROADCAST] Error dalam broadcast sensor updates:", error);
     // Don't throw error to avoid breaking payload saving
   }
 }

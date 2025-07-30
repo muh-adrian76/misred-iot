@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/providers/user-provider";
 import {
   Sheet,
@@ -9,6 +8,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
+import CheckboxButton from "@/components/custom/buttons/checkbox-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -48,6 +49,7 @@ import {
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
+import { errorToast, successToast } from "./toaster";
 
 const formatDateTime = (dateString) => {
   const date = new Date(dateString);
@@ -119,9 +121,9 @@ const NotificationHistoryItem = ({ notification }) => {
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1 text-gray-500">
+            <div className="flex items-center gap-1 text-foreground">
               <CheckCircle className="w-3 h-3" />
-              <span className="text-xs">Browser</span>
+              <span className="text-xs">Terkirim pada Browser</span>
             </div>
           )}
         </div>
@@ -154,27 +156,32 @@ const NotificationHistoryItem = ({ notification }) => {
 };
 
 export default function NotifHistory({ open, setOpen }) {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [timeRange, setTimeRange] = useState("all");
   const [pageSize, setPageSize] = useState(10);
-  const queryClient = useQueryClient();
-  const { user } = useUser(); // Add user context
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteChecked, setDeleteChecked] = useState(false);
+  const [historyData, setHistoryData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { user } = useUser();
 
-  // Helper function to check if user is logged in
   const isUserLoggedIn = (user) => {
     return user && user.id && user.email && user.id !== "" && user.email !== "";
   };
 
-  // Fetch notification history - ONLY when user is logged in
-  const {
-    data: historyData,
-    isLoading,
-    refetch,
-    error,
-  } = useQuery({
-    queryKey: ["notification-history", currentPage, timeRange, pageSize],
-    queryFn: async () => {
+  // Fetch notification history using simple fetch
+  const fetchHistoryData = async () => {
+    if (!isUserLoggedIn(user)) {
+      setHistoryData(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
@@ -191,7 +198,7 @@ export default function NotifHistory({ open, setOpen }) {
       if (!response.ok) {
         // If backend returns structured error response, use it
         if (data.success === false) {
-          return {
+          setHistoryData({
             success: false,
             notifications: [],
             pagination: {
@@ -201,72 +208,65 @@ export default function NotifHistory({ open, setOpen }) {
               pages: 1,
             },
             message: data.message || "Gagal mengambil riwayat notifikasi",
-          };
+          });
+          return;
         }
         throw new Error("Failed to fetch notification history");
       }
 
-      return data;
-    },
-    enabled: Boolean(open && activeIndex === 0 && user && isUserLoggedIn(user)), // Ensure it always returns a boolean
-    retry: 1, // Only retry once
-    refetchOnWindowFocus: false,
-  });
+      setHistoryData(data);
+    } catch (error) {
+      console.error("❌ Error fetching history:", error);
+      setError(error);
+      setHistoryData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Mark all notifications as read mutation
-  const markAllAsReadMutation = useMutation({
-    mutationFn: async () => {
-      if (!isUserLoggedIn(user)) {
-        throw new Error("User not authenticated");
-      }
-      
-      const response = await fetchFromBackend("/notifications/mark-all-read", {
-        method: "POST",
-      });
+  // Load data when dependencies change
+  useEffect(() => {
+    if (open && user && isUserLoggedIn(user)) {
+      fetchHistoryData();
+    }
+  }, [open, user, currentPage, timeRange, pageSize]);
 
-      if (!response.ok) {
-        throw new Error("Failed to mark all notifications as read");
-      }
+  // Delete all notifications using simple fetch
+  const deleteAllNotifications = async () => {
+    if (!isUserLoggedIn(user)) {
+      errorToast("User tidak terautentikasi");
+      return;
+    }
 
-      return response.json();
-    },
-    onSuccess: () => {
-      // Refetch the current page data only if user is still logged in
-      if (isUserLoggedIn(user)) {
-        refetch();
-      }
-    },
-    onError: (error) => {
-      alert("Gagal menandai semua notifikasi sebagai dibaca: " + error.message);
-    },
-  });
+    setIsDeleting(true);
 
-  // Delete all notifications mutation
-  const deleteAllMutation = useMutation({
-    mutationFn: async () => {
-      if (!isUserLoggedIn(user)) {
-        throw new Error("User not authenticated");
-      }
-      
-      const response = await fetchFromBackend("/notifications/delete-all", {
-        method: "POST",
+    try {
+      const response = await fetchFromBackend("/notifications", {
+        method: "DELETE",
       });
 
       if (!response.ok) {
         throw new Error("Failed to delete all notifications");
       }
 
-      return response.json();
-    },
-    onSuccess: () => {
-      // Refetch the current page data
-      refetch();
-      alert("Semua riwayat notifikasi berhasil dihapus");
-    },
-    onError: (error) => {
-      alert("Gagal menghapus semua riwayat notifikasi: " + error.message);
-    },
-  });
+      await response.json();
+      
+      setDeleteDialogOpen(false);
+      setDeleteChecked(false);
+      await fetchHistoryData();
+      successToast("Semua riwayat notifikasi berhasil dihapus");
+    } catch (error) {
+      console.error("❌ Error deleting notifications:", error);
+      errorToast("Gagal menghapus semua riwayat notifikasi: " + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
+    deleteAllNotifications();
+  };
 
   // Export functions
   const exportToCSV = () => {
@@ -279,19 +279,22 @@ export default function NotifHistory({ open, setOpen }) {
       "Sensor",
       "Nilai",
       "Kondisi",
-      "WhatsApp Status",
-      "Tipe Notifikasi",
     ];
 
-    const rows = historyData.notifications.map((notif) => [
+    // Sort notifications from oldest to newest for export
+    const sortedNotifications = [...historyData.notifications].sort((a, b) => {
+      const dateA = new Date(a.triggered_at);
+      const dateB = new Date(b.triggered_at);
+      return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
+    });
+
+    const rows = sortedNotifications.map((notif) => [
       formatDateTime(notif.triggered_at),
       notif.alarm_description,
       notif.device_description,
       notif.datastream_description,
       notif.sensor_value,
       notif.conditions_text,
-      notif.whatsapp_sent ? "Terkirim" : "Tidak dikirim",
-      notif.notification_type === "all" ? "Semua Channel" : "Browser Only",
     ]);
 
     const csvContent = [headers, ...rows]
@@ -308,6 +311,13 @@ export default function NotifHistory({ open, setOpen }) {
   const exportToPDF = async () => {
     // Simple PDF export using window.print with custom styles
     if (!historyData?.notifications?.length) return;
+
+    // Sort notifications from oldest to newest for export
+    const sortedNotifications = [...historyData.notifications].sort((a, b) => {
+      const dateA = new Date(a.triggered_at);
+      const dateB = new Date(b.triggered_at);
+      return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
+    });
 
     const printWindow = window.open("", "_blank");
     const htmlContent = `
@@ -329,7 +339,7 @@ export default function NotifHistory({ open, setOpen }) {
           <h1>Riwayat Notifikasi Alarm</h1>
           <div class="metadata">
             <p>Periode: ${timeRange === "today" ? "Hari ini" : timeRange === "week" ? "Minggu ini" : timeRange === "month" ? "Bulan ini" : "Semua"}</p>
-            <p>Total: ${historyData.notifications.length} notifikasi</p>
+            <p>Total: ${sortedNotifications.length} notifikasi</p>
             <p>Dicetak: ${formatDateTime(new Date().toISOString())}</p>
           </div>
           <table>
@@ -341,11 +351,10 @@ export default function NotifHistory({ open, setOpen }) {
                 <th>Sensor</th>
                 <th>Nilai</th>
                 <th>Kondisi</th>
-                <th>WhatsApp</th>
               </tr>
             </thead>
             <tbody>
-              ${historyData.notifications
+              ${sortedNotifications
                 .map(
                   (notif) => `
                 <tr>
@@ -355,7 +364,6 @@ export default function NotifHistory({ open, setOpen }) {
                   <td>${notif.datastream_description}</td>
                   <td>${notif.sensor_value}</td>
                   <td>${notif.conditions_text}</td>
-                  <td>${notif.whatsapp_sent ? "✓ Terkirim" : "✗ Tidak"}</td>
                 </tr>
               `
                 )
@@ -376,7 +384,10 @@ export default function NotifHistory({ open, setOpen }) {
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet 
+      open={open} 
+      onOpenChange={setOpen}
+    >
       <SheetContent side="right" className="max-w-4xl w-full">
         <SheetHeader className="border-b-2">
           <SheetTitle>Riwayat Notifikasi</SheetTitle>
@@ -485,7 +496,7 @@ export default function NotifHistory({ open, setOpen }) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => refetch()}
+                    onClick={() => fetchHistoryData()}
                     className="text-sm"
                   >
                     Coba Lagi
@@ -586,15 +597,11 @@ export default function NotifHistory({ open, setOpen }) {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => {
-                    if (confirm("Apakah Anda yakin ingin menghapus semua riwayat notifikasi? Tindakan ini tidak dapat dibatalkan.")) {
-                      deleteAllMutation.mutate();
-                    }
-                  }}
-                  disabled={deleteAllMutation.isPending}
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={isDeleting}
                   className="w-full"
                 >
-                  {deleteAllMutation.isPending ? (
+                  {isDeleting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
                       Menghapus...
@@ -611,6 +618,26 @@ export default function NotifHistory({ open, setOpen }) {
           </div>
         </div>
       </SheetContent>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        setOpen={setDeleteDialogOpen}
+        title="Hapus Semua Riwayat Notifikasi"
+        description="Apakah Anda yakin ingin menghapus semua riwayat notifikasi? Tindakan ini tidak dapat dibatalkan."
+        checkbox={
+          <CheckboxButton
+            id="deleteNotificationHistoryCheckbox"
+            text="Saya mengerti konsekuensinya."
+            checked={!!deleteChecked}
+            onChange={(e) => setDeleteChecked(e.target.checked)}
+          />
+        }
+        confirmHandle={handleDeleteConfirm}
+        confirmText="Hapus Semua"
+        cancelText="Batal"
+        confirmDisabled={!deleteChecked || isDeleting}
+      />
     </Sheet>
   );
 }

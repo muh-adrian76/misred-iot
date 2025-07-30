@@ -8,7 +8,6 @@ import { useUser } from "@/providers/user-provider";
 import AppSidebar from "@/components/features/app-sidebar";
 import AppNavbar from "@/components/features/app-navbar";
 import ToDoList from "@/components/custom/other/to-do-list";
-import OnboardingDebug from "@/components/custom/other/onboarding-debug";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { LayoutDashboard, Cpu, Siren, CircuitBoard, ArrowLeftRight } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";

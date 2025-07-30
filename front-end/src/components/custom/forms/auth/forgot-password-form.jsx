@@ -105,6 +105,7 @@ export default function ForgotPasswordForm({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  noInfo
                   required
                 />
               </div>

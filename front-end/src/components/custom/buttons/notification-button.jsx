@@ -13,9 +13,7 @@ const markAsRead = async (id) => {
   await new Promise(resolve => setTimeout(resolve, 300));
 };
 
-const markAllAsRead = async () => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-};
+// Remove the dummy markAllAsRead - let NotificationCenter handle it with its own built-in function
 
 const deleteNotification = async (id) => {
   await new Promise(resolve => setTimeout(resolve, 300));
@@ -58,7 +56,7 @@ function NotificationContent() {
         notifications={transformedNotifications} // Pass sebagai static data
         fetchNotifications={fetchNotifications}
         onMarkAsRead={markAsRead}
-        onMarkAllAsRead={markAllAsRead}
+        // Remove onMarkAllAsRead prop - let NotificationCenter use its own defaultMarkAllAsRead
         onDeleteNotification={deleteNotification}
         enableRealTimeUpdates={false} // Disable polling karena menggunakan WebSocket
         updateInterval={0} // No interval needed

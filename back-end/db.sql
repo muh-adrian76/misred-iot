@@ -171,7 +171,6 @@ CREATE TABLE IF NOT EXISTS `alarm_notifications` (
   `error_message` TEXT NULL,
   `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `is_read` BOOLEAN DEFAULT FALSE,
-  `read_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,

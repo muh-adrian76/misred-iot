@@ -33,8 +33,8 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
     : label;
 
   return (
-    <div className="bg-background border border-border rounded-lg shadow-lg p-3 min-w-[200px]">
-      <p className="text-sm font-medium text-foreground mb-2">
+    <div className="bg-background border border-border rounded-lg shadow-lg p-3 max-sm:max-w-[200px] min-w-[200px]">
+      <p className="text-xs sm:text-sm font-medium text-foreground mb-2">
         {fullTimeFormatted}
       </p>
       <div className="space-y-1">
@@ -53,11 +53,11 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: entry.color }}
                 />
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {displayLabel}
                 </span>
               </div>
-              <span className="text-sm font-medium">
+              <span className="text-xs sm:text-sm font-medium">
                 {entry.value !== null && entry.value !== undefined
                   ? entry.value.toLocaleString("id-ID", {
                       minimumFractionDigits: 1,
@@ -369,7 +369,7 @@ export function LineChartWidget({
                 />
               ))}
               <ChartLegend
-                content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />}
+                content={<ChartLegendContent className={"ml-11"} />}
               />
             </LineChart>
           </ChartContainer>
@@ -416,7 +416,7 @@ export function LineChartWidget({
       </div>
 
       {/* Chart Container - dengan tinggi yang fleksibel */}
-      <div className="flex-1 min-h-auto">
+      <div className="flex-1 min-h-[150px] lg:min-h-auto">
         <ChartContainer config={dynamicChartConfig} className="h-full w-full">
           <LineChart
             accessibilityLayer
@@ -475,7 +475,7 @@ export function LineChartWidget({
                 }}
               />
             ))}
-            <ChartLegend content={<ChartLegendContent className={"ml-11 max-sm:hidden"} />} />
+            <ChartLegend content={<ChartLegendContent className={"ml-11"} />} />
           </LineChart>
         </ChartContainer>
       </div>

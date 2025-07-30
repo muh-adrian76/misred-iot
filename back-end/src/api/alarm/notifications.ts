@@ -288,14 +288,14 @@ export function alarmNotificationRoutes(
     )
 
     // ✅ MARK All Notifications as Read
-    .post(
-      "/mark-all-read",
+    .put(
+      "/read",
       //@ts-ignore
       async ({ jwt, cookie, set }) => {
         try {
           const user = await authorizeRequest(jwt, cookie);
           const userId = parseInt(user.sub);
-
+          
           // Validate userId
           if (isNaN(userId) || userId <= 0) {
             console.error("❌ Invalid user ID:", user.sub);
@@ -305,10 +305,8 @@ export function alarmNotificationRoutes(
               message: "Invalid user ID"
             };
           }
-
-          // Mark all unread notifications for this user as read
           const affectedRows = await notificationService.markAllAsRead(userId);
-
+          
           return {
             success: true,
             message: "Semua notifikasi berhasil ditandai dibaca",
@@ -338,8 +336,8 @@ export function alarmNotificationRoutes(
     )
 
     // 🗑️ DELETE All Notifications 
-    .post(
-      "/delete-all",
+    .delete(
+      "/",
       //@ts-ignore
       async ({ jwt, cookie, set }) => {
         try {
@@ -375,59 +373,6 @@ export function alarmNotificationRoutes(
       }
     )
 
-    // ✅ MARK Single Notification as Read
-    .post(
-      "/:id/read",
-      //@ts-ignore
-      async ({ params, jwt, cookie, set }) => {
-        try {
-          const user = await authorizeRequest(jwt, cookie);
-          const userId = parseInt(user.sub);
-          const notificationId = parseInt(params.id);
-
-          // Validate inputs
-          if (isNaN(userId) || userId <= 0) {
-            console.error("❌ Invalid user ID:", user.sub);
-            set.status = 400;
-            return {
-              success: false,
-              message: "Invalid user ID"
-            };
-          }
-
-          if (isNaN(notificationId) || notificationId <= 0) {
-            set.status = 400;
-            return {
-              success: false,
-              message: "Invalid notification ID"
-            };
-          }
-
-          const marked = await notificationService.markAsRead(notificationId, userId);
-
-          if (!marked) {
-            set.status = 404;
-            return {
-              success: false,
-              message: "Notifikasi tidak ditemukan atau tidak bisa diubah"
-            };
-          }
-
-          return {
-            success: true,
-            message: "Notifikasi berhasil ditandai dibaca"
-          };
-        } catch (error) {
-          console.error("Error marking notification as read:", error);
-          set.status = 500;
-          return {
-            success: false,
-            message: "Internal server error"
-          };
-        }
-      }
-    )
-    
     // 🧪 SEND Test Notification
     .post(
       "/test/send",

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Move, Download, SaveAll, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DashboardTimeFilter from "@/components/custom/other/range-filter";
+import ExportDashboardDialog from "@/components/custom/other/export-dialog";
 
 export default function DashboardToolbar({
   dashboardState,
@@ -21,6 +22,8 @@ export default function DashboardToolbar({
   onDataCountChange,
   onFilterTypeChange,
 }) {
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
   return (
     <div className={cn("flex gap-2 sm:gap-3", className)}>
       {editState ? (
@@ -71,8 +74,8 @@ export default function DashboardToolbar({
           <Button
             className="cursor-pointer"
             variant="outline"
-            // disabled={widgetState}
-            disabled={true}
+            onClick={() => setExportDialogOpen(true)}
+            disabled={widgetState}
           >
             <span className="sr-only">Ekspor</span>
             <Download className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -80,6 +83,15 @@ export default function DashboardToolbar({
           </Button>
         </>
       )}
+
+      {/* Export Dialog */}
+      <ExportDashboardDialog
+        open={exportDialogOpen}
+        setOpen={setExportDialogOpen}
+        currentTimeRange={currentTimeRange}
+        currentDataCount={currentDataCount}
+        filterType={filterType}
+      />
     </div>
   );
 }

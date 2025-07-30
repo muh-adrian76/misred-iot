@@ -202,15 +202,15 @@ export default function DashboardContent(props) {
         </motion.div>
       )}
       {activeTab && isEditing && (
-        <div className="dashboard-editing-container flex flex-col lg:flex-row gap-4 w-full px-4 lg:pr-5.5">
+        <div className="dashboard-editing-container flex flex-col lg:flex-row gap-4 w-full px-4 lg:pr-5.5 min-h-0">
           {/* Drag & Drop di kiri */}
-          <div className="flex-1">
+          <div className="flex-1 min-h-0">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5, delay: 1, ease: "easeInOut" }}
-              className="pb-4 lg:pb-0"
+              className="pb-4 lg:pb-0 min-h-0"
             >
               <GridLayout
                 items={currentItems}

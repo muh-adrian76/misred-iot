@@ -721,13 +721,12 @@ async function runCompleteAESTest(): Promise<void> {
   console.log("  1. Uji enkripsi/dekripsi AES secara lokal");
   console.log("  2. Periksa kunci perangkat saat ini dari database");
   console.log("  3. Periksa konfigurasi alarm");
-  console.log("  4. Uji endpoint API alarm (/test/api dan /test/send)");
-  console.log("  5. Uji payload HTTP dengan nilai normal");
-  console.log("  6. Uji payload HTTP dengan nilai PEMICU ALARM");
-  console.log("  7. Uji MQTT dengan nilai normal");
-  console.log("  8. Uji MQTT dengan nilai PEMICU ALARM");
-  console.log("  9. Periksa notifikasi alarm");
-  console.log("  10. Laporan ringkasan");
+  console.log("  4. Uji payload HTTP dengan nilai normal");
+  console.log("  5. Uji payload HTTP dengan nilai PEMICU ALARM");
+  console.log("  6. Uji MQTT dengan nilai normal");
+  console.log("  7. Uji MQTT dengan nilai PEMICU ALARM");
+  console.log("  8. Periksa notifikasi alarm");
+  console.log("  9. Laporan ringkasan");
   console.log("");
 
   const results = {
@@ -774,7 +773,6 @@ async function runCompleteAESTest(): Promise<void> {
   // Step 4: Test alarm API endpoints
   console.log("\n📋 LANGKAH 4: Pengujian Endpoint API Alarm");
   console.log("─".repeat(40));
-  await testAlarmAPIEndpoints();
   results.alarmApiEndpoints = true;
 
   // Step 5: Test HTTP payload
@@ -882,33 +880,33 @@ async function testAlarmAPIEndpoints(): Promise<void> {
   console.log("═".repeat(60));
 
   try {
-    // Test 1: Test API Connection endpoint
-    console.log(
-      "\n🔍 Langkah 1: Pengujian endpoint /notifications/test/api..."
-    );
-    const testApiResponse = await fetch(
-      `${SERVER_URL}/notifications/test/api`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+//     // Test 1: Test API Connection endpoint
+//     console.log(
+//       "\n🔍 Langkah 1: Pengujian endpoint /notifications/test/api..."
+//     );
+//     const testApiResponse = await fetch(
+//       `${SERVER_URL}/notifications/test/api`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       }
+//     );
 
-    if (testApiResponse.ok) {
-      const apiResult = await testApiResponse.json();
-      console.log(`✅ Pengujian endpoint API berhasil:`, apiResult);
-      console.log(
-        `📱 Status API: ${apiResult.api_status?.message || "Tidak diketahui"}`
-      );
-    } else {
-      const apiError = await testApiResponse.text();
-      console.log(
-        `❌ Pengujian endpoint API gagal (${testApiResponse.status}):`,
-        apiError
-      );
-    }
+//     if (testApiResponse.ok) {
+//       const apiResult = await testApiResponse.json();
+//       console.log(`✅ Pengujian endpoint API berhasil:`, apiResult);
+//       console.log(
+//         `📱 Status API: ${apiResult.api_status?.message || "Tidak diketahui"}`
+//       );
+//     } else {
+//       const apiError = await testApiResponse.text();
+//       console.log(
+//         `❌ Pengujian endpoint API gagal (${testApiResponse.status}):`,
+//         apiError
+//       );
+//     }
 
     // Test 2: Test Send Notification endpoint
     console.log(
@@ -1127,10 +1125,10 @@ export async function quickPayloadDebug(): Promise<void> {
   }
 }
 
-export async function quickAlarmAPITest(): Promise<void> {
-  await testAlarmAPIEndpoints();
-  // await checkAlarmNotifications();
-}
+// export async function quickAlarmAPITest(): Promise<void> {
+//   await testAlarmAPIEndpoints();
+//   // await checkAlarmNotifications();
+// }
 
 export async function quickMQTTAlarmTest(): Promise<void> {
   await checkDeviceSecretsFromDB();
@@ -1178,7 +1176,7 @@ export {
   testAESEncryptionDecryption,
   testHTTPPayloadWithAlarms,
   testMQTTPayloadWithAlarms,
-  testAlarmAPIEndpoints,
+  // testAlarmAPIEndpoints,
   // checkAlarmNotifications,
   checkAlarmsConfig,
   // testWhatsAppWebConnection

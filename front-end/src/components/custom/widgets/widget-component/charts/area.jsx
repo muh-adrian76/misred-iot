@@ -445,7 +445,7 @@ export function AreaChartWidget({
       </div>
 
       {/* Chart */}
-      <div className="flex-1 min-h-auto">
+      <div className="flex-1 min-h-[150px] lg:min-h-auto">
         <ChartContainer config={dynamicChartConfig} className="h-full w-full">
           <AreaChart
             accessibilityLayer

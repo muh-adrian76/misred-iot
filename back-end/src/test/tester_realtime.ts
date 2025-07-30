@@ -61,7 +61,7 @@ let mqttSuccessCount = 0;
  */
 function generateRealtimeSensorData(): any {
   const data: any = {
-    timestamp: Date.now(), // Unix timestamp in milliseconds for device_time
+    timestamp: Math.floor(Date.now() / 1000), // Unix timestamp dalam SECONDS untuk kompatibilitas
   };
 
   // Generate gradual variations (±5% change from current value)
@@ -429,8 +429,9 @@ export async function showCurrentSensorValues(): Promise<void> {
   console.log(`🌡️ V3 (Temp): ${data.V3} °C`);
   console.log(`⚗️ V4 (NH3N): ${data.V4} mg/L`);
   console.log(`🌊 V5 (NTU): ${data.V5}`);
+  console.log(`⏰ Timestamp (Unix seconds): ${data.timestamp}`);
   console.log(
-    `⏰ Timestamp: ${new Date(data.timestamp).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`
+    `⏰ Timestamp (Human readable): ${new Date(data.timestamp * 1000).toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })}`
   );
 }
 

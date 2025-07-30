@@ -38,8 +38,8 @@ const responsiveMargins = {
 };
 
 const gridStyle = `
-  bg-background border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg min-h-[350px]
-  relative overflow-hidden
+  bg-background border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg 
+  relative overflow-visible min-h-screen
   bg-[linear-gradient(to_right,rgba(156,163,175,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(156,163,175,0.15)_1px,transparent_1px)]
   dark:bg-[linear-gradient(to_right,rgba(75,85,99,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(75,85,99,0.2)_1px,transparent_1px)]
 `;
@@ -199,6 +199,13 @@ export default function GridLayoutOptimized({
   // Optimized event handlers with useCallback (Performance optimization from notes.txt)
   const handleLayoutChange = useCallback(
     (layout, allLayouts) => {
+      console.log('🔄 Layout Change Triggered:', {
+        layoutLength: layout.length,
+        isEditing,
+        maxY: layout.length > 0 ? Math.max(...layout.map(item => item.y + item.h)) : 0,
+        layout: layout.map(item => ({ id: item.i, x: item.x, y: item.y, w: item.w, h: item.h }))
+      });
+      
       if (onLayoutChange) {
         const constrainedLayout = layout.map((item) => {
           const widget = items.find((w) => w.id.toString() === item.i);
@@ -536,7 +543,7 @@ export default function GridLayoutOptimized({
 
   return (
     <div
-      className="space-y-4"
+      className="space-y-4 w-full h-auto min-h-0"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleAddWidgetDrop}
     >
@@ -553,7 +560,7 @@ export default function GridLayoutOptimized({
         layouts={effectiveLayouts}
         onLayoutChange={isEditing ? handleLayoutChange : undefined} // Disable layout change in static mode
         onBreakpointChange={handleBreakpointChange}
-        onDrop={isEditing ? handleDrop : undefined} // Disable drop in static mode
+        onDrop={isEditing ? handleDrop : undefined}
         breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
         cols={{ lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }}
         rowHeight={40}
@@ -561,7 +568,7 @@ export default function GridLayoutOptimized({
         containerPadding={isEditing ? [5, 5] : [0, 0]} // Responsive padding
         measureBeforeMount={false}
         useCSSTransforms={true}
-        isBounded={true}
+        isBounded={false}
         isResizable={isEditing}
         isDroppable={isEditing}
         isDraggable={isEditing}
@@ -570,12 +577,14 @@ export default function GridLayoutOptimized({
           i: "__dropping-elem__",
           w: 4,
           h: 6,
+          isResizable: true,
+          isDraggable: true,
         }}
         draggableHandle=".drag-handle"
-        preventCollision={!isEditing} // Prevent collision in static mode for exact positioning
-        compactType={isEditing ? "vertical" : null} // No compacting in static mode
-        autoSize={false}
-        allowOverlap={!isEditing} // Allow overlap in static mode to preserve exact positions
+        preventCollision={!isEditing} 
+        compactType={isEditing ? "vertical" : null}
+        autoSize={true}
+        allowOverlap={!isEditing}
       >
         {items.length === 0 && (
           <div
