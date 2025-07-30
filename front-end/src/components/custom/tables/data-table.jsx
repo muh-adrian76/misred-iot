@@ -328,7 +328,7 @@ export default function DataTable({
                               ? "sm:sticky left-0 z-10 border-r min-w-[150px] truncate"
                               : "bg-background",
                             idx === columns.length - 1 ? "" : "",
-                            ["default_value", "min_value", "max_value"].includes(
+                            ["min_value", "max_value"].includes(
                               col.key
                             )
                               ? "min-w-[100px] border-r"

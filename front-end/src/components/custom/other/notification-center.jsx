@@ -121,7 +121,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
                   : "text-muted-foreground"
               )}
             >
-              {notification.title || "Peringatan Sensor Alarm"}
+              {notification.title}
             </p>
           </div>
 
@@ -241,8 +241,8 @@ export function NotificationCenter({
           ...notification,
           isRead: notification.isRead || notification.is_read || false,
           // Ensure we have all required fields for display
-          title: notification.title || "🚨 Peringatan Sensor Alarm",
-          message: notification.message || `${notification.alarm_description || 'Alarm'} - ${notification.datastream_description || 'Sensor'}: ${notification.sensor_value || 'N/A'}`,
+          title: notification.title,
+          message: notification.message,
           createdAt: notification.createdAt || notification.triggered_at || new Date().toISOString()
         };
         acc.push(normalizedNotification);

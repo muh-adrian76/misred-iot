@@ -73,7 +73,6 @@ export function useDatastreamLogic() {
         body: JSON.stringify({
           ...payload,
           deviceId: String(payload.deviceId),
-          defaultValue: String(payload.defaultValue),
           minValue: String(payload.minValue),
           maxValue: String(payload.maxValue),
         }),
@@ -97,7 +96,6 @@ export function useDatastreamLogic() {
         body: JSON.stringify({
           ...payload,
           deviceId: String(payload.deviceId),
-          defaultValue: String(payload.defaultValue),
           minValue: String(payload.minValue),
           maxValue: String(payload.maxValue),
         }),

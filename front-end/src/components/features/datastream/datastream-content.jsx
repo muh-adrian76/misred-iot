@@ -73,7 +73,6 @@ export default function DatastreamContent({
         );
       },
     },
-    { key: "default_value", label: "Default", sortable: false },
     { key: "min_value", label: "Min", sortable: false },
     { key: "max_value", label: "Max", sortable: false },
   ];

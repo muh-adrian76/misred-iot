@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `datastreams` (
   `pin` VARCHAR(10) NOT NULL,
   `type` ENUM('integer', 'double', 'string', 'boolean') NOT NULL,
   `unit` VARCHAR(50) NOT NULL,
-  `default_value` VARCHAR(255) NOT NULL,
+  -- `default_value` VARCHAR(255) NOT NULL,
   `min_value` DOUBLE NOT NULL,
   `max_value` DOUBLE NOT NULL,
   `decimal_value` ENUM('0.0', '0.00', '0.000', '0.0000') NOT NULL,
@@ -209,31 +209,31 @@ INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, n
 (1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', NULL, '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online', -6.2146, 106.8451, 'Jakarta Pusat, DKI Jakarta'),
 (2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', 'device/data', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online', -7.2575, 112.7521, 'Surabaya, Jawa Timur');
 
-INSERT IGNORE INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
+INSERT IGNORE INTO datastreams (id, description, pin, type, unit, min_value, max_value, decimal_value, device_id, user_id) VALUES
 -- Device 1 (HTTP) - Sensors
-(1, 'pH Sensor', 'V0', 'double', '', '7.0', 0.0, 14.0, '0.0', 1, 1),
-(2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 1, 1),
-(3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '0.00', 1, 1),
-(4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '0.00', 1, 1),
-(5, 'NH3N Sensor', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '0.00', 1, 1),
-(6, 'Turbidity Sensor', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '0.00', 1, 1),
+(1, 'pH Sensor', 'V0', 'double', '', 0.0, 14.0, '0.0', 1, 1),
+(2, 'Flow Sensor', 'V1', 'double', 'L/min', 0.0, 100.0, '0.00', 1, 1),
+(3, 'COD Sensor', 'V2', 'double', 'mg/L', 0.0, 200.0, '0.00', 1, 1),
+(4, 'Temperature Sensor', 'V3', 'double', '°C', -10.0, 60.0, '0.00', 1, 1),
+(5, 'NH3N Sensor', 'V4', 'double', 'mg/L', 0.0, 20.0, '0.00', 1, 1),
+(6, 'Turbidity Sensor', 'V5', 'double', 'NTU', 0.0, 100.0, '0.00', 1, 1),
 -- Device 1 (HTTP) - Actuators
-(13, 'LED Control', 'V6', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
-(14, 'Pump Control', 'V7', 'boolean', 'state', '0', 0.0, 1.0, '0', 1, 1),
-(15, 'Fan Speed', 'V8', 'string', '%', '50', 0.0, 100.0, '0', 1, 1),
-(16, 'Valve Position', 'V9', 'string', 'degrees', '90', 0.0, 180.0, '0', 1, 1),
+(13, 'LED Control', 'V6', 'boolean', 'state', 0.0, 1.0, '0', 1, 1),
+(14, 'Pump Control', 'V7', 'boolean', 'state', 0.0, 1.0, '0', 1, 1),
+(15, 'Fan Speed', 'V8', 'string', '%', 0.0, 100.0, '0', 1, 1),
+(16, 'Valve Position', 'V9', 'string', 'degrees', 0.0, 180.0, '0', 1, 1),
 -- Device 2 (MQTT) - Sensors
-(7, 'pH Sensor MQTT', 'V0', 'double', '', '7.0', 0.0, 14.0, '0.0', 2, 1),
-(8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 2, 1),
-(9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '0.00', 2, 1),
-(10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '0.00', 2, 1),
-(11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', '2.0', 0.0, 20.0, '0.00', 2, 1),
-(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', '10.0', 0.0, 100.0, '0.00', 2, 1),
+(7, 'pH Sensor MQTT', 'V0', 'double', '', 0.0, 14.0, '0.0', 2, 1),
+(8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', 0.0, 100.0, '0.00', 2, 1),
+(9, 'COD Sensor MQTT', 'V2', 'double', 'mg/L', 0.0, 200.0, '0.00', 2, 1),
+(10, 'Temperature Sensor MQTT', 'V3', 'double', '°C', -10.0, 60.0, '0.00', 2, 1),
+(11, 'NH3N Sensor MQTT', 'V4', 'double', 'mg/L', 0.0, 20.0, '0.00', 2, 1),
+(12, 'Turbidity Sensor MQTT', 'V5', 'double', 'NTU', 0.0, 100.0, '0.00', 2, 1),
 -- Device 2 (MQTT) - Actuators
-(17, 'LED Control MQTT', 'V6', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
-(18, 'Pump Control MQTT', 'V7', 'boolean', 'state', '0', 0.0, 1.0, '0', 2, 1),
-(19, 'Fan Speed MQTT', 'V8', 'string', '%', '50', 0.0, 100.0, '0', 2, 1),
-(20, 'Valve Position MQTT', 'V9', 'string', 'degrees', '90', 0.0, 180.0, '0', 2, 1);
+(17, 'LED Control MQTT', 'V6', 'boolean', 'state', 0.0, 1.0, '0', 2, 1),
+(18, 'Pump Control MQTT', 'V7', 'boolean', 'state', 0.0, 1.0, '0', 2, 1),
+(19, 'Fan Speed MQTT', 'V8', 'string', '%', 0.0, 100.0, '0', 2, 1),
+(20, 'Valve Position MQTT', 'V9', 'string', 'degrees', 0.0, 180.0, '0', 2, 1);
 
 INSERT IGNORE INTO alarms (id, description, user_id, device_id, datastream_id, is_active, cooldown_minutes) VALUES
 (1, 'pH Level Too High Alert', 1, 1, 1, TRUE, 1),

@@ -118,15 +118,15 @@ async function resetToTestData() {
     
     // Insert test datastreams
     await db.query(`
-      INSERT INTO datastreams (id, description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES
-      (1, 'pH Sensor', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '0.00', 1, 1),
-      (2, 'Flow Sensor', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 1, 1),
-      (3, 'COD Sensor', 'V2', 'double', 'mg/L', '50.0', 0.0, 200.0, '0.00', 1, 1),
-      (4, 'Temperature Sensor', 'V3', 'double', '°C', '25.0', -10.0, 60.0, '0.00', 1, 1),
-      (7, 'pH Sensor MQTT', 'V0', 'double', 'pH', '7.0', 0.0, 14.0, '0.00', 2, 1),
-      (8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', '25.0', 0.0, 100.0, '0.00', 2, 1),
-      (13, 'LED Control', 'V6', 'boolean', 'state', '0', 0.0, 1.0, '0.00', 1, 1),
-      (14, 'Pump Control', 'V7', 'boolean', 'state', '0', 0.0, 1.0, '0.00', 1, 1)
+      INSERT INTO datastreams (id, description, pin, type, unit, min_value, max_value, decimal_value, device_id, user_id) VALUES
+      (1, 'pH Sensor', 'V0', 'double', 'pH', 0.0, 14.0, '0.00', 1, 1),
+      (2, 'Flow Sensor', 'V1', 'double', 'L/min', 0.0, 100.0, '0.00', 1, 1),
+      (3, 'COD Sensor', 'V2', 'double', 'mg/L', 0.0, 200.0, '0.00', 1, 1),
+      (4, 'Temperature Sensor', 'V3', 'double', '°C', -10.0, 60.0, '0.00', 1, 1),
+      (7, 'pH Sensor MQTT', 'V0', 'double', 'pH', 0.0, 14.0, '0.00', 2, 1),
+      (8, 'Flow Sensor MQTT', 'V1', 'double', 'L/min', 0.0, 100.0, '0.00', 2, 1),
+      (13, 'LED Control', 'V6', 'boolean', 'state', 0.0, 1.0, '0.00', 1, 1),
+      (14, 'Pump Control', 'V7', 'boolean', 'state', 0.0, 1.0, '0.00', 1, 1)
     `);
     
     // Insert test alarms

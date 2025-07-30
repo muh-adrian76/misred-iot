@@ -59,7 +59,6 @@ export class DatastreamService {
     type,
     unit,
     description,
-    defaultValue,
     minValue,
     maxValue,
     decimalValue,
@@ -71,7 +70,6 @@ export class DatastreamService {
     type: string;
     unit?: string;
     description?: string;
-    defaultValue: string;
     minValue: string;
     maxValue: string;
     decimalValue: string;
@@ -92,32 +90,27 @@ export class DatastreamService {
       }
 
       // Cek format tipe data
-      let defaultVal: any = defaultValue;
       let minVal: any = minValue;
       let maxVal: any = maxValue;
       if (type === "integer") {
-        defaultVal = parseInt(defaultValue);
         minVal = parseInt(minValue);
         maxVal = parseInt(maxValue);
       } else if (type === "double") {
         const decimalFormat = getDecimal(decimalValue);
-        defaultVal = parseFloat(Number(defaultValue).toFixed(decimalFormat));
         minVal = parseFloat(Number(minValue).toFixed(decimalFormat));
         maxVal = parseFloat(Number(maxValue).toFixed(decimalFormat));
       } else if (type === "boolean") {
-        defaultVal = booleanValue === "1" ? 1 : 0;
         minVal = 0;
         maxVal = 1;
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
-        "INSERT INTO datastreams (description, pin, type, unit, default_value, min_value, max_value, decimal_value, device_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO datastreams (description, pin, type, unit, min_value, max_value, decimal_value, device_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           description,
           virtualPin,
           type,
           unit,
-          defaultVal,
           minVal,
           maxVal,
           decimalValue,
@@ -140,7 +133,6 @@ export class DatastreamService {
       type,
       unit,
       description,
-      defaultValue,
       minValue,
       maxValue,
       decimalValue,
@@ -151,7 +143,6 @@ export class DatastreamService {
       type: string;
       unit?: string;
       description?: string;
-      defaultValue: string;
       minValue: string;
       maxValue: string;
       decimalValue: string;
@@ -161,33 +152,28 @@ export class DatastreamService {
     try {
       // Cek format tipe data
       const virtualPin = `V${pin}`;
-      let defaultVal: any = defaultValue;
       let minVal: any = minValue;
       let maxVal: any = maxValue;
       if (type === "integer") {
-        defaultVal = parseInt(defaultValue);
         minVal = parseInt(minValue);
         maxVal = parseInt(maxValue);
       } else if (type === "double") {
         const decimalFormat = getDecimal(decimalValue);
-        defaultVal = parseFloat(Number(defaultValue).toFixed(decimalFormat));
         minVal = parseFloat(Number(minValue).toFixed(decimalFormat));
         maxVal = parseFloat(Number(maxValue).toFixed(decimalFormat));
       } else if (type === "boolean") {
-        defaultVal = booleanValue === "1" ? 1 : 0;
         minVal = 0;
         maxVal = 1;
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
-        "UPDATE datastreams SET device_id = ?, pin = ?, type = ?, unit = ?, description = ?, default_value = ?, min_value = ?, max_value = ?, decimal_value = ? WHERE id = ?",
+        "UPDATE datastreams SET device_id = ?, pin = ?, type = ?, unit = ?, description = ?, min_value = ?, max_value = ?, decimal_value = ? WHERE id = ?",
         [
           Number(deviceId),
           virtualPin,
           type,
           unit ?? null,
           description ?? null,
-          defaultVal,
           minVal,
           maxVal,
           decimalValue,

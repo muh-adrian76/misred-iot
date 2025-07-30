@@ -43,7 +43,6 @@ export default function AddDatastreamForm({
   const [pin, setPin] = useState("");
   const [type, setType] = useState("");
   const [unit, setUnit] = useState("");
-  const [defaultValue, setDefaultValue] = useState(0);
   const [minValue, setMinValue] = useState(0);
   const [maxValue, setMaxValue] = useState(1);
   const [deviceId, setDeviceId] = useState("");
@@ -60,7 +59,6 @@ export default function AddDatastreamForm({
       setPin("");
       setType("");
       setUnit("");
-      setDefaultValue(0);
       setMinValue(0);
       setMaxValue(1);
       setDeviceId("");
@@ -354,43 +352,8 @@ export default function AddDatastreamForm({
         )}
       </div>
 
-      {type === "boolean" ? null : type === "string" ? (
-        <div className="flex flex-col gap-2">
-          <Label
-            htmlFor="defaultValue"
-            className="text-left font-medium max-sm:text-xs ml-1"
-          >
-            Nilai Default
-          </Label>
-          <Input
-            id="defaultValue"
-            type="text"
-            value={defaultValue}
-            onChange={(e) => setDefaultValue(e.target.value)}
-            className="w-full"
-            placeholder="Data"
-            noInfo
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="defaultValue"
-              className="text-left font-medium max-sm:text-xs ml-1"
-            >
-              Nilai Default
-            </Label>
-            <Input
-              id="defaultValue"
-              type="number"
-              value={defaultValue}
-              onChange={(e) => setDefaultValue(String(e.target.value))}
-              className="w-full"
-              placeholder="0"
-              noInfo
-            />
-          </div>
+      {type === "boolean" || type === "string" ? null : (
+        <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <Label
               htmlFor="minValue"
@@ -438,7 +401,6 @@ export default function AddDatastreamForm({
       pin,
       type,
       unit,
-      defaultValue,
       minValue,
       maxValue,
       decimalValue,

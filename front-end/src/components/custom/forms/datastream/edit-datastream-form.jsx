@@ -42,7 +42,6 @@ export default function EditDatastreamForm({
   const [pin, setPin] = useState("");
   const [type, setType] = useState("");
   const [unit, setUnit] = useState("");
-  const [defaultValue, setDefaultValue] = useState(0);
   const [minValue, setMinValue] = useState(0);
   const [maxValue, setMaxValue] = useState(1);
   const [deviceId, setDeviceId] = useState("");
@@ -64,7 +63,6 @@ export default function EditDatastreamForm({
       );
       setType(editDatastream.type || "");
       setUnit(editDatastream.unit || "");
-      setDefaultValue(editDatastream.default_value || 0);
       setMinValue(editDatastream.min_value || 0);
       setMaxValue(editDatastream.max_value || 1);
     }
@@ -376,43 +374,8 @@ export default function EditDatastreamForm({
         )}
       </div>
 
-      {type === "boolean" ? null : type === "string" ? (
-        <div className="flex flex-col gap-2">
-          <Label
-            htmlFor="defaultValue"
-            className="text-left font-medium max-sm:text-xs ml-1"
-          >
-            Nilai Default
-          </Label>
-          <Input
-            id="defaultValue"
-            type="text"
-            value={defaultValue}
-            onChange={(e) => setDefaultValue(e.target.value)}
-            className="w-full"
-            placeholder="Data"
-            noInfo
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="defaultValue"
-              className="text-left font-medium max-sm:text-xs ml-1"
-            >
-              Nilai Default
-            </Label>
-            <Input
-              id="defaultValue"
-              type="number"
-              value={defaultValue}
-              onChange={(e) => setDefaultValue(String(e.target.value))}
-              className="w-full"
-              placeholder="0"
-              noInfo
-            />
-          </div>
+      {type === "boolean" || type === "string" ? null : (
+        <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <Label
               htmlFor="minValue"
@@ -460,7 +423,6 @@ export default function EditDatastreamForm({
       pin,
       type,
       unit,
-      defaultValue,
       minValue,
       maxValue,
       decimalValue,

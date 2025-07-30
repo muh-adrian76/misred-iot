@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Move, Download, SaveAll, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DashboardTimeFilter from "@/components/custom/other/range-filter";
-import ExportDashboardDialog from "@/components/custom/other/export-dialog";
+import ExportDashboardDialog from "@/components/custom/other/export-datastream";
 
 export default function DashboardToolbar({
   dashboardState,

@@ -165,14 +165,6 @@ export class PayloadService {
       let query = '';
       let queryParams: any[] = [device_id, datastream_id];
 
-      console.log(`🔍 [TIME SERIES] Mengambil data time series:`, {
-        device_id, 
-        datastream_id, 
-        timeRange, 
-        count,
-        serverTime: new Date().toISOString()
-      });
-
       // Jika filter berdasarkan count (jumlah data terakhir)
       if (count && count !== 'all') {
         const limitCount = parseInt(count);
@@ -224,8 +216,6 @@ export class PayloadService {
       }
 
       const [rows] = await this.db.query(query, queryParams);
-      
-      console.log(`✅ [TIME SERIES] Berhasil mengambil ${(rows as any[]).length} data points`);
       
       // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
       if (count && count !== 'all') {

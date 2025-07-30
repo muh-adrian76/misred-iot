@@ -976,18 +976,14 @@ export class AlarmNotificationService {
       const sessionPath = path.join(process.cwd(), "wwebjs_auth");
 
       try {
-        console.log("🗑️ Cleaning up session files at:", sessionPath);
-
         // Check if directory exists
         await fs.access(sessionPath);
 
         // List what we're about to delete
         const files = await fs.readdir(sessionPath);
-        console.log(`🗑️ Found ${files.length} items to clean up`);
 
         // Remove the entire session directory recursively
         await fs.rm(sessionPath, { recursive: true, force: true });
-        console.log("✅ Session files cleaned up successfully");
 
         // Wait a bit to ensure filesystem operations complete
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -1277,10 +1273,7 @@ export class AlarmNotificationService {
       );
       
       const unreadCount = (checkResult as any)[0]?.unread_count || 0;
-      console.log("📊 Found", unreadCount, "unread notifications for user", userId);
-      
       if (unreadCount === 0) {
-        console.log("⚠️ No unread notifications found for user", userId);
         return 0;
       }
       
@@ -1294,9 +1287,7 @@ export class AlarmNotificationService {
         [userId]
       );
 
-      const affectedRows = (result as any).affectedRows;
-      console.log("✅ Successfully marked", affectedRows, "notifications as read for user", userId);
-      
+      const affectedRows = (result as any).affectedRows; 
       return affectedRows;
     } catch (error) {
       console.error("❌ Error marking all notifications as read:", error);
