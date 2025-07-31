@@ -191,15 +191,20 @@ export class PayloadService {
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
         let timeCondition = '';
-        // PERBAIKAN: Gunakan UTC_TIMESTAMP() untuk konsistensi dengan frontend
-        // dan pastikan perbandingan timezone yang tepat
-        switch (timeRange) {
-          case '1h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
-          case '12h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
-          case '1d': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
-          case '1w': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
-          case 'all': timeCondition = ''; break; // Semua data
-          default: timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
+        // PERBAIKAN: Handle case untuk mendapatkan semua data
+        // Jika tidak ada parameter range atau range kosong, ambil semua data
+        if (!timeRange || timeRange === 'all') {
+          timeCondition = ''; // Tidak ada filter waktu = semua data
+        } else {
+          // PERBAIKAN: Gunakan UTC_TIMESTAMP() untuk konsistensi dengan frontend
+          // dan pastikan perbandingan timezone yang tepat
+          switch (timeRange) {
+            case '1h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
+            case '12h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
+            case '1d': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
+            case '1w': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
+            default: timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
+          }
         }
 
         query = `SELECT 
@@ -224,7 +229,7 @@ export class PayloadService {
       
       return rows;
     } catch (error) {
-      console.error("Error fetching time series data:", error);
+      console.error("❌ [PAYLOAD SERVICE] Error fetching time series data:", error);
       throw new Error("Failed to fetch time series data");
     }
   }

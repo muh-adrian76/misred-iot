@@ -9,6 +9,7 @@ const CheckboxButton = ({
   checked = false,
   onChange,
   indeterminate,
+  disabled = false,
   ...props
 }) => {
   const ref = useRef();
@@ -37,7 +38,7 @@ const CheckboxButton = ({
               <polyline points="1.5 6 4.5 9 10.5 1" />
             </svg>
           </span>
-          <span className={cn("max-sm:text-sm", text ? "ml-2" : "")}>{text}</span>
+          <span className={cn("max-sm:text-sm", text ? "ml-2" : "", disabled ? "text-muted-foreground line-through" : "")}>{text}</span>
         </label>
       </div>
     </StyledWrapper>

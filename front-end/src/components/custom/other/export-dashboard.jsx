@@ -7,17 +7,21 @@ import CheckboxButton from "../buttons/checkbox-button";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { 
   FileText, 
   Download, 
   AlertCircle,
   CheckCircle2,
-  Loader2 
+  Loader2,
+  FileDown,
+  Search,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { useUser } from "@/providers/user-provider";
 import { successToast, errorToast } from "./toaster";
-import { generatePDFHtmlContent, exportToCSV as exportCSVUtil, printHTMLContent, formatDateTime } from "@/lib/export-utils";
+import { exportToCSV, formatDateTime, generateReactPDF } from "@/lib/export-utils";
+import { DatastreamPDFDocument } from "@/components/custom/other/pdf-content";
 
 export default function ExportDashboardDialog({
   open,
@@ -25,23 +29,36 @@ export default function ExportDashboardDialog({
   currentTimeRange,
   currentDataCount,
   filterType,
+  exportMode = "filter", // "filter" or "all"
+  isMobile,
 }) {
   const { user } = useUser();
   const [devices, setDevices] = useState([]);
   const [datastreams, setDatastreams] = useState([]);
   const [selectedDatastreams, setSelectedDatastreams] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [exportFormats, setExportFormats] = useState({
     csv: true,
-    pdf: false,
+    pdf: exportMode === "filter", // PDF only available for filter mode
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [loadingError, setLoadingError] = useState(null);
 
+  // Update export formats when mode changes
+  useEffect(() => {
+    if (exportMode === "all") {
+      setExportFormats({ csv: true, pdf: false });
+    } else {
+      setExportFormats({ csv: true, pdf: false });
+    }
+  }, [exportMode]);
+
   // Fetch devices and datastreams
   useEffect(() => {
     if (open && user) {
       fetchDevicesAndDatastreams();
+      setSearchQuery(""); // Clear search when dialog opens
     }
   }, [open, user]);
 
@@ -93,7 +110,7 @@ export default function ExportDashboardDialog({
   };
 
   const handleSelectAllDevice = (deviceId, checked) => {
-    const device = devices.find(d => d.id === deviceId);
+    const device = filteredDevices.find(d => d.id === deviceId);
     if (!device) return;
     
     const deviceDatastreamIds = device.datastreams.map(ds => ds.id);
@@ -111,11 +128,53 @@ export default function ExportDashboardDialog({
   };
 
   const handleFormatToggle = (format, checked) => {
+    // Prevent changing formats in "all" mode where only CSV is allowed
+    if (exportMode === "all" && format === "pdf") {
+      return;
+    }
+    
     setExportFormats(prev => ({
       ...prev,
       [format]: checked
     }));
   };
+
+  // Generate dialog title based on export mode and filter
+  const getDialogTitle = () => {
+    if (exportMode === "all") {
+      return "Ekspor semua data";
+    } else {
+      if (filterType === "time") {
+        const timeRangeText = {
+          "1h": "1 jam terakhir",
+          "12h": "12 jam terakhir", 
+          "1d": "1 hari terakhir",
+          "1w": "1 minggu terakhir"
+        }[currentTimeRange] || `${currentTimeRange} terakhir`;
+        return `Ekspor ${timeRangeText}`;
+      } else {
+        return `Ekspor ${currentDataCount} data terakhir`;
+      }
+    }
+  };
+
+  // Filter devices and datastreams based on search query
+  const filteredDevices = devices.filter(device => {
+    const deviceMatches = device.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const datastreamMatches = device.datastreams.some(ds => 
+      ds.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ds.pin.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    return deviceMatches || datastreamMatches;
+  }).map(device => ({
+    ...device,
+    datastreams: device.datastreams.filter(ds =>
+      searchQuery === "" || 
+      device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ds.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ds.pin.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }));
 
   const fetchDatastreamData = async (datastreamId) => {
     try {
@@ -126,24 +185,33 @@ export default function ExportDashboardDialog({
 
       // Use the timeseries endpoint for consistent data
       const params = new URLSearchParams();
-      if (filterType === 'time' && currentTimeRange) {
-        params.append('range', currentTimeRange);
-      } else if (filterType === 'count' && currentDataCount) {
-        params.append('count', currentDataCount.toString());
+      
+      // Only add filter parameters if in filter mode
+      if (exportMode === "filter") {
+        if (filterType === 'time' && currentTimeRange) {
+          params.append('range', currentTimeRange);
+        } else if (filterType === 'count' && currentDataCount) {
+          params.append('count', currentDataCount.toString());
+        }
+      } else if (exportMode === "all") {
+        // For "all" mode, explicitly request all data
+        params.append('range', 'all');
       }
 
-      const response = await fetchFromBackend(
-        `/payload/timeseries/${datastream.device_id}/${datastreamId}?${params}`
-      );
+      const url = `/payload/timeseries/${datastream.device_id}/${datastreamId}?${params}`;
+
+      const response = await fetchFromBackend(url);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch data for datastream ${datastreamId}`);
       }
       
       const data = await response.json();
+      const resultData = data.result || [];
+      
       return {
         datastream,
-        data: data.result || []
+        data: resultData
       };
     } catch (error) {
       console.error(`Error fetching data for datastream ${datastreamId}:`, error);
@@ -151,20 +219,19 @@ export default function ExportDashboardDialog({
     }
   };
 
-  const exportToCSV = async (datastreamData) => {
+  const exportDataToCSV = async (datastreamData) => {
     const { datastream, data } = datastreamData;
     
     if (!data || data.length === 0) {
-      console.warn(`No data found for datastream: ${datastream.description}`);
-      return;
+      throw new Error(`Tidak ada data untuk diekspor pada datastream: ${datastream.description}`);
     }
 
     const headers = [
-      "Tanggal/Waktu",
-      "Device ID", 
-      "Device Name",
+      "Tanggal dan Waktu",
+      "UID Perangkat", 
+      "Deskripsi",
       "Datastream",
-      "Value"
+      "Nilai"
     ];
 
     // Sort data from oldest to newest
@@ -177,56 +244,33 @@ export default function ExportDashboardDialog({
     const rows = sortedData.map((item) => [
       formatDateTime(item.device_time || item.created_at),
       datastream.device_id,
-      datastream.device_description,
+      item.device_name || datastream.device_description || `Device ${datastream.device_id}`,
       datastream.description,
       item.value
     ]);
 
-    const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}`;
-    exportCSVUtil(headers, rows, filename);
+    // Add unique timestamp to prevent filename conflicts
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
+    
+    // Use utility function for CSV export
+    exportToCSV(headers, rows, filename);
   };
 
   const exportToPDF = async (datastreamData) => {
     const { datastream, data } = datastreamData;
     
     if (!data || data.length === 0) {
-      console.warn(`No data found for datastream: ${datastream.description}`);
-      return;
+      throw new Error(`Tidak ada data untuk diekspor pada datastream: ${datastream.description}`);
     }
 
-    // Sort data from oldest to newest
-    const sortedData = [...data].sort((a, b) => {
-      const dateA = new Date(a.device_time || a.created_at);
-      const dateB = new Date(b.device_time || b.created_at);
-      return dateA.getTime() - dateB.getTime();
-    });
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
 
-    const headers = ["Tanggal/Waktu", "Device ID", "Device Name", "Datastream", "Value"];
-    
-    const rows = sortedData.map((item) => [
-      formatDateTime(item.device_time || item.created_at),
-      datastream.device_id,
-      datastream.device_description || `Device ${datastream.device_id}`,
-      datastream.description,
-      item.value
-    ]);
-
-    const metadata = {
-      "Device": datastream.device_description || `Device ${datastream.device_id}`,
-      "Datastream": datastream.description,
-      "Total": `${sortedData.length} data`
-    };
-
-    const htmlContent = generatePDFHtmlContent({
-      title: `Data Ekspor - ${datastream.description}`,
-      subtitle: "Monitoring System Report",
-      headers,
-      data: rows,
-      metadata,
-      filename: `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}`
-    });
-
-    printHTMLContent(htmlContent);
+    // Create React PDF Document component and generate PDF
+    const DocumentComponent = DatastreamPDFDocument({ datastream, data });
+    await generateReactPDF(DocumentComponent, filename);
   };
 
   const handleExport = async () => {
@@ -243,44 +287,84 @@ export default function ExportDashboardDialog({
     setIsExporting(true);
 
     try {
-      // Fetch data for all selected datastreams
-      const exportPromises = selectedDatastreams.map(async (datastreamId) => {
+      let successCount = 0;
+      let failCount = 0;
+      let emptyDataCount = 0;
+      const emptyDatastreams = [];
+      
+      // Process each datastream sequentially to avoid race conditions
+      for (const datastreamId of selectedDatastreams) {
         try {
           const datastreamData = await fetchDatastreamData(datastreamId);
           
           // Export in selected formats
           if (exportFormats.csv) {
-            await exportToCSV(datastreamData);
+            await exportDataToCSV(datastreamData);
+            // Small delay to prevent conflicts
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
           
           if (exportFormats.pdf) {
             await exportToPDF(datastreamData);
+            // Small delay for PDF generation
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
           
-          return { success: true, datastreamId };
+          successCount++;
         } catch (error) {
-          console.error(`Failed to export datastream ${datastreamId}:`, error);
-          return { success: false, datastreamId, error: error.message };
+          // Check if error is due to empty data
+          if (error.message.includes('Tidak ada data untuk diekspor')) {
+            emptyDataCount++;
+            const datastream = datastreams.find(ds => ds.id === datastreamId);
+            if (datastream) {
+              emptyDatastreams.push(datastream.description);
+            }
+          } else {
+            failCount++;
+          }
         }
-      });
-
-      const results = await Promise.all(exportPromises);
+      }
       
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
-      
+      // Show appropriate toast messages
       if (successCount > 0) {
-        successToast(
-          `Berhasil mengekspor ${successCount} datastream`, 
-          failCount > 0 ? `${failCount} datastream gagal diekspor` : undefined
+        let message = `Berhasil mengekspor ${successCount} datastream`;
+        let description = undefined;
+        
+        if (emptyDataCount > 0 || failCount > 0) {
+          const issues = [];
+          if (emptyDataCount > 0) {
+            issues.push(`${emptyDataCount} datastream tidak memiliki data`);
+          }
+          if (failCount > 0) {
+            issues.push(`${failCount} datastream gagal diekspor`);
+          }
+          description = issues.join(", ");
+        }
+        
+        successToast(message, description);
+      } else if (emptyDataCount > 0 && failCount === 0) {
+        // All selected datastreams have empty data
+        const modeText = exportMode === "all" ? "semua data" : "data sesuai filter";
+        errorToast(
+          "Tidak ada data untuk diekspor", 
+          `Datastream yang dipilih (${emptyDatastreams.join(", ")}) tidak memiliki ${modeText}`
         );
-      }
-      
-      if (failCount > 0 && successCount === 0) {
+      } else if (failCount > 0 && emptyDataCount === 0) {
+        // All exports failed due to other errors
         errorToast("Semua ekspor gagal. Silakan coba lagi.");
+      } else {
+        // Mixed failures
+        const errorParts = [];
+        if (emptyDataCount > 0) {
+          errorParts.push(`${emptyDataCount} datastream tidak memiliki data`);
+        }
+        if (failCount > 0) {
+          errorParts.push(`${failCount} datastream gagal diekspor`);
+        }
+        errorToast("Ekspor gagal", errorParts.join(", "));
       }
       
-      // Close dialog on success
+      // Close dialog only on successful exports
       if (successCount > 0) {
         setOpen(false);
       }
@@ -294,10 +378,22 @@ export default function ExportDashboardDialog({
   };
 
   const formContent = (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Datastream Selection */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Pilih Datastream untuk Diekspor</Label>
+        <div className="flex items-center justify-between gap-3 max-sm:flex-col max-sm:items-start">
+          <Label className="text-sm font-medium">Pilih Datastream untuk Diekspor</Label>
+          <div className="relative max-sm:w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari device atau datastream..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-8 w-64 max-sm:w-full max-sm:text-xs text-sm"
+              noInfo
+            />
+          </div>
+        </div>
         
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -311,15 +407,20 @@ export default function ExportDashboardDialog({
             <AlertCircle className="h-4 w-4" />
             <span>Error: {loadingError}</span>
           </div>
-        ) : devices.length === 0 ? (
+        ) : filteredDevices.length === 0 ? (
           <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground bg-muted rounded-lg">
             <AlertCircle className="h-4 w-4" />
-            <span>Tidak ada datastream yang tersedia</span>
+            <span>
+              {searchQuery ? 
+                `Tidak ada datastream yang cocok dengan pencarian "${searchQuery}"` : 
+                "Tidak ada datastream yang tersedia"
+              }
+            </span>
           </div>
         ) : (
-          <ScrollArea className="h-48 border border-accent rounded-lg p-3">
+          <ScrollArea className="h-48 max-sm:h-36 border border-accent rounded-lg p-3">
             <div className="space-y-4">
-              {devices.map((device) => (
+              {filteredDevices.map((device) => (
                 <div key={device.id} className="space-y-2">
                   <div className="flex items-center gap-2">
                     <CheckboxButton
@@ -358,36 +459,41 @@ export default function ExportDashboardDialog({
         )}
       </div>
 
-      <Separator className={"bg-accent"} />
+      <Separator className={"bg-accent max-sm:hidden"} />
 
       {/* Export Format Selection */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium">Format Ekspor</Label>
-        <div className="space-y-2">
+        <Label className="text-sm font-medium flex gap-3 items-center">
+          Pilih Format Ekspor
+          <FileDown className="w-4 h-4" />
+        </Label>
+        <div className="sm:space-y-2 max-sm:flex max-sm:gap-3">
           <div className="flex items-center gap-2">
             <CheckboxButton
               id="export-csv"
-              text="CSV (Kompatibel dengan Excel)"
+              text={isMobile ? "CSV" : "CSV (Kompatibel dengan Excel)"}
               checked={exportFormats.csv}
               onChange={(e) => handleFormatToggle('csv', e.target.checked)}
             />
-            <FileText className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2">
             <CheckboxButton
               id="export-pdf"
-              text="PDF (Siap Cetak)"
+              text={isMobile ? "PDF" : "PDF (Siap Cetak)"}
               checked={exportFormats.pdf}
               onChange={(e) => handleFormatToggle('pdf', e.target.checked)}
+              disabled={exportMode === "all"}
             />
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            {exportMode === "all" && (
+              <span className="text-xs text-muted-foreground">(Tidak tersedia untuk semua data)</span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Selection Summary */}
       {selectedDatastreams.length > 0 && (
-        <div className="p-3 bg-red-50 dark:bg-accent rounded-lg border border-red-200">
+        <div className="max-sm:py-1 max-sm:px-3 p-3 bg-red-50 dark:bg-accent rounded-lg border border-red-200">
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4 text-red-600 dark:text-foreground" />
             <span className="text-red-800 dark:text-foreground">
@@ -403,7 +509,7 @@ export default function ExportDashboardDialog({
     <ResponsiveDialog
       open={open}
       setOpen={setOpen}
-      title="Ekspor Data Dashboard"
+      title={getDialogTitle()}
       form={formContent}
       formHandle={(e) => {
         e.preventDefault();

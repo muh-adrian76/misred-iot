@@ -28,15 +28,15 @@ const dataCountOptions = [
 export default function DashboardTimeFilter({ 
   currentTimeRange = "1h", 
   currentDataCount = "10",
-  filterType = "time", // "time" atau "count"
+  filterType = "count", // "time" atau "count" - default changed to "count"
   onTimeRangeChange,
   onDataCountChange,
   onFilterTypeChange,
   disabled = false 
 }) {
   const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(filterType === "time" ? 0 : 1);
-  const { isMobile, isMedium } = useBreakpoint();
+  const [activeIndex, setActiveIndex] = useState(filterType === "count" ? 0 : 1);
+  const { isMobile, isMedium, isTablet } = useBreakpoint();
 
   const currentTimeOption = timeRangeOptions.find(option => option.value === currentTimeRange);
   const currentCountOption = dataCountOptions.find(option => option.value === currentDataCount);
@@ -58,7 +58,7 @@ export default function DashboardTimeFilter({
 
   const handleTabChange = (index) => {
     setActiveIndex(index);
-    const newFilterType = index === 0 ? "time" : "count";
+    const newFilterType = index === 0 ? "count" : "time"; // Swap: index 0 = count, index 1 = time
     onFilterTypeChange && onFilterTypeChange(newFilterType);
   };
 
@@ -69,8 +69,8 @@ export default function DashboardTimeFilter({
         <div
           key={option.value}
           className={cn(
-            "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
-            filterType === "time" && currentTimeRange === option.value && "bg-muted"
+            "flex items-center justify-between px-4 py-2 rounded-md cursor-pointer hover:bg-accent transition-colors",
+            filterType === "time" && currentTimeRange === option.value && "bg-accent"
           )}
           onClick={() => handleTimeSelect(option.value)}
         >
@@ -81,7 +81,7 @@ export default function DashboardTimeFilter({
             </div>
           </div>
           {filterType === "time" && currentTimeRange === option.value && (
-            <Check className="w-5 h-5" />
+            <Check className="w-5 h-5 dark:text-primary" />
           )}
         </div>
       ))}
@@ -95,8 +95,8 @@ export default function DashboardTimeFilter({
         <div
           key={option.value}
           className={cn(
-            "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted transition-colors",
-            filterType === "count" && currentDataCount === option.value && "bg-muted"
+            "flex items-center justify-between px-4 py-2 rounded-md cursor-pointer hover:bg-accent transition-colors",
+            filterType === "count" && currentDataCount === option.value && "bg-accent"
           )}
           onClick={() => handleCountSelect(option.value)}
         >
@@ -107,7 +107,7 @@ export default function DashboardTimeFilter({
             </div>
           </div>
           {filterType === "count" && currentDataCount === option.value && (
-            <Check className="w-5 h-5" />
+            <Check className="w-5 h-5 dark:text-primary" />
           )}
         </div>
       ))}
@@ -116,12 +116,12 @@ export default function DashboardTimeFilter({
 
   const FILTER_TABS = [
     {
-      title: "Waktu",
-      content: <TimeRangePanel />
-    },
-    {
       title: "Jumlah",
       content: <DataCountPanel />
+    },
+    {
+      title: "Waktu",
+      content: <TimeRangePanel />
     },
   ];
 
@@ -148,7 +148,7 @@ export default function DashboardTimeFilter({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align={isMobile || isMedium ? "center" : "end"}>
+      <PopoverContent className="w-80 p-0" align={isMobile || isMedium || isTablet ? "center" : "end"}>
         <div className="p-4">
           {/* Tab Navigation */}
           <div className="flex space-x-2 mb-4 justify-center">
@@ -159,8 +159,8 @@ export default function DashboardTimeFilter({
                 className={cn(
                   "rounded-md px-3 py-1 text-sm font-medium transition-colors",
                   activeIndex === index
-                    ? "bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-400 hover:bg-zinc-150 dark:hover:bg-zinc-650"
+                    ? "bg-red-500 text-white"
+                    : "bg-gray-100 text-gray-600 dark:bg-grey-700 dark:text-grey-400 hover:bg-grey-150 dark:hover:bg-grey-650"
                 )}
               >
                 {tab.title}

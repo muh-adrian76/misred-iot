@@ -117,7 +117,7 @@ export default function GridLayoutOptimized({
   isEditing = true,
   currentTimeRange = "1h",
   currentDataCount = "100",
-  filterType = "time",
+  filterType = "count",
   stageWidgetRemoval,
   removeWidgetFromDatabase,
   handleEditWidget,

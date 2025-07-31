@@ -25,6 +25,7 @@ export default function DataTableHead({
   handleFilterChange,
   handleFilterReset,
   glowingHeaders = false,
+  hoveredColumn = null,
 }) {
   return col.sortable ? (
     <DescriptionTooltip key={col.key} content="Urutkan Data">
@@ -40,6 +41,7 @@ export default function DataTableHead({
               : "",
           glowingHeaders && "glowing-header-effect"
         ].join(" "))}
+        data-column={col.key}
         onClick={col.sortable ? () => handleSort(col.key) : undefined}
       >
         <span className="flex items-center justify-center">
@@ -129,6 +131,7 @@ export default function DataTableHead({
             : "",
         glowingHeaders && "glowing-header-effect"
       ].join(" "))}
+      data-column={col.key}
       onClick={col.sortable ? () => handleSort(col.key) : undefined}
     >
       <span className="flex items-center justify-center">

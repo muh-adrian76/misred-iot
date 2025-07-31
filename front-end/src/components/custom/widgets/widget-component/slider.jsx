@@ -13,7 +13,7 @@ export function SliderWidget({
   widget,
   timeRange = "1h",
   dataCount = "100",
-  filterType = "time",
+  filterType = "count",
   ...props
 }) {
   const [dummyValue, setDummyValue] = useState([50]);

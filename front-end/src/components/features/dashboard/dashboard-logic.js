@@ -37,7 +37,7 @@ export function useDashboardLogic() {
   const [deleteChecked, setDeleteChecked] = useState(false);
   const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
   const [currentDataCount, setCurrentDataCount] = useState("10"); // Default 10 data
-  const [filterType, setFilterType] = useState("time"); // Default filter by time
+  const [filterType, setFilterType] = useState("count"); // Default filter by count
 
   // Dashboard provider
   const {

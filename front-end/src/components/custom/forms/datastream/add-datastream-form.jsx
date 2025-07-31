@@ -93,7 +93,7 @@ export default function AddDatastreamForm({
           <Label className="text-left font-medium max-sm:text-xs ml-1">
             Device
           </Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select value={deviceId} onValueChange={setDeviceId}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Device" />
@@ -106,7 +106,7 @@ export default function AddDatastreamForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover
               open={openDevicePopover}
               onOpenChange={setOpenDevicePopover}
@@ -162,7 +162,7 @@ export default function AddDatastreamForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
         {/* PIN */}
         <div className="flex flex-col gap-2">
@@ -236,7 +236,7 @@ export default function AddDatastreamForm({
           <Label className="text-left font-medium max-sm:text-xs ml-1">
             Satuan
           </Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select value={unit} onValueChange={setUnit} required>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Satuan" />
@@ -260,7 +260,7 @@ export default function AddDatastreamForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover open={openUnitPopover} onOpenChange={setOpenUnitPopover}>
               <PopoverTrigger asChild>
                 <Button
@@ -308,7 +308,7 @@ export default function AddDatastreamForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
         {type === "boolean" && (
           <div className="flex flex-col gap-2">

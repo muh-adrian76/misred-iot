@@ -23,7 +23,7 @@ export function BarChartWidget({
   widget,
   timeRange = "1h",
   dataCount = "100",
-  filterType = "time",
+  filterType = "count",
 }) {
   // Preview mode dengan data dummy
   if (previewMode) {

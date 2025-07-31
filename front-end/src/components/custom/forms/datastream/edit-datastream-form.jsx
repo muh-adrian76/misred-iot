@@ -121,23 +121,25 @@ export default function EditDatastreamForm({
             <span className="text-sm text-muted-foreground px-2 py-2 italic">
               Tidak ada device
             </span>
-          ) : isMobile ? (
-            <Select
-              value={deviceId}
-              onValueChange={(value) => setDeviceId(value)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih Device" />
-              </SelectTrigger>
-              <SelectContent>
-                {devices.map((dev) => (
-                  <SelectItem key={dev.id} value={String(dev.id)}>
-                    {dev.description || dev.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
+          ) 
+          // : isMobile ? (
+          //   <Select
+          //     value={deviceId}
+          //     onValueChange={(value) => setDeviceId(value)}
+          //   >
+          //     <SelectTrigger className="w-full">
+          //       <SelectValue placeholder="Pilih Device" />
+          //     </SelectTrigger>
+          //     <SelectContent>
+          //       {devices.map((dev) => (
+          //         <SelectItem key={dev.id} value={String(dev.id)}>
+          //           {dev.description || dev.name}
+          //         </SelectItem>
+          //       ))}
+          //     </SelectContent>
+          //   </Select>
+          // )
+           : (
             <Popover
               open={openDevicePopover}
               onOpenChange={setOpenDevicePopover}
@@ -258,7 +260,7 @@ export default function EditDatastreamForm({
           <Label className="text-left font-medium max-sm:text-xs ml-1">
             Satuan
           </Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select value={unit} onValueChange={setUnit} required>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Satuan" />
@@ -282,7 +284,7 @@ export default function EditDatastreamForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover open={openUnitPopover} onOpenChange={setOpenUnitPopover}>
               <PopoverTrigger asChild>
                 <Button
@@ -330,7 +332,7 @@ export default function EditDatastreamForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
         {type === "boolean" && (
           <div className="flex flex-col gap-2">

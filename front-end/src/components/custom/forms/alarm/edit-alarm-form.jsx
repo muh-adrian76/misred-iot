@@ -135,7 +135,7 @@ export default function EditAlarmForm({
       <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label>Device</Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select
               value={deviceId}
               onValueChange={(value) => {
@@ -156,7 +156,7 @@ export default function EditAlarmForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover
               open={openDevicePopover}
               onOpenChange={setOpenDevicePopover}
@@ -207,12 +207,12 @@ export default function EditAlarmForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
 
         <div className="flex flex-col gap-2">
           <Label>Datastream</Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select
               value={datastreamId}
               onValueChange={setDatastreamId}
@@ -237,7 +237,7 @@ export default function EditAlarmForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover
               open={openDatastreamPopover}
               onOpenChange={setOpenDatastreamPopover}
@@ -294,7 +294,7 @@ export default function EditAlarmForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
 
         {/* Cooldown */}

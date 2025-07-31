@@ -41,7 +41,7 @@ export default function DashboardHeader(props) {
     <motion.div
       className={cn(
         "flex items-end sticky z-40 top-[64px] w-full rounded-2xl px-3.5 py-3 gap-3 bg-background",
-        isMobile || isMedium ? "justify-center" : "justify-between"
+        isMobile || isMedium || isTablet ? "justify-center" : "justify-between"
       )}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -108,6 +108,9 @@ export default function DashboardHeader(props) {
             onTimeRangeChange={onTimeRangeChange}
             onDataCountChange={onDataCountChange}
             onFilterTypeChange={onFilterTypeChange}
+            isMobile={isMobile}
+            isMedium={isMedium}
+            isTablet={isTablet}
           />
         </div>
       ) : (
@@ -127,6 +130,9 @@ export default function DashboardHeader(props) {
             onTimeRangeChange={onTimeRangeChange}
             onDataCountChange={onDataCountChange}
             onFilterTypeChange={onFilterTypeChange}
+            isMobile={isMobile}
+            isMedium={isMedium}
+            isTablet={isTablet}
           />
         </div>
       )}

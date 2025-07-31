@@ -10,7 +10,7 @@ export function SwitchWidget({
   widget,
   timeRange = "1h",
   dataCount = "100",
-  filterType = "time",
+  filterType = "count",
 }) {
   const [dummyChecked, setDummyChecked] = useState(false);
   const [isToggling, setIsToggling] = useState(false);

@@ -3,17 +3,9 @@
  * Generates styled HTML content for PDF exports
  */
 
-const formatDateTime = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleString("id-ID", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
+import { formatDateTime } from './export-utils';
+import { generateReactPDF } from './export-utils';
+import { DatastreamPDFDocument, NotificationHistoryPDFDocument } from '../components/custom/other/pdf-content';
 
 /**
  * Generate HTML content for export
@@ -315,9 +307,7 @@ export const generateExportHTML = ({
           <div class="header">
             <div class="logo-container">
               <div class="logo-icon">
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="#dc3545">
-                  <path d="M12 2L2 7L12 12L22 7L12 2M2 17L12 22L22 17M2 12L12 17L22 12"/>
-                </svg>
+                <img src="./web-logo.svg" alt="MiSREd IoT Logo" class="w-8 h-8" />
               </div>
               <div>
                 <div class="logo-text">MiSREd <span class="logo-iot">IoT</span></div>
@@ -425,46 +415,29 @@ export const generateNotificationHistoryHTML = (notifications, timeRange) => {
 };
 
 /**
- * Helper function for datastream export
+ * Helper function for datastream export using React PDF
  * @param {Object} datastream - Datastream info
  * @param {Array} data - Sensor data
- * @returns {string} HTML content
+ * @returns {Promise} React PDF generation promise
  */
-export const generateDatastreamHTML = (datastream, data) => {
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.device_time || a.created_at);
-    const dateB = new Date(b.device_time || b.created_at);
-    return dateA.getTime() - dateB.getTime();
-  });
+export const generateDatastreamPDF = async (datastream, data) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
+  
+  const DocumentComponent = DatastreamPDFDocument({ datastream, data });
+  return await generateReactPDF(DocumentComponent, filename);
+};
 
-  const headers = [
-    "Tanggal/Waktu",
-    "Device ID",
-    "Device Name", 
-    "Datastream",
-    "Value"
-  ];
-
-  const tableData = sortedData.map(item => [
-    formatDateTime(item.device_time || item.created_at),
-    datastream.device_id,
-    datastream.device_description || `Device ${datastream.device_id}`,
-    datastream.description,
-    item.value
-  ]);
-
-  const metadata = {
-    "Device": datastream.device_description || `Device ${datastream.device_id}`,
-    "Datastream": datastream.description,
-    "Total": `${sortedData.length} data`,
-    "Dicetak": formatDateTime(new Date().toISOString())
-  };
-
-  return generateExportHTML({
-    title: `Data Ekspor - ${datastream.description}`,
-    subtitle: "Monitoring System Report", 
-    headers,
-    data: tableData,
-    metadata
-  });
+/**
+ * Helper function for notification history export using React PDF
+ * @param {Array} notifications - Notification data
+ * @param {string} timeRange - Time range filter
+ * @returns {Promise} React PDF generation promise
+ */
+export const generateNotificationHistoryPDF = async (notifications, timeRange) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+  const filename = `notification-history-${timestamp}`;
+  
+  const DocumentComponent = NotificationHistoryPDFDocument({ notifications, timeRange });
+  return await generateReactPDF(DocumentComponent, filename);
 };

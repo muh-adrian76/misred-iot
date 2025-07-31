@@ -86,7 +86,7 @@ export function LineChartWidget({
   widget,
   timeRange = "1h",
   dataCount = "100",
-  filterType = "time",
+  filterType = "count",
   isEditing,
 }) {
   // Preview mode dengan data dummy
@@ -383,8 +383,8 @@ export function LineChartWidget({
             <p className="text-sm text-muted-foreground font-medium">
               Tidak ada data dalam {timeRangeLabel}
             </p>
-            <p className="text-xs text-muted-foreground opacity-75">
-              Data akan muncul saat sensor mulai mengirim data
+            <p className="text-xs text-muted-foreground opacity-75 max-sm:hidden">
+              Data akan muncul otomatis saat perangkat mulai mengirim data
             </p>
           </div>
         </div>

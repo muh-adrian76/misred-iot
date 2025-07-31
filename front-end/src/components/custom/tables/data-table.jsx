@@ -53,6 +53,7 @@ export default function DataTable({
   const [limit, setLimit] = useState(initialLimit);
   const [openDropdownOptions, setOpenDropdownOptions] = useState(null);
   const [hoveredCell, setHoveredCell] = useState(null);
+  const [hoveredColumn, setHoveredColumn] = useState(null);
   const tableRef = useRef(null);
 
   // Mouse tracking untuk dynamic glowing colors
@@ -70,6 +71,37 @@ export default function DataTable({
     // Dynamic hue berdasarkan posisi mouse
     const hue = Math.round(((x + y) / 2) * 3.6) % 360;
     tableRef.current.style.setProperty('--glow-hue', hue);
+  }, []);
+
+  // Handle column hover for specific header glow
+  const handleCellHover = useCallback((columnKey, isHovering) => {
+    if (!tableRef.current) return;
+    
+    if (isHovering) {
+      setHoveredColumn(columnKey);
+      tableRef.current.setAttribute('data-hover-column', columnKey);
+      
+      // Reset all headers first
+      const allHeaders = tableRef.current.querySelectorAll('.glowing-header-effect');
+      allHeaders.forEach(header => {
+        header.classList.remove('column-hovered');
+      });
+      
+      // Add glow to matching header
+      const matchingHeader = tableRef.current.querySelector(`.glowing-header-effect[data-column="${columnKey}"]`);
+      if (matchingHeader) {
+        matchingHeader.classList.add('column-hovered');
+      }
+    } else {
+      setHoveredColumn(null);
+      tableRef.current.removeAttribute('data-hover-column');
+      
+      // Remove glow from all headers
+      const allHeaders = tableRef.current.querySelectorAll('.glowing-header-effect');
+      allHeaders.forEach(header => {
+        header.classList.remove('column-hovered');
+      });
+    }
   }, []);
 
   // Logic sorting
@@ -266,6 +298,7 @@ export default function DataTable({
                     handleFilterChange={handleFilterChange}
                     handleFilterReset={handleFilterReset}
                     glowingHeaders={glowingHeaders}
+                    hoveredColumn={hoveredColumn}
                   />
                 ))}
                 <TableHead className={cn(
@@ -340,8 +373,15 @@ export default function DataTable({
                           glowingCells && "glowing-cell-effect",
                           glowingCells && idx === 0 && "sticky-cell",
                         )}
-                        onMouseEnter={() => setHoveredCell(`${i}-${idx}`)}
-                        onMouseLeave={() => setHoveredCell(null)}
+                        data-column={col.key}
+                        onMouseEnter={() => {
+                          setHoveredCell(`${i}-${idx}`);
+                          handleCellHover(col.key, true);
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredCell(null);
+                          handleCellHover(col.key, false);
+                        }}
                       >
                         {col.render
                           ? col.render(row)

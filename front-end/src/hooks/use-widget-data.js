@@ -5,7 +5,7 @@ import { useWebSocket } from "@/providers/websocket-provider";
 import { useUser } from "@/providers/user-provider";
 import { fetchFromBackend, timezoneConfig, convertUTCToLocalTime } from "@/lib/helper";
 
-export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filterType = "time", pairsInput) {
+export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filterType = "count", pairsInput) {
   const { user } = useUser();
   const { ws } = useWebSocket();
   const [realTimeData, setRealTimeData] = useState(null);

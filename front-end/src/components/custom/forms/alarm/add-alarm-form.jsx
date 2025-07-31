@@ -112,7 +112,7 @@ export default function AddAlarmForm({
       <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <Label>Device</Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select value={deviceId} onValueChange={setDeviceId}>
               <SelectTrigger className="w-full">
                 <SelectValue
@@ -127,7 +127,7 @@ export default function AddAlarmForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover
               open={openDevicePopover}
               onOpenChange={setOpenDevicePopover}
@@ -178,12 +178,12 @@ export default function AddAlarmForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
 
         <div className="flex flex-col gap-2">
           <Label>Datastream</Label>
-          {isMobile ? (
+          {/* {isMobile ? (
             <Select
               value={datastreamId}
               onValueChange={setDatastreamId}
@@ -208,7 +208,7 @@ export default function AddAlarmForm({
                 ))}
               </SelectContent>
             </Select>
-          ) : (
+          ) : ( */}
             <Popover
               open={openDatastreamPopover}
               onOpenChange={setOpenDatastreamPopover}
@@ -267,7 +267,7 @@ export default function AddAlarmForm({
                 </Command>
               </PopoverContent>
             </Popover>
-          )}
+          {/* )} */}
         </div>
 
         <div className="flex flex-col gap-2">

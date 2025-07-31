@@ -46,11 +46,13 @@ import {
   BellRing,
   ChartBar,
   Trash2,
+  FileType,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
 import { errorToast, successToast } from "./toaster";
-import { generatePDFHtmlContent, exportToCSV as exportCSVUtil, printHTMLContent, formatDateTime } from "@/lib/export-utils";
+import { exportToCSV as exportCSVUtil, formatDateTime, generateReactPDF } from "@/lib/export-utils";
+import { NotificationHistoryPDFDocument } from "@/components/custom/other/pdf-content";
 
 // formatDateTime is now imported from export-utils
 
@@ -261,7 +263,10 @@ export default function NotifHistory({ open, setOpen }) {
 
   // Export functions
   const exportToCSV = () => {
-    if (!historyData?.notifications?.length) return;
+    if (!historyData?.notifications?.length) {
+      errorToast("Tidak ada data riwayat notifikasi untuk diekspor");
+      return;
+    }
 
     const headers = [
       "Tanggal/Waktu",
@@ -290,45 +295,32 @@ export default function NotifHistory({ open, setOpen }) {
 
     const filename = "riwayat-notifikasi";
     exportCSVUtil(headers, rows, filename);
+    successToast("CSV berhasil diekspor", `${sortedNotifications.length} notifikasi berhasil diekspor ke CSV`);
   };
 
   const exportToPDF = async () => {
-    // Simple PDF export using window.print with custom styles
-    if (!historyData?.notifications?.length) return;
+    // PDF export using React PDF
+    if (!historyData?.notifications?.length) {
+      errorToast("Tidak ada data riwayat notifikasi untuk diekspor");
+      return;
+    }
 
-    // Sort notifications from oldest to newest for export
-    const sortedNotifications = [...historyData.notifications].sort((a, b) => {
-      const dateA = new Date(a.triggered_at);
-      const dateB = new Date(b.triggered_at);
-      return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
-    });
+    try {
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const filename = `notification-history-${timestamp}`;
 
-    const headers = ["Tanggal/Waktu", "Alarm", "Device", "Sensor", "Nilai", "Kondisi"];
-    
-    const rows = sortedNotifications.map((notif) => [
-      formatDateTime(notif.triggered_at),
-      notif.alarm_description,
-      notif.device_description,
-      notif.datastream_description,
-      notif.sensor_value,
-      notif.conditions_text,
-    ]);
-
-    const metadata = {
-      "Periode": timeRange === "today" ? "Hari ini" : timeRange === "week" ? "Minggu ini" : timeRange === "month" ? "Bulan ini" : "Semua",
-      "Total": `${sortedNotifications.length} notifikasi`
-    };
-
-    const htmlContent = generatePDFHtmlContent({
-      title: "Riwayat Notifikasi Alarm",
-      subtitle: "Monitoring System Report",
-      headers,
-      data: rows,
-      metadata,
-      filename: "riwayat-notifikasi"
-    });
-
-    printHTMLContent(htmlContent);
+      // Create React PDF Document component and generate PDF
+      const DocumentComponent = NotificationHistoryPDFDocument({ 
+        notifications: historyData.notifications, 
+        timeRange 
+      });
+      await generateReactPDF(DocumentComponent, filename);
+      successToast("PDF berhasil diekspor", `${historyData.notifications.length} notifikasi berhasil diekspor ke PDF`);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      errorToast("Gagal mengekspor PDF", error.message);
+    }
   };
 
   return (
@@ -395,26 +387,26 @@ export default function NotifHistory({ open, setOpen }) {
                     Ekspor
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-min p-1" align="end">
+                <PopoverContent className="w-min p-1" align="center">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="justify-start"
+                    className="justify-start hover:bg-green-50 hover:text-green-600"
                     onClick={exportToCSV}
                     disabled={!historyData?.notifications?.length || error}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Ekspor CSV
+                    <span className="text-inherit">CSV</span>
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full justify-start"
+                    className="w-full justify-start hover:bg-orange-50 hover:text-orange-600"
                     onClick={exportToPDF}
                     disabled={!historyData?.notifications?.length || error}
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Ekspor PDF
+                    <FileType className="w-4 h-4 mr-2" />
+                    <span className="text-inherit">PDF</span>
                   </Button>
                 </PopoverContent>
               </Popover>
