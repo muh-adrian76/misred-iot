@@ -1,45 +1,57 @@
+// Import utility untuk konversi tanggal
 import { convertDate } from "@/lib/helper";
+// Import ikon-ikon dari Lucide React untuk statistik dan UI
 import {
-  Users,
-  Activity,
-  Database,
-  Shield,
-  TrendingUp,
-  TrendingDown,
-  Eye,
-  UserPlus,
-  Settings,
-  BarChart3,
-  MapPin,
-  RefreshCw,
-  Bell,
-  AlertTriangle,
-  Wifi,
+  Users, // Ikon users
+  Activity, // Ikon aktivitas
+  Database, // Ikon database
+  Shield, // Ikon keamanan
+  TrendingUp, // Ikon trend naik
+  TrendingDown, // Ikon trend turun 
+  Eye, // Ikon mata/view
+  UserPlus, // Ikon tambah user
+  Settings, // Ikon pengaturan
+  BarChart3, // Ikon chart
+  MapPin, // Ikon lokasi
+  RefreshCw, // Ikon refresh
+  Bell, // Ikon notifikasi
+  AlertTriangle, // Ikon peringatan
+  Wifi, // Ikon koneksi
 } from "lucide-react";
+// Import Link dengan view transitions
 import { Link } from "next-view-transitions";
+// Import Framer Motion untuk animasi
 import { motion } from "framer-motion";
+// Import efek glow untuk UI
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 
+// Komponen konten utama untuk halaman admin overview/statistik
 export default function AdminOverviewsContent({
-  stats,
-  isLoading,
-  refreshing,
-  user,
-  handleRefresh,
+  stats, // Data statistik sistem
+  isLoading, // Status loading
+  refreshing, // Status refresh
+  user, // Data user admin
+  handleRefresh, // Handler untuk refresh data
 }) {
+  // Tampilkan loading state jika sedang loading
   if (isLoading) {
     return (
+      // Container dengan padding dan spacing untuk loading state
       <div className="p-6 space-y-6">
+        {/* Animasi pulse untuk header */}
         <div className="animate-pulse">
           <div className="h-8 bg-gray-300 rounded w-1/3 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2"></div>
         </div>
+        {/* Grid skeleton untuk kartu statistik */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Generate 4 skeleton card */}
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
               className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse"
             >
+              {/* Skeleton untuk label dan value */}
               <div className="h-4 bg-gray-300 rounded w-1/2 mb-4"></div>
               <div className="h-8 bg-gray-300 rounded w-1/3"></div>
             </div>
@@ -137,7 +149,7 @@ export default function AdminOverviewsContent({
                   {stats.totalDevices}
                 </p>
               </div>
-              <div className="bg-green-100 dark:bg-blue-900 p-3 rounded-lg">
+              <div className="bg-blue-100 dark:bg-blue-900 p-3 rounded-lg">
                 <Activity className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
             </div>

@@ -1,4 +1,6 @@
 "use client";
+
+// Import dependencies untuk notification center IoT  
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,11 @@ import DescriptionTooltip from "./description-tooltip";
 import NotifHistory from "./notif-history";
 import { successToast } from "./toaster";
 
-// Helper function to format time ago (copied from notif-history.jsx)
+/**
+ * Fungsi helper untuk memformat waktu relatif
+ * Diambil dari notif-history.jsx untuk konsistensi UI
+ * Memberikan format yang user-friendly untuk timestamp
+ */
 const formatTimeAgo = (dateString) => {
   const now = new Date();
   const date = new Date(dateString);
@@ -42,13 +48,18 @@ const formatTimeAgo = (dateString) => {
   return `${days} hari yang lalu`;
 };
 
-// Helper function to check if user is truly logged in (dari websocket-provider pattern)
+/**
+ * Fungsi helper untuk validasi status login user
+ * Mengikuti pattern dari websocket-provider untuk konsistensi
+ * Memastikan user benar-benar terautentikasi dengan lengkap
+ */
 const isUserLoggedIn = (user) => {
-  // First check if user exists and is not null
+  // Cek apakah user ada dan tidak null
   if (!user || user.id === "") {
     return false;
   }
   
+  // Validasi lengkap untuk memastikan user benar-benar login
   const isLoggedIn = user.id && 
          user.email && 
          user.id !== "" && 
@@ -59,7 +70,10 @@ const isUserLoggedIn = (user) => {
   return isLoggedIn;
 };
 
-// Default API functions
+/**
+ * Fungsi API default untuk mengambil notifikasi dari backend
+ * Menghandle error dan response parsing dengan proper error messages
+ */
 const defaultFetchNotifications = async () => {
   const response = await fetchFromBackend("/notifications");
   if (!response.ok) {
@@ -70,6 +84,9 @@ const defaultFetchNotifications = async () => {
   return data.notifications || [];
 };
 
+/**
+ * Fungsi API default untuk menandai semua notifikasi sebagai telah dibaca
+ */
 const defaultMarkAllAsRead = async () => {
   const response = await fetchFromBackend("/notifications/read", {
     method: "PUT"
@@ -82,6 +99,9 @@ const defaultMarkAllAsRead = async () => {
   return result;
 };
 
+/**
+ * Fungsi API default untuk menghapus semua notifikasi
+ */
 const defaultDeleteAllNotifications = async () => {
   const response = await fetchFromBackend("/notifications", { method: "DELETE" });
   if (!response.ok) {
@@ -90,8 +110,26 @@ const defaultDeleteAllNotifications = async () => {
   return response.json();
 };
 
-// NotificationItem component for individual notifications
+/**
+ * KOMPONEN NOTIFICATION ITEM
+ * 
+ * NotificationItem adalah sub-komponen untuk menampilkan setiap notifikasi individual
+ * dalam daftar notification center. Komponen ini menghandle:
+ * 
+ * Fitur per item:
+ * - Visual indicator untuk notifikasi yang belum dibaca (unread state)
+ * - Click handler untuk membuka detail atau menandai sebagai dibaca
+ * - Responsive styling dengan hover effects
+ * - Timestamp formatting untuk menampilkan waktu yang user-friendly
+ * - Badge status untuk membedakan notifikasi read/unread
+ * 
+ * Props:
+ * @param {Object} notification - Data notifikasi yang akan ditampilkan
+ * @param {Function} onMarkAsRead - Handler untuk menandai notifikasi sebagai dibaca
+ * @param {Function} onClick - Handler untuk click pada item notifikasi
+ */
 const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
+  // Cek status unread dari dua possible property (untuk compatibility)
   const isUnread = !notification.isRead && !notification.is_read;
 
   return (
@@ -99,20 +137,26 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
       className={cn(
         "group relative p-3 border border-border/40 rounded-lg transition-all duration-200",
         isUnread
+          // Styling conditional berdasarkan status read/unread
           ? "bg-muted/30 hover:bg-primary/5 border-primary/20 dark:bg-primary/20 dark:hover:bg-primary/50 shadow-sm"
           : "bg-card/50 hover:bg-muted/20 dark:bg-card/50 dark:hover:bg-accent"
       )}
       onClick={() => onClick?.(notification)}
     >
+      {/* Layout flex untuk mengatur posisi konten dan indicator */}
       <div className="flex items-start justify-between gap-3">
+        {/* Konten utama notifikasi */}
         <div className="flex-1 min-w-0 space-y-1">
+          {/* Header dengan status indicator dan title */}
           <div className="flex items-center gap-2">
+            {/* Status indicator - berubah warna dan animasi berdasarkan read state */}
             <div
               className={cn(
                 "w-2 h-2 rounded-full flex-shrink-0",
                 isUnread ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
               )}
             />
+            {/* Title/pesan utama dengan truncation untuk text panjang */}
             <p
               className={cn(
                 "text-sm font-medium leading-none truncate",
@@ -136,7 +180,9 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
             {notification.message}
           </p>
 
+          {/* Footer dengan timestamp dan border separator */}
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
+            {/* Timestamp dengan format yang user-friendly */}
             <span className="text-xs text-muted-foreground font-medium">
               {formatTimeAgo(notification.createdAt || notification.triggered_at)}
             </span>
@@ -147,6 +193,33 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
   );
 };
 
+/**
+ * KOMPONEN UTAMA NOTIFICATION CENTER
+ * 
+ * NotificationCenter adalah komponen utama yang mengelola sistem notifikasi real-time
+ * untuk IoT dashboard. Komponen ini menyediakan interface lengkap untuk:
+ * 
+ * Fitur-fitur utama:
+ * - Real-time notification management dengan WebSocket
+ * - Persistent storage menggunakan localStorage
+ * - Browser notifications untuk alert di luar aplikasi
+ * - Bulk operations (mark all as read, delete all)
+ * - Auto-refresh dan caching mechanism
+ * - Responsive popover interface
+ * - Integration dengan authentication system
+ * 
+ * Varian tampilan:
+ * - "full": Tampilan lengkap dengan semua fitur dan controls
+ * - "compact": Tampilan minimal untuk space-constrained areas
+ * 
+ * Props yang diterima:
+ * @param {string} className - Additional CSS classes
+ * @param {string} variant - Varian tampilan ("full" | "compact")
+ * @param {Array} notifications - Static notifications (optional, untuk testing)
+ * @param {Function} fetchNotifications - Custom function untuk fetch data
+ * @param {Function} onMarkAllAsRead - Custom handler untuk mark all as read
+ * @param {Function} onDeleteAllNotifications - Custom handler untuk delete all
+ */
 export function NotificationCenter({
   className,
   variant = "full",
@@ -168,10 +241,18 @@ export function NotificationCenter({
     description: "Alarm yang terpicu akan otomatis ditampilkan disini.",
   },
 }) {
+  // ===== STATE MANAGEMENT =====
+  // State untuk mengontrol visibility popover dan history dialog
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [filter, setFilter] = useState("unread"); // "all" or "unread"
+  
+  // State untuk filter tampilan notifikasi (all/unread)
+  const [filter, setFilter] = useState("unread");
+  
+  // State untuk operasi mark all as read (mencegah multiple calls)
   const [isProcessingMarkAll, setIsProcessingMarkAll] = useState(false);
+  
+  // State untuk notifikasi yang tersimpan di database
   const [savedNotifications, setSavedNotifications] = useState([]);
   const [isLoadingSaved, setIsLoadingSaved] = useState(false);
   const [savedNotificationsError, setSavedNotificationsError] = useState(null);

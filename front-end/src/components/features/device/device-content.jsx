@@ -1,5 +1,7 @@
+// Import komponen UI untuk badge dan button
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+// Import ikon-ikon dari Lucide React
 import {
   Copy,
   Edit,
@@ -13,39 +15,50 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
+// Import komponen toast untuk notifikasi
 import { successToast } from "@/components/custom/other/toaster";
+// Import komponen DataTable untuk menampilkan data
 import DataTable from "@/components/custom/tables/data-table";
+// Import Framer Motion untuk animasi
 import { AnimatePresence } from "framer-motion";
+// Import tooltip untuk deskripsi
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
+// Import utility untuk konversi tanggal
 import { convertDate } from "@/lib/helper";
+// Import form OTAA (Over-The-Air Activation)
 import OtaaForm from "@/components/custom/forms/otaa/otaa-form";
+// Import efek glow untuk UI
 import { GlowingEffect } from "@/components/ui/glowing-effect";
+// Import hook untuk status device
 import { useDeviceStatus } from "@/hooks/use-device-status";
 
+// Komponen konten utama untuk halaman device management
 export default function DeviceContent({
-  devices,
-  loading,
-  setAddFormOpen,
-  setEditDevice,
-  setEditFormOpen,
-  setDeviceToDelete,
-  setDeleteFormOpen,
-  isMobile,
-  selectedRows,
-  setSelectedRows,
-  boardOptions,
-  uploadFirmwareSheetOpen,
-  setUploadFirmwareSheetOpen,
-  handleFirmwareUploaded,
+  devices, // Data array devices
+  loading, // Status loading
+  setAddFormOpen, // Setter untuk dialog tambah device
+  setEditDevice, // Setter untuk device yang akan diedit
+  setEditFormOpen, // Setter untuk dialog edit device
+  setDeviceToDelete, // Setter untuk device yang akan dihapus
+  setDeleteFormOpen, // Setter untuk dialog hapus device
+  isMobile, // Status apakah dalam mode mobile
+  selectedRows, // Baris yang dipilih
+  setSelectedRows, // Setter untuk baris yang dipilih
+  boardOptions, // Opsi board yang tersedia
+  uploadFirmwareSheetOpen, // Status sheet upload firmware
+  setUploadFirmwareSheetOpen, // Setter untuk sheet upload firmware
+  handleFirmwareUploaded, // Handler ketika firmware berhasil diupload
 }) {
+  // Hook untuk mengelola status device (online/offline)
   const {
-    getDeviceStatus,
-    formatTimeSinceLastSeen,
-    isConnected,
-    refreshDeviceStatuses,
+    getDeviceStatus, // Fungsi untuk mendapatkan status device
+    formatTimeSinceLastSeen, // Fungsi untuk format waktu terakhir terlihat
+    isConnected, // Fungsi untuk cek koneksi device
+    refreshDeviceStatuses, // Fungsi untuk refresh status semua device
   } = useDeviceStatus(devices);
 
+  // Fungsi untuk copy teks ke clipboard
   const handleCopy = (text, type = "secret") => {
     navigator.clipboard.writeText(text);
     type === "secret"

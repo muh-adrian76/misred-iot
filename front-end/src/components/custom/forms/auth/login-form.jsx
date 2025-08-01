@@ -1,39 +1,47 @@
+// Import hooks dan utilities
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "framer-motion"; // Animasi transisi
 
+// Import komponen UI
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+// Import komponen custom dan utilities
 import { errorToast } from "../../other/toaster";
 import { Link } from "next-view-transitions";
-
 import { brandLogo, fetchFromBackend } from "@/lib/helper";
 import GoogleButton from "../../buttons/google-button";
-import { Eye, EyeOff } from "lucide-react";
-import OTPModal from "./otp-modal";
+import { Eye, EyeOff } from "lucide-react"; // Icons untuk toggle password visibility
+import OTPModal from "./otp-modal"; // Modal untuk verifikasi OTP
 
+// Komponen LoginForm untuk autentikasi user ke sistem IoT
 export default function LoginForm({
-  className,
-  logoFont,
-  router,
-  setUser,
-  isLoading,
-  setIsLoading,
-  setShowRegister,
-  setShowForgotPassword,
+  className, // Custom CSS classes
+  logoFont, // Font untuk logo branding
+  router, // Next.js router untuk navigasi
+  setUser, // Setter untuk user state setelah login berhasil
+  isLoading, // State loading global
+  setIsLoading, // Setter untuk loading state
+  setShowRegister, // Handler untuk switch ke register mode
+  setShowForgotPassword, // Handler untuk switch ke forgot password mode
   ...props
 }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showOTPModal, setShowOTPModal] = useState(false);
-  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  // State management untuk form login
+  const [email, setEmail] = useState(""); // Email user untuk login
+  const [password, setPassword] = useState(""); // Password user
+  const [showPassword, setShowPassword] = useState(false); // Toggle visibility password
+  const [showOTPModal, setShowOTPModal] = useState(false); // State untuk modal OTP
+  const [unverifiedEmail, setUnverifiedEmail] = useState(""); // Email yang belum terverifikasi
 
+  // Handler untuk proses login
   const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsLoading(true); // Set loading state
+    
     try {
+      // Request login ke backend API
       const res = await fetchFromBackend("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
@@ -41,11 +49,13 @@ export default function LoginForm({
       const data = await res.json();
 
       if (!res.ok) {
-        // Check jika akun belum diverifikasi
+        // Handle error response dari server
+        // Check jika akun belum diverifikasi email
         if (data.message && data.message.includes("belum diverifikasi")) {
-          setUnverifiedEmail(email);
-          setShowOTPModal(true);
+          setUnverifiedEmail(email); // Simpan email untuk OTP modal
+          setShowOTPModal(true); // Tampilkan modal OTP
         } else {
+          // Tampilkan error message untuk kasus lain
           errorToast("Login gagal!", `${data.message}`);
         }
       } else {

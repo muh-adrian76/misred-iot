@@ -1,42 +1,53 @@
+// Import hooks React untuk state management, memoization, dan callback
 import { useRef, useState, useMemo, useCallback } from "react";
+// Import React Grid Layout untuk drag-drop grid system
 import { WidthProvider, Responsive } from "react-grid-layout";
+// Import CSS untuk styling grid layout dan resizable elements
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-import { AreaChartWidget } from "@/components/custom/widgets/widget-component/charts/area";
-import { BarChartWidget } from "@/components/custom/widgets/widget-component/charts/bar";
-import { LineChartWidget } from "@/components/custom/widgets/widget-component/charts/line";
-import { SwitchWidget } from "@/components/custom/widgets/widget-component/switch";
-import { SliderWidget } from "@/components/custom/widgets/widget-component/slider";
+// Import komponen widget untuk berbagai tipe chart
+import { AreaChartWidget } from "@/components/custom/widgets/widget-component/monitor/area";
+import { BarChartWidget } from "@/components/custom/widgets/widget-component/monitor/bar";
+import { LineChartWidget } from "@/components/custom/widgets/widget-component/monitor/line";
+import { PieChartWidget } from "./widget-component/monitor/pie";
+import GaugeWidget from "./widget-component/monitor/gauge-widget";
+import TextWidgetWrapper from "./widget-component/monitor/text-widget";
+// Import komponen widget untuk kontrol IoT
+import { SwitchWidget } from "@/components/custom/widgets/widget-component/control/switch";
+import { SliderWidget } from "@/components/custom/widgets/widget-component/control/slider";
+// Import komponen UI dan ikon
 import { Button } from "@/components/ui/button";
 import { Trash2, Move, Settings2 } from "lucide-react";
+// Import utility dan helper functions
 import { errorToast } from "../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 import {
-  bootstrapWidths,
-  cols,
-  availableHandles,
-  findAvailablePosition,
-  generateWidgetLayout,
-  getWidgetConstraints,
+  bootstrapWidths, // Konfigurasi lebar responsive
+  cols, // Konfigurasi kolom untuk setiap breakpoint
+  availableHandles, // Handle untuk resize widget
+  findAvailablePosition, // Helper untuk mencari posisi kosong
+  generateWidgetLayout, // Generator layout widget
+  getWidgetConstraints, // Constraint ukuran untuk setiap tipe widget
 } from "@/lib/dashboard-utils";
 import { cn } from "@/lib/utils";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
-import { Pie } from "recharts";
-import { PieChartWidget } from "./widget-component/charts/pie";
 
+// ResponsiveGridLayout dengan WidthProvider untuk auto-sizing
+// ResponsiveGridLayout dengan WidthProvider untuk auto-sizing
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
-// Responsive margins configuration (Performance optimization from notes.txt)
+// Konfigurasi margin responsif untuk optimasi performa (dari notes.txt)
 const responsiveMargins = {
-  lg: [10, 10], // Larger margins for desktop
-  md: [8, 8], // Medium margins for tablet
-  sm: [6, 6], // Smaller margins for mobile
-  xs: [5, 5], // Minimal margins for small mobile
-  xxs: [5, 5], // Minimal margins for very small screens
+  lg: [10, 10], // Margin lebih besar untuk desktop
+  md: [8, 8], // Margin sedang untuk tablet
+  sm: [6, 6], // Margin kecil untuk mobile
+  xs: [5, 5], // Margin minimal untuk mobile kecil
+  xxs: [5, 5], // Margin minimal untuk layar sangat kecil
 };
 
+// Styling grid dengan background pattern untuk mode editing
 const gridStyle = `
   bg-background border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg 
   relative overflow-visible min-h-screen
@@ -44,37 +55,48 @@ const gridStyle = `
   dark:bg-[linear-gradient(to_right,rgba(75,85,99,0.2)_1px,transparent_1px),linear-gradient(to_bottom,rgba(75,85,99,0.2)_1px,transparent_1px)]
 `;
 
+// Mapping tipe widget ke komponen React yang sesuai
 const widgetComponents = {
-  slider: SliderWidget,
-  switch: SwitchWidget,
-  area: AreaChartWidget,
-  bar: BarChartWidget,
-  line: LineChartWidget,
-  pie: PieChartWidget,
+  slider: SliderWidget, // Widget slider untuk kontrol nilai
+  switch: SwitchWidget, // Widget switch untuk kontrol on/off
+  area: AreaChartWidget, // Chart area untuk data time-series
+  bar: BarChartWidget, // Chart bar untuk data kategorikal
+  line: LineChartWidget, // Chart line untuk tren data
+  pie: PieChartWidget, // Chart pie untuk data proporsi
+  gauge: GaugeWidget, // Widget gauge untuk monitoring status
+  text: TextWidgetWrapper, // Widget text untuk display nilai tunggal
 };
 
-// Optimized layout generation with memoization
+// Generator layout responsif yang dioptimasi dengan memoization
 const generateResponsiveLayouts = (items, existingLayouts = {}) => {
-  const widths = bootstrapWidths;
-  const cols = { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 };
+  const widths = bootstrapWidths; // Lebar standar untuk setiap breakpoint
+  const cols = { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 }; // Jumlah kolom grid
 
+  // Generate layout untuk setiap breakpoint
+  // Generate layout untuk setiap breakpoint
   return Object.keys(widths).reduce((memo, breakpoint) => {
-    const defaultWidth = widths[breakpoint];
-    const colCount = cols[breakpoint];
-    const existingLayoutForBreakpoint = existingLayouts[breakpoint] || [];
+    const defaultWidth = widths[breakpoint]; // Lebar default untuk breakpoint ini
+    const colCount = cols[breakpoint]; // Jumlah kolom untuk breakpoint ini
+    const existingLayoutForBreakpoint = existingLayouts[breakpoint] || []; // Layout yang sudah ada
 
+    // Generate layout untuk setiap widget
     memo[breakpoint] = items.map((widget, i) => {
+      // Dapatkan constraint ukuran untuk tipe widget ini
       const constraints = getWidgetConstraints(widget.type, breakpoint);
+      // Cari layout item yang sudah ada untuk widget ini
       const existingItem = existingLayoutForBreakpoint.find(
         (item) => item.i === widget.id.toString()
       );
 
+      // Ukuran responsif berdasarkan constraint
       const responsiveWidth = constraints.minW;
       const responsiveHeight = constraints.minH;
 
+      // Jika sudah ada layout, gunakan dengan validasi constraint
       if (existingItem) {
         return {
           ...existingItem,
+          // Pastikan ukuran tidak kurang dari minimum constraint
           w: Math.max(constraints.minW, existingItem.w || responsiveWidth),
           h: Math.max(constraints.minH, existingItem.h || responsiveHeight),
           minW: constraints.minW,
@@ -85,20 +107,21 @@ const generateResponsiveLayouts = (items, existingLayouts = {}) => {
         };
       }
 
-      const x = (i * responsiveWidth) % colCount;
-      const y = 0;
+      // Jika belum ada layout, buat layout baru dengan posisi otomatis
+      const x = (i * responsiveWidth) % colCount; // Posisi X berdasarkan index
+      const y = 0; // Mulai dari atas
 
       return {
-        i: widget.id.toString(),
+        i: widget.id.toString(), // ID widget sebagai string
         x,
         y,
-        w: responsiveWidth,
-        h: responsiveHeight,
-        minW: constraints.minW,
-        minH: constraints.minH,
-        maxW: constraints.maxW,
-        maxH: constraints.maxH,
-        isResizable: constraints.isResizable,
+        w: responsiveWidth, // Lebar widget
+        h: responsiveHeight, // Tinggi widget
+        minW: constraints.minW, // Lebar minimum
+        minH: constraints.minH, // Tinggi minimum
+        maxW: constraints.maxW, // Lebar maksimum
+        maxH: constraints.maxH, // Tinggi maksimum
+        isResizable: constraints.isResizable, // Apakah bisa diresize
       };
     });
 
@@ -106,68 +129,73 @@ const generateResponsiveLayouts = (items, existingLayouts = {}) => {
   }, {});
 };
 
+// Komponen utama GridLayout yang dioptimasi untuk performa dan responsivitas
+// Komponen utama GridLayout yang dioptimasi untuk performa dan responsivitas
 export default function GridLayoutOptimized({
-  items,
-  setItems,
-  layouts,
-  setLayouts,
-  onChartDrop,
-  onLayoutChange,
-  onBreakpointChange,
-  isEditing = true,
-  currentTimeRange = "1h",
-  currentDataCount = "100",
-  filterType = "count",
-  stageWidgetRemoval,
-  removeWidgetFromDatabase,
-  handleEditWidget,
+  items, // Array widget yang akan ditampilkan
+  setItems, // Setter untuk mengubah items
+  layouts, // Konfigurasi layout untuk setiap breakpoint
+  setLayouts, // Setter untuk mengubah layouts
+  onChartDrop, // Handler ketika chart di-drop ke grid
+  onLayoutChange, // Handler ketika layout berubah
+  onBreakpointChange, // Handler ketika breakpoint berubah
+  isEditing = true, // Mode editing (drag, resize, delete)
+  currentTimeRange = "1h", // Range waktu data untuk widget
+  currentDataCount = "100", // Jumlah data point untuk widget
+  filterType = "count", // Tipe filter data
+  stageWidgetRemoval, // Handler untuk staging penghapusan widget
+  removeWidgetFromDatabase, // Handler untuk menghapus widget dari database
+  handleEditWidget, // Handler untuk mengedit konfigurasi widget
 }) {
+  // State untuk breakpoint saat ini dan pengaturan widget
   const [currentBreakpoint, setCurrentBreakpoint] = useState("lg");
   const [openWidgetSetting, setOpenWidgetSetting] = useState(null);
-  const [forceRegenerate, setForceRegenerate] = useState(0);
+  const [forceRegenerate, setForceRegenerate] = useState(0); // Force re-render trigger
 
-  // Memoize effective layouts to prevent unnecessary recalculations (Performance optimization from notes.txt)
+  // Memoize layout efektif untuk mencegah recalculation yang tidak perlu (optimasi performa)
   const effectiveLayouts = useMemo(() => {
+    // Cek apakah ada layout valid dari database
     const hasValidLayouts =
       layouts && typeof layouts === "object" && Object.keys(layouts).length > 0;
 
     if (items.length > 0) {
-      // For static mode (non-editing), always use existing layouts from database if available
-      // This prevents automatic layout regeneration that causes display issues after login
+      // Untuk mode static (non-editing), selalu gunakan layout dari database jika tersedia
+      // Ini mencegah regenerasi layout otomatis yang menyebabkan masalah tampilan setelah login
       if (!isEditing && hasValidLayouts) {
         // Debug layout dari DB
         // console.log('Database layouts:', layouts);
 
-        // Validate layouts have all required breakpoints and widgets
+        // Validasi layouts memiliki semua breakpoint dan widget yang diperlukan
         const validatedLayouts = {};
         const breakpoints = ["lg", "md", "sm", "xs", "xxs"];
 
         breakpoints.forEach((bp) => {
           validatedLayouts[bp] = layouts[bp] || [];
 
-          // Ensure all current items exist in layout
+          // Pastikan semua item saat ini ada dalam layout
           const layoutItemIds = validatedLayouts[bp].map((item) => item.i);
           const missingItems = items.filter(
             (item) => !layoutItemIds.includes(item.id.toString())
           );
 
+          // Jika ada item yang hilang, tambahkan ke layout
           if (missingItems.length > 0) {
             // console.log(`Adding missing items to ${bp} layout:`, missingItems.map(i => i.id));
-            // Only add missing items, don't regenerate existing ones
+            // Hanya tambahkan item yang hilang, jangan regenerasi yang sudah ada
             missingItems.forEach((widget, idx) => {
               const constraints = getWidgetConstraints(widget.type, bp);
               const existingItemsCount = validatedLayouts[bp].length;
               validatedLayouts[bp].push({
                 i: widget.id.toString(),
                 x: 0,
-                y: existingItemsCount * 6, // Stack missing items at bottom
+                y: existingItemsCount * 6, // Stack item yang hilang di bawah
                 w: constraints.minW,
                 h: constraints.minH,
                 minW: constraints.minW,
                 minH: constraints.minH,
                 maxW: constraints.maxW,
                 maxH: constraints.maxH,
-                isResizable: false, // Static in non-editing mode
+                isResizable: false, // Static di mode non-editing
                 isDraggable: false,
                 static: true,
               });
@@ -179,7 +207,7 @@ export default function GridLayoutOptimized({
         return validatedLayouts;
       }
 
-      // For editing mode, use responsive layout generation
+      // Untuk mode editing, gunakan generator layout responsif
       const responsiveLayouts = generateResponsiveLayouts(
         items,
         hasValidLayouts ? layouts : {}
@@ -187,18 +215,20 @@ export default function GridLayoutOptimized({
       return responsiveLayouts;
     }
 
-    return {};
+    return {}; // Return empty jika tidak ada items
   }, [items, layouts, forceRegenerate, isEditing]);
 
-  // Memoize responsive margins and padding based on current breakpoint
+  // Memoize responsive margins dan padding berdasarkan breakpoint saat ini
   const currentMargin = useMemo(
     () => responsiveMargins[currentBreakpoint] || responsiveMargins.lg,
     [currentBreakpoint]
   );
 
-  // Optimized event handlers with useCallback (Performance optimization from notes.txt)
+  // Event handlers yang dioptimasi dengan useCallback (optimasi performa)
+  // Handler ketika layout berubah (drag, resize, atau perubahan breakpoint)
   const handleLayoutChange = useCallback(
     (layout, allLayouts) => {
+      // Debug log untuk memantau perubahan layout
       console.log('🔄 Layout Change Triggered:', {
         layoutLength: layout.length,
         isEditing,
@@ -207,37 +237,41 @@ export default function GridLayoutOptimized({
       });
       
       if (onLayoutChange) {
+        // Validasi dan constraint layout untuk setiap widget
         const constrainedLayout = layout.map((item) => {
           const widget = items.find((w) => w.id.toString() === item.i);
           if (!widget) return item;
 
+          // Dapatkan constraints untuk widget type di breakpoint saat ini
           const constraints = getWidgetConstraints(
             widget.type,
             currentBreakpoint
           );
 
+          // Validasi dan apply constraints ke setiap property layout
           const validatedItem = {
             ...item,
-            x: Number.isFinite(item.x) ? Math.max(0, item.x) : 0,
-            y: Number.isFinite(item.y) ? Math.max(0, item.y) : 0,
+            x: Number.isFinite(item.x) ? Math.max(0, item.x) : 0, // Pastikan x >= 0
+            y: Number.isFinite(item.y) ? Math.max(0, item.y) : 0, // Pastikan y >= 0
             w: Number.isFinite(item.w)
               ? Math.max(constraints.minW, Math.min(constraints.maxW, item.w))
-              : constraints.minW,
+              : constraints.minW, // Constraint width dalam batas min/max
             h: Number.isFinite(item.h)
               ? Math.max(constraints.minH, Math.min(constraints.maxH, item.h))
-              : constraints.minH,
-            minW: constraints.minW,
-            minH: constraints.minH,
-            maxW: constraints.maxW,
-            maxH: constraints.maxH,
-            isResizable: isEditing && constraints.isResizable,
-            isDraggable: isEditing,
-            static: !isEditing,
+              : constraints.minH, // Constraint height dalam batas min/max
+            minW: constraints.minW, // Set minimum width
+            minH: constraints.minH, // Set minimum height
+            maxW: constraints.maxW, // Set maximum width
+            maxH: constraints.maxH, // Set maximum height
+            isResizable: isEditing && constraints.isResizable, // Resizable hanya di mode editing
+            isDraggable: isEditing, // Draggable hanya di mode editing
+            static: !isEditing, // Static di mode non-editing
           };
 
           return validatedItem;
         });
 
+        // Validasi semua layouts untuk semua breakpoint
         const validatedAllLayouts = {};
         Object.keys(allLayouts).forEach((breakpoint) => {
           if (allLayouts[breakpoint] && Array.isArray(allLayouts[breakpoint])) {
@@ -256,6 +290,7 @@ export default function GridLayoutOptimized({
                 return {
                   ...item,
                   x: Number.isFinite(item.x) ? Math.max(0, item.x) : 0,
+                  // Validasi posisi dan ukuran untuk breakpoint ini
                   y: Number.isFinite(item.y) ? Math.max(0, item.y) : 0,
                   w: Number.isFinite(item.w)
                     ? Math.max(
@@ -273,10 +308,11 @@ export default function GridLayoutOptimized({
               }
             );
           } else {
-            validatedAllLayouts[breakpoint] = [];
+            validatedAllLayouts[breakpoint] = []; // Breakpoint kosong jika tidak ada data
           }
         });
 
+        // Set layout untuk breakpoint saat ini
         validatedAllLayouts[currentBreakpoint] = constrainedLayout;
         onLayoutChange(constrainedLayout, validatedAllLayouts);
       }
@@ -284,13 +320,14 @@ export default function GridLayoutOptimized({
     [items, currentBreakpoint, isEditing, onLayoutChange]
   );
 
+  // Handler ketika breakpoint berubah (responsive behavior)
   const handleBreakpointChange = useCallback(
     (breakpoint) => {
       // Debug lebar responsive
       // console.log('Bootstrap widths:', bootstrapWidths);
 
       setCurrentBreakpoint(breakpoint);
-      setForceRegenerate((prev) => prev + 1);
+      setForceRegenerate((prev) => prev + 1); // Trigger re-render
 
       if (onBreakpointChange) {
         onBreakpointChange(breakpoint);
@@ -299,38 +336,42 @@ export default function GridLayoutOptimized({
     [onBreakpointChange]
   );
 
-  // Optimized drop handlers
+  // Handler drop yang dioptimasi untuk chart baru
   const handleDrop = useCallback(
     (layout, layoutItem, e) => {
       e.preventDefault();
       e.stopPropagation();
 
+      // Ambil tipe chart dari drag data
       const chartType = e.dataTransfer.getData("type");
 
       if (layoutItem && chartType) {
+        // Dapatkan constraints untuk chart type di breakpoint saat ini
         const constraints = getWidgetConstraints(chartType, currentBreakpoint);
 
+        // Validasi dan round posisi/ukuran layout item
         const validatedLayoutItem = {
           ...layoutItem,
-          x: Math.max(0, Math.round(layoutItem.x || 0)),
-          y: Math.max(0, Math.round(layoutItem.y || 0)),
+          x: Math.max(0, Math.round(layoutItem.x || 0)), // Round dan pastikan x >= 0
+          y: Math.max(0, Math.round(layoutItem.y || 0)), // Round dan pastikan y >= 0
           w: Math.max(
             constraints.minW,
             Math.round(layoutItem.w || constraints.minW)
-          ),
+          ), // Width dalam batas minimum
           h: Math.max(
             constraints.minH,
             Math.round(layoutItem.h || constraints.minH)
-          ),
-          minW: constraints.minW,
-          minH: constraints.minH,
-          maxW: constraints.maxW,
-          maxH: constraints.maxH,
-          isResizable: constraints.isResizable,
-          isDraggable: true,
-          static: false,
+          ), // Height dalam batas minimum
+          minW: constraints.minW, // Set constraint minimum width
+          minH: constraints.minH, // Set constraint minimum height
+          maxW: constraints.maxW, // Set constraint maximum width
+          maxH: constraints.maxH, // Set constraint maximum height
+          isResizable: constraints.isResizable, // Apakah bisa di-resize
+          isDraggable: true, // Widget baru selalu draggable
+          static: false, // Widget baru tidak static
         };
 
+        // Panggil handler parent untuk menambah widget
         if (onChartDrop) {
           onChartDrop(chartType, validatedLayoutItem);
         }
@@ -339,18 +380,21 @@ export default function GridLayoutOptimized({
     [currentBreakpoint, onChartDrop]
   );
 
+  // Handler untuk drop widget ke area kosong (tambah widget baru)
   const handleAddWidgetDrop = useCallback(
     (e) => {
       e.preventDefault();
       const chartType = e.dataTransfer.getData("type");
       if (chartType && onChartDrop) {
+        // Dapatkan constraints default untuk widget baru
         const constraints = getWidgetConstraints(chartType, currentBreakpoint);
 
+        // Tambah widget di posisi default (bawah grid)
         onChartDrop(chartType, {
-          x: 0,
-          y: Infinity,
-          w: constraints.minW,
-          h: constraints.minH,
+          x: 0, // Posisi horizontal awal
+          y: Infinity, // Grid akan auto-position ke bawah
+          w: constraints.minW, // Width default
+          h: constraints.minH, // Height default
           minW: constraints.minW,
           minH: constraints.minH,
           maxW: constraints.maxW,
@@ -358,25 +402,30 @@ export default function GridLayoutOptimized({
           isResizable: constraints.isResizable,
           isDraggable: true,
           static: false,
-          resizeHandles: availableHandles,
+          resizeHandles: availableHandles, // Handle resize yang tersedia
         });
       }
     },
     [currentBreakpoint, onChartDrop]
   );
 
-  // Optimized remove widget handler with useCallback
+  // Handler penghapusan widget yang dioptimasi dengan useCallback
   const handleRemoveWidget = useCallback(
     async (widgetId) => {
       if (isEditing && stageWidgetRemoval) {
+        // Mode staging - widget akan dihapus nanti
         stageWidgetRemoval(widgetId);
       } else if (removeWidgetFromDatabase) {
+        // Hapus langsung dari database
         await removeWidgetFromDatabase(widgetId);
       } else {
+        // Fallback - hapus dari state lokal
         try {
+          // Hapus dari items array
           const updatedItems = items.filter((item) => item.id !== widgetId);
           setItems(updatedItems);
 
+          // Hapus dari semua layouts
           const updatedLayouts = { ...effectiveLayouts };
           Object.keys(updatedLayouts).forEach((bp) => {
             if (updatedLayouts[bp]) {
@@ -403,14 +452,18 @@ export default function GridLayoutOptimized({
     ]
   );
 
-  // Memoize grid items for performance optimization (from notes.txt)
+  // Memoize grid items untuk optimasi performa (dari catatan optimasi)
   const gridItems = useMemo(() => {
     return (effectiveLayouts[currentBreakpoint] || [])
       .map((layoutItem) => {
+        // Cari widget data berdasarkan layout item ID
         const widget = items.find((w) => w.id.toString() === layoutItem.i);
-        if (!widget) return null;
+        if (!widget) return null; // Skip jika widget tidak ditemukan
 
+        // Dapatkan komponen widget berdasarkan tipe
         const WidgetComponent = widgetComponents[widget.type];
+        
+        // Tampilkan error jika tipe widget tidak dikenali
         if (!WidgetComponent) {
           return (
             <div key={layoutItem.i}>
@@ -421,6 +474,7 @@ export default function GridLayoutOptimized({
           );
         }
 
+        // Dapatkan constraint untuk tipe widget di breakpoint saat ini
         const widgetConstraints = getWidgetConstraints(
           widget.type,
           currentBreakpoint

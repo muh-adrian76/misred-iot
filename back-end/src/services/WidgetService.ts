@@ -1,3 +1,16 @@
+/**
+ * ===== WIDGET SERVICE =====
+ * Service untuk mengelola widgets dalam dashboard IoT
+ * Menyediakan CRUD operations untuk widget management
+ * 
+ * Fitur utama:
+ * - Widget CRUD operations (create, read, update, delete)
+ * - Multi-format input support (inputs array, datastream_ids, single device/datastream)
+ * - Dashboard integration dengan widget layouts
+ * - Device-widget relationship management
+ * - Backward compatibility untuk format lama
+ * - JSON input handling untuk flexible widget configurations
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
 export class WidgetService {
@@ -7,6 +20,8 @@ export class WidgetService {
     this.db = db;
   }
 
+  // ===== CREATE WIDGET =====
+  // Membuat widget baru dengan support multiple input formats
   async createWidget({
     description,
     dashboard_id,
@@ -17,17 +32,17 @@ export class WidgetService {
     type,
   }: any) {
     try {
-      // Convert to new inputs format
+      // Convert ke format inputs baru dengan backward compatibility
       let finalInputs: any[];
       
       if (inputs && Array.isArray(inputs)) {
-        // Direct inputs format (preferred)
+        // Format inputs langsung (preferred format)
         finalInputs = inputs;
       } else if (datastream_ids && Array.isArray(datastream_ids)) {
-        // datastream_ids format (compatibility)
+        // Format datastream_ids (compatibility)
         finalInputs = datastream_ids;
       } else if (device_id && datastream_id) {
-        // Old single format (compatibility)
+        // Format lama single device/datastream (compatibility)
         finalInputs = [{ device_id: parseInt(device_id), datastream_id: parseInt(datastream_id) }];
       } else {
         throw new Error("Either inputs, datastream_ids, or device_id+datastream_id must be provided");
@@ -37,7 +52,7 @@ export class WidgetService {
       const params = [
         description,
         dashboard_id,
-        JSON.stringify(finalInputs),
+        JSON.stringify(finalInputs),  // Simpan sebagai JSON string
         type,
       ];
       
@@ -49,6 +64,8 @@ export class WidgetService {
     }
   }
 
+  // ===== GET WIDGETS BY DASHBOARD ID =====
+  // Mengambil semua widget dalam dashboard tertentu
   async getWidgetsByDashboardId(dashboardId: string) {
     try {
       const [rows] = await this.db.query(
@@ -62,9 +79,11 @@ export class WidgetService {
     }
   }
 
+  // ===== GET WIDGETS BY DEVICE ID =====
+  // Mengambil widget yang menggunakan device tertentu
   async getWidgetsByDeviceId(device_id: string) {
     try {
-      // Search for widgets that contain this device_id in their inputs JSON
+      // Search widget yang mengandung device_id dalam inputs JSON
       const [rows] = await this.db.query(
         "SELECT * FROM widgets WHERE JSON_SEARCH(inputs, 'one', ?, NULL, '$[*].device_id') IS NOT NULL",
         [device_id]
@@ -76,6 +95,8 @@ export class WidgetService {
     }
   }
 
+  // ===== UPDATE WIDGET =====
+  // Update widget dengan support multiple input formats
   async updateWidget(
     id: string,
     {
@@ -89,17 +110,17 @@ export class WidgetService {
     }: any
   ) {
     try {
-      // Convert to new inputs format
+      // Convert ke format inputs baru dengan backward compatibility
       let finalInputs: any[];
       
       if (inputs && Array.isArray(inputs)) {
-        // Direct inputs format (preferred)
+        // Format inputs langsung (preferred format)
         finalInputs = inputs;
       } else if (datastream_ids && Array.isArray(datastream_ids)) {
-        // datastream_ids format (compatibility)
+        // Format datastream_ids (compatibility)
         finalInputs = datastream_ids;
       } else if (device_id && datastream_id) {
-        // Old single format (compatibility)
+        // Format lama single device/datastream (compatibility)
         finalInputs = [{ device_id: parseInt(device_id), datastream_id: parseInt(datastream_id) }];
       } else {
         throw new Error("Either inputs, datastream_ids, or device_id+datastream_id must be provided");
@@ -109,7 +130,7 @@ export class WidgetService {
       const params = [
         description,
         dashboard_id,
-        JSON.stringify(finalInputs),
+        JSON.stringify(finalInputs),  // Update sebagai JSON string
         type,
         id,
       ];
@@ -122,6 +143,8 @@ export class WidgetService {
     }
   }
 
+  // ===== DELETE WIDGET =====
+  // Menghapus widget berdasarkan ID
   async deleteWidget(id: string) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(

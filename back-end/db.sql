@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS `dashboards` (
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `layout` JSON NULL,
-  `time_range` ENUM('1m', '1h', '12h', '1d', '1w', '1M', '1y', 'all') DEFAULT '1m',
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -85,7 +84,6 @@ CREATE TABLE IF NOT EXISTS `datastreams` (
   `pin` VARCHAR(10) NOT NULL,
   `type` ENUM('integer', 'double', 'string', 'boolean') NOT NULL,
   `unit` VARCHAR(50) NOT NULL,
-  -- `default_value` VARCHAR(255) NOT NULL,
   `min_value` DOUBLE NOT NULL,
   `max_value` DOUBLE NOT NULL,
   `decimal_value` ENUM('0.0', '0.00', '0.000', '0.0000') NOT NULL,

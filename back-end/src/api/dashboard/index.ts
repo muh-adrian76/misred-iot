@@ -1,3 +1,9 @@
+/**
+ * ===== DASHBOARD API ROUTES - ENDPOINT MANAJEMEN DASHBOARD IoT =====
+ * File ini mengatur CRUD operations untuk dashboard kustomisasi user
+ * Meliputi: create, read, update, delete dashboard dengan layout management
+ */
+
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { DashboardService } from "../../services/DashboardService";
@@ -11,7 +17,8 @@ import {
 export function dashboardRoutes(dashboardService: DashboardService) {
   return (
     new Elysia({ prefix: "/dashboard" })
-      // Get user dashboards
+      // ===== GET USER DASHBOARDS ENDPOINT =====
+      // GET /dashboard - Ambil semua dashboard milik user
       .get(
         "/",
         //@ts-ignore
@@ -27,7 +34,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
           } catch (error: any) {
             console.error("Error in get dashboards:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               return new Response(JSON.stringify({
@@ -46,7 +53,8 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         getAllDashboardsSchema
       )
 
-      // Create dashboard
+      // ===== CREATE DASHBOARD ENDPOINT =====
+      // POST /dashboard - Buat dashboard baru dengan layout kustomisasi
       .post(
         "/",
         //@ts-ignore
@@ -84,7 +92,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
           } catch (error: any) {
             console.error("Error in create dashboard:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               return new Response(JSON.stringify({
@@ -103,7 +111,8 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         postDashboardSchema
       )
 
-      // Update dashboard description/layout
+      // ===== UPDATE DASHBOARD ENDPOINT =====
+      // PUT /dashboard/:id - Update dashboard description/layout
       .put(
         "/:id",
         //@ts-ignore
@@ -135,7 +144,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
           } catch (error: any) {
             console.error("Error in update dashboard:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               return new Response(JSON.stringify({
@@ -153,7 +162,8 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         },
         putDashboardSchema
       )
-      // Delete dashboard
+      // ===== DELETE DASHBOARD ENDPOINT =====
+      // DELETE /dashboard/:id - Hapus dashboard dengan validasi ownership
       .delete(
         "/:id",
         //@ts-ignore
@@ -174,7 +184,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
           } catch (error: any) {
             console.error("Error in delete dashboard:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               return new Response(JSON.stringify({

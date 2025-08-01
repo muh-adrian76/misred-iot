@@ -1,5 +1,19 @@
+/**
+ * ===== DATASTREAM SERVICE =====
+ * Service untuk mengelola datastream (channel data) dari IoT devices
+ * Menyediakan CRUD operations dan validasi untuk sensor data streams
+ * 
+ * Fitur utama:
+ * - Get datastream berdasarkan user ID atau device ID
+ * - Create datastream dengan validasi pin dan tipe data
+ * - Update datastream dengan format validation  
+ * - Delete datastream
+ * - Pin management untuk virtual pins (V0, V1, dll)
+ * - Data type validation (integer, double, boolean)
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
+// Helper function untuk mendapatkan jumlah decimal dari format string
 function getDecimal(format: string): number {
   const match = format.match(/\.(0+)/);
   return match ? match[1].length : 0;
@@ -12,10 +26,17 @@ export class DatastreamService {
     this.db = db;
   }
 
+  // ===== GET DATASTREAMS BY USER ID =====
+  // Mengambil semua datastream milik user dengan info device
   async getDatastreamsByUserId(userId: string) {
     try {
       const [rows] = await this.db.query(
-        "SELECT * FROM datastreams WHERE user_id = ?",
+        `SELECT 
+          ds.*,
+          d.description as device_description
+         FROM datastreams ds
+         LEFT JOIN devices d ON ds.device_id = d.id
+         WHERE ds.user_id = ?`,
         [userId]
       );
       return rows;
@@ -25,10 +46,17 @@ export class DatastreamService {
     }
   }
 
+  // ===== GET DATASTREAMS BY DEVICE ID =====
+  // Mengambil semua datastream untuk device tertentu milik user
   async getDatastreamsByDeviceId(deviceId: string, userId: string) {
     try {
       const [rows] = await this.db.query(
-        "SELECT * FROM datastreams WHERE device_id = ? AND user_id = ?",
+        `SELECT 
+          ds.*,
+          d.description as device_description
+         FROM datastreams ds
+         LEFT JOIN devices d ON ds.device_id = d.id
+         WHERE ds.device_id = ? AND ds.user_id = ?`,
         [deviceId, userId]
       );
       return rows;
@@ -38,6 +66,8 @@ export class DatastreamService {
     }
   }
 
+  // ===== GET DATASTREAM BY ID =====
+  // Mengambil datastream spesifik berdasarkan ID dan user ID
   async getDatastreamById(datastreamId: string, userId: string) {
     try {
       const [rows] = await this.db.query(

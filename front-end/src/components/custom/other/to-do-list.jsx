@@ -1,9 +1,9 @@
+// Import library dan komponen yang diperlukan untuk To-Do List onboarding
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Check,
   ChevronRight,
   X,
-  Sparkles,
   LucideLayoutDashboard,
   Cpu,
   ClipboardList,
@@ -18,16 +18,41 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/providers/user-provider";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "next-view-transitions";
+import confetti from "canvas-confetti"; // Import confetti untuk celebrasi
+import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog"; // Import ResponsiveDialog untuk celebration modal
 
+/**
+ * Komponen ToDoList
+ * 
+ * Komponen panduan onboarding interaktif untuk pengguna baru aplikasi IoT.
+ * Menampilkan daftar tugas yang harus diselesaikan untuk memulai menggunakan
+ * sistem IoT dengan progress tracking real-time dan animasi yang menarik.
+ * 
+ * Fitur utama:
+ * - Progress tracking dengan API backend
+ * - Animasi smooth dengan Framer Motion
+ * - Mode minimized untuk UX yang tidak mengganggu
+ * - Event listener untuk task completion
+ * - Responsive design untuk mobile dan desktop
+ * - Auto-hide ketika semua task selesai
+ */
 const ToDoList = () => {
-  const [completedTasks, setCompletedTasks] = useState([]);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // State management untuk komponen
+  const [completedTasks, setCompletedTasks] = useState([]); // Daftar task yang sudah selesai
+  const [isMinimized, setIsMinimized] = useState(false); // Status minimize widget
+  const [loading, setLoading] = useState(true); // Status loading data
+  const [showCelebration, setShowCelebration] = useState(false); // Status celebrasi completion
+  const [celebrationTriggered, setCelebrationTriggered] = useState(false); // Flag untuk mencegah celebrasi berulang
+  // Hooks untuk otentikasi dan data pengguna
   const { isAuthenticated } = useAuth();
   const { user } = useUser();
 
-  // Function to fetch progress data
+  /**
+   * Fungsi untuk mengambil data progress dari backend
+   * Menggunakan useCallback untuk optimasi performa dan mencegah re-render berlebihan
+   */
   const fetchProgress = useCallback(async () => {
+    // Cek apakah user sudah login dan memiliki ID
     if (!isAuthenticated || !user?.id) {
       setLoading(false);
       return;
@@ -35,10 +60,11 @@ const ToDoList = () => {
 
     try {
       setLoading(true);
+      // Request ke API untuk mendapatkan progress onboarding user
       const res = await fetchFromBackend("/user/onboarding-progress");
       if (res.ok) {
         const data = await res.json();
-        // Backend returns { success: true, progress: [...], completed: boolean }
+        // Backend mengembalikan { success: true, progress: [...], completed: boolean }
         setCompletedTasks(data.progress || []);
         // console.log("ToDoList: Fetched progress:", data.progress);
       }
@@ -106,6 +132,11 @@ const ToDoList = () => {
     }
   };
 
+  /**
+   * Daftar task onboarding yang harus diselesaikan pengguna baru
+   * Setiap task memiliki ID unik, judul, deskripsi, ikon, dan URL tujuan
+   * Urutan task dirancang untuk memandu user secara logis dalam setup IoT
+   */
   const tasks = [
     {
       id: 1,
@@ -116,9 +147,8 @@ const ToDoList = () => {
     },
     {
       id: 2,
-      title: "Buat Datastream",
-      description:
-        "untuk mengelola aliran data dari device",
+      title: "Buat Datastream", 
+      description: "untuk mengelola aliran data dari device",
       icon: <CircuitBoard className="w-5 h-5 text-gray-500" />,
       url: "/datastreams",
     },
@@ -132,8 +162,7 @@ const ToDoList = () => {
     {
       id: 4,
       title: "Buat Widget",
-      description:
-        "untuk tampilan yang lebih interaktif",
+      description: "untuk tampilan yang lebih interaktif",
       icon: <ChartNoAxesCombined className="w-5 h-5 text-gray-500" />,
       url: "/dashboards",
     },
@@ -146,19 +175,86 @@ const ToDoList = () => {
     },
   ];
 
+  // Kalkulasi persentase completion berdasarkan task yang sudah selesai
   const completionPercentage = (completedTasks.length / tasks.length) * 100;
 
+  /**
+   * Function untuk memicu efek confetti fireworks saat onboarding selesai
+   * Menggunakan animasi confetti yang spektakuler dengan multiple origins
+   */
+  const triggerCelebrationFireworks = useCallback(() => {
+    const duration = 5 * 1000; // Durasi celebrasi 5 detik
+    const animationEnd = Date.now() + duration;
+    const defaults = { 
+      startVelocity: 30, 
+      spread: 360, 
+      ticks: 60, 
+      zIndex: 9999 // Pastikan confetti tampil di atas semua element
+    };
+
+    // Function untuk generate random number dalam range
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+    // Interval untuk continuous confetti
+    const interval = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      // Confetti dari kiri
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      });
+      
+      // Confetti dari kanan
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      });
+    }, 250);
+
+    // Confetti burst awal yang lebih spektakuler
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      zIndex: 9999
+    });
+  }, []);
+
+  // Effect untuk trigger celebrasi ketika semua task selesai
+  useEffect(() => {
+    if (completionPercentage === 100 && !celebrationTriggered && !loading) {
+      setShowCelebration(true);
+      setCelebrationTriggered(true);
+      triggerCelebrationFireworks();
+      
+      // Modal akan ditutup manual oleh user, tidak auto-hide
+      // User mengontrol kapan modal ditutup dengan tombol "Lanjutkan"
+    }
+  }, [completionPercentage, celebrationTriggered, loading, triggerCelebrationFireworks]);
+
+  /**
+   * Fungsi untuk toggle status minimize/maximize widget
+   */
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
   };
 
-  // Don't show if loading
+  // Kondisi render: jangan tampilkan jika masih loading
   if (loading) {
     // console.log("ToDoList: Still loading...");
     return null;
   }
 
-  // For debugging
+  // Debug logging untuk development (dapat dihapus di production)
   //   console.log('ToDoList render:', {
   //     loading,
   //     completedTasks,
@@ -167,13 +263,25 @@ const ToDoList = () => {
   //     userId: user?.id
   //   });
 
-  // Don't show if all tasks are completed
-  if (completionPercentage === 100) {
-    // console.log("ToDoList: All tasks completed, hiding");
+  // Kondisi render: sembunyikan widget jika semua task sudah selesai DAN modal sudah ditutup user
+  // Memberikan clean UX setelah onboarding selesai
+  if (completionPercentage === 100 && !showCelebration && celebrationTriggered) {
+    // console.log("ToDoList: All tasks completed and celebration dismissed by user, hiding");
     return null;
   }
 
+  /**
+   * Komponen CircularProgress
+   * 
+   * Komponen progress bar circular untuk menampilkan persentase completion
+   * dengan SVG yang responsif dan animasi smooth. Mendukung dua ukuran
+   * berbeda untuk mode normal dan minimized.
+   * 
+   * @param {number} percentage - Persentase progress (0-100)
+   * @param {string} size - Ukuran progress ("normal" atau "small")
+   */
   const CircularProgress = ({ percentage, size = "normal" }) => {
+    // Kalkulasi dimensi berdasarkan ukuran
     const radius = size === "small" ? 16 : 18;
     const circumference = 2 * Math.PI * radius;
     const strokeDasharray = circumference;
@@ -182,10 +290,12 @@ const ToDoList = () => {
 
     return (
       <div className={`relative ${size === "small" ? "w-9 h-9" : "w-10 h-10"}`}>
+        {/* SVG progress circle dengan transformasi rotasi -90 derajat */}
         <svg
           className={`${size === "small" ? "w-9 h-9" : "w-10 h-10"} transform -rotate-90`}
           viewBox={`0 0 ${svgSize} ${svgSize}`}
         >
+          {/* Background circle (track) */}
           <circle
             cx={svgSize / 2}
             cy={svgSize / 2}
@@ -195,6 +305,7 @@ const ToDoList = () => {
             fill="none"
             className="dark:stroke-gray-600"
           />
+          {/* Progress circle (actual progress) */}
           <circle
             cx={svgSize / 2}
             cy={svgSize / 2}
@@ -210,7 +321,7 @@ const ToDoList = () => {
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           {percentage === 100 ? (
-            <Sparkles
+            <Goal
               className={`${size === "small" ? "w-3 h-3" : "w-4 h-4"} text-red-600 dark:text-red-400`}
             />
           ) : (
@@ -389,22 +500,87 @@ const ToDoList = () => {
             })}
           </div>
 
-          {/* Completion Message */}
-          {completionPercentage === 100 && (
-            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 rounded-xl border border-red-200 dark:border-red-700 animate-pulse">
-              <div className="flex items-center justify-center space-x-2">
-                <div className="bg-red-600 dark:bg-red-500 p-1.5 sm:p-2 rounded-full">
-                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <div className="text-center">
-                  <h4 className="text-sm sm:text-base font-bold text-red-800 dark:text-red-300">Selamat! 🎉</h4>
-                  <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">
-                    Anda telah menyelesaikan semua tugas onboarding.
+          {/* Completion Message dengan Celebrasi dalam Modal */}
+          <ResponsiveDialog
+            open={showCelebration}
+            setOpen={setShowCelebration}
+            title="🎉 Selamat! Luar Biasa! 🎉"
+            description="Anda telah berhasil menyelesaikan semua langkah panduan! Sistem IoT Anda siap digunakan!"
+            content={
+              <div className="text-center space-y-4">
+                {/* Celebrasi Header - Simplified untuk mobile */}
+                <motion.div
+                  animate={{ 
+                    rotate: [0, -10, 10, -10, 0],
+                    scale: [1, 1.1, 1]
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3
+                  }}
+                  className="inline-block"
+                >
+                  <div className="bg-gradient-to-r from-red-500 to-yellow-500 dark:from-red-400 dark:to-yellow-400 p-3 rounded-full shadow-lg mx-auto w-fit">
+                    <Goal className="w-6 h-6 text-white" />
+                  </div>
+                </motion.div>
+
+                {/* Achievement Stats - Kompak untuk mobile */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="grid grid-cols-3 gap-2 max-w-xs mx-auto"
+                >
+                  <div className="text-center p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                    <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                      {tasks.length}
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Tugas
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      100%
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Selesai
+                    </div>
+                  </div>
+                  <div className="text-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                      ✨
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      Status
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Motivational Message - Simplified */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-center p-3 bg-gradient-to-r from-red-100 to-yellow-100 dark:from-red-900/40 dark:to-yellow-900/40 rounded-lg border border-red-200 dark:border-red-700 max-w-sm mx-auto"
+                >
+                  <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-2">
+                    🚀 <strong>Sekarang Anda dapat:</strong>
                   </p>
-                </div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <div>✅ Memantau device IoT real-time</div>
+                    <div>✅ Mengelola data sensor</div>
+                    <div>✅ Membuat visualisasi data</div>
+                    <div>✅ Mengatur alarm otomatis</div>
+                  </div>
+                </motion.div>
               </div>
-            </div>
-          )}
+            }
+            confirmText="Tutup"
+            oneButton={true}
+          />
         </div>
       </div>
     </motion.div>

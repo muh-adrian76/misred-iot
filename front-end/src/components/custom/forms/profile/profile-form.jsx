@@ -1,4 +1,6 @@
+// Import React hooks untuk state management
 import { useState, useEffect } from "react";
+// Import komponen Sheet untuk sidebar form layout
 import {
   Sheet,
   SheetContent,
@@ -6,37 +8,49 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+// Import section components untuk profile management
 import ProfileInfoSection from "./profile-info";
 import ProfilePasswordSection from "./profile-password";
 import ProfileDeleteDialog from "./profile-delete";
+// Import komponen TransitionPanel untuk smooth transitions
 import { TransitionPanel } from "@/components/ui/transition-panel";
 
+// Komponen ProfileForm untuk mengelola profil user dalam sidebar sheet
 export default function ProfileForm({ open, setOpen, user, setUser, router }) {
-  const [username, setUsername] = useState(user?.name || "");
-  const [phoneNumber, setPhoneNumber] = useState(user?.phone || "");
-  const [whatsappNotif, setWhatsappNotif] = useState(user?.whatsapp_notif || false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [openDeleteAccountDialog, setOpenDeleteAccountDialog] = useState(false);
-  const [deleteChecked, setDeleteChecked] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  // State untuk form fields dengan data user yang ada
+  const [username, setUsername] = useState(user?.name || ""); // Nama user
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || ""); // Nomor telepon user
+  const [whatsappNotif, setWhatsappNotif] = useState(user?.whatsapp_notif || false); // Setting notifikasi WhatsApp
   
-  // Update state ketika user data berubah
+  // State untuk password management
+  const [showPassword, setShowPassword] = useState(false); // Visibility password fields
+  const [oldPassword, setOldPassword] = useState(""); // Password lama untuk verifikasi
+  const [newPassword, setNewPassword] = useState(""); // Password baru
+  
+  // State untuk delete account functionality
+  const [openDeleteAccountDialog, setOpenDeleteAccountDialog] = useState(false); // Modal delete account
+  const [deleteChecked, setDeleteChecked] = useState(false); // Checkbox konfirmasi delete
+  
+  // State untuk UI control
+  const [isEditing, setIsEditing] = useState(false); // Mode editing profile
+  const [activeIndex, setActiveIndex] = useState(0); // Index active section dalam TransitionPanel
+  
+  // Update state ketika user data berubah dari props
   useEffect(() => {
     if (user) {
-      setUsername(user?.name || "");
-      setPhoneNumber(user?.phone || "");
-      setWhatsappNotif(user?.whatsapp_notif || false);
+      setUsername(user?.name || ""); // Sync nama user
+      setPhoneNumber(user?.phone || ""); // Sync nomor telepon
+      setWhatsappNotif(user?.whatsapp_notif || false); // Sync setting WhatsApp
     }
   }, [user]);
   
+  // Array items untuk TransitionPanel dengan section yang berbeda
   const ITEMS = [
     {
-      title: "Informasi Akun",
-      // subtitle: "Refining Visual Harmony",
+      title: "Informasi Akun", // Title section informasi
+      // subtitle: "Refining Visual Harmony", // Optional subtitle (commented out)
       content: (
+        // Section untuk mengedit informasi dasar akun
         <ProfileInfoSection
           user={user}
           username={username}

@@ -1,10 +1,11 @@
 /**
- * Export Utilities
- * Fungsi-fungsi untuk membantu proses ekspor data ke berbagai format
+ * Export Utilities - Fungsi-fungsi untuk ekspor data ke berbagai format
+ * Mendukung: CSV export, PDF generation dengan react-pdf, dan format timestamp Indonesia
  */
 
 import { pdf } from '@react-pdf/renderer';
 
+// Utility untuk format timestamp ke format Indonesia (DD/MM/YYYY HH:mm:ss)
 export const formatDateTime = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleString("id-ID", {
@@ -18,16 +19,19 @@ export const formatDateTime = (dateString) => {
 };
 
 /**
- * Eksport data ke CSV format
- * @param {Array} headers - Array header untuk CSV
- * @param {Array} data - Array data untuk CSV
- * @param {string} filename - Nama file
+ * Export data ke format CSV dengan auto-download
+ * Memformat data menjadi CSV yang bisa dibuka di Excel/spreadsheet
+ * @param {Array} headers - Array string untuk header kolom CSV
+ * @param {Array} data - Array of arrays berisi data untuk setiap row
+ * @param {string} filename - Nama file tanpa extension (.csv akan ditambah otomatis)
  */
 export const exportToCSV = (headers, data, filename) => {
+  // Gabungkan headers dan data, wrap setiap field dengan quotes untuk CSV safety
   const csvContent = [headers, ...data]
     .map((row) => row.map((field) => `"${field}"`).join(","))
     .join("\n");
 
+  // Create blob dan trigger download
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -36,16 +40,17 @@ export const exportToCSV = (headers, data, filename) => {
 };
 
 /**
- * Generate dan download PDF menggunakan react-pdf
- * @param {React.Component} DocumentComponent - React PDF Document component
- * @param {string} filename - Nama file untuk download
+ * Generate dan auto-download PDF menggunakan react-pdf library
+ * Untuk membuat laporan IoT dalam format PDF yang professional
+ * @param {React.Component} DocumentComponent - React PDF Document component yang sudah dibuat
+ * @param {string} filename - Nama file PDF tanpa extension
  */
 export const generateReactPDF = async (DocumentComponent, filename) => {
   try {
-    // Create PDF blob using react-pdf
+    // Generate PDF blob dari React PDF component
     const blob = await pdf(DocumentComponent).toBlob();
     
-    // Create download link
+    // Create download link dan trigger download otomatis
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

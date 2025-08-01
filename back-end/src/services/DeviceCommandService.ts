@@ -1,12 +1,25 @@
+/**
+ * ===== DEVICE COMMAND SERVICE =====
+ * Service untuk mengelola perintah ke IoT devices
+ * Mendukung komunikasi via MQTT, WebSocket, dan HTTP polling
+ * 
+ * Fitur utama:
+ * - Send command ke device (set_value, toggle, reset)
+ * - Multi-protocol support (MQTT, WebSocket, HTTP)
+ * - Command status tracking dan acknowledgment
+ * - Command history dan statistics
+ * - Auto cleanup untuk pending commands
+ * - Real-time notification via WebSocket
+ */
 import mysql, { Pool } from "mysql2/promise";
 import { type DeviceCommand, type CommandStatus } from "../lib/types";
 import { MQTTClient } from "../lib/middleware";
 
-// Lazy import to avoid circular dependency
+// Lazy import untuk menghindari circular dependency
 let broadcastToUsersByDevice: any = null;
 let sendToDevice: any = null;
 
-// Initialize broadcast functions
+// Initialize broadcast functions untuk WebSocket communication
 const initializeBroadcasting = async () => {
   if (!broadcastToUsersByDevice) {
     try {
@@ -35,13 +48,12 @@ export class DeviceCommandService {
     this.db = db;
     this.mqttClient = MQTTClient.getInstance();
     
-    // Initialize broadcasting functions
+    // Initialize broadcasting functions untuk WebSocket
     initializeBroadcasting();
   }
 
-  /**
-   * Create a new device command and send it to device
-   */
+  // ===== CREATE COMMAND =====
+  // Membuat command baru dan mengirim ke device
   async createCommand(
     deviceId: number,
     datastreamId: number,
@@ -50,7 +62,7 @@ export class DeviceCommandService {
     userId: number
   ): Promise<number> {
     try {
-      // Validate datastream is actuator (string or boolean type)
+      // Validasi datastream harus actuator (string atau boolean type)
       const [datastreamRows]: any = await this.db.execute(
         `SELECT ds.*, d.protocol, d.description as device_name 
          FROM datastreams ds 
@@ -65,22 +77,22 @@ export class DeviceCommandService {
 
       const datastream = datastreamRows[0];
       
-      // Check if datastream is actuator (string or boolean type)
+      // Cek apakah datastream adalah actuator (string atau boolean)
       if (!['string', 'boolean'].includes(datastream.type)) {
         throw new Error("Datastream ini bukan aktuator. Hanya tipe 'string' atau 'boolean' yang dapat dikontrol.");
       }
 
-      // Validate value range for boolean type
+      // Validasi nilai untuk boolean type (harus 0 atau 1)
       if (datastream.type === 'boolean' && ![0, 1].includes(value)) {
         throw new Error("Nilai untuk tipe boolean harus 0 atau 1");
       }
 
-      // Validate value range for other types
+      // Validasi range nilai untuk tipe lain
       if (datastream.type === 'string' && (value < datastream.min_value || value > datastream.max_value)) {
         throw new Error(`Nilai harus antara ${datastream.min_value} dan ${datastream.max_value}`);
       }
 
-      // Create command record
+      // Buat record command di database
       const [result] = await this.db.execute(
         `INSERT INTO device_commands 
          (device_id, datastream_id, command_type, value, user_id, status)
@@ -90,10 +102,10 @@ export class DeviceCommandService {
       
       const commandId = (result as any).insertId;
 
-      // Send command to device via appropriate protocol
+      // Kirim command ke device sesuai protokol
       await this.sendCommandToDevice(commandId, deviceId, datastream, commandType, value);
 
-      // Broadcast command status to frontend ONLY to device owner
+      // Broadcast status command ke frontend via WebSocket
       if (broadcastToUsersByDevice) {
         await broadcastToUsersByDevice(this.db, deviceId, {
           type: "command_status",

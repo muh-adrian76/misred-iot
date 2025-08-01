@@ -1,3 +1,17 @@
+/**
+ * ===== MQTT SERVICE =====
+ * Service untuk mengelola komunikasi MQTT dengan IoT devices
+ * Menangani receive data dari devices dan forward ke sistem
+ * 
+ * Fitur utama:
+ * - MQTT client management dan connection handling
+ * - Topic subscription/unsubscription management  
+ * - JWT verification dan AES decryption untuk security
+ * - Real-time data processing dan normalization
+ * - WebSocket broadcasting untuk frontend updates
+ * - Alarm checking setelah data diterima
+ * - Device status monitoring integration
+ */
 import { MQTTClient } from "../lib/middleware";
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import {
@@ -30,6 +44,8 @@ export class MQTTService {
     this.deviceService = deviceService;
   }
 
+  // ===== SUBSCRIBE TOPIC =====
+  // Subscribe ke MQTT topic tertentu
   subscribeTopic(topic: string) {
     this.mqttClient.subscribe(topic, (err) => {
       if (!err) {
@@ -40,6 +56,8 @@ export class MQTTService {
     });
   }
 
+  // ===== UNSUBSCRIBE TOPIC =====
+  // Unsubscribe dari MQTT topic tertentu
   unSubscribeTopic(topic: string) {
     this.mqttClient.unsubscribe(topic, (err) => {
       if (!err) {
@@ -50,6 +68,8 @@ export class MQTTService {
     });
   }
 
+  // ===== SUBSCRIBE ALL DEVICE TOPICS =====
+  // Subscribe ke semua topic aktif dari devices
   async subscribeAllDeviceTopics() {
     // Gunakan topic manager dari device service untuk subscribe
     const topicManager = this.deviceService?.getMQTTTopicManager();

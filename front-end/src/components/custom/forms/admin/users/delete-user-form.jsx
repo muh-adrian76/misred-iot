@@ -1,5 +1,5 @@
 import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
-import CheckboxButton from "../../buttons/checkbox-button";
+import CheckboxButton from "../../../buttons/checkbox-button";
 
 export default function DeleteUserForm({
   open,

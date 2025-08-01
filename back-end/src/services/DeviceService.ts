@@ -1,3 +1,16 @@
+/**
+ * ===== DEVICE SERVICE =====
+ * Service untuk mengelola IoT devices dalam sistem
+ * Menyediakan CRUD operations dan integrasi dengan MQTT, OTAA, firmware management
+ * 
+ * Fitur utama:
+ * - Device CRUD operations dengan multi-protocol support
+ * - MQTT topic management dan subscription
+ * - OTAA (Over-The-Air) firmware update integration
+ * - Device status monitoring (online/offline)
+ * - Secret key management untuk keamanan device
+ * - Cascade delete untuk menghapus data terkait
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { randomBytes } from "crypto";
 import { OtaaUpdateService } from "./OtaaUpdateService";
@@ -6,8 +19,8 @@ import { MQTTTopicManager } from "./MQTTTopicManager";
 export class DeviceService {
   private db: Pool;
   private otaaService: OtaaUpdateService;
-  private onSubscribeTopic?: (topic: string) => void;
-  private onUnsubscribeTopic?: (topic: string) => void;
+  private onSubscribeTopic?: (topic: string) => void;    // Callback untuk subscribe MQTT
+  private onUnsubscribeTopic?: (topic: string) => void;  // Callback untuk unsubscribe MQTT
   private mqttTopicManager?: MQTTTopicManager;
 
   constructor(
@@ -23,6 +36,8 @@ export class DeviceService {
     this.mqttTopicManager = new MQTTTopicManager(db);
   }
 
+  // ===== CREATE DEVICE =====
+  // Membuat device baru dengan konfigurasi protokol dan MQTT topic
   async createDevice({
     name,
     board,
@@ -63,7 +78,7 @@ export class DeviceService {
           id,
         ]);
         
-        // Subscribe menggunakan topic manager
+        // Subscribe menggunakan topic manager untuk receive data
         await this.mqttTopicManager.subscribeIfNeeded(uniqueTopic, this.onSubscribeTopic);
       }
 

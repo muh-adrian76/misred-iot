@@ -1,4 +1,6 @@
 "use client";
+
+// Import utility dan komponen yang diperlukan
 import { cn } from "@/lib/utils";
 import { SlidingNumber } from "@/components/ui/sliding-number";
 import { useWidgetData } from "@/hooks/use-widget-data";
@@ -7,36 +9,39 @@ import { Loader2, WifiOff, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Slider } from "@/components/ui/slider";
 
+// Komponen SliderWidget untuk kontrol nilai dalam rentang tertentu pada dashboard IoT
 export function SliderWidget({
   className,
-  previewMode = false,
-  widget,
-  timeRange = "1h",
-  dataCount = "100",
-  filterType = "count",
+  previewMode = false, // Mode preview untuk widget box
+  widget, // Data konfigurasi widget
+  timeRange = "1h", // Range waktu data
+  dataCount = "100", // Jumlah data point
+  filterType = "count", // Tipe filter data
   ...props
 }) {
-  const [dummyValue, setDummyValue] = useState([50]);
-  const [sliderValue, setSliderValue] = useState([0]);
-  const [isSending, setIsSending] = useState(false);
+  // State untuk nilai slider dalam berbagai mode
+  const [dummyValue, setDummyValue] = useState([50]); // Nilai dummy untuk preview
+  const [sliderValue, setSliderValue] = useState([0]); // Nilai slider aktual
+  const [isSending, setIsSending] = useState(false); // Status pengiriman command
 
-  // Use real-time data hook
+  // Hook untuk mendapatkan data real-time dari datastream
   const {
-    latestValue,
-    isLoading,
-    error,
-    isValidWidget,
-    isRealTimeConnected,
-    datastreamInfo,
+    latestValue, // Nilai terbaru dari sensor
+    isLoading, // Status loading data
+    error, // Error jika ada
+    isValidWidget, // Validasi widget
+    isRealTimeConnected, // Status koneksi real-time
+    datastreamInfo, // Info datastream
   } = useWidgetData(widget, timeRange, dataCount, filterType);
 
-  // Use device control hook
+  // Hook untuk kontrol device (actuator/sensor)
   const { sendValueCommand, isActuator, isSensor } = useDeviceControl();
 
-  // Preview mode dengan data dummy
+  // Mode preview dengan data dummy untuk widget box
   if (previewMode) {
     return (
       <div className="flex w-full h-full items-center gap-4 px-4">
+        {/* Slider dengan nilai dummy yang dapat diubah */}
         <Slider
           value={dummyValue}
           onValueChange={setDummyValue}
@@ -46,6 +51,7 @@ export function SliderWidget({
           className={cn("flex-1", className)}
           {...props}
         />
+        {/* Tampilan angka yang beranimasi */}
         <SlidingNumber value={dummyValue[0]} />
       </div>
     );

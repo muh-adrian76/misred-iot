@@ -1,3 +1,9 @@
+/**
+ * ===== ALARM MANAGEMENT API ROUTES - ENDPOINT MANAJEMEN ALARM IoT =====
+ * File ini mengatur semua endpoint API untuk manajemen alarm dan notifikasi
+ * Meliputi: CRUD operations untuk alarm, kondisi threshold, dan monitoring
+ */
+
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { AlarmService } from "../../services/AlarmService";
@@ -12,7 +18,8 @@ import {
 export function alarmRoutes(alarmService: AlarmService) {
   return new Elysia({ prefix: "/alarm" })
 
-    // ➕ CREATE Alarm
+    // ===== CREATE ALARM ENDPOINT =====
+    // POST /alarm - Membuat alarm baru dengan kondisi threshold
     .post(
       "/",
       //@ts-ignore
@@ -20,7 +27,7 @@ export function alarmRoutes(alarmService: AlarmService) {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
           const { description, device_id, datastream_id, is_active, conditions, cooldown_minutes } = body;
-          const user_id = decoded.sub;
+          const user_id = decoded.sub; // Ambil user ID dari JWT
           
           const insertId = await alarmService.createAlarm({
             description,
@@ -28,8 +35,8 @@ export function alarmRoutes(alarmService: AlarmService) {
             device_id,
             datastream_id,
             is_active,
-            conditions,
-            cooldown_minutes,
+            conditions, // Array kondisi threshold (operator + nilai)
+            cooldown_minutes, // Cooldown untuk mencegah spam notifikasi
           });
           return new Response(
             JSON.stringify({
@@ -42,7 +49,7 @@ export function alarmRoutes(alarmService: AlarmService) {
         } catch (error: any) {
           console.error("Error creating alarm:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;
@@ -63,25 +70,26 @@ export function alarmRoutes(alarmService: AlarmService) {
       createAlarmSchema
     )
 
-    // 📄 READ Semua Alarm milik user
+    // ===== GET ALL ALARMS ENDPOINT =====
+    // GET /alarm - Ambil semua alarm milik user yang sedang login
     .get(
       "/",
       //@ts-ignore
       async ({ jwt, cookie, set }) => {
         try {
           const decoded = await authorizeRequest(jwt, cookie);
-          const data = await alarmService.getAllAlarms(decoded.sub);
+          const data = await alarmService.getAllAlarms(decoded.sub); // Filter berdasarkan user ID
           return new Response(
             JSON.stringify({ 
               success: true,
-              alarms: data 
+              alarms: data // Array alarm dengan detail device dan datastream
             }), 
             { status: 200 }
           );
         } catch (error: any) {
           console.error("Error fetching alarms:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;
@@ -104,7 +112,8 @@ export function alarmRoutes(alarmService: AlarmService) {
       getAlarmsSchema
     )
 
-    // 📄 READ Alarm by ID
+    // ===== GET ALARM BY ID ENDPOINT =====
+    // GET /alarm/:alarmId - Ambil detail alarm berdasarkan ID dengan validasi ownership
     .get(
       "/:alarmId",
       //@ts-ignore
@@ -117,7 +126,7 @@ export function alarmRoutes(alarmService: AlarmService) {
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Alarm tidak ditemukan",
+                message: "Alarm tidak ditemukan atau tidak memiliki akses",
               }),
               { status: 404 }
             );
@@ -126,14 +135,14 @@ export function alarmRoutes(alarmService: AlarmService) {
           return new Response(
             JSON.stringify({ 
               success: true,
-              alarm: data 
+              alarm: data // Detail alarm dengan kondisi threshold
             }), 
             { status: 200 }
           );
         } catch (error: any) {
           console.error("Error fetching alarm:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;
@@ -154,7 +163,8 @@ export function alarmRoutes(alarmService: AlarmService) {
       getAlarmByIdSchema
     )
 
-    // ✏️ UPDATE Alarm
+    // ===== UPDATE ALARM ENDPOINT =====
+    // PUT /alarm/:alarmId - Update konfigurasi alarm dengan validasi ownership
     .put(
       "/:alarmId",
       //@ts-ignore
@@ -183,7 +193,7 @@ export function alarmRoutes(alarmService: AlarmService) {
         } catch (error: any) {
           console.error("Error updating alarm:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;
@@ -204,7 +214,8 @@ export function alarmRoutes(alarmService: AlarmService) {
       updateAlarmSchema
     )
 
-    // ❌ DELETE Alarm
+    // ===== DELETE ALARM ENDPOINT =====
+    // DELETE /alarm/:alarmId - Hapus alarm dengan validasi ownership
     .delete(
       "/:alarmId",
       //@ts-ignore
@@ -233,7 +244,7 @@ export function alarmRoutes(alarmService: AlarmService) {
         } catch (error: any) {
           console.error("Error deleting alarm:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;

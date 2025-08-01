@@ -1,3 +1,9 @@
+/**
+ * ===== ADMIN MANAGEMENT API ROUTES - ENDPOINT ADMINISTRASI SISTEM IoT =====
+ * File ini mengatur semua endpoint API untuk administrasi dan monitoring sistem
+ * Meliputi: statistik overview, manajemen user/device, lokasi, sistem health
+ */
+
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { AdminService } from "../../services/AdminService";
@@ -15,7 +21,8 @@ import {
 export function adminRoutes(adminService: AdminService, userService: UserService) {
   return new Elysia({ prefix: "/admin" })
 
-    // Get overview statistics
+    // ===== GET OVERVIEW STATISTICS ENDPOINT =====
+    // GET /admin/stats/overview - Ambil statistik overview sistem (hanya admin)
     .get(
       "/stats/overview",
       // @ts-ignore
@@ -24,6 +31,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -32,17 +40,17 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }
 
           const stats = await adminService.getOverviewStats();
-          // Jika stats ada recentUsers, format juga
+          // Format data recentUsers jika ada untuk konsistensi frontend
           if (stats.recentUsers) {
             stats.recentUsers = stats.recentUsers.map((row) => ({
               ...row,
-              is_admin: !!row.is_admin,
+              is_admin: !!row.is_admin, // Convert ke boolean
               created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString()
             }));
           }
           return {
             status: "success",
-            data: stats
+            data: stats // Total users, devices, alarms, payload count, dsb
           };
         } catch (error) {
           console.error("Error getting overview stats:", error);
@@ -55,7 +63,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getOverviewStatsSchema
     )
 
-    // Get recent users
+    // ===== GET RECENT USERS ENDPOINT =====
+    // GET /admin/stats/recent-users - Ambil daftar user terbaru dengan limit (hanya admin)
     .get(
       "/stats/recent-users",
       // @ts-ignore
@@ -64,6 +73,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -71,17 +81,17 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             }), { status: 403 });
           }
 
-          const limit = query.limit ? parseInt(String(query.limit)) : 10;
+          const limit = query.limit ? parseInt(String(query.limit)) : 10; // Default 10 user terbaru
           const users = await adminService.getRecentUsers(limit);
-          // Format agar is_admin boolean dan created_at string ISO
+          // Format data untuk konsistensi frontend (boolean dan ISO timestamp)
           const formattedUsers = users.map((row) => ({
             ...row,
-            is_admin: !!row.is_admin,
+            is_admin: !!row.is_admin, // Convert ke boolean
             created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString()
           }));
           return {
             status: "success",
-            data: formattedUsers
+            data: formattedUsers // Array user terbaru dengan metadata
           };
         } catch (error) {
           console.error("Error getting recent users:", error);
@@ -94,7 +104,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getRecentUsersSchema
     )
 
-    // Get all users with statistics
+    // ===== GET ALL USERS WITH STATISTICS ENDPOINT =====
+    // GET /admin/users - Ambil semua user dengan statistik lengkap (hanya admin)
     .get(
       "/users",
       // @ts-ignore
@@ -103,6 +114,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -112,19 +124,19 @@ export function adminRoutes(adminService: AdminService, userService: UserService
 
           const users = await adminService.getAllUsersWithStats();
           
-          // Format agar is_admin boolean dan created_at string ISO
+          // Format data untuk konsistensi frontend (boolean types dan ISO timestamps)
           const formattedUsers = users.map((row) => ({
             ...row,
-            is_admin: !!row.is_admin,
-            whatsapp_notif: !!row.whatsapp_notif,
-            onboarding_completed: !!row.onboarding_completed,
+            is_admin: !!row.is_admin, // Convert ke boolean
+            whatsapp_notif: !!row.whatsapp_notif, // Convert ke boolean
+            onboarding_completed: !!row.onboarding_completed, // Convert ke boolean
             created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
             last_login: row.last_login ? (typeof row.last_login === "string" ? row.last_login : new Date(row.last_login).toISOString()) : null
           }));
           
           return {
             status: "success",
-            data: formattedUsers
+            data: formattedUsers // Array lengkap user dengan device count, alarm count, dsb
           };
         } catch (error) {
           console.error("Error getting users with stats:", error);
@@ -137,7 +149,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getAllUsersWithStatsSchema
     )
 
-    // Get all devices with statistics
+    // ===== GET ALL DEVICES WITH STATISTICS ENDPOINT =====
+    // GET /admin/devices - Ambil semua device dengan statistik lengkap (hanya admin)
     .get(
       "/devices",
       // @ts-ignore
@@ -146,6 +159,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -154,7 +168,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }
 
           const devices = await adminService.getAllDevicesWithStats();
-          // Format agar created_at dan last_data_time string ISO
+          // Format timestamps untuk konsistensi frontend (ISO string format)
           const formattedDevices = devices.map((row) => ({
             ...row,
             created_at: typeof row.created_at === "string" ? row.created_at : new Date(row.created_at).toISOString(),
@@ -162,7 +176,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }));
           return {
             status: "success",
-            data: formattedDevices
+            data: formattedDevices // Array device dengan payload count, alarm count, owner info
           };
         } catch (error) {
           console.error("Error getting devices with stats:", error);
@@ -175,7 +189,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getAllDevicesWithStatsSchema
     )
 
-    // Get device locations for maps
+    // ===== GET DEVICE LOCATIONS FOR MAPS ENDPOINT =====
+    // GET /admin/devices/locations - Ambil lokasi semua device untuk maps (hanya admin)
     .get(
       "/devices/locations",
       // @ts-ignore
@@ -184,6 +199,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -192,16 +208,16 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           }
 
           const devices = await adminService.getDeviceLocations();
-          // Format agar latitude/longitude number dan last_seen string
+          // Format koordinat dan timestamp untuk mapping/GIS
           const formattedDevices = devices.map((row) => ({
             ...row,
-            latitude: row.latitude !== undefined ? Number(row.latitude) : undefined,
-            longitude: row.longitude !== undefined ? Number(row.longitude) : undefined,
-            last_seen: row.last_seen ? String(row.last_seen) : undefined
+            latitude: row.latitude !== undefined ? Number(row.latitude) : undefined, // Ensure number type
+            longitude: row.longitude !== undefined ? Number(row.longitude) : undefined, // Ensure number type
+            last_seen: row.last_seen ? String(row.last_seen) : undefined // String timestamp
           }));
           return {
             status: "success",
-            data: formattedDevices
+            data: formattedDevices // Array device dengan koordinat untuk maps
           };
         } catch (error) {
           console.error("Error getting device locations:", error);
@@ -214,7 +230,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getDeviceLocationsSchema
     )
 
-    // Update device location
+    // ===== UPDATE DEVICE LOCATION ENDPOINT =====
+    // PUT /admin/devices/:id/location - Update lokasi device untuk admin GIS management
     .put(
       "/devices/:id/location",
       // @ts-ignore
@@ -227,6 +244,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           
           console.log("User authentication:", { userId: decoded.sub, isAdmin: adminUser?.is_admin });
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             console.log("Authorization failed: User is not admin");
             return new Response(JSON.stringify({
@@ -240,7 +258,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           
           console.log("Parsed data:", { deviceId, latitude, longitude, address });
           
-          // Validate input
+          // Validasi input data
           if (!deviceId || isNaN(deviceId)) {
             return new Response(JSON.stringify({
               status: "error",
@@ -285,7 +303,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       putDeviceLocationSchema
     )
 
-    // Get system health
+    // ===== GET SYSTEM HEALTH ENDPOINT =====
+    // GET /admin/system/health - Monitoring kesehatan sistem IoT (hanya admin)
     .get(
       "/system/health",
       // @ts-ignore
@@ -294,6 +313,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
+          // Validasi akses admin
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
@@ -304,7 +324,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           const health = await adminService.getSystemHealth();
           return {
             status: "success",
-            data: health
+            data: health // Database status, server uptime, service status, dsb
           };
         } catch (error) {
           console.error("Error getting system health:", error);

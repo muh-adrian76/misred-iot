@@ -1,78 +1,93 @@
+/**
+ * ===== ALARM NOTIFICATION SERVICE =====
+ * Service untuk mengelola notifikasi alarm IoT
+ * Mengirim notifikasi via WhatsApp dan browser push notification
+ * 
+ * Fitur utama:
+ * - WhatsApp integration dengan qrcode-terminal
+ * - Browser push notification via WebSocket
+ * - Log history semua notifikasi alarm
+ * - Cooldown management untuk prevent spam
+ * - Auto retry mechanism untuk WhatsApp failed
+ * - Template pesan yang customizable
+ */
 import { Pool } from "mysql2/promise";
 import { Client, LocalAuth } from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
 import { broadcastToSpecificUser } from "../api/ws/user-ws";
 
+// Interface data alarm lengkap dengan JOIN fields
 export interface AlarmData {
   id: number;
-  description: string;
-  user_id: number;
-  device_id: number;
-  datastream_id: number;
-  is_active: boolean;
-  cooldown_minutes: number;
-  last_triggered?: string;
+  description: string;              // Deskripsi alarm
+  user_id: number;                 // ID user pemilik
+  device_id: number;               // ID device yang trigger
+  datastream_id: number;           // ID datastream yang dipantau
+  is_active: boolean;              // Status alarm aktif/tidak
+  cooldown_minutes: number;        // Waktu cooldown dalam menit
+  last_triggered?: string;         // Waktu terakhir trigger
   created_at: string;
   updated_at: string;
 
-  // Fields from joined tables
-  field_name: string; // dari datastreams.pin
-  data_type: string; // dari datastreams.type
-  datastream_description: string; // dari datastreams.description
-  device_description: string; // dari devices.description
-  whatsapp_number: string; // dari users.phone
-  user_name: string; // dari users.name
-  user_email: string; // dari users.email
-  condition_operator: string; // dari alarm_conditions.operator
-  condition_value: string; // dari alarm_conditions.threshold
+  // Fields dari JOIN dengan tabel lain
+  field_name: string;              // Nama field sensor (dari datastreams.pin)
+  data_type: string;               // Tipe data sensor (dari datastreams.type)
+  datastream_description: string;  // Deskripsi datastream
+  device_description: string;      // Deskripsi device
+  whatsapp_number: string;         // Nomor WhatsApp user (dari users.phone)
+  user_name: string;               // Nama user
+  user_email: string;              // Email user
+  condition_operator: string;      // Operator kondisi (>, <, =, dll)
+  condition_value: string;         // Nilai threshold kondisi
 }
 
+// Interface hasil pengiriman notifikasi
 export interface NotificationResult {
-  success: boolean;
-  whatsapp_message_id?: string;
-  error_message?: string;
+  success: boolean;                // Status berhasil/gagal
+  whatsapp_message_id?: string;    // ID pesan WhatsApp jika berhasil
+  error_message?: string;          // Pesan error jika gagal
 }
 
+// Interface log alarm untuk database
 export interface AlarmLog {
   id?: number;
-  alarm_id: number;
-  user_id: number;
-  device_id: number;
-  datastream_id: number;
-  sensor_value: number;
-  conditions_text: string;
-  notification_type: "browser" | "all";
-  whatsapp_message_id?: string;
-  error_message?: string;
-  triggered_at: Date;
+  alarm_id: number;                // ID alarm yang trigger
+  user_id: number;                 // ID user penerima notifikasi
+  device_id: number;               // ID device sumber alarm
+  datastream_id: number;           // ID datastream yang memicu
+  sensor_value: number;            // Nilai sensor saat trigger
+  conditions_text: string;         // Kondisi dalam bentuk text
+  notification_type: "browser" | "all";  // Tipe notifikasi
+  whatsapp_message_id?: string;    // ID pesan WhatsApp
+  error_message?: string;          // Pesan error jika ada
+  triggered_at: Date;              // Waktu trigger
 }
 
 export class AlarmNotificationService {
-  public db: Pool; // Changed to public for API access
+  public db: Pool; // Public untuk akses dari API
   private lastNotificationTime: number = 0;
-  private minNotificationInterval = 500; // delay 500ms
+  private minNotificationInterval = 500; // Delay 500ms antar notifikasi
 
-  // WhatsApp Web client properties
+  // Properties WhatsApp Web client
   private whatsAppClient!: Client;
-  private isWhatsAppReady: boolean = false;
-  private isWhatsAppInitializing: boolean = false;
-  private whatsAppDisabled: boolean = false; // Flag to disable WhatsApp if needed
+  private isWhatsAppReady: boolean = false;          // Status WhatsApp siap
+  private isWhatsAppInitializing: boolean = false;   // Status sedang inisialisasi
+  private whatsAppDisabled: boolean = false;         // Flag disable WhatsApp
 
   constructor(database: Pool) {
     this.db = database;
-    this.initializeWhatsAppClient();
-    this.startHealthMonitoring();
+    this.initializeWhatsAppClient();  // Inisialisasi WhatsApp client
+    this.startHealthMonitoring();     // Mulai monitoring kesehatan
   }
 
-  /**
-   * Check if system is compatible with WhatsApp Web (Puppeteer/Chrome)
-   */
+  // ===== CHECK SYSTEM COMPATIBILITY =====
+  // Mengecek apakah sistem support WhatsApp Web (Puppeteer/Chrome)
   private checkSystemCompatibility(): boolean {
     try {
-      // Check if we're in a minimal container environment
+      // Cek apakah berjalan di container environment minimal
       const fs = require("fs");
 
-      // Common paths where Chrome dependencies should be
+      // Path umum dimana Chrome dependencies seharusnya ada
       const requiredLibs = [
         "/usr/lib/x86_64-linux-gnu/libatk-1.0.so.0",
         "/lib/x86_64-linux-gnu/libatk-1.0.so.0",
@@ -80,7 +95,7 @@ export class AlarmNotificationService {
         "/lib/libatk-1.0.so.0",
       ];
 
-      // Check if any of the required libraries exist
+      // Cek apakah ada library yang dibutuhkan
       const hasRequiredLibs = requiredLibs.some((path) => {
         try {
           fs.accessSync(path);
@@ -97,18 +112,17 @@ export class AlarmNotificationService {
         return true; // Disable WhatsApp
       }
 
-      return false; // System is compatible
+      return false; // Sistem kompatibel
     } catch (error) {
       console.log("⚠️ Error saat memeriksa kompatibilitas sistem:", error);
-      return true; // Disable WhatsApp on error
+      return true; // Disable WhatsApp jika error
     }
   }
 
-  /**
-   * Start health monitoring for WhatsApp connection
-   */
+  // ===== START HEALTH MONITORING =====
+  // Memulai monitoring kesehatan koneksi WhatsApp
   private startHealthMonitoring(): void {
-    // Check WhatsApp health every 5 minutes
+    // Cek kesehatan WhatsApp setiap 5 menit
     setInterval(async () => {
       try {
         await this.healthCheck();
@@ -1182,6 +1196,8 @@ export class AlarmNotificationService {
         SELECT 
           an.id,
           an.alarm_id,
+          an.device_id,
+          an.datastream_id,
           an.sensor_value,
           an.conditions_text,
           an.triggered_at,

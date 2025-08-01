@@ -1,9 +1,22 @@
 "use client";
 
+// Import React dan komponen toast dari library Sonner untuk notifikasi
 import React from "react";
 import { toast as sonnerToast } from "sonner";
 import { CheckCircle, Info, AlertTriangle } from "lucide-react";
 
+/**
+ * Fungsi toast kustom
+ * 
+ * Wrapper untuk sonner toast yang menggunakan komponen Toast kustom.
+ * Memungkinkan pembuatan toast dengan styling yang konsisten dengan
+ * desain aplikasi IoT MiSREd.
+ * 
+ * @param {Object} toast - Objek konfigurasi toast
+ * @param {string} toast.title - Judul toast
+ * @param {string} toast.description - Deskripsi atau pesan detail
+ * @param {string} toast.type - Tipe toast (success, info, error)
+ */
 function toast(toast) {
   return sonnerToast.custom((id) => (
     <Toast
@@ -15,10 +28,23 @@ function toast(toast) {
   ));
 }
 
+/**
+ * Komponen Toast
+ * 
+ * Komponen toast kustom yang menampilkan notifikasi dengan styling
+ * yang konsisten. Mendukung berbagai tipe notifikasi dengan ikon
+ * dan warna yang sesuai untuk aplikasi IoT.
+ * 
+ * @param {Object} props - Props komponen
+ * @param {string} props.title - Judul notifikasi
+ * @param {string} props.description - Deskripsi notifikasi
+ * @param {string} props.type - Tipe notifikasi (success, info, error)
+ */
 function Toast(props) {
   const { title, description, type } = props;
 
-  // Konfigurasi untuk setiap tipe toast
+  // Fungsi untuk mendapatkan konfigurasi visual berdasarkan tipe toast
+  // Setiap tipe memiliki ikon, warna background, dan shadow yang berbeda
   const getToastConfig = (type) => {
     switch (type) {
       case "success":
@@ -48,9 +74,11 @@ function Toast(props) {
     }
   };
 
+  // Ambil konfigurasi visual berdasarkan tipe toast
   const config = getToastConfig(type);
 
   return (
+    // Container utama toast dengan styling responsif dan tema gelap/terang
     <div
       className={`
       flex justify-center items-center py-3 px-5 w-full md:min-w-[350px]
@@ -61,7 +89,7 @@ function Toast(props) {
       hover:shadow-lg
     `}
     >
-      {/* Icon Container */}
+      {/* Container ikon dengan background berwarna sesuai tipe toast */}
       <div
         className={`
         flex-shrink-0 w-6 h-6 rounded-full
@@ -70,14 +98,17 @@ function Toast(props) {
         mr-3
       `}
       >
+        {/* Ikon yang sesuai dengan tipe notifikasi */}
         {config.icon}
       </div>
 
-      {/* Content */}
+      {/* Container konten teks dengan flex yang dapat menyesuaikan ukuran */}
       <div className="flex-1 min-w-0 font-sans">
+        {/* Judul toast dengan font yang lebih tebal */}
         <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           {title}
         </p>
+        {/* Deskripsi toast dengan warna yang lebih redup */}
         <p className="text-sm text-gray-600 dark:text-gray-300">
           {description}
         </p>
@@ -86,7 +117,13 @@ function Toast(props) {
   );
 }
 
-// Fungsi helper untuk memanggil toast dengan mudah
+// Fungsi helper untuk memudahkan pemanggilan toast dengan tipe tertentu
+// Setiap fungsi sudah memiliki tipe yang telah ditentukan
+
+/**
+ * Toast untuk notifikasi sukses
+ * Digunakan ketika operasi IoT berhasil (device terhubung, data tersimpan, dll)
+ */
 export function successToast(title, description) {
   toast({
     type: "success",
@@ -95,6 +132,10 @@ export function successToast(title, description) {
   });
 }
 
+/**
+ * Toast untuk notifikasi informasi
+ * Digunakan untuk memberikan informasi umum kepada pengguna
+ */
 export function infoToast(title, description) {
   toast({
     type: "info",
@@ -103,6 +144,10 @@ export function infoToast(title, description) {
   });
 }
 
+/**
+ * Toast untuk notifikasi error
+ * Digunakan ketika terjadi kesalahan dalam sistem IoT atau operasi gagal
+ */
 export function errorToast(title, description) {
   toast({
     type: "error",

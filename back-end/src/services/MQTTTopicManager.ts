@@ -1,3 +1,16 @@
+/**
+ * ===== MQTT TOPIC MANAGER =====
+ * Service untuk mengelola subscription MQTT topics secara efisien
+ * Mencegah duplicate subscription dan mengelola usage count per topic
+ * 
+ * Fitur utama:
+ * - Smart topic subscription/unsubscription management
+ * - Usage count tracking per topic 
+ * - Prevent duplicate subscriptions
+ * - Auto cleanup unused topics
+ * - Batch topic operations
+ * - Subscription status monitoring
+ */
 import { Pool } from "mysql2/promise";
 
 export class MQTTTopicManager {
@@ -9,9 +22,8 @@ export class MQTTTopicManager {
     this.db = db;
   }
 
-  /**
-   * Check berapa banyak device yang menggunakan topic tertentu
-   */
+  // ===== GET TOPIC USAGE COUNT =====
+  // Mengecek berapa banyak device yang menggunakan topic tertentu
   private async getTopicUsageCount(topic: string): Promise<number> {
     try {
       const [rows]: any = await this.db.query(
@@ -25,9 +37,8 @@ export class MQTTTopicManager {
     }
   }
 
-  /**
-   * Get semua unique topics yang digunakan oleh devices
-   */
+  // ===== GET ALL ACTIVE TOPICS =====
+  // Mendapatkan semua unique topics yang digunakan oleh devices
   async getAllActiveTopics(): Promise<string[]> {
     try {
       const [rows]: any = await this.db.query(
@@ -40,9 +51,8 @@ export class MQTTTopicManager {
     }
   }
 
-  /**
-   * Update topic usage count cache
-   */
+  // ===== UPDATE TOPIC USAGE CACHE =====
+  // Update cache count usage topic
   private async updateTopicUsageCache(topic: string): Promise<void> {
     const count = await this.getTopicUsageCount(topic);
     if (count > 0) {
@@ -52,9 +62,8 @@ export class MQTTTopicManager {
     }
   }
 
-  /**
-   * Subscribe ke topic jika belum di-subscribe
-   */
+  // ===== SUBSCRIBE IF NEEDED =====
+  // Subscribe ke topic jika belum di-subscribe
   async subscribeIfNeeded(
     topic: string, 
     subscribeFn: (topic: string) => void

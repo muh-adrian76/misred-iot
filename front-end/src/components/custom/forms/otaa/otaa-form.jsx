@@ -1,4 +1,6 @@
+// Import React hooks untuk state management
 import { useState } from "react";
+// Import komponen Sheet untuk sidebar form layout
 import {
   Sheet,
   SheetContent,
@@ -6,27 +8,35 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
+// Import komponen TransitionPanel untuk smooth transitions
 import { TransitionPanel } from "@/components/ui/transition-panel";
+// Import section components untuk OTAA (Over The Air Activation) management
 import OtaaInfoSection from "./otaa-info";
 import OtaaUploadSection from "./otaa-upload";
 
+// Komponen OtaaSheet untuk mengelola firmware update Over The Air
 export default function OtaaSheet({ 
-  open, 
-  setOpen, 
-  devices = [],
-  boardOptions = [],
-  handleFirmwareUploaded 
+  open, // State untuk kontrol visibility sheet
+  setOpen, // Setter untuk mengubah state sheet
+  devices = [], // Array devices yang tersedia untuk firmware update
+  boardOptions = [], // Array board types yang didukung
+  handleFirmwareUploaded // Handler callback setelah firmware berhasil diupload
 }) {
+  // State untuk kontrol active section dalam TransitionPanel
   const [activeIndex, setActiveIndex] = useState(0);
-const boardTypesInUse = [...new Set(devices.map(device => device.board_type).filter(Boolean))];
 
+  // Extract unique board types yang sedang digunakan dari devices
+  const boardTypesInUse = [...new Set(devices.map(device => device.board_type).filter(Boolean))];
+
+  // Array items untuk TransitionPanel dengan section yang berbeda
   const ITEMS = [
     {
-      title: "Daftar Firmware",
+      title: "Daftar Firmware", // Title section info firmware
       content: (
+        // Section untuk menampilkan informasi firmware yang tersedia
         <OtaaInfoSection
-          boardTypes={boardTypesInUse}
-          devices={devices}
+          boardTypes={boardTypesInUse} // Board types yang perlu firmware
+          devices={devices} // Data devices untuk referensi
         />
       ),
     },

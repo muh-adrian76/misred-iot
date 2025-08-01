@@ -1,3 +1,16 @@
+/**
+ * ===== DEVICE STATUS SERVICE =====
+ * Service untuk monitoring status device secara real-time
+ * Mengelola status online/offline berdasarkan aktivitas terakhir device
+ * 
+ * Fitur utama:
+ * - Real-time device status monitoring (online/offline)
+ * - Auto status update berdasarkan last_seen_at timestamp
+ * - WebSocket broadcasting untuk status changes
+ * - Periodic status checking dengan interval
+ * - Device activity level classification
+ * - Database connection health monitoring
+ */
 // DeviceStatusService.ts - Service untuk manage status device realtime
 import { Pool } from 'mysql2/promise';
 import { broadcastToUsersByDevice } from '../api/ws/user-ws';
@@ -9,9 +22,10 @@ export class DeviceStatusService {
 
   constructor(database: Pool) {
     this.db = database;
-    this.startStatusMonitoring();
+    this.startStatusMonitoring();  // Mulai monitoring otomatis
   }
 
+  // Singleton pattern untuk memastikan hanya ada satu instance
   static getInstance(database: Pool): DeviceStatusService {
     if (!DeviceStatusService.instance) {
       DeviceStatusService.instance = new DeviceStatusService(database);
@@ -19,13 +33,12 @@ export class DeviceStatusService {
     return DeviceStatusService.instance;
   }
 
-  /**
-   * Update last_seen_at ketika device mengirim payload
-   * Dipanggil dari PayloadService setiap kali terima data
-   */
+  // ===== UPDATE DEVICE LAST SEEN =====
+  // Update timestamp terakhir device terlihat ketika mengirim payload
+  // Dipanggil dari PayloadService setiap kali menerima data dari device
   async updateDeviceLastSeen(deviceId: number): Promise<void> {
     try {
-      // Check database connection first
+      // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
         console.warn(`Database connection not available, skipping status update for device ${deviceId}`);
@@ -43,7 +56,7 @@ export class DeviceStatusService {
       // Debug log untuk status update
       // console.log(`🟢 Status Device ${deviceId} diupdate menjadi online`);
 
-      // Broadcast status update via WebSocket ONLY to device owner
+      // Broadcast status update via WebSocket HANYA ke pemilik device
       await broadcastToUsersByDevice(this.db, deviceId, {
         type: "status_update",
         device_id: deviceId,
@@ -53,7 +66,7 @@ export class DeviceStatusService {
       
     } catch (error) {
       console.error(`Error updating device ${deviceId} last seen:`, error);
-      // If it's a connection error, try to stop and restart monitoring
+      // Jika error koneksi, coba restart monitoring
       if (error instanceof Error && error.message && error.message.includes('Pool is closed')) {
         console.warn('Database pool is closed, attempting to restart status monitoring...');
         this.restartStatusMonitoring();
@@ -61,9 +74,8 @@ export class DeviceStatusService {
     }
   }
 
-  /**
-   * Check if database connection is healthy
-   */
+  // ===== CHECK DB CONNECTION =====
+  // Mengecek apakah koneksi database masih sehat
   private async checkDbConnection(): Promise<boolean> {
     try {
       await this.db.query('SELECT 1');

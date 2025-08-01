@@ -1,48 +1,60 @@
+// Menggunakan "use client" untuk komponen React sisi klien
 "use client";
 
+// Import provider dan type untuk user management
 import { useUser, userType } from "@/providers/user-provider";
+// Import hook React untuk state
 import { useState } from "react";
+// Import router dengan view transitions
 import { useTransitionRouter as useRouter } from "next-view-transitions";
+// Import komponen UI
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
+  Popover, // Container popover
+  PopoverTrigger, // Trigger button untuk popover
+  PopoverContent, // Konten popover
 } from "@/components/ui/popover";
+// Import ikon-ikon dari Lucide React
 import { LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Settings2, User } from "lucide-react";
 
+// Import komponen kustom
 import DescriptionTooltip from "../other/description-tooltip";
 import ConfirmDialog from "../dialogs/confirm-dialog";
 import ProfileForm from "../forms/profile/profile-form";
 
+// Import utility dan Google OAuth
 import { fetchFromBackend } from "@/lib/helper";
 import { googleLogout } from "@react-oauth/google";
 
+// Komponen button profile dengan dropdown menu dan logout functionality
 export default function ProfileButton() {
-  const [openProfileSheet, setOpenProfileSheet] = useState(false);
-  const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
-  const [openLogoutDialog, setOpenLogoutDialog] = useState(false);
+  // State untuk mengontrol berbagai dialog dan sheet
+  const [openProfileSheet, setOpenProfileSheet] = useState(false); // Sheet untuk edit profile
+  const [openPopoverProfile, setOpenPopoverProfile] = useState(false); // Popover profile menu
+  const [openLogoutDialog, setOpenLogoutDialog] = useState(false); // Dialog konfirmasi logout
 
+  // Hook untuk router dan user management
   const router = useRouter();
   const { user, setUser } = useUser();
 
+  // Handler untuk proses logout
   const handleLogout = async (e) => {
     e.preventDefault();
     
-    // Clear user immediately
+    // Clear user data dari state (logout immediate untuk UX)
     setUser(userType);
     
-    // Call backend logout
+    // Panggil backend logout untuk invalidate session
     await fetchFromBackend("/auth/logout", {
       method: "POST",
     });
     
-    // Google logout
+    // Logout dari Google OAuth jika user login dengan Google
     googleLogout?.();
     
-    // Redirect to auth page
+    // Redirect ke halaman auth
     router.push("/auth");
   };
 

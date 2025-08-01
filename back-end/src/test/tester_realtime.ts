@@ -11,20 +11,30 @@ import mqtt, { MqttClient } from "mqtt";
 import mysql from "mysql2/promise";
 
 const SERVER_URL = "http://localhost:7601";
+// const SERVER_URL = "https://api.misred-iot.com";
+
 const MQTT_CONFIG = {
   host: "localhost",
+  // host: "103.82.241.46",
   port: 1883,
   clientId: "Realtime_Test_Client",
 };
 
 // Database configuration
 const DB_CONFIG = {
-  host: process.env.MYSQL_HOST || "localhost",
-  user: process.env.MYSQL_USER || "root",
-  password: process.env.MYSQL_PASSWORD || "",
-  database: process.env.MYSQL_NAME || "misred_iot",
-  port: Number(process.env.MYSQL_PORT) || 3306,
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "misred_iot",
+  port: 3306,
 };
+// const DB_CONFIG = {
+//   host: "103.229.73.15",
+//   user: "misredio_web",
+//   password: "misred-iot.com",
+//   database: "misredio_web",
+//   port: 3306,
+// };
 
 // Device configurations (will be loaded from database)
 let HTTP_DEVICE = {

@@ -1,3 +1,5 @@
+// Hook untuk device control - mengirim perintah ke IoT devices via WebSocket dan REST API
+// Handles: command sending, status tracking, error handling dengan toast notifications
 "use client";
 import { useState } from "react";
 import { useWebSocket } from "@/providers/websocket-provider";
@@ -8,19 +10,24 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 export function useDeviceControl() {
   const { user } = useUser();
   const { ws, sendDeviceCommand } = useWebSocket();
-  const [commandStatus, setCommandStatus] = useState({});
+  const [commandStatus, setCommandStatus] = useState({}); // Track status per command
 
   /**
-   * Send device command via WebSocket
+   * Send device command dengan dual approach: REST API untuk logging + WebSocket untuk real-time
+   * @param {string} deviceId - ID device target
+   * @param {string} datastreamId - ID datastream untuk control
+   * @param {string} commandType - Jenis command (on/off/set_value/etc)
+   * @param {any} value - Value yang akan dikirim
    */
   const sendCommand = async (deviceId, datastreamId, commandType, value) => {
+    // Validasi user authentication
     if (!user?.id) {
       errorToast("Error", "User tidak terautentikasi");
       return false;
     }
 
     try {
-      // Send via REST API first to create command record
+      // Step 1: Send via REST API untuk create command record di database
       const response = await fetchFromBackend("/device-command/send", {
         method: "POST",
         body: JSON.stringify({

@@ -1,4 +1,6 @@
+// Menggunakan "use client" untuk komponen React sisi klien
 "use client";
+// Import ikon-ikon dari Lucide React untuk UI
 import {
   Users,
   Plus,
@@ -8,60 +10,79 @@ import {
   UserPlus,
   phone,
 } from "lucide-react";
+// Import komponen UI dasar
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Import komponen DataTable kustom untuk menampilkan data dalam bentuk tabel
 import DataTable from "@/components/custom/tables/data-table";
+// Import konfigurasi kolom dan aksi untuk tabel user
 import {
   createUserColumns,
   createUserRowActions,
   userBulkActions,
 } from "./admin-users-columns";
+// Import hook untuk deteksi breakpoint layar
 import { useBreakpoint } from "@/hooks/use-mobile";
+// Import Framer Motion untuk animasi
 import { motion } from "framer-motion";
+// Import efek glow untuk kartu
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 
+// Komponen konten utama untuk halaman admin users
 export default function AdminUsersContent({
-  users,
-  isLoading,
-  search,
-  setSearch,
-  selectedRows,
-  setSelectedRows,
-  setAddUserOpen,
-  openEditDialog,
-  openDeleteDialog,
-  handleRefresh,
+  users, // Data array users
+  isLoading, // Status loading
+  search, // State pencarian
+  setSearch, // Setter untuk pencarian
+  selectedRows, // Baris yang dipilih
+  setSelectedRows, // Setter untuk baris yang dipilih
+  setAddUserOpen, // Setter untuk dialog tambah user
+  openEditDialog, // Fungsi untuk membuka dialog edit
+  openDeleteDialog, // Fungsi untuk membuka dialog hapus
+  handleRefresh, // Fungsi untuk refresh data
 }) {
+  // Hook untuk mendeteksi apakah dalam mode mobile
   const { isMobile } = useBreakpoint();
 
-  // Create columns and row actions
+  // Buat konfigurasi kolom dan aksi baris dengan handler
   const userColumns = createUserColumns(openEditDialog, openDeleteDialog);
   const userRowActions = createUserRowActions(openEditDialog, openDeleteDialog);
 
-  // Handle bulk delete
+  // Handler untuk aksi bulk (operasi pada multiple users)
   const handleBulkAction = (action, selectedIds) => {
     if (action === "delete") {
+      // Filter users yang dipilih berdasarkan ID
       const selectedUsers = users.filter((user) =>
         selectedIds.includes(user.id)
       );
+      // Buka dialog hapus untuk users yang dipilih
       openDeleteDialog(selectedUsers);
     }
   };
+  
+  // Tampilkan loading state jika sedang loading
+  // Tampilkan loading state jika sedang loading
   if (isLoading) {
     return (
+      // Container dengan padding dan spacing untuk loading state
       <div className="p-6 space-y-6">
+        {/* Animasi pulse untuk header */}
         <div className="animate-pulse">
           <div className="h-8 bg-gray-300 rounded w-1/3 mb-2"></div>
           <div className="h-4 bg-gray-200 rounded w-1/2"></div>
         </div>
+        {/* Card dengan skeleton untuk data loading */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="space-y-4">
+            {/* Generate 5 skeleton item untuk user list */}
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
                 className="flex items-center space-x-4 animate-pulse"
               >
+                {/* Skeleton avatar */}
                 <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                {/* Skeleton konten */}
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-300 rounded w-1/4"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/3"></div>
@@ -74,7 +95,7 @@ export default function AdminUsersContent({
     );
   }
 
-  // Empty state component
+  // Komponen empty state - ditampilkan jika tidak ada data user
   if (!isLoading && users.length === 0) {
     return (
       <div className="p-6 space-y-6">

@@ -1,3 +1,5 @@
+// Admin Maps page - halaman peta untuk monitoring lokasi dan distribusi device
+// Features: geographic device visualization, location-based analytics, device mapping
 import AdminMapsLayout from "./_layout";
 
 export const metadata = {

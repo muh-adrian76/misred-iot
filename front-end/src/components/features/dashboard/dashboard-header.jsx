@@ -1,48 +1,59 @@
+// Import komponen select untuk memilih dashboard
 import DashboardSelect from "@/components/custom/forms/dashboard/dashboard-select";
+// Import komponen Button UI
 import { Button } from "@/components/ui/button";
+// Import ikon-ikon dari Lucide React
 import { Plus, Trash2 } from "lucide-react";
+// Import toolbar dashboard untuk kontrol editing
 import DashboardToolbar from "@/components/custom/forms/dashboard/dashboard-toolbar";
+// Import utility untuk class names
 import { cn } from "@/lib/utils";
+// Import Framer Motion untuk animasi
 import { motion } from "framer-motion";
 
+// Komponen header dashboard dengan kontrol navigasi dan editing
 export default function DashboardHeader(props) {
+  // Destructure props untuk mendapatkan data dan fungsi yang diperlukan
   const {
-    dashboards,
-    activeTab,
-    setActiveTab,
-    isMobile,
-    isMedium,
-    isTablet,
-    isDesktop,
-    isEditing,
-    editDashboardValue,
-    setEditDashboardValue,
-    setOpenDashboardDialog,
-    setDashboardToDelete,
-    setOpenDeleteDialog,
-    widgetCount,
-    setOpenChartSheet,
-    handleSaveEditDashboard,
-    currentTimeRange,
-    currentDataCount,
-    filterType,
-    onTimeRangeChange,
-    onDataCountChange,
-    onFilterTypeChange,
+    dashboards, // Data dashboard yang tersedia
+    activeTab, // Tab dashboard yang sedang aktif
+    setActiveTab, // Setter untuk tab aktif
+    isMobile, // Status mobile view
+    isMedium, // Status medium screen
+    isTablet, // Status tablet view
+    isDesktop, // Status desktop view
+    isEditing, // Status mode editing dashboard
+    editDashboardValue, // Nilai dashboard yang sedang diedit
+    setEditDashboardValue, // Setter untuk nilai edit dashboard
+    setOpenDashboardDialog, // Setter untuk dialog dashboard
+    setDashboardToDelete, // Setter untuk dashboard yang akan dihapus
+    setOpenDeleteDialog, // Setter untuk dialog delete
+    widgetCount, // Jumlah widget dalam dashboard
+    setOpenChartSheet, // Setter untuk sheet tambah chart
+    handleSaveEditDashboard, // Handler untuk menyimpan edit dashboard
+    currentTimeRange, // Range waktu data yang ditampilkan
+    currentDataCount, // Jumlah data yang ditampilkan
+    filterType, // Tipe filter data
+    onTimeRangeChange, // Handler perubahan time range
+    onDataCountChange, // Handler perubahan data count
+    onFilterTypeChange, // Handler perubahan filter type
     
-    // New staging functions
-    startEditMode,
-    cancelEditMode,
-    saveAllLayoutChanges,
-    hasUnsavedChanges,
+    // Fungsi staging untuk mode editing
+    startEditMode, // Mulai mode editing
+    cancelEditMode, // Batalkan mode editing
+    saveAllLayoutChanges, // Simpan semua perubahan layout
+    hasUnsavedChanges, // Status apakah ada perubahan yang belum disimpan
   } = props;
 
   return (
+    // Container header dengan animasi dan sticky positioning
     <motion.div
       className={cn(
         "flex items-end sticky z-40 top-[64px] w-full rounded-2xl px-3.5 py-3 gap-3 bg-background",
+        // Responsive layout: center untuk mobile/tablet, between untuk desktop
         isMobile || isMedium || isTablet ? "justify-center" : "justify-between"
       )}
+      // Animasi fade-in dengan delay
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

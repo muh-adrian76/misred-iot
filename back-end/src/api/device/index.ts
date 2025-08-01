@@ -1,3 +1,9 @@
+/**
+ * ===== DEVICE API ROUTES - ENDPOINT MANAJEMEN DEVICE IoT =====
+ * File ini mengatur semua operasi CRUD untuk device IoT termasuk firmware management
+ * Meliputi: registrasi device, update config, delete, firmware upload/download, ping connectivity
+ */
+
 import { randomBytes } from "crypto";
 import {
   mkdirSync,
@@ -32,11 +38,13 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
   return (
     new Elysia({ prefix: "/device" })
 
-      // Connectivity Check
+      // ===== CONNECTIVITY CHECK ENDPOINT =====
+      // GET /device/ping - Check server connectivity untuk device
       .get(
         "/ping",
         (): any => {
           try {
+            // Return status server untuk device connectivity check
             return new Response(
               JSON.stringify({
                 status: "ok",
@@ -58,13 +66,16 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
         pingSchema
       )
 
-      // Create device
+      // ===== CREATE DEVICE ENDPOINT =====
+      // POST /device - Buat device IoT baru dengan konfigurasi lengkap
       .post(
         "/",
         //@ts-ignore
         async ({ jwt, cookie, body, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
+            
+            // Ekstrak data device dari request body
             const {
               name,
               board,
@@ -77,9 +88,12 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
               firmware_version,
               firmware_url,
             } = body;
+            
+            // Generate secret key untuk device authentication
             const new_secret = randomBytes(16).toString("hex");
             const user_id = decoded.sub;
 
+            // Buat device baru di database
             const insertId = await deviceService.createDevice({
               name,
               board,

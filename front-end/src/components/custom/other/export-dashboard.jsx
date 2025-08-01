@@ -1,4 +1,6 @@
 "use client";
+
+// Import dependencies untuk dialog ekspor dashboard IoT
 import { useState, useEffect } from "react";
 import ResponsiveDialog from "../dialogs/responsive-dialog";
 import { Label } from "@/components/ui/label";
@@ -23,6 +25,25 @@ import { successToast, errorToast } from "./toaster";
 import { exportToCSV, formatDateTime, generateReactPDF } from "@/lib/export-utils";
 import { DatastreamPDFDocument } from "@/components/custom/other/pdf-content";
 
+/**
+ * Komponen ExportDashboardDialog
+ * 
+ * Dialog ekspor data dashboard IoT yang powerful dengan berbagai fitur:
+ * - Ekspor berdasarkan filter waktu atau jumlah data
+ * - Ekspor semua data historis
+ * - Multiple format (CSV dan PDF)
+ * - Seleksi device dan datastream granular
+ * - Search dan filter real-time
+ * - Progress tracking dan error handling
+ * 
+ * @param {boolean} open - Status dialog terbuka/tertutup
+ * @param {function} setOpen - Callback untuk mengubah status dialog
+ * @param {string} currentTimeRange - Range waktu saat ini (1h, 12h, 1d, 1w)
+ * @param {number} currentDataCount - Jumlah data saat ini untuk filter count
+ * @param {string} filterType - Tipe filter ('time' atau 'count')
+ * @param {string} exportMode - Mode ekspor ('filter' atau 'all')
+ * @param {boolean} isMobile - Indikator tampilan mobile untuk UI responsif
+ */
 export default function ExportDashboardDialog({
   open,
   setOpen,
@@ -32,20 +53,28 @@ export default function ExportDashboardDialog({
   exportMode = "filter", // "filter" or "all"
   isMobile,
 }) {
+  // Hooks dan state management
   const { user } = useUser();
-  const [devices, setDevices] = useState([]);
-  const [datastreams, setDatastreams] = useState([]);
-  const [selectedDatastreams, setSelectedDatastreams] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  
+  // State untuk data perangkat dan datastream
+  const [devices, setDevices] = useState([]); // Daftar perangkat IoT
+  const [datastreams, setDatastreams] = useState([]); // Daftar semua datastream
+  const [selectedDatastreams, setSelectedDatastreams] = useState([]); // Datastream yang dipilih untuk ekspor
+  
+  // State untuk UI dan pencarian
+  const [searchQuery, setSearchQuery] = useState(""); // Query pencarian device/datastream
   const [exportFormats, setExportFormats] = useState({
     csv: true,
-    pdf: exportMode === "filter", // PDF only available for filter mode
+    pdf: exportMode === "filter", // PDF hanya tersedia untuk mode filter
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [loadingError, setLoadingError] = useState(null);
+  
+  // State untuk loading dan error
+  const [isLoading, setIsLoading] = useState(false); // Loading saat fetch initial data
+  const [isExporting, setIsExporting] = useState(false); // Loading saat proses ekspor
+  const [loadingError, setLoadingError] = useState(null); // Error saat loading data
 
-  // Update export formats when mode changes
+  // Effect: Update format ekspor ketika mode berubah
+  // PDF tidak tersedia untuk mode "all" karena limitasi performa
   useEffect(() => {
     if (exportMode === "all") {
       setExportFormats({ csv: true, pdf: false });
@@ -54,20 +83,24 @@ export default function ExportDashboardDialog({
     }
   }, [exportMode]);
 
-  // Fetch devices and datastreams
+  // Effect: Fetch data ketika dialog dibuka
   useEffect(() => {
     if (open && user) {
       fetchDevicesAndDatastreams();
-      setSearchQuery(""); // Clear search when dialog opens
+      setSearchQuery(""); // Reset pencarian saat dialog dibuka
     }
   }, [open, user]);
 
+  /**
+   * Fungsi untuk mengambil daftar perangkat dan datastream dari backend
+   * Mengelompokkan datastream berdasarkan device untuk organisasi yang lebih baik
+   */
   const fetchDevicesAndDatastreams = async () => {
     setIsLoading(true);
     setLoadingError(null);
     
     try {
-      // Fetch all datastreams (which includes device info)
+      // Ambil semua datastream (sudah termasuk informasi device)
       const response = await fetchFromBackend("/datastream");
       if (!response.ok) {
         throw new Error("Failed to fetch datastreams");
@@ -76,7 +109,7 @@ export default function ExportDashboardDialog({
       const data = await response.json();
       const datastreamList = data.result || [];
       
-      // Group datastreams by device
+      // Kelompokkan datastream berdasarkan device untuk UI yang lebih organized
       const deviceMap = {};
       datastreamList.forEach(datastream => {
         if (!deviceMap[datastream.device_id]) {
@@ -101,6 +134,10 @@ export default function ExportDashboardDialog({
     }
   };
 
+  /**
+   * Handler untuk toggle seleksi individual datastream
+   * Menambah atau menghapus datastream dari daftar yang akan diekspor
+   */
   const handleDatastreamToggle = (datastreamId, checked) => {
     if (checked) {
       setSelectedDatastreams(prev => [...prev, datastreamId]);
@@ -109,6 +146,10 @@ export default function ExportDashboardDialog({
     }
   };
 
+  /**
+   * Handler untuk seleksi semua datastream dalam satu device
+   * Memungkinkan user untuk cepat memilih semua sensor dalam satu perangkat
+   */
   const handleSelectAllDevice = (deviceId, checked) => {
     const device = filteredDevices.find(d => d.id === deviceId);
     if (!device) return;
@@ -116,19 +157,25 @@ export default function ExportDashboardDialog({
     const deviceDatastreamIds = device.datastreams.map(ds => ds.id);
     
     if (checked) {
+      // Tambahkan semua datastream device ini, hapus yang sudah ada sebelumnya
       setSelectedDatastreams(prev => [
         ...prev.filter(id => !deviceDatastreamIds.includes(id)),
         ...deviceDatastreamIds
       ]);
     } else {
+      // Hapus semua datastream device ini dari seleksi
       setSelectedDatastreams(prev => 
         prev.filter(id => !deviceDatastreamIds.includes(id))
       );
     }
   };
 
+  /**
+   * Handler untuk toggle format ekspor (CSV/PDF)
+   * Mencegah perubahan format yang tidak diizinkan pada mode tertentu
+   */
   const handleFormatToggle = (format, checked) => {
-    // Prevent changing formats in "all" mode where only CSV is allowed
+    // Cegah perubahan PDF pada mode "all" karena limitasi performa
     if (exportMode === "all" && format === "pdf") {
       return;
     }
@@ -139,7 +186,10 @@ export default function ExportDashboardDialog({
     }));
   };
 
-  // Generate dialog title based on export mode and filter
+  /**
+   * Fungsi untuk generate judul dialog berdasarkan mode dan filter
+   * Memberikan konteks yang jelas tentang data apa yang akan diekspor
+   */
   const getDialogTitle = () => {
     if (exportMode === "all") {
       return "Ekspor semua data";
@@ -158,7 +208,10 @@ export default function ExportDashboardDialog({
     }
   };
 
-  // Filter devices and datastreams based on search query
+  /**
+   * Fungsi untuk filter device dan datastream berdasarkan query pencarian
+   * Mendukung pencarian berdasarkan nama device, deskripsi datastream, dan virtual pin
+   */
   const filteredDevices = devices.filter(device => {
     const deviceMatches = device.name.toLowerCase().includes(searchQuery.toLowerCase());
     const datastreamMatches = device.datastreams.some(ds => 
@@ -168,6 +221,7 @@ export default function ExportDashboardDialog({
     return deviceMatches || datastreamMatches;
   }).map(device => ({
     ...device,
+    // Filter datastream dalam device berdasarkan query
     datastreams: device.datastreams.filter(ds =>
       searchQuery === "" || 
       device.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -219,57 +273,79 @@ export default function ExportDashboardDialog({
     }
   };
 
-  const exportDataToCSV = async (datastreamData) => {
-    const { datastream, data } = datastreamData;
+  const exportDataToCSV = async (deviceData) => {
+    // deviceData is { deviceId, deviceName, datastreams: [{ datastream, data }] }
+    const { deviceId, deviceName, datastreams } = deviceData;
     
-    if (!data || data.length === 0) {
-      throw new Error(`Tidak ada data untuk diekspor pada datastream: ${datastream.description}`);
-    }
-
     const headers = [
       "Tanggal dan Waktu",
       "UID Perangkat", 
-      "Deskripsi",
+      "Nama Perangkat",
       "Datastream",
+      "Virtual Pin",
       "Nilai"
     ];
 
-    // Sort data from oldest to newest
-    const sortedData = [...data].sort((a, b) => {
-      const dateA = new Date(a.device_time || a.created_at);
-      const dateB = new Date(b.device_time || b.created_at);
-      return dateA.getTime() - dateB.getTime();
+    // Combine all data from all datastreams for this device
+    const allRows = [];
+    datastreams.forEach(({ datastream, data }) => {
+      if (data && data.length > 0) {
+        data.forEach((item) => {
+          allRows.push({
+            timestamp: new Date(item.device_time || item.created_at).getTime(),
+            row: [
+              formatDateTime(item.device_time || item.created_at),
+              deviceId,
+              deviceName,
+              datastream.description,
+              datastream.pin,
+              item.value
+            ]
+          });
+        });
+      }
     });
 
-    const rows = sortedData.map((item) => [
-      formatDateTime(item.device_time || item.created_at),
-      datastream.device_id,
-      item.device_name || datastream.device_description || `Device ${datastream.device_id}`,
-      datastream.description,
-      item.value
-    ]);
+    if (allRows.length === 0) {
+      throw new Error(`Tidak ada data untuk diekspor pada device: ${deviceName}`);
+    }
+
+    // Sort all rows by timestamp (oldest to newest)
+    const sortedRows = allRows.sort((a, b) => a.timestamp - b.timestamp);
+    const rows = sortedRows.map(item => item.row);
 
     // Add unique timestamp to prevent filename conflicts
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
+    const filename = `device-${deviceName.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
     
     // Use utility function for CSV export
     exportToCSV(headers, rows, filename);
   };
 
-  const exportToPDF = async (datastreamData) => {
-    const { datastream, data } = datastreamData;
-    
-    if (!data || data.length === 0) {
-      throw new Error(`Tidak ada data untuk diekspor pada datastream: ${datastream.description}`);
+  const exportToPDF = async (allDatastreamData) => {
+    // allDatastreamData is an array of { datastream, data }
+    if (!allDatastreamData || allDatastreamData.length === 0) {
+      throw new Error("Tidak ada data untuk diekspor ke PDF");
     }
 
-    // Generate filename with timestamp
+    // Filter out empty datastreams
+    const validDatastreams = allDatastreamData.filter(({ data }) => data && data.length > 0);
+    
+    if (validDatastreams.length === 0) {
+      throw new Error("Semua datastream yang dipilih tidak memiliki data");
+    }
+
+    // Generate filename with timestamp and first device info
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `datastream-${datastream.description.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
+    const firstDevice = validDatastreams[0].datastream;
+    const filename = `laporan-perangkat-${firstDevice.device_description?.replace(/[^a-zA-Z0-9]/g, '_') || `device-${firstDevice.device_id}`}-${timestamp}`;
 
     // Create React PDF Document component and generate PDF
-    const DocumentComponent = DatastreamPDFDocument({ datastream, data });
+    const DocumentComponent = DatastreamPDFDocument({ 
+      datastreams: validDatastreams.map(d => d.datastream),
+      allData: validDatastreams,
+      exportMode 
+    });
     await generateReactPDF(DocumentComponent, filename);
   };
 
@@ -291,25 +367,13 @@ export default function ExportDashboardDialog({
       let failCount = 0;
       let emptyDataCount = 0;
       const emptyDatastreams = [];
+      const allDatastreamData = []; // For combined PDF
       
-      // Process each datastream sequentially to avoid race conditions
+      // Process each datastream sequentially to collect data
       for (const datastreamId of selectedDatastreams) {
         try {
           const datastreamData = await fetchDatastreamData(datastreamId);
-          
-          // Export in selected formats
-          if (exportFormats.csv) {
-            await exportDataToCSV(datastreamData);
-            // Small delay to prevent conflicts
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-          
-          if (exportFormats.pdf) {
-            await exportToPDF(datastreamData);
-            // Small delay for PDF generation
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-          
+          allDatastreamData.push(datastreamData);
           successCount++;
         } catch (error) {
           // Check if error is due to empty data
@@ -322,6 +386,49 @@ export default function ExportDashboardDialog({
           } else {
             failCount++;
           }
+        }
+      }
+      
+      // Group datastreams by device for CSV export
+      if (exportFormats.csv && allDatastreamData.length > 0) {
+        const deviceGroups = {};
+        
+        allDatastreamData.forEach(({ datastream, data }) => {
+          const deviceId = datastream.device_id;
+          const deviceName = datastream.device_description || `Device ${deviceId}`;
+          
+          if (!deviceGroups[deviceId]) {
+            deviceGroups[deviceId] = {
+              deviceId,
+              deviceName,
+              datastreams: []
+            };
+          }
+          
+          deviceGroups[deviceId].datastreams.push({ datastream, data });
+        });
+        
+        // Export one CSV per device
+        for (const deviceData of Object.values(deviceGroups)) {
+          try {
+            await exportDataToCSV(deviceData);
+            // Small delay to prevent conflicts
+            await new Promise(resolve => setTimeout(resolve, 300));
+          } catch (error) {
+            console.error("CSV export failed for device:", deviceData.deviceName, error);
+          }
+        }
+      }
+      
+      // Export single combined PDF if PDF format is selected and we have data
+      if (exportFormats.pdf && allDatastreamData.length > 0) {
+        try {
+          await exportToPDF(allDatastreamData);
+          // Small delay for PDF generation
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error("PDF export failed:", error);
+          errorToast("Ekspor PDF gagal: " + error.message);
         }
       }
       
@@ -471,7 +578,7 @@ export default function ExportDashboardDialog({
           <div className="flex items-center gap-2">
             <CheckboxButton
               id="export-csv"
-              text={isMobile ? "CSV" : "CSV (Kompatibel dengan Excel)"}
+              text={isMobile ? "CSV" : "CSV (Kompatibel dengan Microsoft Excel)"}
               checked={exportFormats.csv}
               onChange={(e) => handleFormatToggle('csv', e.target.checked)}
             />

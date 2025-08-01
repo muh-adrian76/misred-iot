@@ -1,3 +1,16 @@
+/**
+ * ===== AUTH SERVICE =====
+ * Service untuk mengelola autentikasi dan otorisasi user
+ * Menyediakan fungsi registrasi, login, verifikasi, dan manajemen token
+ * 
+ * Fitur utama:
+ * - Register user dengan email/password dan OTP verification
+ * - Login dengan Google OAuth dan email/password
+ * - JWT token management (access + refresh token)  
+ * - Password reset dan forgot password
+ * - OTP verification system
+ * - Admin user registration
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
 import bcrypt from "bcrypt";
@@ -10,7 +23,10 @@ export class AuthService {
     this.db = db;
   }
 
+  // ===== REGISTER USER =====
+  // Registrasi user baru dengan email/password dan OTP verification
   async register({ email, password }: { password: string; email: string }) {
+    // Validasi format email
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
         status: 400,
@@ -32,14 +48,14 @@ export class AuthService {
         };
       }
 
-      // Generate OTP 6 digit
+      // Generate OTP 6 digit untuk verifikasi email
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Set OTP expiration time (default 10 minutes, configurable via env)
+      // Set waktu kadaluarsa OTP (default 10 menit, bisa dikonfigurasi via env)
       const otpExpirationMinutes = parseInt(process.env.OTP_TIME || "10");
       const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
 
-      // Jika email belum terdaftar, lanjutkan proses insert
+      // Hash password dan extract nama dari email
       const hashedPassword = await bcrypt.hash(password, 10);
       const name = email.split("@")[0];
 

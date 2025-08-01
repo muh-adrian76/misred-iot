@@ -1,53 +1,65 @@
+// Menggunakan "use client" untuk komponen React sisi klien
 "use client";
 
+// Import komponen UI
 import { Button } from "@/components/ui/button";
+// Import komponen Dialog untuk desktop
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, // Container dialog untuk desktop
+  DialogContent, // Konten dialog
+  DialogDescription, // Deskripsi dialog
+  DialogHeader, // Header dialog
+  DialogTitle, // Judul dialog
+  DialogFooter, // Footer dialog
 } from "@/components/ui/dialog";
+// Import komponen Drawer untuk mobile
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
+  Drawer, // Container drawer untuk mobile
+  DrawerClose, // Button close drawer
+  DrawerContent, // Konten drawer
+  DrawerDescription, // Deskripsi drawer
+  DrawerFooter, // Footer drawer
+  DrawerHeader, // Header drawer
+  DrawerTitle, // Judul drawer
 } from "@/components/ui/drawer";
+// Import efek glow dan hook mobile
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { useBreakpoint } from "@/hooks/use-mobile";
 
+// Komponen dialog yang responsif - menggunakan drawer di mobile, dialog di desktop
 export default function ResponsiveDialog({
-  open,
-  setOpen,
-  title,
-  description,
-  form = false,
-  formHandle = null,
-  checkbox = false,
-  confirmText,
-  cancelText,
-  loading = false,
+  open, // State apakah dialog/drawer terbuka
+  setOpen, // Setter untuk mengontrol state
+  title, // Judul dialog/drawer
+  description, // Deskripsi opsional
+  content = false, // Konten jika tidak berupa form
+  form = false, // Apakah konten berupa form
+  formHandle = null, // Handler untuk submit form
+  checkbox = false, // Komponen checkbox opsional
+  confirmText, // Teks button konfirmasi
+  cancelText, // Teks button batal
+  loading = false, // Status loading untuk disable buttons
+  oneButton = false, // Apakah hanya ada satu button konfirmasi
 }) {
+  // Hook untuk deteksi breakpoint layar
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
+  // Jika mobile, gunakan Drawer
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="rounded-t-2xl pb-4 px-4">
+          {/* Header drawer dengan judul */}
           <DrawerHeader className="text-center pt-4 pb-2 px-2">
             <DrawerTitle className="text-lg font-bold">{title}</DrawerTitle>
             <DrawerDescription className="text-muted-foreground hidden text-balance">
               {description || ""}
             </DrawerDescription>
           </DrawerHeader>
+          {/* Conditional rendering berdasarkan apakah konten berupa form */}
           {form ? (
             <form
-              id="responsive-dialog-form"
+              id="responsive-dialog-form" // ID untuk form submission
               onSubmit={formHandle}
               className="flex flex-col gap-1 px-2"
             >
@@ -58,20 +70,30 @@ export default function ResponsiveDialog({
                   {confirmText || "Submit"}
                 </Button>
                 <DrawerClose asChild>
-                  <Button variant="outline">{cancelText || "Cancel"}</Button>
+                  <Button
+                    variant="outline"
+                    className={oneButton ? "hidden" : ""}
+                  >
+                    {cancelText || "Cancel"}
+                  </Button>
                 </DrawerClose>
               </DrawerFooter>
             </form>
           ) : (
             <>
-              <div className="flex flex-col gap-4 px-2 py-2">{description}</div>
+              <div className="flex flex-col gap-4 px-2 py-2">{content}</div>
               {checkbox && <div className="mt-2">{checkbox}</div>}
               <DrawerFooter>
                 <Button onClick={() => setOpen(false)}>
                   {confirmText || "OK"}
                 </Button>
                 <DrawerClose asChild>
-                  <Button variant="outline">{cancelText || "Cancel"}</Button>
+                  <Button
+                    variant="outline"
+                    className={oneButton ? "hidden" : ""}
+                  >
+                    {cancelText || "Cancel"}
+                  </Button>
                 </DrawerClose>
               </DrawerFooter>
             </>
@@ -112,6 +134,7 @@ export default function ResponsiveDialog({
                 variant="outline"
                 type="button"
                 onClick={() => setOpen(false)}
+                className={oneButton ? "hidden" : ""}
               >
                 {cancelText || "Cancel"}
               </Button>
@@ -119,7 +142,7 @@ export default function ResponsiveDialog({
           </form>
         ) : (
           <>
-            <div className="flex flex-col gap-4 px-2 py-2">{description}</div>
+            <div className="flex flex-col gap-4 px-2 py-2">{content}</div>
             {checkbox && <div className="mt-2">{checkbox}</div>}
             <DialogFooter>
               <Button onClick={() => setOpen(false)}>
@@ -129,6 +152,7 @@ export default function ResponsiveDialog({
                 variant="outline"
                 type="button"
                 onClick={() => setOpen(false)}
+                className={oneButton ? "hidden" : ""}
               >
                 {cancelText || "Cancel"}
               </Button>

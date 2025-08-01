@@ -1,253 +1,328 @@
+// ===== IMPORTS PLUGINS & MIDDLEWARE =====
+// Import plugin CORS untuk mengatur Cross-Origin Resource Sharing
 import { cors } from "@elysiajs/cors";
+// Import plugin JWT untuk autentikasi menggunakan JSON Web Token
 import { jwt } from "@elysiajs/jwt";
+// Import plugin Swagger untuk dokumentasi API otomatis
 import { swagger } from "@elysiajs/swagger";
+// Import plugin static untuk melayani file statis (gambar, dokumen, dll)
 import { staticPlugin } from "@elysiajs/static";
+
+// ===== IMPORTS NODE.JS MODULES =====
+// Import fungsi filesystem untuk operasi file dan direktori
 import { existsSync, readdirSync, readFileSync } from "fs";
+// Import fungsi path untuk manipulasi path file
 import { join } from "path";
+
+// ===== IMPORTS ELYSIA FRAMEWORK =====
+// Import framework Elysia untuk membangun REST API
 import { Elysia } from "elysia";
+
+// ===== IMPORTS MIDDLEWARE & UTILITIES =====
+// Import middleware database MySQL dan MQTT client
 import { MySQLDatabase, MQTTClient } from "./lib/middleware";
+// Import utilities untuk API tags, subdomain, dan konversi age
 import { apiTags, subDomain, ageConverter } from "./lib/utils";
 
-import { authRoutes } from "./api/auth";
-import { userRoutes } from "./api/user";
-import { deviceRoutes } from "./api/device";
-import { deviceCommandRoutes } from "./api/device-command";
-import { payloadRoutes } from "./api/payload";
-import { widgetRoutes } from "./api/widget";
-import { alarmRoutes } from "./api/alarm";
-import { alarmNotificationRoutes } from "./api/alarm/notifications";
-import { dashboardRoutes } from "./api/dashboard";
-import { datastreamRoutes } from "./api/datastream";
-import { otaaRoutes } from "./api/otaa";
-import { adminRoutes } from "./api/admin";
-import { userWsRoutes, broadcastToUsers } from "./api/ws/user-ws";
-import { deviceWsRoutes } from "./api/ws/device-ws";
+// ===== IMPORTS API ROUTES =====
+// Import semua route untuk berbagai endpoint API
+import { authRoutes } from "./api/auth"; // Route autentikasi (login, register, logout)
+import { userRoutes } from "./api/user"; // Route manajemen user
+import { deviceRoutes } from "./api/device"; // Route manajemen device IoT
+import { deviceCommandRoutes } from "./api/device-command"; // Route command device
+import { payloadRoutes } from "./api/payload"; // Route data payload dari sensor
+import { widgetRoutes } from "./api/widget"; // Route widget dashboard
+import { alarmRoutes } from "./api/alarm"; // Route sistem alarm
+import { alarmNotificationRoutes } from "./api/alarm/notifications"; // Route notifikasi alarm
+import { dashboardRoutes } from "./api/dashboard"; // Route dashboard
+import { datastreamRoutes } from "./api/datastream"; // Route datastream sensor
+import { otaaRoutes } from "./api/otaa"; // Route Over-The-Air-Activation
+import { adminRoutes } from "./api/admin"; // Route admin panel
 
-import { AuthService } from "./services/AuthService";
-import { UserService } from "./services/UserService";
-import { DeviceService } from "./services/DeviceService";
-import { PayloadService } from "./services/PayloadService";
-import { WidgetService } from "./services/WidgetService";
-import { AlarmService } from "./services/AlarmService";
-import { AlarmNotificationService } from "./services/AlarmNotificationService";
-import { DashboardService } from "./services/DashboardService";
-import { DatastreamService } from "./services/DatastreamService";
-import { DeviceCommandService } from "./services/DeviceCommandService";
-import { DeviceStatusService } from "./services/DeviceStatusService";
-import { OtaaUpdateService } from "./services/OtaaUpdateService";
-import { AdminService } from "./services/AdminService";
-import { MQTTService } from "./services/MiddlewareService";
+// ===== IMPORTS WEBSOCKET ROUTES =====
+// Import route WebSocket untuk komunikasi real-time
+import { userWsRoutes, broadcastToUsers } from "./api/ws/user-ws"; // WebSocket user
+import { deviceWsRoutes } from "./api/ws/device-ws"; // WebSocket device
 
+// ===== IMPORTS SERVICES =====
+// Import semua service class untuk business logic
+import { AuthService } from "./services/AuthService"; // Service autentikasi
+import { UserService } from "./services/UserService"; // Service manajemen user
+import { DeviceService } from "./services/DeviceService"; // Service manajemen device IoT
+import { PayloadService } from "./services/PayloadService"; // Service data payload sensor
+import { WidgetService } from "./services/WidgetService"; // Service widget dashboard
+import { AlarmService } from "./services/AlarmService"; // Service sistem alarm
+import { AlarmNotificationService } from "./services/AlarmNotificationService"; // Service notifikasi alarm
+import { DashboardService } from "./services/DashboardService"; // Service dashboard
+import { DatastreamService } from "./services/DatastreamService"; // Service datastream sensor
+import { DeviceCommandService } from "./services/DeviceCommandService"; // Service command device
+import { DeviceStatusService } from "./services/DeviceStatusService"; // Service status device
+import { OtaaUpdateService } from "./services/OtaaUpdateService"; // Service OTAA update
+import { AdminService } from "./services/AdminService"; // Service admin panel
+import { MQTTService } from "./services/MiddlewareService"; // Service MQTT messaging
+
+// ===== MAIN SERVER CLASS =====
+// Class utama untuk mengelola server IoT dengan semua service dan middleware
 class Server {
-  private app: Elysia;
-  private db!: Awaited<ReturnType<typeof MySQLDatabase.getInstance>>;
-  private mqttClient!: ReturnType<typeof MQTTClient.getInstance>;
+  // ===== CORE PROPERTIES =====
+  private app: Elysia; // Instance aplikasi Elysia
+  private db!: Awaited<ReturnType<typeof MySQLDatabase.getInstance>>; // Instance database MySQL
+  private mqttClient!: ReturnType<typeof MQTTClient.getInstance>; // Instance MQTT client
 
-  private authService!: AuthService;
-  private userService!: UserService;
-  private deviceService!: DeviceService;
-  private payloadService!: PayloadService;
-  private widgetService!: WidgetService;
-  private alarmService!: AlarmService;
-  private alarmNotificationService!: AlarmNotificationService;
-  private dashboardService!: DashboardService;
-  private datastreamService!: DatastreamService;
-  private otaaService!: OtaaUpdateService;
-  private deviceStatusService!: DeviceStatusService;
-  private adminService!: AdminService;
-  private mqttService!: MQTTService;
+  // ===== SERVICE INSTANCES =====
+  // Deklarasi semua service yang akan digunakan dalam aplikasi
+  private authService!: AuthService; // Service untuk autentikasi user
+  private userService!: UserService; // Service untuk manajemen user
+  private deviceService!: DeviceService; // Service untuk manajemen device IoT
+  private payloadService!: PayloadService; // Service untuk data sensor payload
+  private widgetService!: WidgetService; // Service untuk widget dashboard
+  private alarmService!: AlarmService; // Service untuk sistem alarm
+  private alarmNotificationService!: AlarmNotificationService; // Service untuk notifikasi alarm
+  private dashboardService!: DashboardService; // Service untuk dashboard
+  private datastreamService!: DatastreamService; // Service untuk datastream
+  private otaaService!: OtaaUpdateService; // Service untuk OTAA updates
+  private deviceStatusService!: DeviceStatusService; // Service untuk status device
+  private adminService!: AdminService; // Service untuk admin panel
+  private mqttService!: MQTTService; // Service untuk MQTT messaging
 
+  // ===== CONSTRUCTOR =====
   constructor() {
-    this.app = new Elysia();
+    this.app = new Elysia(); // Inisialisasi aplikasi Elysia
   }
 
+  // ===== INITIALIZATION METHOD =====
+  // Method utama untuk menginisialisasi semua komponen server
   async init() {
-    this.db = MySQLDatabase.getInstance();
-    this.mqttClient = MQTTClient.getInstance();
+    // ===== DATABASE & MQTT INITIALIZATION =====
+    // Inisialisasi koneksi database MySQL dan MQTT client
+    this.db = MySQLDatabase.getInstance(); // Singleton pattern untuk database
+    this.mqttClient = MQTTClient.getInstance(); // Singleton pattern untuk MQTT
 
-    // Init services yang tidak butuh dependencies dulu
-    this.authService = new AuthService(this.db);
-    this.userService = new UserService(this.db);
-    this.widgetService = new WidgetService(this.db);
-    this.alarmService = new AlarmService(this.db);
-    this.alarmNotificationService = new AlarmNotificationService(this.db);
-    this.dashboardService = new DashboardService(this.db);
-    this.datastreamService = new DatastreamService(this.db);
-    this.otaaService = new OtaaUpdateService(this.db);
-    this.adminService = new AdminService(this.db);
-    this.deviceStatusService = new DeviceStatusService(this.db);
+    // ===== SERVICE INITIALIZATION (PHASE 1) =====
+    // Inisialisasi service yang tidak memiliki dependencies terlebih dahulu
+    this.authService = new AuthService(this.db); // Service autentikasi
+    this.userService = new UserService(this.db); // Service user management
+    this.widgetService = new WidgetService(this.db); // Service widget dashboard
+    this.alarmService = new AlarmService(this.db); // Service sistem alarm
+    this.alarmNotificationService = new AlarmNotificationService(this.db); // Service notifikasi
+    this.dashboardService = new DashboardService(this.db); // Service dashboard
+    this.datastreamService = new DatastreamService(this.db); // Service datastream
+    this.otaaService = new OtaaUpdateService(this.db); // Service OTAA
+    this.adminService = new AdminService(this.db); // Service admin
+    this.deviceStatusService = new DeviceStatusService(this.db); // Service status device
 
-    // Init MQTT service dengan alarm notification
+    // ===== MQTT SERVICE INITIALIZATION =====
+    // Inisialisasi MQTT service dengan dependencies untuk notifikasi dan status
     this.mqttService = new MQTTService(this.db, this.alarmNotificationService, this.deviceStatusService);
 
-    // Init device service dengan MQTT callbacks
+    // ===== DEVICE SERVICE INITIALIZATION =====
+    // Inisialisasi device service dengan callback MQTT untuk subscribe/unsubscribe topic
     this.deviceService = new DeviceService(
-      this.db,
-      this.otaaService,
-      this.mqttService.subscribeTopic.bind(this.mqttService),
-      this.mqttService.unSubscribeTopic.bind(this.mqttService)
+      this.db, // Database connection
+      this.otaaService, // OTAA service untuk device activation
+      this.mqttService.subscribeTopic.bind(this.mqttService), // Callback subscribe topic
+      this.mqttService.unSubscribeTopic.bind(this.mqttService) // Callback unsubscribe topic
     );
 
-    // Set device service ke MQTT service (untuk JWT verification)
+    // ===== MQTT-DEVICE SERVICE LINKING =====
+    // Set device service ke MQTT service untuk JWT verification dan device management
     this.mqttService.setDeviceService(this.deviceService);
 
-    // Init payload service dengan dependencies
+    // ===== PAYLOAD SERVICE INITIALIZATION (PHASE 2) =====
+    // Inisialisasi payload service dengan semua dependencies yang diperlukan
     this.payloadService = new PayloadService(
-      this.db,
-      this.deviceService,
-      this.alarmNotificationService,
-      this.deviceStatusService
+      this.db, // Database connection
+      this.deviceService, // Device service untuk validasi device
+      this.alarmNotificationService, // Service notifikasi untuk alarm
+      this.deviceStatusService // Service status untuk update status device
     );
 
-    // Create JWT instance
+    // ===== JWT CONFIGURATION =====
+    // Konfigurasi JWT untuk autentikasi dengan secret dan expiration dari environment
     const jwtInstance = jwt({
-      name: "jwt",
-      secret: process.env.JWT_SECRET!,
-      exp: process.env.ACCESS_TOKEN_AGE!,
+      name: "jwt", // Nama instance JWT
+      secret: process.env.JWT_SECRET!, // Secret key dari environment variable
+      exp: process.env.ACCESS_TOKEN_AGE!, // Expiration time dari environment variable
     });
 
-    // Start MQTT listener
+    // ===== MQTT LISTENER START =====
+    // Mulai mendengarkan pesan MQTT dari device IoT
     this.mqttService.listen();
 
     this.app
-      // Health check endpoint
+      // ===== HEALTH CHECK ENDPOINT =====
+      // Endpoint untuk monitoring kesehatan server dan database
       .get("/health-check", () => ({
-        status: "ok",
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        database: "connected", // You can add actual DB health check here
+        status: "ok", // Status server
+        timestamp: new Date().toISOString(), // Timestamp saat ini
+        uptime: process.uptime(), // Waktu server berjalan (dalam detik)
+        database: "connected", // Status database (bisa ditambah health check aktual)
       }))
 
-      // API
-      .use(authRoutes(this.authService, this.userService))
-      .use(userRoutes(this.userService))
-      .use(deviceRoutes(this.deviceService, this.deviceStatusService))
-      .use(deviceCommandRoutes(this.db))
-      .use(payloadRoutes(this.payloadService))
-      .use(widgetRoutes(this.widgetService))
-      .use(alarmRoutes(this.alarmService))
-      .use(alarmNotificationRoutes(this.alarmNotificationService))
-      .use(dashboardRoutes(this.dashboardService))
-      .use(datastreamRoutes(this.datastreamService))
-      .use(otaaRoutes(this.otaaService))
-      .use(adminRoutes(this.adminService, this.userService))
+      // ===== API ROUTES REGISTRATION =====
+      // Registrasi semua route API dengan service yang sesuai
+      .use(authRoutes(this.authService, this.userService)) // Route autentikasi
+      .use(userRoutes(this.userService)) // Route manajemen user
+      .use(deviceRoutes(this.deviceService, this.deviceStatusService)) // Route device IoT
+      .use(deviceCommandRoutes(this.db)) // Route command device
+      .use(payloadRoutes(this.payloadService)) // Route payload data sensor
+      .use(widgetRoutes(this.widgetService)) // Route widget dashboard
+      .use(alarmRoutes(this.alarmService)) // Route sistem alarm
+      .use(alarmNotificationRoutes(this.alarmNotificationService)) // Route notifikasi alarm
+      .use(dashboardRoutes(this.dashboardService)) // Route dashboard
+      .use(datastreamRoutes(this.datastreamService)) // Route datastream
+      .use(otaaRoutes(this.otaaService)) // Route OTAA
+      .use(adminRoutes(this.adminService, this.userService)) // Route admin panel
 
-      // Websocket
-      .use(userWsRoutes)
-      .use(deviceWsRoutes(this.deviceService, this.db))
+      // ===== WEBSOCKET ROUTES =====
+      // Registrasi route WebSocket untuk komunikasi real-time
+      .use(userWsRoutes) // WebSocket untuk user
+      .use(deviceWsRoutes(this.deviceService, this.db)) // WebSocket untuk device
 
-      // Plugin
+      // ===== PLUGINS CONFIGURATION =====
+      // ===== CORS PLUGIN =====
+      // Konfigurasi Cross-Origin Resource Sharing untuk frontend
       .use(
         cors({
           origin: [
-            process.env.FRONTEND_URL!,
-            subDomain(process.env.FRONTEND_URL!),
-            process.env.FRONTEND_ADMIN_URL!,
+            process.env.FRONTEND_URL!, // URL frontend utama
+            subDomain(process.env.FRONTEND_URL!), // Subdomain frontend
+            process.env.FRONTEND_ADMIN_URL!, // URL admin frontend
           ],
-          preflight: true,
-          credentials: true,
-          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-          allowedHeaders: ["Content-Type", "Authorization"],
+          preflight: true, // Enable preflight requests
+          credentials: true, // Allow credentials (cookies, auth headers)
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // HTTP methods yang diizinkan
+          allowedHeaders: ["Content-Type", "Authorization"], // Headers yang diizinkan
         })
       )
+      // ===== JWT PLUGIN =====
+      // Registrasi plugin JWT untuk autentikasi token
       .use(jwtInstance)
+      
+      // ===== SWAGGER PLUGIN =====
+      // Plugin dokumentasi API otomatis dengan Swagger UI
       .use(
         swagger({
           documentation: {
             info: {
-              title: "REST API Misred-IoT",
-              description: "Dokumentasi API untuk proyek Misred-IoT",
-              version: "1.0.0",
+              title: "REST API Misred-IoT", // Judul dokumentasi API
+              description: "Dokumentasi API untuk proyek Misred-IoT", // Deskripsi API
+              version: "1.0.0", // Versi API
             },
-            tags: apiTags,
+            tags: apiTags, // Tags untuk kategorisasi endpoint
             components: {
               securitySchemes: {
                 bearerAuth: {
-                  type: "http",
-                  scheme: "bearer",
-                  bearerFormat: "JWT",
+                  type: "http", // Tipe autentikasi HTTP
+                  scheme: "bearer", // Skema bearer token
+                  bearerFormat: "JWT", // Format token JWT
                 },
               },
             },
           },
         })
       )
+      
+      // ===== STATIC FILES PLUGIN =====
+      // Plugin untuk melayani file statis (gambar, dokumen, firmware, dll)
       .use(
         staticPlugin({
-          prefix: "/public",
-          assets: "./src/assets",
+          prefix: "/public", // URL prefix untuk file statis
+          assets: "./src/assets", // Direktori file statis
         })
       )
-      // Dokumentasi REST API
+      
+      // ===== CUSTOM ENDPOINTS =====
+      // ===== DOCUMENTATION ENDPOINT =====
+      // Endpoint kustom untuk dokumentasi API dengan favicon
       .get("/docs", async () => {
-        const res = await fetch(`${process.env.BACKEND_URL}/swagger`);
+        const res = await fetch(`${process.env.BACKEND_URL}/swagger`); // Ambil HTML swagger
         let html = await res.text();
+        // Inject favicon ke dalam HTML dokumentasi
         html = html.replace(
           "</head>",
           `<link rel="icon" type="image/svg+xml" href="/public/web-logo.svg" /></head>`
         );
         return new Response(html, {
           headers: {
-            "Content-Type": "text/html",
+            "Content-Type": "text/html", // Set content type HTML
           },
         });
       })
 
-      // Error handler
+      // ===== ERROR HANDLING =====
+      // Global error handler untuk menangani semua error yang terjadi
       .onError(({ error, code, request }) => {
         console.error("❌ Terjadi kesalahan:", error, `Halaman yang dicoba oleh user: ${request.url}`);
-        // Redirect to frontend 404 page
+        
+        // ===== 404 NOT FOUND HANDLING =====
+        // Redirect ke halaman 404 frontend jika endpoint tidak ditemukan
         if (code === "NOT_FOUND") {
           return new Response(null, {
-            status: 302,
+            status: 302, // HTTP 302 redirect
             headers: {
-              Location: `${process.env.FRONTEND_URL}/404`
+              Location: `${process.env.FRONTEND_URL}/404` // Redirect ke 404 page
             }
           });
         }
-        // Redirect to frontend 401 page
+        
+        // ===== 401 VALIDATION ERROR HANDLING =====
+        // Redirect ke halaman 401 frontend jika ada error validasi/autentikasi
         if (typeof code === "string" && code === "VALIDATION") {
           return new Response(null, {
-            status: 302,
+            status: 302, // HTTP 302 redirect
             headers: {
-              Location: `${process.env.FRONTEND_URL}/401`
+              Location: `${process.env.FRONTEND_URL}/401` // Redirect ke 401 page
             }
           });
         }
-        // Default error message
+        
+        // ===== DEFAULT ERROR RESPONSE =====
+        // Response default untuk error yang tidak spesifik
         return new Response("Terjadi kesalahan pada server", { status: 500 });
       })
+      
+      // ===== SERVER LISTENER =====
+      // Konfigurasi dan start server dengan hostname dan port dari environment
       .listen(
         {
-          hostname: "0.0.0.0",
-          port: Number(process.env.BACKEND_PORT),
+          hostname: "0.0.0.0", // Listen pada semua interface network
+          port: Number(process.env.BACKEND_PORT), // Port dari environment variable
         },
         () => {
+          // Callback ketika server berhasil start
           console.log(
             `🦊 Backend Server telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
           );
         }
       );
 
-    // Cleanup old pending device commands setiap 30 detik
+    // ===== BACKGROUND TASKS & INTERVALS =====
+    
+    // ===== DEVICE COMMAND CLEANUP TASK =====
+    // Cleanup command lama yang pending setiap 30 detik untuk mencegah command menumpuk
     setInterval(async () => {
       try {
-        // Test database connection first
+        // ===== DATABASE HEALTH CHECK =====
+        // Test koneksi database sebelum melakukan operasi
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
           console.log("🔄 Database unhealthy, attempting reconnection...");
-          this.db = MySQLDatabase.forceReconnect();
+          this.db = MySQLDatabase.forceReconnect(); // Force reconnect jika tidak sehat
         }
         
+        // ===== COMMAND CLEANUP EXECUTION =====
+        // Buat instance service dan cleanup command lama
         const commandService = new DeviceCommandService(this.db);
-        const affected = await commandService.markOldCommandsAsFailed(0.17); // 10 seconds timeout
+        const affected = await commandService.markOldCommandsAsFailed(0.17); // 10 detik timeout
         if (affected > 0) {
           console.log(`🧹 Marked ${affected} old device commands as failed`);
         }
       } catch (error: any) {
         console.error("Error cleaning up device commands:", error);
         
-        // Check if it's a connection error
+        // ===== CONNECTION ERROR HANDLING =====
+        // Check jika error disebabkan oleh masalah koneksi database
         if (error.code === "PROTOCOL_CONNECTION_LOST" || 
             error.code === "ER_CONNECTION_LOST" || 
             error.code === "ECONNRESET" ||
@@ -255,7 +330,8 @@ class Server {
             error.code === "ETIMEDOUT") {
           console.log("🔄 Database connection error detected, forcing reconnection...");
           try {
-            // Force reconnection
+            // ===== FORCE RECONNECTION =====
+            // Paksa reconnect database jika ada masalah koneksi
             this.db = MySQLDatabase.forceReconnect();
             console.log("✅ Database connection restored for command cleanup");
           } catch (reconnectError) {
@@ -263,18 +339,21 @@ class Server {
           }
         }
       }
-    }, 30000); // 30 seconds interval
+    }, 30000); // Interval 30 detik
 
-    // Refresh variabel secret semua device setiap 5 menit
+    // ===== DEVICE SECRET REFRESH TASK =====
+    // Refresh variable secret semua device secara berkala untuk keamanan
     setInterval(async () => {
       try {
-        // Test database connection first
+        // ===== DATABASE HEALTH CHECK =====
+        // Test koneksi database sebelum refresh secret
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
           console.log("🔄 Database unhealthy, attempting reconnection...");
-          this.db = MySQLDatabase.forceReconnect();
+          this.db = MySQLDatabase.forceReconnect(); // Force reconnect jika tidak sehat
           
-          // Reinitialize device service with new db connection
+          // ===== REINITIALIZE DEVICE SERVICE =====
+          // Reinisialisasi device service dengan koneksi database baru
           this.deviceService = new DeviceService(
             this.db,
             this.otaaService,
@@ -283,16 +362,22 @@ class Server {
           );
         }
         
+        // ===== SECRET REFRESH EXECUTION =====
+        // Refresh secret semua device untuk keamanan
         await this.deviceService.refreshAllDeviceSecrets();
         console.log("🔄 Berhasil me-refresh secret dari semua device ");
+        
+        // ===== BROADCAST UPDATE TO USERS =====
+        // Broadcast notifikasi ke semua user melalui WebSocket
         broadcastToUsers({
-          type: "device_secret_refreshed",
-          message: "Secret perangkat telah diperbarui",
+          type: "device_secret_refreshed", // Tipe event
+          message: "Secret perangkat telah diperbarui", // Pesan notifikasi
         });
       } catch (error: any) {
         console.error("Gagal refresh secret:", error);
         
-        // Check if it's a connection error
+        // ===== CONNECTION ERROR HANDLING =====
+        // Check jika error disebabkan oleh masalah koneksi database
         if (error.code === "PROTOCOL_CONNECTION_LOST" || 
             error.code === "ER_CONNECTION_LOST" || 
             error.code === "ECONNRESET" ||
@@ -300,10 +385,12 @@ class Server {
             error.code === "ETIMEDOUT") {
           console.log("🔄 Database connection error during secret refresh, forcing reconnection...");
           try {
-            // Force reconnection
+            // ===== FORCE RECONNECTION =====
+            // Paksa reconnect database jika ada masalah koneksi
             this.db = MySQLDatabase.forceReconnect();
             
-            // Reinitialize device service with new db connection
+            // ===== REINITIALIZE DEVICE SERVICE =====
+            // Reinisialisasi device service dengan koneksi database baru
             this.deviceService = new DeviceService(
               this.db,
               this.otaaService,
@@ -314,12 +401,13 @@ class Server {
             console.error("❌ Failed to reconnect to database:", reconnectError);
           }
         }
-        return;
+        return; // Exit dari fungsi jika terjadi error
       }
-    }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000);
+    }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000); // Interval dari environment variable
   }
 }
 
-// Jalankan server
+// ===== SERVER INSTANTIATION & STARTUP =====
+// Buat instance server dan jalankan inisialisasi
 const server = new Server();
-server.init();
+server.init(); // Mulai server dengan semua konfigurasi

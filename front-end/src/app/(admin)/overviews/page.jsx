@@ -1,3 +1,5 @@
+// Admin Overviews page - halaman overview untuk monitoring sistem secara keseluruhan
+// Menampilkan statistik global, device summary, dan metrics penting untuk admin
 import AdminOverviewsLayout from "./_layout";
 
 export const metadata = {

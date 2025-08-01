@@ -1,11 +1,12 @@
-// Timezone utility functions
+// Timezone utility functions untuk formatting waktu dengan zona waktu Indonesia
 import { timezoneConfig } from './helper';
 
 /**
- * Format timestamp dengan timezone yang dikonfigurasi
- * @param {string|Date|number} timestamp 
- * @param {object} options - Options untuk formatting
- * @returns {string} Formatted timestamp string
+ * Format timestamp dengan timezone yang dikonfigurasi (default: Asia/Jakarta)
+ * Mengkonversi UTC timestamp ke local time Indonesia dengan format lengkap
+ * @param {string|Date|number} timestamp - Input timestamp dalam format apapun
+ * @param {object} options - Options untuk custom formatting
+ * @returns {string} Formatted timestamp string dengan timezone info
  */
 export function formatTimestamp(timestamp, options = {}) {
   if (!timestamp) return 'Unknown';
@@ -13,6 +14,7 @@ export function formatTimestamp(timestamp, options = {}) {
   const date = new Date(timestamp);
   if (isNaN(date.getTime())) return 'Invalid Date';
   
+  // Default options untuk format Indonesia (DD/MM/YYYY HH:mm:ss)
   const defaultOptions = {
     year: 'numeric',
     month: '2-digit',
@@ -20,7 +22,7 @@ export function formatTimestamp(timestamp, options = {}) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    timeZone: timezoneConfig.timezone,
+    timeZone: timezoneConfig.timezone, // Asia/Jakarta
   };
   
   const formatOptions = { ...defaultOptions, ...options };
@@ -34,9 +36,10 @@ export function formatTimestamp(timestamp, options = {}) {
 }
 
 /**
- * Format waktu saja (tanpa tanggal) dengan timezone yang dikonfigurasi
+ * Format waktu saja (HH:mm) tanpa tanggal dan timezone display
+ * Berguna untuk display jam pada widget atau komponen kecil
  * @param {string|Date|number} timestamp 
- * @returns {string} Formatted time string
+ * @returns {string} Formatted time string (HH:mm)
  */
 export function formatTimeOnly(timestamp) {
   return formatTimestamp(timestamp, {
@@ -47,7 +50,7 @@ export function formatTimeOnly(timestamp) {
 }
 
 /**
- * Format tanggal saja (tanpa waktu) dengan timezone yang dikonfigurasi
+ * Format tanggal saja (DD/MM/YYYY) tanpa waktu dan timezone display
  * @param {string|Date|number} timestamp 
  * @returns {string} Formatted date string
  */

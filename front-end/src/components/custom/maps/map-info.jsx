@@ -1,3 +1,27 @@
+/**
+ * KOMPONEN MAP INFO
+ * 
+ * map-info.jsx berisi komponen-komponen untuk menampilkan informasi device
+ * dalam konteks peta dan sistem manajemen lokasi device IoT. File ini terdiri dari:
+ * 
+ * 1. DeviceStatusIcon - Icon status device dengan styling berdasarkan status
+ * 2. DeviceInfoPanel - Panel informasi lengkap device dengan fitur edit lokasi
+ * 
+ * Fitur utama:
+ * - Visual status indicators untuk device online/offline
+ * - Panel informasi device yang comprehensive
+ * - Edit lokasi device dengan dual input mode (address/coordinates)
+ * - Integration dengan LocationPickerClient untuk geocoding
+ * - Real-time location updates dengan API backend
+ * - Responsive design dengan error handling yang robust
+ * - Success/error feedback untuk user actions
+ * 
+ * API Integration:
+ * - PUT /admin/devices/{id}/location untuk update lokasi
+ * - Error handling untuk berbagai HTTP status codes
+ * - Token-based authentication dengan localStorage
+ */
+
 import {
   MapPin,
   Wifi,
@@ -16,14 +40,34 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LocationPickerClient } from "@/components/custom/other/location-picker-client";
+import { LocationPickerClient } from "@/components/custom/maps/location-picker-client";
 import { useState } from "react";
 import { fetchFromBackend } from "@/lib/helper";
 
-// Device status icon with enhanced styling
+/**
+ * KOMPONEN DEVICE STATUS ICON
+ * 
+ * DeviceStatusIcon menampilkan icon visual untuk status device dengan styling
+ * yang berbeda berdasarkan status online/offline. Komponen ini juga mendukung
+ * berbagai tipe device dengan icon yang sesuai.
+ * 
+ * Fitur:
+ * - Status-based styling (hijau untuk online, merah untuk offline)
+ * - Type-specific icons (thermometer, droplets, beaker)
+ * - Gradient backgrounds untuk visual yang menarik
+ * - Dark mode support dengan proper contrast
+ * - Ring borders untuk emphasis
+ * - CSS classes untuk custom styling
+ * 
+ * @param {string} status - Status device ("online"|"offline")
+ * @param {string} type - Tipe device ("temperature"|"humidity"|"water_quality")
+ */
 export function DeviceStatusIcon({ status, type }) {
+  /**
+   * Function untuk mendapatkan icon berdasarkan tipe device
+   * Default menggunakan MapPin jika tipe tidak dikenali
+   */
   const getTypeIcon = () => {
-    // Dapat digunakan untuk menampilkan ikon lain, defaultnya adalah Pin
     switch (type) {
       case "temperature":
         return <Thermometer className="w-4 h-4" />;
@@ -49,25 +93,66 @@ export function DeviceStatusIcon({ status, type }) {
   );
 }
 
-// Enhanced Device Info Panel with better responsive design
+/**
+ * KOMPONEN DEVICE INFO PANEL
+ * 
+ * DeviceInfoPanel adalah komponen comprehensive untuk menampilkan informasi
+ * lengkap device dan mengelola lokasi device. Komponen ini menyediakan:
+ * 
+ * Fitur utama:
+ * - View mode: Menampilkan informasi device secara lengkap
+ * - Edit mode: Form untuk mengubah lokasi device
+ * - Dual input mode: Address picker dan manual coordinates
+ * - Real-time validation untuk input coordinates
+ * - API integration untuk menyimpan perubahan lokasi
+ * - Error handling yang comprehensive dengan user-friendly messages
+ * - Success feedback dengan auto-dismiss
+ * - Responsive design dengan mobile optimization
+ * 
+ * Input Modes:
+ * - Address mode: Menggunakan LocationPickerClient dengan geocoding
+ * - Coordinates mode: Manual input latitude/longitude dengan validasi
+ * 
+ * @param {Object} device - Data device yang akan ditampilkan
+ * @param {Function} onClose - Handler untuk menutup panel
+ * @param {Function} onLocationUpdated - Callback ketika lokasi berhasil diupdate
+ */
 export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
+  // ===== STATE MANAGEMENT =====
+  // State untuk mode tampilan (view/edit)
   const [isEditMode, setIsEditMode] = useState(false);
+  
+  // State untuk loading indicator saat API call
   const [isLoading, setIsLoading] = useState(false);
+  
+  // State untuk error handling
   const [error, setError] = useState(null);
+  
+  // State untuk success feedback
   const [success, setSuccess] = useState(false);
+  
+  // State untuk form inputs
   const [addressInput, setAddressInput] = useState("");
   const [latitudeInput, setLatitudeInput] = useState("");
   const [longitudeInput, setLongitudeInput] = useState("");
-  const [inputMode, setInputMode] = useState("address"); // "address" or "coordinates"
+  
+  // State untuk input mode selection
+  const [inputMode, setInputMode] = useState("address"); // "address" atau "coordinates"
 
+  // Early return jika tidak ada device data
   if (!device) return null;
 
+  // ===== EVENT HANDLERS =====
+  /**
+   * Handler untuk memulai edit mode
+   * Pre-fill form dengan data lokasi yang sudah ada
+   */
   const handleEditClick = () => {
     setIsEditMode(true);
     setError(null);
     setSuccess(false);
     
-    // Pre-fill dengan data yang ada
+    // Pre-fill dengan data lokasi yang sudah ada jika tersedia
     if (device.location) {
       setAddressInput(device.location.address || "");
       setLatitudeInput(device.location.lat?.toString() || "");
@@ -75,6 +160,10 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
     }
   };
 
+  /**
+   * Handler untuk membatalkan edit mode
+   * Reset semua state dan form inputs
+   */
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setError(null);
@@ -84,24 +173,32 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
     setLongitudeInput("");
   };
 
+  /**
+   * Handler untuk menyimpan perubahan lokasi
+   * Melakukan validasi input dan API call ke backend
+   */
   const handleSaveLocation = async () => {
     let locationData = null;
 
-    // Validasi input berdasarkan mode
+    // ===== VALIDASI INPUT BERDASARKAN MODE =====
     if (inputMode === "coordinates") {
+      // Mode coordinates - validasi manual input
       const lat = parseFloat(latitudeInput);
       const lng = parseFloat(longitudeInput);
       
+      // Validasi format angka
       if (isNaN(lat) || isNaN(lng)) {
         setError("Koordinat harus berupa angka yang valid");
         return;
       }
       
+      // Validasi range latitude (-90 sampai 90)
       if (lat < -90 || lat > 90) {
         setError("Latitude harus antara -90 dan 90");
         return;
       }
       
+      // Validasi range longitude (-180 sampai 180)
       if (lng < -180 || lng > 180) {
         setError("Longitude harus antara -180 dan 180");
         return;
@@ -113,7 +210,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
         address: addressInput || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
       };
     } else {
-      // Mode address menggunakan data dari LocationPicker
+      // Mode address - menggunakan data dari LocationPicker
       const lat = parseFloat(latitudeInput);
       const lng = parseFloat(longitudeInput);
       
@@ -133,6 +230,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
     setError(null);
 
     try {
+      // ===== API CALL UNTUK UPDATE LOKASI =====
       const token = localStorage.getItem("accessToken");
       const requestBody = {
         latitude: locationData.lat,
@@ -158,6 +256,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
 
       setSuccess(true);
       
+      // ===== UPDATE DEVICE DATA UNTUK MAP =====
       // Update device data dengan lokasi baru untuk update posisi map
       const updatedDevice = {
         ...device,
@@ -170,12 +269,12 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
         longitude: locationData.lng
       };
       
-      // Call callback to refresh device data dan update map position
+      // Call callback untuk refresh device data dan update map position
       if (onLocationUpdated) {
         onLocationUpdated(device.id, locationData, updatedDevice);
       }
 
-      // Reset form setelah berhasil
+      // Reset form setelah berhasil dengan delay untuk user feedback
       setTimeout(() => {
         setIsEditMode(false);
         setSuccess(false);
@@ -184,6 +283,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
     } catch (error) {
       console.error("Error saving location:", error);
       
+      // ===== ERROR HANDLING YANG COMPREHENSIVE =====
       let errorMessage = "Gagal menyimpan lokasi";
       
       if (error.name === "TypeError" && error.message.includes("fetch")) {
@@ -206,8 +306,10 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
     }
   };
 
+  // ===== RENDER COMPONENT =====
   return (
     <div className="absolute top-4 right-4 w-80 lg:w-96 max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 z-50 max-h-[calc(100vh-2rem)] overflow-hidden device-info-panel">
+      {/* Header Panel dengan gradient background */}
       <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-900/20 dark:to-indigo-900/20">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -225,6 +327,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
               </>
             )}
           </h3>
+          {/* Tombol close dengan styling minimal */}
           <Button
             variant="ghost"
             size="sm"
@@ -236,8 +339,9 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
         </div>
       </div>
 
+      {/* Content Area dengan scroll handling */}
       <div className="p-4 space-y-4 overflow-y-auto max-h-[calc(100vh-8rem)]">
-        {/* Success Message */}
+        {/* Success Message dengan auto-dismiss styling */}
         {success && (
           <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-xl">
             <div className="p-1 bg-green-100 dark:bg-green-900/40 rounded-full">
@@ -249,7 +353,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
           </div>
         )}
 
-        {/* Error Message */}
+        {/* Error Message dengan styling yang prominent */}
         {error && (
           <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-800 rounded-xl">
             <div className="p-1 bg-red-100 dark:bg-red-900/40 rounded-full">
@@ -262,9 +366,9 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
         )}
 
         {isEditMode ? (
-          // Edit Mode - Form untuk edit lokasi
+          // ===== EDIT MODE - FORM UNTUK EDIT LOKASI =====
           <div className="space-y-4">
-            {/* Mode Selector with enhanced styling */}
+            {/* Mode Selector dengan enhanced styling */}
             <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl">
               <button
                 onClick={() => setInputMode("address")}
@@ -291,18 +395,20 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
             </div>
 
             {inputMode === "address" ? (
-              // Address Input Mode
+              // ===== ADDRESS INPUT MODE =====
               <div className="space-y-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Alamat
                   </label>
+                  {/* LocationPickerClient dengan theme customization */}
                   <LocationPickerClient
                     variant="inline"
                     placeholder="Cari lokasi atau klik tombol lokasi"
                     defaultLocation={addressInput} // Set default value untuk sinkronisasi
                     onChange={(locationData) => {
                       if (locationData && locationData.lat && locationData.lng) {
+                        // Update semua input dengan data dari geocoding
                         setAddressInput(locationData.address || "");
                         setLatitudeInput(locationData.lat.toString());
                         setLongitudeInput(locationData.lng.toString());
@@ -310,7 +416,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                       } else if (locationData?.error) {
                         setError(locationData.error);
                       } else if (locationData === null || locationData === "") {
-                        // Reset when cleared
+                        // Reset ketika input dikosongkan
                         setAddressInput("");
                         setLatitudeInput("");
                         setLongitudeInput("");
@@ -336,7 +442,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                   </p>
                 </div>
                 
-                {/* Coordinates display (auto-filled) */}
+                {/* Coordinates display (auto-filled dari LocationPickerClient) */}
                 {(latitudeInput || longitudeInput) && (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -351,7 +457,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                         type="number"
                         noInfo
                         step="any"
-                        readOnly
+                        readOnly // Read-only karena auto-filled dari geocoding
                       />
                     </div>
                     <div>
@@ -366,14 +472,14 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                         type="number"
                         noInfo
                         step="any"
-                        readOnly
+                        readOnly // Read-only karena auto-filled dari geocoding
                       />
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              // Coordinates Input Mode
+              // ===== COORDINATES INPUT MODE =====
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -425,7 +531,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
               </div>
             )}
 
-            {/* Action Buttons with enhanced styling */}
+            {/* Action Buttons dengan enhanced styling dan proper loading states */}
             <div className="flex gap-3 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
               <Button
                 variant="outline"
@@ -456,8 +562,9 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
             </div>
           </div>
         ) : (
-          // Enhanced View Mode - Informasi device
+          // ===== VIEW MODE - INFORMASI DEVICE =====
           <div className="space-y-6">
+            {/* Device Header dengan status dan informasi utama */}
             <div className="flex items-start gap-4 p-4 bg-gradient-to-r from-gray-50/50 to-gray-100/50 dark:from-gray-700/50 dark:to-gray-600/50 rounded-xl border border-gray-200/30 dark:border-gray-600/30">
               <DeviceStatusIcon status={device.status} type={device.type} />
               <div className="flex-1">
@@ -465,6 +572,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
                   {device.name}
                 </h4>
                 <div className="flex items-center gap-2 mt-2">
+                  {/* Status indicator dengan icon dan warna yang sesuai */}
                   {device.status === "online" ? (
                     <Wifi className="w-4 h-4 text-green-600" />
                   ) : (
@@ -481,6 +589,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
               </div>
             </div>
 
+            {/* Device Details dalam grid layout untuk responsive design */}
             <div className="space-y-4 grid grid-cols-2 gap-4">
               <div className="p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-800/30">
                 <p className="text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">

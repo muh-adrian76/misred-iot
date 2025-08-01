@@ -1,3 +1,5 @@
+// Client component untuk admin layout - handles admin authentication dan UI rendering
+// Features: admin privilege checking, responsive sidebar, access control dengan error states
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,6 +16,7 @@ import {
   Users,
   MapPin,
   BarChart3,
+  CloudCog,
   ArrowLeftRight,
 } from "lucide-react";
 import AppSidebar from "@/components/features/app-sidebar";
@@ -21,17 +24,19 @@ import AppNavbar from "@/components/features/app-navbar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import localFont from "next/font/local";
 
+// Local font untuk logo branding
 const logoFont = localFont({
   src: "../../../public/logo-font.ttf",
 });
 
+// Menu navigation untuk admin panel
 const adminMenu = [
   {
     title: "Mode User",
     url: "/dashboards",
     icon: ArrowLeftRight,
     disabled: false,
-    isSpecial: true,
+    isSpecial: true, // Special styling untuk switch mode
   },
   {
     title: "Overviews",
@@ -51,6 +56,12 @@ const adminMenu = [
     icon: MapPin,
     disabled: false,
   },
+  {
+    title: "Over-The-Air",
+    url: "/otaa",
+    icon: CloudCog,
+    disabled: false,
+  },
 ];
 
 export default function AdminLayoutClient({ children }) {
@@ -60,9 +71,9 @@ export default function AdminLayoutClient({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true); // Local loading state
 
-  // Debug logging
+  // Debug logging untuk development (commented out untuk production)
   // console.log("Admin client render:", {
   //   isAdmin,
   //   isAuthenticated,
@@ -71,23 +82,25 @@ export default function AdminLayoutClient({ children }) {
   //   pathname,
   // });
 
+  // Determine active menu berdasarkan current pathname
   const activeMenu = adminMenu.find((item) =>
     pathname.startsWith(item.url)
   ) || {
-    title: "Admin Panel",
+    title: "Admin Panel", // Fallback title
   };
 
+  // Effect untuk handle loading state setelah auth checks selesai
   useEffect(() => {
-    // Wait for auth to be determined and admin check to complete
+    // Wait sampai semua auth checks selesai
     if (!adminLoading && isAuthenticated !== undefined && isAdmin !== undefined) {
       // const timer = setTimeout(() => {
         setIsLoading(false);
-      // }, 100000); // Lebih cepat
+      // }, 100000); // Timer untuk smooth transition (commented out)
       // return () => clearTimeout(timer);
     }
   }, [adminLoading, isAuthenticated, isAdmin]);
 
-  // Show loading state
+  // Loading state - tampil saat masih mengecek admin privileges
   if (isLoading || adminLoading) {
     // console.log("Admin client: Showing loading state", {
     //   isLoading,
@@ -108,7 +121,7 @@ export default function AdminLayoutClient({ children }) {
     );
   }
 
-  // Show access denied if not authenticated
+  // Access denied state - user belum login
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -139,7 +152,7 @@ export default function AdminLayoutClient({ children }) {
     );
   }
 
-  // Show access denied if authenticated but not admin
+  // Admin privilege required state - user login tapi bukan admin
   if (isAuthenticated && isAdmin === false) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -173,8 +186,10 @@ export default function AdminLayoutClient({ children }) {
     );
   }
 
+  // Main admin layout - render sidebar dan content area
   return (
     <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
+      {/* Mobile: show/hide sidebar berdasarkan state */}
       {isMobile ? (
         <AppSidebar
           sidebarMenu={adminMenu}
@@ -183,6 +198,7 @@ export default function AdminLayoutClient({ children }) {
           logoFont={logoFont.className}
         />
       ) : (
+        /* Desktop: hover behavior untuk sidebar auto show/hide */
         <div
           onMouseEnter={() => setSidebarOpen(true)}
           onMouseLeave={() => setSidebarOpen(false)}
@@ -197,6 +213,7 @@ export default function AdminLayoutClient({ children }) {
           />
         </div>
       )}
+      {/* Main content area dengan navbar dan children */}
       <SidebarInset className="flex flex-col w-[80vw]">
         <AppNavbar page={activeMenu.title} />
         <div className="min-h-screen relative">{children}</div>

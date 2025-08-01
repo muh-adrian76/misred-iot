@@ -15,12 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import MapView from "@/components/custom/other/map-view";
+import MapView from "@/components/custom/maps/map-view";
 import { successToast } from "@/components/custom/other/toaster";
 import {
   DeviceStatusIcon,
   DeviceInfoPanel,
-} from "@/components/custom/other/map-info";
+} from "@/components/custom/maps/map-info";
 import { useState } from "react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { motion } from "framer-motion";

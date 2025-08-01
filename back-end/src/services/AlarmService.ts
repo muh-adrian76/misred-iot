@@ -1,26 +1,41 @@
+/**
+ * ===== ALARM SERVICE =====
+ * Service untuk mengelola sistem alarm IoT
+ * Menyediakan fungsi CRUD alarm dan pengelolaan kondisi alarm
+ * 
+ * Fitur utama:
+ * - Membuat alarm baru dengan kondisi threshold
+ * - Update alarm dan kondisi
+ * - Menghapus alarm
+ * - Validasi alarm berdasarkan data sensor
+ * - Statistik alarm per user/device
+ * - Cooldown management untuk mencegah spam notifikasi
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
+// Interface untuk data pembuatan alarm baru
 export interface CreateAlarmData {
-  description: string;
-  user_id: number;
-  device_id: number;
-  datastream_id: number;
-  is_active: boolean;
-  conditions: Array<{
-    operator: '=' | '<' | '>' | '<=' | '>=';
-    threshold: number;
+  description: string;           // Deskripsi alarm
+  user_id: number;              // ID user pemilik
+  device_id: number;            // ID device yang dipantau
+  datastream_id: number;        // ID datastream yang dipantau
+  is_active: boolean;           // Status aktif/non-aktif
+  conditions: Array<{           // Kondisi threshold alarm
+    operator: '=' | '<' | '>' | '<=' | '>=';  // Operator perbandingan
+    threshold: number;          // Nilai batas
   }>;
-  cooldown_minutes?: number;
+  cooldown_minutes?: number;    // Waktu jeda setelah alarm trigger (opsional)
 }
 
+// Interface untuk update data alarm
 export interface UpdateAlarmData {
-  description?: string;
-  conditions?: Array<{
+  description?: string;         // Update deskripsi (opsional)
+  conditions?: Array<{          // Update kondisi (opsional)
     operator: '=' | '<' | '>' | '<=' | '>=';
     threshold: number;
   }>;
-  is_active?: boolean;
-  cooldown_minutes?: number;
+  is_active?: boolean;          // Update status aktif (opsional)
+  cooldown_minutes?: number;    // Update waktu cooldown (opsional)
 }
 
 export class AlarmService {
@@ -30,12 +45,11 @@ export class AlarmService {
     this.db = database;
   }
 
-  /**
-   * Create new alarm
-   */
+  // ===== CREATE ALARM =====
+  // Membuat alarm baru dengan kondisi threshold
   async createAlarm(data: CreateAlarmData): Promise<number> {
     try {
-      // Start transaction
+      // Mulai transaksi untuk konsistensi data
       await this.db.query('START TRANSACTION');
       
       const query = `
@@ -51,12 +65,12 @@ export class AlarmService {
         data.device_id,
         data.datastream_id,
         data.is_active,
-        data.cooldown_minutes || 5
+        data.cooldown_minutes || 5  // Default 5 menit cooldown
       ]);
 
       const alarmId = (result as any).insertId;
 
-      // Insert conditions
+      // Insert semua kondisi alarm ke tabel alarm_conditions
       for (const condition of data.conditions) {
         const conditionQuery = `
           INSERT INTO alarm_conditions (alarm_id, operator, threshold) 
@@ -78,9 +92,8 @@ export class AlarmService {
     }
   }
 
-  /**
-   * Get all alarms untuk user tertentu
-   */
+  // ===== GET ALARMS BY USER ID =====
+  // Mengambil semua alarm milik user tertentu
   async getAlarmsByUserId(userId: number): Promise<any[]> {
     try {
       const query = `

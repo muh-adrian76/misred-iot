@@ -1,3 +1,15 @@
+/**
+ * ===== DASHBOARD SERVICE =====
+ * Service untuk mengelola dashboard user dalam sistem IoT
+ * Menyediakan CRUD operations untuk dashboard dan layout management
+ * 
+ * Fitur utama:
+ * - Get dashboard berdasarkan user ID
+ * - Create dashboard baru dengan layout JSON
+ * - Update dashboard dan layout widget
+ * - Delete dashboard
+ * - Widget count management
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
 export class DashboardService {
@@ -7,6 +19,8 @@ export class DashboardService {
     this.db = db;
   }
 
+  // ===== GET DASHBOARDS BY USER ID =====
+  // Mengambil semua dashboard milik user tertentu
   async getDashboardsByUserId(userId: string) {
     try {
       const [rows] = await this.db.query(
@@ -14,7 +28,7 @@ export class DashboardService {
         [userId]
       );
       
-      // Debug log untuk melihat struktur data
+      // Debug log untuk melihat struktur data dashboard
       // if (Array.isArray(rows)) {
       //   rows.forEach((dashboard: any) => {
       //     console.log(`Dashboard ${dashboard.id}:`, {
@@ -34,6 +48,8 @@ export class DashboardService {
     }
   }
 
+  // ===== CREATE DASHBOARD =====
+  // Membuat dashboard baru dengan deskripsi, widget count, dan layout
   async createDashboard(userId: string, description: string, widgetCount: number, layout?: any) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
@@ -47,10 +63,12 @@ export class DashboardService {
     }
   }
 
+  // ===== UPDATE DASHBOARD =====
+  // Update dashboard dengan deskripsi, widget count, dan layout baru
   async updateDashboard(userId: string, dashboardId: string, description: string, widgetCount:number, layout?: any) {
     try {
       if (layout) {
-        // Debug layout
+        // Debug layout untuk troubleshooting
         // console.log('Layout JSON string:', JSON.stringify(layout));
         // console.log('Layout JSON string length:', JSON.stringify(layout).length);
       }
@@ -67,6 +85,8 @@ export class DashboardService {
     }
   }
 
+  // ===== DELETE DASHBOARD =====
+  // Menghapus dashboard berdasarkan ID dan user ID
   async deleteDashboard(userId: string, dashboardId: string) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(

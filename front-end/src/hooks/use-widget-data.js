@@ -1,3 +1,5 @@
+// Hook untuk widget data management - handles time series data, real-time updates, dan aggregations
+// Supports: chart widgets, value widgets, real-time streaming via WebSocket
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -8,12 +10,15 @@ import { fetchFromBackend, timezoneConfig, convertUTCToLocalTime } from "@/lib/h
 export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filterType = "count", pairsInput) {
   const { user } = useUser();
   const { ws } = useWebSocket();
-  const [realTimeData, setRealTimeData] = useState(null);
-  const [latestValue, setLatestValue] = useState(null);
-  const [realtimeTimeSeriesData, setRealtimeTimeSeriesData] = useState({}); // State untuk real-time chart data
+  
+  // States untuk real-time data dan time series
+  const [realTimeData, setRealTimeData] = useState(null); // Latest single values
+  const [latestValue, setLatestValue] = useState(null); // For value widgets
+  const [realtimeTimeSeriesData, setRealtimeTimeSeriesData] = useState({}); // Real-time chart data
   const lastUpdateTime = useRef(null);
 
-  // Ambil pairs dari widget atau argumen
+  // Extract device-datastream pairs dari berbagai format widget input
+  // Supports multiple input formats untuk backward compatibility
   const pairs =
     Array.isArray(pairsInput) && pairsInput.length > 0
       ? pairsInput
@@ -172,13 +177,13 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           if (!initialData[item.datastream_id]) {
             initialData[item.datastream_id] = [];
           }
-          // PERBAIKAN: Konversi timezone untuk initial data juga
-          const rawTimestamp = item.timestamp || item.device_time;
-          const convertedTime = convertUTCToLocalTime(rawTimestamp);
+          // Konversi timestamp dari UTC ke local time untuk initial data
+          const timestamp = item.timestamp || item.device_time;
+          const convertedTime = convertUTCToLocalTime(timestamp);
           
           const normalizedItem = {
             ...item,
-            timestamp: convertedTime || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
+            timestamp: convertedTime || timestamp, // Gunakan timestamp yang sudah dikonversi
           };
           initialData[item.datastream_id].push(normalizedItem);
         });
@@ -232,14 +237,14 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         ) {
           setRealTimeData(data);
           
-          // PERBAIKAN: Deklarasikan variabel timezone conversion dulu
-          const rawTimestamp = data.device_time || data.timestamp;
-          const convertedTimestamp = convertUTCToLocalTime(rawTimestamp);
+          // PERBAIKAN: Untuk WebSocket real-time, gunakan timestamp langsung tanpa konversi
+          // karena backend sudah mengirim device timestamp yang benar
+          const timestamp = data.device_time || data.timestamp;
           
           // Update latest value langsung
           setLatestValue({
             value: data.value,
-            timestamp: convertedTimestamp || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
+            timestamp: timestamp, // Gunakan timestamp langsung dari WebSocket
             device_time: data.device_time || data.timestamp, // Raw timestamp untuk referensi
             sensor_name: data.sensor_name,
             unit: data.unit,
@@ -254,7 +259,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             device_id: data.device_id,
             datastream_id: data.datastream_id,
             value: parseFloat(data.value),
-            timestamp: convertedTimestamp || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
+            timestamp: timestamp, // Gunakan timestamp langsung dari WebSocket
             device_time: data.device_time || data.timestamp, // Simpan raw timestamp untuk referensi
             device_name: data.device_name,
             sensor_name: data.sensor_name,
@@ -498,14 +503,14 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           // Convert ke format yang dibutuhkan chart
           sortedData.forEach(item => {
             const timestamp = item.timestamp || item.device_time;
-            // PERBAIKAN: Timestamp sudah dikonversi saat disimpan, jadi langsung gunakan
+            // PERBAIKAN: Untuk real-time data, timestamp sudah dalam format yang benar
             const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
             timestampSet.add(timeKey);
             
             allDataPoints.push({
               timeKey,
               timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
-              originalTimestamp: timeKey, // Gunakan timestamp yang sudah dikonversi
+              originalTimestamp: timeKey, // Gunakan timestamp langsung
               device_id: item.device_id,
               datastream_id: item.datastream_id,
               value: parseFloat(item.value),
@@ -575,14 +580,14 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       Object.values(realtimeTimeSeriesData).forEach(datastreamData => {
         datastreamData.forEach(item => {
           const timestamp = item.timestamp || item.device_time;
-          // PERBAIKAN: Timestamp sudah dikonversi saat disimpan, jadi langsung gunakan
+          // PERBAIKAN: Untuk real-time data, timestamp sudah dalam format yang benar
           const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
           timestampSet.add(timeKey);
           
           allDataPoints.push({
             timeKey,
             timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
-            originalTimestamp: timeKey, // Gunakan timestamp yang sudah dikonversi untuk tooltip
+            originalTimestamp: timeKey, // Gunakan timestamp langsung
             device_id: item.device_id,
             datastream_id: item.datastream_id,
             value: parseFloat(item.value),
@@ -650,8 +655,8 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     return {
       device_id: pair.device_id,
       datastream_id: pair.datastream_id,
-      device_name: latest?.device_name || `Device ${pair.device_id}`,
-      sensor_name: latest?.sensor_name || `Datastream ${pair.datastream_id}`,
+      device_name: latest?.device_name,
+      sensor_name: latest?.sensor_name,
       unit: latest?.unit || "",
     };
   });

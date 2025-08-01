@@ -1,3 +1,5 @@
+// Admin Users page - halaman untuk kelola user management
+// Features: user list, user registration, role management, user activity monitoring
 import AdminUsersLayout from "./_layout";
 
 export const metadata = {

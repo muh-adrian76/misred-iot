@@ -1,50 +1,60 @@
+// Import React hooks untuk state management
 import { useState } from "react";
+// Import UI components untuk form inputs
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Import icons untuk UI elements
 import { Upload, FileCode, X, HardDrive, Users, Cpu } from "lucide-react";
+// Import toaster untuk notifications
 import { successToast, errorToast } from "../../other/toaster";
+// Import helper function untuk API calls
 import { fetchFromBackend } from "@/lib/helper";
 
+// Komponen OtaaUploadSection untuk upload firmware Over The Air ke devices IoT
 export default function OtaaUploadSection({ 
-  boardOptions, 
-  boardTypesInUse, 
-  devices, 
-  handleFirmwareUploaded, 
-  setOpen 
+  boardOptions, // Array board types yang didukung sistem
+  boardTypesInUse, // Array board types yang sedang digunakan devices
+  devices, // Array devices yang terdaftar dalam sistem
+  handleFirmwareUploaded, // Callback function setelah firmware berhasil diupload
+  setOpen // Setter untuk close modal parent
 }) {
-  const [selectedBoardType, setSelectedBoardType] = useState("");
-  const [firmwareVersion, setFirmwareVersion] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  // State untuk form fields
+  const [selectedBoardType, setSelectedBoardType] = useState(""); // Board type yang dipilih untuk firmware
+  const [firmwareVersion, setFirmwareVersion] = useState(""); // Versi firmware yang akan diupload
+  const [selectedFile, setSelectedFile] = useState(null); // File firmware yang dipilih
+  const [uploading, setUploading] = useState(false); // Loading state saat upload
 
+  // Handler untuk memilih file firmware dengan validasi
   const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; // Get first selected file
+    if (!file) return; // Exit jika tidak ada file yang dipilih
 
-    // Validasi ekstensi file
+    // Validasi ekstensi file - hanya .bin dan .hex yang diperbolehkan
     const allowedExt = ['.bin', '.hex'];
-    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+    const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase(); // Extract file extension
     
     if (!allowedExt.includes(ext)) {
-      errorToast("Hanya file .bin atau .hex yang diperbolehkan");
-      return;
+      errorToast("Hanya file .bin atau .hex yang diperbolehkan"); // Error untuk ekstensi tidak valid
+      return; // Stop execution jika ekstensi tidak valid
     }
 
-    // Validasi ukuran file (maksimal 10MB)
+    // Validasi ukuran file maksimal 5MB untuk firmware
     if (file.size > 5 * 1024 * 1024) {
-      errorToast("Ukuran file maksimal 5MB");
-      return;
+      errorToast("Ukuran file maksimal 5MB"); // Error untuk file terlalu besar
+      return; // Stop execution jika file terlalu besar
     }
 
-    setSelectedFile(file);
+    setSelectedFile(file); // Set file yang valid ke state
   };
 
+  // Handler untuk menghapus file yang sudah dipilih
   const handleRemoveFile = () => {
-    setSelectedFile(null);
+    setSelectedFile(null); // Clear selected file
   };
 
+  // Helper function untuk menghitung jumlah device berdasarkan board type
   const getDeviceCountByBoard = (boardType) => {
     return devices.filter(device => device.board_type === boardType).length;
   };

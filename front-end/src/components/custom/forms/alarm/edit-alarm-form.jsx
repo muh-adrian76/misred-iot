@@ -1,8 +1,11 @@
+// Import komponen dialog responsif untuk form edit
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
+// Import UI components untuk form inputs
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+// Import komponen Command untuk search/select functionality
 import {
   Command,
   CommandEmpty,
@@ -10,14 +13,17 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+// Import Popover untuk dropdown menu
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
+// Import icons untuk UI elements
 import { ChevronDown, Check, Plus, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"; // Utility untuk CSS classes
+// Import komponen Select untuk dropdown
 import {
   Select,
   SelectTrigger,
@@ -25,26 +31,32 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+// Import React hooks untuk state management
 import { useState, useEffect } from "react";
+// Import toaster untuk error notifications
 import { errorToast } from "../../other/toaster";
 
+// Komponen EditAlarmForm untuk mengedit alarm monitoring IoT yang sudah ada
 export default function EditAlarmForm({
-  open,
-  setOpen,
-  editAlarm,
-  handleEditAlarm,
-  devices = [],
-  datastreams = [],
-  loadingDevices = false,
-  loadingDatastreams = false,
-  isMobile,
+  open, // State untuk kontrol visibility modal
+  setOpen, // Setter untuk mengubah state modal
+  editAlarm, // Data alarm yang akan diedit
+  handleEditAlarm, // Handler function untuk update alarm
+  devices = [], // Array device yang tersedia untuk monitoring
+  datastreams = [], // Array datastream dari devices
+  loadingDevices = false, // Loading state untuk devices data
+  loadingDatastreams = false, // Loading state untuk datastreams data
+  isMobile, // Flag untuk responsive design
 }) {
-  const [description, setDescription] = useState("");
-  const [deviceId, setDeviceId] = useState("");
-  const [datastreamId, setDatastreamId] = useState("");
-  const [conditions, setConditions] = useState([]);
-  const [cooldownMinutes, setCooldownMinutes] = useState("1");
-  const [isActive, setIsActive] = useState(true);
+  // State untuk form fields dengan data yang akan diedit
+  const [description, setDescription] = useState(""); // Deskripsi alarm
+  const [deviceId, setDeviceId] = useState(""); // ID device yang dipilih
+  const [datastreamId, setDatastreamId] = useState(""); // ID datastream yang dipilih
+  const [conditions, setConditions] = useState([]); // Array kondisi threshold alarm
+  const [cooldownMinutes, setCooldownMinutes] = useState("1"); // Cooldown delay dalam menit
+  const [isActive, setIsActive] = useState(true); // Status aktif/nonaktif alarm
+  
+  // State untuk kontrol popover dropdowns
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
 

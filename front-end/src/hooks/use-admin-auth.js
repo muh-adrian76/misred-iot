@@ -1,21 +1,28 @@
+// Hook untuk admin authentication - mengecek apakah user memiliki admin privileges
+// Digunakan untuk protect admin routes dan menampilkan konten admin-only
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "./use-auth";
 import { fetchFromBackend } from "@/lib/helper";
 
 export function useAdminAuth() {
-  const { isAuthenticated, loading: authLoading } = useAuth(true); // Skip redirect untuk handle manual
-  const [isAdmin, setIsAdmin] = useState(undefined); // undefined = belum dicek
+  // Menggunakan useAuth dengan skipRedirect untuk manual handling
+  const { isAuthenticated, loading: authLoading } = useAuth(true);
+  
+  // States untuk admin status dan user data
+  const [isAdmin, setIsAdmin] = useState(undefined); // undefined = belum dicek, true/false = hasil check
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Effect untuk check admin status setelah authentication selesai
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // Wait for auth to finish loading
+      // Wait sampai auth loading selesai
       if (authLoading) {
         return;
       }
 
+      // Jika tidak authenticated, set admin false
       if (!isAuthenticated) {
         setIsAdmin(false);
         setUser(null);
@@ -24,6 +31,7 @@ export function useAdminAuth() {
       }
 
       try {
+        // API call untuk check admin privileges
         const response = await fetchFromBackend("/auth/check-admin");
         if (response.ok) {
           const data = await response.json();
@@ -44,7 +52,7 @@ export function useAdminAuth() {
         console.error("useAdminAuth: Error checking admin status:", error);
         setIsAdmin(false);
         setUser(null);
-        // Error juga biarkan client.jsx yang handle
+        // Error handling diserahkan ke client.jsx
         return;
       } finally {
         setLoading(false);
@@ -54,12 +62,12 @@ export function useAdminAuth() {
     checkAdminStatus();
   }, [isAuthenticated, authLoading]);
   
-  // Memoize result untuk stabilitas
+  // Memoize result untuk prevent unnecessary re-renders
   const result = useMemo(() => ({
     isAdmin,
     isAuthenticated,
     user,
-    loading: loading || authLoading, // Include auth loading in overall loading state
+    loading: loading || authLoading, // Gabungkan auth loading dengan admin loading
   }), [isAdmin, isAuthenticated, user, loading, authLoading]);
   
   return result;

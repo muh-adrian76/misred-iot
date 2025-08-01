@@ -1,17 +1,23 @@
 "use client";
+
+// Import dependencies untuk komponen password strength meter
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff, Check, X, RotateCcwKey } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cva } from "class-variance-authority";
 
+/**
+ * Varian styling untuk meter kekuatan password
+ * Menggunakan class-variance-authority untuk variant yang konsisten
+ */
 const strengthMeterVariants = cva(
   "transition-all w-full h-2 rounded-full bg-gray-200 dark:bg-gray-700 mt-1 flex gap-1",
   {
     variants: {
       size: {
         default: "h-2",
-        sm: "h-1.5",
+        sm: "h-1.5", 
         lg: "h-3",
       },
       animated: {
@@ -26,6 +32,10 @@ const strengthMeterVariants = cva(
   }
 );
 
+/**
+ * Varian styling untuk segmen bar kekuatan password
+ * Setiap segmen menunjukkan tingkat kekuatan dengan warna berbeda
+ */
 const strengthBarSegmentVariants = cva(
   "h-full rounded-full transition-all duration-300 ease-in-out",
   {
@@ -33,7 +43,7 @@ const strengthBarSegmentVariants = cva(
       strength: {
         empty: "bg-transparent",
         weak: "bg-red-500",
-        fair: "bg-orange-500",
+        fair: "bg-orange-500", 
         good: "bg-yellow-500",
         strong: "bg-green-500",
       },
@@ -49,6 +59,10 @@ const strengthBarSegmentVariants = cva(
   }
 );
 
+/**
+ * Aturan default untuk validasi password
+ * Setiap aturan memiliki label dan fungsi validator untuk keamanan IoT
+ */
 const defaultRequirements = [
   {
     label: "8 Karakter atau lebih",
@@ -72,6 +86,9 @@ const defaultRequirements = [
   },
 ];
 
+/**
+ * Label default untuk setiap tingkat kekuatan password
+ */
 const defaultStrengthLabels = {
   empty: "Kosong",
   weak: "Lemah",
@@ -80,6 +97,10 @@ const defaultStrengthLabels = {
   strong: "Kuat",
 };
 
+/**
+ * Threshold default untuk menentukan tingkat kekuatan password
+ * Nilai dalam persentase (0-100)
+ */
 const defaultStrengthThresholds = {
   empty: 0,
   weak: 1,
@@ -88,6 +109,33 @@ const defaultStrengthThresholds = {
   strong: 90,
 };
 
+/**
+ * Komponen PasswordStrengthMeter
+ * 
+ * Komponen untuk mengukur dan memvisualisasikan kekuatan password dengan
+ * berbagai fitur seperti generator password otomatis, validasi real-time,
+ * dan tampilan yang responsif. Penting untuk keamanan akun IoT.
+ * 
+ * @param {string} value - Nilai password saat ini
+ * @param {function} onValueChange - Callback saat password berubah
+ * @param {boolean} showText - Tampilkan teks tingkat kekuatan
+ * @param {boolean} showRequirements - Tampilkan daftar persyaratan
+ * @param {number} segments - Jumlah segmen dalam meter (default: 4)
+ * @param {object} strengthThresholds - Threshold untuk setiap level
+ * @param {array} requirements - Aturan validasi password
+ * @param {function} customCalculateStrength - Fungsi kalkulasi kustom
+ * @param {boolean} showPasswordToggle - Tampilkan toggle show/hide password
+ * @param {object} strengthLabels - Label untuk setiap tingkat kekuatan
+ * @param {string} className - Kelas CSS tambahan
+ * @param {string} meterClassName - Kelas CSS untuk meter
+ * @param {string} inputClassName - Kelas CSS untuk input
+ * @param {string} placeholder - Placeholder text untuk input
+ * @param {string} size - Ukuran meter (sm, default, lg)
+ * @param {boolean} animated - Aktifkan animasi
+ * @param {boolean} enableAutoGenerate - Aktifkan fitur generate password
+ * @param {number} autoGenerateLength - Panjang password yang di-generate
+ * @param {string} autoComplete - Atribut autocomplete HTML
+ */
 export function PasswordStrengthMeter({
   value = "",
   onValueChange,
@@ -107,38 +155,48 @@ export function PasswordStrengthMeter({
   animated = true,
   enableAutoGenerate = false,
   autoGenerateLength = 10,
-                          autoComplete,
+  autoComplete,
   ...props
 }) {
+  // State untuk menyimpan nilai password dan status visibility
   const [password, setPassword] = React.useState(value);
   const [showPassword, setShowPassword] = React.useState(false);
 
+  // Sinkronisasi state internal dengan prop value
   React.useEffect(() => {
     setPassword(value);
   }, [value]);
 
+  /**
+   * Fungsi untuk menghasilkan password yang kuat secara otomatis
+   * Menggunakan kombinasi huruf besar, kecil, angka, dan karakter khusus
+   * dengan algoritma Fisher-Yates untuk pengacakan yang aman
+   */
   const generateStrongPassword = (length = autoGenerateLength) => {
+    // Karakter set untuk setiap kategori
     const lowercase = "abcdefghijklmnopqrstuvwxyz";
     const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const numbers = "0123456789";
     const specialChars = "@/._-";
 
+    // Gabungan semua karakter yang diizinkan
     const allChars = lowercase + uppercase + numbers + specialChars;
 
     let password = "";
 
-    // Pastikan minimal 1 karakter dari setiap kategori
+    // Pastikan minimal 1 karakter dari setiap kategori untuk keamanan
     password += lowercase[Math.floor(Math.random() * lowercase.length)]
     password += uppercase[Math.floor(Math.random() * uppercase.length)]
     password += numbers[Math.floor(Math.random() * numbers.length)]
     password += specialChars[Math.floor(Math.random() * specialChars.length)]
 
-    // Tambahkan karakter acak untuk sisanya
+    // Tambahkan karakter acak untuk mencapai panjang yang diinginkan
     for (let i = 4; i < length; i++) {
         password += allChars[Math.floor(Math.random() * allChars.length)]
     }
 
-    // Shuffle menggunakan Fisher-Yates algorithm untuk keamanan yang lebih baik
+    // Shuffle password menggunakan Fisher-Yates algorithm untuk keamanan
+    // yang lebih baik dan mencegah pattern yang dapat diprediksi
     const passwordArray = password.split('')
     for (let i = passwordArray.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1))
@@ -148,12 +206,19 @@ export function PasswordStrengthMeter({
     return passwordArray.join('')
   };
 
+  /**
+   * Handler untuk generate password otomatis
+   */
   const handleGeneratePassword = () => {
     const newPassword = generateStrongPassword(autoGenerateLength);
     setPassword(newPassword);
     onValueChange?.(newPassword);
   };
 
+  /**
+   * Fungsi untuk menghitung kekuatan password berdasarkan kriteria default
+   * Menggunakan sistem scoring dengan berbagai faktor keamanan
+   */
   const calculateBaseStrength = (password) => {
     if (!password) return 0;
 

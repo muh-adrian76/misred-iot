@@ -1,3 +1,9 @@
+/**
+ * ===== AUTHENTICATION API ROUTES - ENDPOINT AUTENTIKASI SISTEM IoT =====
+ * File ini mengatur semua endpoint API untuk autentikasi dan manajemen user
+ * Meliputi: registrasi, login, verify OTP, Google OAuth, JWT token management
+ */
+
 import { Elysia, redirect } from "elysia";
 import {
   authorizeRequest,
@@ -21,7 +27,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
   return (
     new Elysia({ prefix: "/auth" })
 
-      // Register User
+      // ===== USER REGISTRATION ENDPOINT =====
+      // POST /auth/register - Mendaftarkan user baru dengan verifikasi OTP
       .post(
         "/register",
         async ({ body }: any) => {
@@ -34,7 +41,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postRegisterSchema
       )
 
-      // Verify OTP
+      // ===== OTP VERIFICATION ENDPOINT =====
+      // POST /auth/verify-otp - Verifikasi kode OTP untuk aktivasi akun
       .post(
         "/verify-otp",
         async ({ body }: any) => {
@@ -45,7 +53,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       )
 
-      // Resend OTP
+      // ===== RESEND OTP ENDPOINT =====
+      // POST /auth/resend-otp - Kirim ulang kode OTP jika expired/tidak diterima
       .post(
         "/resend-otp",
         async ({ body }: any) => {
@@ -56,14 +65,15 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       )
 
-      // Admin: Register User
+      // ===== ADMIN USER REGISTRATION ENDPOINT =====
+      // POST /auth/admin/register - Admin mendaftarkan user baru (bypass OTP)
       .post(
         "/admin/register",
         // @ts-ignore
         async ({ jwt, cookie, body }) => {
           const decoded = await authorizeRequest(jwt, cookie);
           
-          // Check if user is admin
+          // Validasi apakah user yang request adalah admin
           const adminUser = await userService.getUserById(decoded.sub);
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
@@ -81,7 +91,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postRegisterSchema
       )
 
-      // Login User
+      // ===== USER LOGIN ENDPOINT =====
+      // POST /auth/login - Login user dengan email/password dan set authentication cookies
       .post(
         "/login",
         // @ts-ignore
@@ -89,11 +100,13 @@ export function authRoutes(authService: AuthService, userService: UserService) {
           try {
             const result = await authService.login(body);
 
+            // Jika login berhasil dan ada user data + refresh token
             if (
               result.status === 200 &&
               result.user?.id &&
               result.refreshToken
             ) {
+              // Set authentication cookies (access_token + refresh_token)
               await setAuthCookie(
                 cookie,
                 jwt,
@@ -104,18 +117,20 @@ export function authRoutes(authService: AuthService, userService: UserService) {
                 status: 200,
               });
             }
+            // Jika login gagal, return pesan error
             return new Response(JSON.stringify({ message: result.message }), {
               status: result.status,
             });
           } catch (error) {
-            console.error(error); // Show error in console
+            console.error(error); // Log error untuk debugging
             return { status: 500, message: "Terjadi kesalahan pada server." };
           }
         },
         postLoginSchema
       )
 
-      // Verify Token
+      // ===== TOKEN VERIFICATION ENDPOINT =====
+      // GET /auth/verify-token - Verifikasi validitas JWT token dari cookies
       .get(
         "/verify-token",
         // @ts-ignore
@@ -134,7 +149,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         getVerifyTokenSchema
       )
 
-      // Refresh Token
+      // ===== REFRESH TOKEN ENDPOINT =====
+      // GET /auth/renew/:id - Generate access token baru menggunakan refresh token
       .get(
         "/renew/:id",
         // @ts-ignore
@@ -152,7 +168,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         getRefreshTokenSchema
       )
 
-      // Google OAuth
+      // ===== GOOGLE OAUTH LOGIN ENDPOINT =====
+      // POST /auth/google - Login menggunakan Google OAuth dengan token/code
       .post(
         "/google",
         // @ts-ignore
@@ -160,11 +177,13 @@ export function authRoutes(authService: AuthService, userService: UserService) {
           try {
             const result = await authService.googleLogin(body);
 
+            // Jika Google login berhasil
             if (
               result.status === 200 &&
               result.user?.id &&
               result.refreshToken
             ) {
+              // Set authentication cookies untuk sesi login
               await setAuthCookie(
                 cookie,
                 jwt,
@@ -180,18 +199,20 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               status: result.status,
             });
           } catch (error) {
-            console.error(error); // Show error in console
+            console.error(error); // Log error untuk debugging
             return { status: 500, message: "Terjadi kesalahan pada server." };
           }
         },
         postGoogleLoginSchema
       )
 
+      // ===== GOOGLE OAUTH CALLBACK ENDPOINT =====
+      // GET /auth/google/callback - Handle redirect dari Google OAuth untuk mobile app
       .get("/google/callback", 
         // @ts-ignore
         async ({ request, cookie, jwt }) => {
         const url = new URL(request.url);
-        const code = url.searchParams.get("code");
+        const code = url.searchParams.get("code"); // Authorization code dari Google
         if (!code) {
           return new Response(
             JSON.stringify({ message: "Authorization code not provided" }),
@@ -203,6 +224,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
           const result = await authService.googleLogin({ code, mode: "redirect" });
           
           if (result.status === 200 && result.user?.id && result.refreshToken) {
+            // Set authentication cookies
             await setAuthCookie(
               cookie,
               jwt,
@@ -217,7 +239,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               type: "access",
             });
             
-            // Redirect ke aplikasi Android WebView
+            // Redirect ke aplikasi Android WebView dengan custom scheme
             return redirect(`misredapp://callback?token=${token}`);
           } else {
             // Jika login gagal, redirect ke halaman error
@@ -229,7 +251,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       })
 
-      // Reset-forgotten-password
+      // ===== FORGOT PASSWORD RESET ENDPOINT =====
+      // PUT /auth/reset-forgotten-password - Reset password menggunakan OTP (lupa password)
       .put(
         "/reset-forgotten-password",
         // @ts-ignore
@@ -242,7 +265,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postResetForgottenPasswordSchema
       )
 
-      // Reset-password
+      // ===== PASSWORD CHANGE ENDPOINT =====
+      // PUT /auth/reset-password - Ganti password untuk user yang sudah login
       .put(
         "/reset-password",
         // @ts-ignore
@@ -267,13 +291,14 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postResetPasswordSchema
       )
 
-      // Logout
+      // ===== USER LOGOUT ENDPOINT =====
+      // POST /auth/logout - Logout user dan hapus authentication cookies
       .post(
         "/logout",
         // @ts-ignore
         async ({ jwt, cookie }) => {
           const result = await authService.logout(jwt, cookie);
-          clearAuthCookie(cookie);
+          clearAuthCookie(cookie); // Hapus cookies dari browser
 
           return new Response(JSON.stringify(result), {
             status: result.status,
@@ -282,7 +307,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postLogoutSchema
       )
 
-      // Check admin status
+      // ===== ADMIN AUTHORIZATION CHECK ENDPOINT =====
+      // GET /auth/check-admin - Cek apakah user yang login memiliki akses admin
       .get(
         "/check-admin",
         // @ts-ignore
@@ -303,7 +329,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             
             const response = {
               status: 200,
-              isAdmin: Boolean(user?.is_admin),
+              isAdmin: Boolean(user?.is_admin), // Convert ke boolean untuk konsistensi
               user: {
                 id: user?.id,
                 name: user?.name,
@@ -329,7 +355,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       )
 
-      // Get WebSocket Token (untuk HttpOnly cookie compatibility)
+      // ===== WEBSOCKET TOKEN GENERATION ENDPOINT =====
+      // GET /auth/ws-token - Generate temporary token untuk WebSocket connection
       .get(
         "/ws-token",
         // @ts-ignore
@@ -344,21 +371,21 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               }), { status: 401 });
             }
             
-            // Generate temporary WebSocket token (valid for 30 minutes)
+            // Generate temporary WebSocket token (valid selama 30 menit)
             const wsTokenPayload = { 
-              sub: decoded.sub,
-              type: "websocket",
-              exp: Date.now() + (30 * 60 * 1000) // 30 minutes
+              sub: decoded.sub, // User ID dari JWT yang ada
+              type: "websocket", // Tipe khusus untuk WebSocket authentication
+              exp: Date.now() + (30 * 60 * 1000) // Expired dalam 30 menit
             };
             
-            // Debug token websocket (server-side)
+            // Debug token websocket (server-side logging)
             // console.log("🔑 Generating WebSocket token for user:", decoded.sub, "with payload:", wsTokenPayload);
             
             const wsToken = await jwt.sign(wsTokenPayload);
             
             return new Response(JSON.stringify({
               status: 200,
-              ws_token: wsToken
+              ws_token: wsToken // Token untuk digunakan di WebSocket connection
             }), { 
               status: 200,
               headers: {

@@ -1,3 +1,9 @@
+/**
+ * ===== USER MANAGEMENT API ROUTES - ENDPOINT MANAJEMEN USER IoT =====
+ * File ini mengatur semua endpoint API untuk manajemen user dan profile
+ * Meliputi: CRUD operations user, profile update, WhatsApp notifications, onboarding progress
+ */
+
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { UserService } from "../../services/UserService";
@@ -11,19 +17,20 @@ import {
 export function userRoutes(userService: UserService) {
   return new Elysia({ prefix: "/user" })
 
-    // Get all users
+    // ===== GET ALL USERS ENDPOINT =====
+    // GET /user - Ambil semua user (untuk admin atau referensi sistem)  
     .get(
       "",
       // @ts-ignore
       async ({ jwt, cookie, set }) => {
         try {
-          await authorizeRequest(jwt, cookie.auth);
+          await authorizeRequest(jwt, cookie.auth); // Verifikasi authentication
           const users = await userService.getAllUsers();
           return { status: "success", data: users };
         } catch (error: any) {
           console.error("Error in get all users:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;
@@ -46,22 +53,23 @@ export function userRoutes(userService: UserService) {
       getAllUsersSchema
     )
 
-    // Get user by ID
+    // ===== GET USER BY ID ENDPOINT =====
+    // GET /user/:id - Ambil detail user berdasarkan ID
     .get(
       "/:id",
       // @ts-ignore
       async ({ jwt, cookie, params, set }) => {
         try {
-          await authorizeRequest(jwt, cookie);
+          await authorizeRequest(jwt, cookie); // Verifikasi authentication
           const user = await userService.getUserById(params.id);
           if (!user) {
             return new Response("User tidak ditemukan", { status: 404 });
           }
-          return user;
+          return user; // Return detail user tanpa sensitive data
         } catch (error: any) {
           console.error("Error in get user by ID:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Handle authentication error dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
             console.error("❌ Authentication error:", error.message);
             set.status = 401;

@@ -1,3 +1,17 @@
+/**
+ * ===== PAYLOAD SERVICE =====
+ * Service untuk mengelola data payload dari IoT devices
+ * Menangani HTTP, MQTT, dan LoRa payload processing
+ * 
+ * Fitur utama:
+ * - JWT verification dan AES decryption untuk security
+ * - Multi-protocol payload handling (HTTP, MQTT, LoRa)
+ * - Raw data backup dan normalized data processing
+ * - Real-time data broadcasting via WebSocket
+ * - Device status monitoring integration
+ * - Alarm checking dan notification trigger
+ * - Time series data untuk charts dan analytics
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { DeviceService } from "./DeviceService";
 import { AlarmNotificationService } from "./AlarmNotificationService";
@@ -28,7 +42,8 @@ export class PayloadService {
     this.deviceStatusService = deviceStatusService;
   }
 
-  // Fungsi verifikasi JWT dan dekripsi payload
+  // ===== VERIFY DEVICE JWT AND DECRYPT =====
+  // Fungsi verifikasi JWT dan dekripsi payload untuk keamanan
   async verifyDeviceJWTAndDecrypt({
     deviceId,
     token,
@@ -43,6 +58,8 @@ export class PayloadService {
     });
   }
 
+  // ===== SAVE HTTP PAYLOAD =====
+  // Menyimpan payload yang diterima via HTTP dari devices
   async saveHttpPayload({
     deviceId,
     decrypted,
@@ -103,13 +120,15 @@ export class PayloadService {
 
     async getByDeviceId(device_id: string) {
     try {
-      // Query data ternormalisasi dengan informasi sensor
+      // Query data ternormalisasi dengan informasi sensor dan device
       const [rows] = await this.db.query(
         `SELECT 
           p.id, p.device_id, p.datastream_id, p.value, p.server_time,
-          ds.description as sensor_name, ds.pin, ds.unit, ds.type
+          ds.description as sensor_name, ds.pin, ds.unit, ds.type,
+          d.description as device_name
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
+        LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? 
         ORDER BY p.server_time DESC`,
         [device_id]
@@ -130,9 +149,11 @@ export class PayloadService {
           p.device_time as timestamp,
           p.device_time,
           ds.description as sensor_name, ds.pin, ds.unit, ds.type,
-          ds.min_value, ds.max_value
+          ds.min_value, ds.max_value,
+          d.description as device_name
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
+        LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL
         ORDER BY p.device_time DESC 
         LIMIT 500`, // Tingkatkan limit untuk memastikan semua data terambil
@@ -203,6 +224,7 @@ export class PayloadService {
             case '12h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
             case '1d': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
             case '1w': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
+            case '1m': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 30 DAY'; break; // Tambahan: Support filter 1 bulan (30 hari)
             default: timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
           }
         }

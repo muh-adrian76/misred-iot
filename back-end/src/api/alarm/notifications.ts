@@ -51,8 +51,8 @@ export function alarmNotificationRoutes(
           // Format notifications untuk frontend
           const formattedNotifications = notifications.map((row: any) => ({
             id: String(row.id),
-            title: "🚨 Peringatan Sensor Alarm",
-            message: `${row.alarm_description} - ${row.datastream_description}(${row.field_name}): ${row.sensor_value} (${row.conditions_text}) pada ${row.device_description}`,
+            title: row.alarm_description,
+            message: `Device: ${row.device_description}\nDatastream: ${row.datastream_description}(${row.field_name})\nNilai: ${row.sensor_value} (${row.conditions_text})`,
             createdAt: String(row.triggered_at),
             isRead: Boolean(row.is_read),
             priority: "high",
@@ -186,6 +186,8 @@ export function alarmNotificationRoutes(
           const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: row.id,
             alarm_id: row.alarm_id,
+            device_id: row.device_id,
+            datastream_id: row.datastream_id,
             alarm_description: row.alarm_description,
             datastream_description: row.datastream_description,
             device_description: row.device_description,

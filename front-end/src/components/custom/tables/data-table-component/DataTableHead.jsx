@@ -1,6 +1,7 @@
+// Import komponen UI dan utilities
 import { TableHead } from "@/components/ui/table";
 import DescriptionTooltip from "../../other/description-tooltip";
-import { ArrowDownAZ, ArrowUpAZ, Funnel } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Funnel } from "lucide-react"; // Icons untuk sorting dan filtering
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -11,41 +12,48 @@ import CheckboxButton from "../../buttons/checkbox-button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
+// Komponen DataTableHead untuk render header kolom dengan sorting dan filtering
 export default function DataTableHead({
-  col,
-  idx,
-  columns,
-  sortBy,
-  sortDir,
-  handleSort,
-  filterMenuOpen,
-  setFilterMenuOpen,
-  filters,
-  filterOptions,
-  handleFilterChange,
-  handleFilterReset,
-  glowingHeaders = false,
-  hoveredColumn = null,
+  col, // Konfigurasi kolom (key, label, sortable, filterable, dll)
+  idx, // Index kolom dalam array columns
+  columns, // Array semua kolom untuk referensi
+  sortBy, // Kolom yang sedang di-sort
+  sortDir, // Arah sorting (asc/desc)
+  handleSort, // Handler untuk sorting kolom
+  filterMenuOpen, // Key kolom yang sedang membuka menu filter
+  setFilterMenuOpen, // Setter untuk kontrol menu filter
+  filters, // Object berisi filter yang aktif per kolom
+  filterOptions, // Opsi filter yang tersedia per kolom
+  handleFilterChange, // Handler untuk mengubah filter
+  handleFilterReset, // Handler untuk reset filter kolom
+  glowingHeaders = false, // Flag untuk efek glowing pada header
+  hoveredColumn = null, // Kolom yang sedang di-hover untuk efek visual
 }) {
+  // Render header yang dapat di-sort (sortable)
   return col.sortable ? (
     <DescriptionTooltip key={col.key} content="Urutkan Data">
       <TableHead
         className={cn([
+          // Styling untuk kolom pertama (sticky)
           idx === 0
             ? "sm:sticky left-0 bg-accent z-20 border-r min-w-[150px] cursor-pointer select-none"
             : "",
+          // Styling untuk kolom yang dapat difilter atau tidak sortable
           col.filterable || col.sortable === false
             ? "min-w-[100px] border-r select-none bg-accent"
-            : ![0, columns.length].includes(idx)
+            : // Styling default untuk kolom lainnya
+              ![0, columns.length].includes(idx)
               ? "border-r min-w-[100px] cursor-pointer select-none bg-accent"
               : "",
+          // Efek glowing jika diaktifkan
           glowingHeaders && "glowing-header-effect"
         ].join(" "))}
-        data-column={col.key}
-        onClick={col.sortable ? () => handleSort(col.key) : undefined}
+        data-column={col.key} // Data attribute untuk CSS selectors
+        onClick={col.sortable ? () => handleSort(col.key) : undefined} // Handler click untuk sorting
       >
         <span className="flex items-center justify-center">
-          {col.label}
+          {col.label} {/* Label kolom */}
+          {/* Icon sorting berdasarkan state saat ini */}
           {sortBy === col.key &&
             (sortDir === "asc" ? (
               <ArrowDownAZ className="inline w-4 h-4 ml-2" />

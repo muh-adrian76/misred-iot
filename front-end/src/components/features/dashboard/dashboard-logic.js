@@ -7,57 +7,82 @@ import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { markDashboardCreated, markWidgetCreated } from "@/lib/onboarding-utils";
 import { getWidgetConstraints } from "@/lib/dashboard-utils"; // Import dari central location
 
-// Helper function to get dashboard description from ID
+// ===== HELPER FUNCTIONS =====
+// Fungsi utility untuk mendapatkan deskripsi dashboard berdasarkan ID
 const getDashboardDescription = (id, dashboards) => {
   const dashboard = dashboards.find(d => d.id === id);
   return dashboard ? dashboard.description : "";
 };
 
+// ===== MAIN DASHBOARD LOGIC HOOK =====
+// Custom hook utama yang mengelola seluruh logic dashboard
 export function useDashboardLogic() {
-  // Core state
-  const [dashboards, setDashboards] = useState([]);
-  const [widgets, setWidgets] = useState({});
-  const [currentBreakpoint, setCurrentBreakpoint] = useState("lg");
-  const [openChartSheet, setOpenChartSheet] = useState(false);
-  const [openDashboardDialog, setOpenDashboardDialog] = useState(false);
-  const [widgetCount, setWidgetCount] = useState(0);
-  const [isLoadingWidget, setIsLoadingWidget] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [dashboardToDelete, setDashboardToDelete] = useState(null);
-  const [editDashboardValue, setEditDashboardValue] = useState("");
-  const [showWidgetForm, setShowWidgetForm] = useState(false);
-  const [showEditWidgetForm, setShowEditWidgetForm] = useState(false);
-  const [newWidgetData, setNewWidgetData] = useState(null);
-  const [editWidgetData, setEditWidgetData] = useState(null);
-  const [devices, setDevices] = useState([]);
-  const [datastreams, setDatastreams] = useState([]);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [layoutKey, setLayoutKey] = useState(0); // For forcing grid re-render
-  const [deleteChecked, setDeleteChecked] = useState(false);
-  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Default 1 jam
-  const [currentDataCount, setCurrentDataCount] = useState("10"); // Default 10 data
-  const [filterType, setFilterType] = useState("count"); // Default filter by count
+  // ===== CORE STATE MANAGEMENT =====
+  // State utama untuk data dashboard dan widget
+  const [dashboards, setDashboards] = useState([]); // Daftar semua dashboard
+  const [widgets, setWidgets] = useState({}); // Widget untuk setiap dashboard
+  const [currentBreakpoint, setCurrentBreakpoint] = useState("lg"); // Breakpoint responsive saat ini
+  
+  // ===== DIALOG & MODAL STATE =====
+  // State untuk mengelola dialog dan modal
+  const [openChartSheet, setOpenChartSheet] = useState(false); // Sheet untuk memilih chart
+  const [openDashboardDialog, setOpenDashboardDialog] = useState(false); // Dialog tambah dashboard
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Dialog hapus dashboard
+  const [showWidgetForm, setShowWidgetForm] = useState(false); // Form tambah widget
+  const [showEditWidgetForm, setShowEditWidgetForm] = useState(false); // Form edit widget
+  
+  // ===== WIDGET MANAGEMENT STATE =====
+  // State untuk mengelola widget dan loading
+  const [widgetCount, setWidgetCount] = useState(0); // Jumlah widget pada dashboard aktif
+  const [isLoadingWidget, setIsLoadingWidget] = useState(false); // Status loading widget
+  const [newWidgetData, setNewWidgetData] = useState(null); // Data widget baru yang akan ditambahkan
+  const [editWidgetData, setEditWidgetData] = useState(null); // Data widget yang sedang diedit
+  
+  // ===== EDITING & DELETE STATE =====
+  // State untuk mode editing dan operasi hapus
+  const [isEditing, setIsEditing] = useState(false); // Status mode editing dashboard
+  const [dashboardToDelete, setDashboardToDelete] = useState(null); // Dashboard yang akan dihapus
+  const [editDashboardValue, setEditDashboardValue] = useState(""); // Nilai nama dashboard yang diedit
+  const [deleteChecked, setDeleteChecked] = useState(false); // Konfirmasi checkbox untuk hapus
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Flag untuk perubahan belum disimpan
+  
+  // ===== EXTERNAL DATA STATE =====
+  // State untuk data dari API external
+  const [devices, setDevices] = useState([]); // Daftar semua device IoT
+  const [datastreams, setDatastreams] = useState([]); // Daftar semua datastream
+  
+  // ===== LAYOUT & RENDERING STATE =====
+  // State untuk layout dan rendering grid
+  const [layoutKey, setLayoutKey] = useState(0); // Key untuk memaksa re-render grid layout
+  
+  // ===== FILTER & TIME RANGE STATE =====
+  // State untuk filtering dan range waktu data
+  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Range waktu default 1 jam
+  const [currentDataCount, setCurrentDataCount] = useState("10"); // Jumlah data default 10
+  const [filterType, setFilterType] = useState("count"); // Tipe filter default berdasarkan jumlah
 
-  // Dashboard provider
+  // ===== DASHBOARD PROVIDER & HOOKS =====
+  // Dashboard provider untuk state management global
   const {
-    tabItems,
-    tabLayouts,
-    activeTab,
-    updateTabItems,
-    updateTabLayouts,
-    updateActiveTab,
-    setAllTabItems,
-    setAllTabLayouts,
-    clearDashboardData,
+    tabItems, // Items widget untuk setiap tab dashboard
+    tabLayouts, // Layout grid untuk setiap tab dashboard
+    activeTab, // ID dashboard yang sedang aktif
+    updateTabItems, // Fungsi update items untuk tab tertentu
+    updateTabLayouts, // Fungsi update layout untuk tab tertentu
+    updateActiveTab, // Fungsi update tab aktif
+    setAllTabItems, // Fungsi set semua tab items sekaligus
+    setAllTabLayouts, // Fungsi set semua tab layouts sekaligus
+    clearDashboardData, // Fungsi clear semua data dashboard
   } = useDashboard();
 
-  // Hooks
-  const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint();
-  const { user } = useUser();
-  const isAuthenticated = user && user.id;
+  // ===== RESPONSIVE & USER HOOKS =====
+  // Custom hooks untuk responsive design dan user management
+  const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint(); // Responsive breakpoints
+  const { user } = useUser(); // Data user yang sedang login
+  const isAuthenticated = user && user.id; // Status autentikasi user
 
-  // Debug logging
+  // ===== DEBUG LOGGING (DEVELOPMENT) =====
+  // Debug logging untuk troubleshooting (dinonaktifkan untuk production)
   // useEffect(() => {
   //   console.log('Dashboard Logic State:', {
   //     isAuthenticated,
@@ -71,88 +96,99 @@ export function useDashboardLogic() {
   //   });
   // }, [isAuthenticated, user, dashboards.length, activeTab, widgetCount, isLoadingWidget, tabItems, tabLayouts]);
 
-  // Monitor edit value changes for dashboard name
+  // ===== MONITORING EDIT VALUE CHANGES =====
+  // Effect untuk monitor perubahan nilai edit dashboard name
   useEffect(() => {
     const currentDescription = getDashboardDescription(activeTab, dashboards);
+    // Set flag unsaved changes jika ada perubahan pada nama dashboard
     if (isEditing && editDashboardValue.trim() && editDashboardValue !== currentDescription) {
       setHasUnsavedChanges(true);
     }
   }, [editDashboardValue, activeTab, dashboards, isEditing]);
 
-  // Fetch functions
+  // ===== FETCH FUNCTIONS - DATA RETRIEVAL =====
+  
+  // Fungsi untuk mengambil data semua dashboard dari backend
   const fetchDashboards = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/dashboard", { method: "GET" });
-      if (!res.ok) return;
+      if (!res.ok) return; // Exit jika response tidak ok
       const data = await res.json();
-      setDashboards(data.result || []);
+      setDashboards(data.result || []); // Set data dashboard atau array kosong
     } catch (error) {
       console.error('Error fetching dashboards:', error);
     }
   }, []);
 
+  // Fungsi untuk mengambil jumlah widget pada dashboard tertentu
   const fetchWidgetCount = useCallback(async (dashboardId) => {
-    setIsLoadingWidget(true);
+    setIsLoadingWidget(true); // Set loading state
     try {
       const res = await fetchFromBackend(`/widget/dashboard/${dashboardId}`, { method: "GET" });
-      if (!res.ok) return setWidgetCount(0);
+      if (!res.ok) return setWidgetCount(0); // Set 0 jika tidak ok
       const data = await res.json();
+      // Set jumlah widget berdasarkan panjang array result
       setWidgetCount(Array.isArray(data.result) ? data.result.length : 0);
     } catch (error) {
-      setWidgetCount(0);
+      setWidgetCount(0); // Set 0 jika terjadi error
     } finally {
-      setIsLoadingWidget(false);
+      setIsLoadingWidget(false); // Reset loading state
     }
   }, []);
 
+  // Fungsi untuk mengambil semua widget pada dashboard tertentu
   const fetchWidgetsByDashboard = useCallback(async (dashboardId) => {
     try {
       const res = await fetchFromBackend(`/widget/dashboard/${dashboardId}`, { method: "GET" });
-      if (!res.ok) return [];
+      if (!res.ok) return []; // Return array kosong jika tidak ok
       const data = await res.json();
-      return data.result || [];
+      return data.result || []; // Return array widget atau array kosong
     } catch (error) {
-      return [];
+      return []; // Return array kosong jika error
     }
   }, []);
 
+  // Fungsi untuk mengambil data semua device IoT
   const fetchDevices = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/device", { method: "GET" });
-      if (!res.ok) return;
+      if (!res.ok) return; // Exit jika response tidak ok
       const data = await res.json();
-      setDevices(data.result || []);
+      setDevices(data.result || []); // Set data device atau array kosong
     } catch (error) {
       console.error('Error fetching devices:', error);
     }
   }, []);
 
+  // Fungsi untuk mengambil data semua datastream
   const fetchDatastreams = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/datastream", { method: "GET" });
-      if (!res.ok) return;
+      if (!res.ok) return; // Exit jika response tidak ok
       const data = await res.json();
-      setDatastreams(data.result || []);
+      setDatastreams(data.result || []); // Set data datastream atau array kosong
     } catch (error) {
       console.error('Error fetching datastreams:', error);
     }
   }, []);
 
-  // Clear dashboard data when user logs out
+  // ===== USEEFFECT HOOKS - LIFECYCLE MANAGEMENT =====
+  
+  // Effect untuk clear dashboard data ketika user logout
   useEffect(() => {
     if (!isAuthenticated) {
-      clearDashboardData();
-      setDashboards([]);
-      setWidgets({});
+      clearDashboardData(); // Clear semua data dashboard dari provider
+      setDashboards([]); // Reset state dashboard
+      setWidgets({}); // Reset state widgets
     }
   }, [isAuthenticated, clearDashboardData]);
 
-  // Fetch data when user is authenticated
+  // Effect untuk fetch data ketika user sudah terauthentikasi
   useEffect(() => {
     if (isAuthenticated) {
-      fetchDashboards();
-      fetchDevices();
-      fetchDatastreams();
+      fetchDashboards(); // Ambil data dashboard
+      fetchDevices(); // Ambil data device
+      fetchDatastreams(); // Ambil data datastream
     }
   }, [isAuthenticated, fetchDashboards, fetchDevices, fetchDatastreams]);
 
@@ -306,40 +342,49 @@ export function useDashboardLogic() {
         updateActiveTab(dashboards[0].id);
       }
     } else {
-      clearDashboardData();
+      clearDashboardData(); // Clear semua data dashboard
     }
   }, [dashboards, widgets, activeTab, setAllTabItems, setAllTabLayouts, updateActiveTab]);
 
-  // CRUD Operations
+  // ===== CRUD OPERATIONS - DASHBOARD MANAGEMENT =====
+  
+  // Fungsi untuk menambah dashboard baru
   const handleAddDashboard = async (description, widget_count = 0) => {
+    // Validasi input - nama dashboard tidak boleh kosong
     if (!description.trim()) {
       errorToast("Nama dashboard tidak boleh kosong");
-      return null;
+      return null; // Return null jika validasi gagal
     }
+    
     try {
+      // Kirim request POST ke backend untuk create dashboard
       const res = await fetchFromBackend("/dashboard", {
         method: "POST",
-        body: JSON.stringify({ description, widget_count }),
+        body: JSON.stringify({ 
+          description, // Nama dashboard
+          widget_count // Jumlah widget (default 0 untuk dashboard baru)
+        }),
       });
+      
       if (!res.ok) throw new Error("Gagal membuat dashboard");
-      const { id } = await res.json();
+      const { id } = await res.json(); // Ambil ID dashboard yang baru dibuat
       
-      successToast("Dashboard berhasil dibuat");
-      markDashboardCreated(); // Trigger onboarding task
+      successToast("Dashboard berhasil dibuat"); // Notifikasi sukses
+      markDashboardCreated(); // Trigger onboarding task untuk user baru
       
-      await fetchDashboards();
+      await fetchDashboards(); // Refresh data dashboard
       
-      // Set as active tab after creation
+      // Set dashboard baru sebagai active tab setelah dibuat
       setTimeout(() => {
-        updateActiveTab(id);
-        fetchWidgetCount(id);
-      }, 100);
+        updateActiveTab(id); // Switch ke dashboard baru
+        fetchWidgetCount(id); // Load widget count untuk dashboard baru
+      }, 100); // Delay untuk memastikan data sudah ter-update
       
-      return id;
+      return id; // Return ID dashboard untuk keperluan lain
     } catch (error) {
       console.error('Error adding dashboard:', error);
-      errorToast("Gagal membuat dashboard");
-      throw error;
+      errorToast("Gagal membuat dashboard"); // Notifikasi error
+      throw error; // Re-throw error untuk handling di level atas
     }
   };
 

@@ -1,5 +1,19 @@
+/**
+ * ===== USER SERVICE =====
+ * Service untuk mengelola user accounts dan user-related operations
+ * Menyediakan CRUD operations untuk user management
+ * 
+ * Fitur utama:
+ * - User CRUD operations (create, read, update, delete)
+ * - Admin user management dengan role permissions
+ * - WhatsApp notification preferences
+ * - Onboarding progress tracking system
+ * - Cascade delete untuk user data cleanup
+ * - User profile management
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
+// Type definition untuk User object
 type User = {
   id: string;
   name: string;
@@ -7,10 +21,10 @@ type User = {
   created_at: Date | string;
   last_login: Date | string | null;
   phone: string | null;
-  whatsapp_notif: boolean;
-  onboarding_completed: boolean;
-  onboarding_progress: any;
-  is_admin?: boolean;
+  whatsapp_notif: boolean;           // Preferensi notifikasi WhatsApp
+  onboarding_completed: boolean;     // Status onboarding selesai
+  onboarding_progress: any;          // Progress onboarding (JSON)
+  is_admin?: boolean;                // Role admin (opsional)
 };
 
 export class UserService {
@@ -20,6 +34,8 @@ export class UserService {
     this.db = db;
   }
 
+  // ===== GET ALL USERS =====
+  // Mengambil semua user untuk admin dashboard
   async getAllUsers() {
     try {
       const [rows] = await this.db.query(
@@ -32,6 +48,8 @@ export class UserService {
     }
   }
 
+  // ===== GET USER BY ID =====
+  // Mengambil user spesifik berdasarkan ID dengan data formatting
   async getUserById(id: string) {
     try {
       const [rows] = await this.db.query(
@@ -40,19 +58,19 @@ export class UserService {
       );
       const user = Array.isArray(rows) ? (rows[0] as User) : null;
       if (user) {
-        // Convert date fields to ISO string if they are Date objects
+        // Convert date fields ke ISO string jika berupa Date objects
         if (user.created_at instanceof Date) {
           user.created_at = user.created_at.toISOString();
         }
         if (user.last_login instanceof Date) {
           user.last_login = user.last_login.toISOString();
         }
-        // Convert tinyint to boolean
+        // Convert tinyint ke boolean untuk frontend
         user.whatsapp_notif = Boolean(user.whatsapp_notif);
         user.onboarding_completed = Boolean(user.onboarding_completed);
         user.is_admin = Boolean(user.is_admin);
         
-        // Parse JSON onboarding_progress
+        // Parse JSON onboarding_progress untuk frontend
         if (user.onboarding_progress && typeof user.onboarding_progress === 'string') {
           try {
             user.onboarding_progress = JSON.parse(user.onboarding_progress);

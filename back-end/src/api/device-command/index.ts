@@ -1,3 +1,9 @@
+/**
+ * ===== DEVICE COMMAND API ROUTES - ENDPOINT KONTROL COMMAND DEVICE IoT =====
+ * File ini mengatur pengiriman command ke device IoT melalui datastream
+ * Meliputi: send command, command history, pending commands, status update, statistics
+ */
+
 import { Elysia, t } from "elysia";
 import mysql, { Pool } from "mysql2/promise";
 import { DeviceCommandService } from "../../services/DeviceCommandService";
@@ -15,7 +21,8 @@ import {
 export const deviceCommandRoutes = (db: Pool) =>
   new Elysia({ prefix: "/device-command" })
     
-    // Send command to device via datastream
+    // ===== SEND COMMAND TO DEVICE ENDPOINT =====
+    // POST /device-command/send - Kirim command ke device IoT via datastream
     .post(
       "/send",
       async ({ body, headers }: any) => {
@@ -24,13 +31,14 @@ export const deviceCommandRoutes = (db: Pool) =>
         if (!user) {
           return {
             success: false,
-            message: "Unauthorized"
+            message: "Unauthorized - Authentication required"
           };
         }
 
         const commandService = new DeviceCommandService(db);
         
         try {
+          // Buat command baru dengan validasi user ownership
           const commandId = await commandService.createCommand(
             body.device_id,
             body.datastream_id,
@@ -41,14 +49,14 @@ export const deviceCommandRoutes = (db: Pool) =>
 
           return {
             success: true,
-            message: "Command created successfully",
+            message: "Command berhasil dibuat dan dikirim ke device",
             data: { command_id: commandId }
           };
         } catch (error: any) {
           console.error("Error creating command:", error);
           return {
             success: false,
-            message: "Failed to create command",
+            message: "Gagal mengirim command ke device",
             error: error.message
           };
         }
@@ -67,7 +75,8 @@ export const deviceCommandRoutes = (db: Pool) =>
       }
     )
 
-    // Get command history for a device
+    // ===== GET COMMAND HISTORY ENDPOINT =====
+    // GET /device-command/history/:device_id - Ambil riwayat command device
     .get(
       "/history/:device_id",
       async ({ params, query, headers }: any) => {
@@ -85,6 +94,7 @@ export const deviceCommandRoutes = (db: Pool) =>
           const limit = parseInt(query.limit || "50");
           const offset = parseInt(query.offset || "0");
           
+          // Ambil riwayat command dengan pagination
           const commands = await commandService.getCommandHistory(
             parseInt(params.device_id),
             limit,
@@ -99,7 +109,7 @@ export const deviceCommandRoutes = (db: Pool) =>
           console.error("Error getting command history:", error);
           return {
             success: false,
-            message: "Failed to get command history",
+            message: "Gagal mengambil riwayat command",
             error: error.message
           };
         }
@@ -115,7 +125,8 @@ export const deviceCommandRoutes = (db: Pool) =>
       }
     )
 
-    // Get pending commands for a device
+    // ===== GET PENDING COMMANDS ENDPOINT =====
+    // GET /device-command/pending/:device_id - Ambil command yang belum dieksekusi
     .get(
       "/pending/:device_id",
       async ({ params, headers }: any) => {
@@ -130,6 +141,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         const commandService = new DeviceCommandService(db);
         
         try {
+          // Ambil semua command yang statusnya pending
           const commands = await commandService.getPendingCommands(
             parseInt(params.device_id)
           );
@@ -142,7 +154,7 @@ export const deviceCommandRoutes = (db: Pool) =>
           console.error("Error getting pending commands:", error);
           return {
             success: false,
-            message: "Failed to get pending commands",
+            message: "Gagal mengambil pending commands",
             error: error.message
           };
         }
@@ -154,7 +166,8 @@ export const deviceCommandRoutes = (db: Pool) =>
       }
     )
 
-    // Update command status (usually called by device or WebSocket handler)
+    // ===== UPDATE COMMAND STATUS ENDPOINT =====
+    // PATCH /device-command/status/:command_id - Update status command (biasanya dari device)
     .patch(
       "/status/:command_id",
       async ({ params, body, headers }: any) => {
@@ -171,6 +184,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         try {
           const acknowledgedAt = body.status === "acknowledged" ? new Date() : undefined;
           
+          // Update status command dengan timestamp jika acknowledged
           const updated = await commandService.updateCommandStatus(
             parseInt(params.command_id),
             body.status,
@@ -180,19 +194,19 @@ export const deviceCommandRoutes = (db: Pool) =>
           if (updated) {
             return {
               success: true,
-              message: "Command status updated successfully"
+              message: "Status command berhasil diupdate"
             };
           } else {
             return {
               success: false,
-              message: "Command not found or already updated"
+              message: "Command tidak ditemukan atau sudah diupdate"
             };
           }
         } catch (error: any) {
           console.error("Error updating command status:", error);
           return {
             success: false,
-            message: "Failed to update command status",
+            message: "Gagal update status command",
             error: error.message
           };
         }
@@ -212,7 +226,8 @@ export const deviceCommandRoutes = (db: Pool) =>
       }
     )
 
-    // Get command statistics for a device
+    // ===== GET COMMAND STATISTICS ENDPOINT =====
+    // GET /device-command/stats/:device_id - Ambil statistik command device
     .get(
       "/stats/:device_id",
       async ({ params, query, headers }: any) => {
@@ -229,6 +244,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         try {
           const days = parseInt(query.days || "7");
           
+          // Ambil statistik command dalam periode tertentu
           const stats = await commandService.getCommandStats(
             parseInt(params.device_id),
             days
@@ -242,7 +258,7 @@ export const deviceCommandRoutes = (db: Pool) =>
           console.error("Error getting command stats:", error);
           return {
             success: false,
-            message: "Failed to get command statistics",
+            message: "Gagal mengambil statistik command",
             error: error.message
           };
         }
@@ -257,7 +273,8 @@ export const deviceCommandRoutes = (db: Pool) =>
       }
     )
 
-    // Cleanup old pending commands (maintenance endpoint)
+    // ===== CLEANUP OLD COMMANDS ENDPOINT =====
+    // POST /device-command/cleanup - Bersihkan command lama (maintenance endpoint)
     .post(
       "/cleanup",
       async ({ body, headers }: any) => {
@@ -274,18 +291,19 @@ export const deviceCommandRoutes = (db: Pool) =>
         try {
           const olderThanMinutes = body.older_than_minutes || 5;
           
+          // Tandai command lama sebagai failed untuk maintenance
           const affected = await commandService.markOldCommandsAsFailed(olderThanMinutes);
 
           return {
             success: true,
-            message: `Marked ${affected} old commands as failed`,
+            message: `Berhasil menandai ${affected} command lama sebagai failed`,
             data: { affected_commands: affected }
           };
         } catch (error: any) {
           console.error("Error cleaning up commands:", error);
           return {
             success: false,
-            message: "Failed to cleanup commands",
+            message: "Gagal membersihkan command lama",
             error: error.message
           };
         }

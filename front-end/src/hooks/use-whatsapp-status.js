@@ -1,14 +1,17 @@
+// Hook dan Provider untuk WhatsApp notification status management
+// Handles: status fetching, enable/disable notifications, context sharing
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { fetchFromBackend } from '@/lib/helper';
 
-// Create context for WhatsApp status
+// Context untuk share WhatsApp status across components
 const WhatsAppStatusContext = createContext();
 
-// Provider component
+// Provider component untuk WhatsApp notification status
 export function WhatsAppStatusProvider({ children }) {
-  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false); // Status notifikasi WA
   const [loading, setLoading] = useState(true);
 
+  // Fetch current WhatsApp notification status dari backend
   const fetchWhatsAppStatus = useCallback(async () => {
     try {
       setLoading(true);
@@ -24,6 +27,7 @@ export function WhatsAppStatusProvider({ children }) {
     }
   }, []);
 
+  // Update WhatsApp status (biasanya dipanggil setelah API call berhasil)
   const updateWhatsAppStatus = useCallback((newStatus) => {
     setWhatsappEnabled(newStatus);
   }, []);

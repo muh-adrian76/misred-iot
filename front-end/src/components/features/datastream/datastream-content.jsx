@@ -1,49 +1,66 @@
+// Import komponen DataTable untuk menampilkan data datastream
 import DataTable from "@/components/custom/tables/data-table";
+// Import ikon-ikon dari Lucide React
 import { Edit, Trash2, Plus } from "lucide-react";
+// Import komponen Button
 import { Button } from "@/components/ui/button";
+// Import Framer Motion untuk animasi
 import { AnimatePresence } from "framer-motion";
+// Import tooltip untuk deskripsi
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
+// Import efek glow untuk UI
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 
+// Komponen konten utama untuk halaman datastream management
 export default function DatastreamContent({
-  datastreams,
-  loading,
-  setAddFormOpen,
-  setEditDatastream,
-  setEditFormOpen,
-  setDatastreamToDelete,
-  setDeleteFormOpen,
-  isMobile,
-  selectedRows,
-  setSelectedRows,
-  devices,
-  unitOptions,
+  datastreams, // Data array datastream
+  loading, // Status loading
+  setAddFormOpen, // Setter untuk dialog tambah datastream
+  setEditDatastream, // Setter untuk datastream yang akan diedit
+  setEditFormOpen, // Setter untuk dialog edit datastream
+  setDatastreamToDelete, // Setter untuk datastream yang akan dihapus
+  setDeleteFormOpen, // Setter untuk dialog hapus datastream
+  isMobile, // Status apakah dalam mode mobile
+  selectedRows, // Baris yang dipilih
+  setSelectedRows, // Setter untuk baris yang dipilih
+  devices, // Data devices untuk referensi
+  unitOptions, // Opsi unit yang tersedia
 }) {
+  // Definisi kolom-kolom untuk tabel datastream
   const columns = [
+    // Kolom nama/deskripsi datastream
     { key: "description", label: "Nama", sortable: true },
     {
+      // Kolom device yang terkait
       key: "device_id",
       label: "Device",
       sortable: true,
       render: (row) => {
+        // Cari device berdasarkan device_id
         const dev = devices?.find((d) => d.id === row.device_id);
         return (
+          // Tooltip menampilkan UID device
           <DescriptionTooltip content={"UID: " + dev?.id || ""}>
             <span className="underline underline-offset-2 cursor-help">
+              {/* Tampilkan deskripsi device */}
               {dev?.description}
             </span>
           </DescriptionTooltip>
         );
       },
     },
+    // Kolom virtual pin
     { key: "pin", label: "Virtual Pin", sortable: true },
     {
+      // Kolom tipe data
       key: "type",
       label: "Tipe Data",
-      filterable: true,
+      filterable: true, // Dapat difilter
       render: (row) => {
+        // Kapitalisasi huruf pertama tipe data
         const typeLabel = row.type.charAt(0).toUpperCase() + row.type.slice(1);
+        // Jika tipe double, tampilkan format desimal dalam tooltip
         if (row.type === "double") {
           return (
             <DescriptionTooltip

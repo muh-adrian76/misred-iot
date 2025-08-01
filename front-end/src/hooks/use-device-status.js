@@ -1,21 +1,22 @@
-// useDeviceStatus.js - Custom hook untuk real-time device status
+// Hook untuk real-time device status tracking - gabungan database + WebSocket data
+// Provides: online/offline status, last seen time, activity level monitoring
 import { useState, useEffect, useCallback } from 'react';
 import { useWebSocket } from '@/providers/websocket-provider';
 
 export function useDeviceStatus(devices) {
-  const [deviceStatuses, setDeviceStatuses] = useState({});
+  const [deviceStatuses, setDeviceStatuses] = useState({}); // Map device status by ID
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const { deviceStatuses: wsDeviceStatuses, isConnected } = useWebSocket();
 
-  // Update status berdasarkan data devices dan WebSocket
+  // Effect untuk merge device data dari database dengan real-time WebSocket updates
   useEffect(() => {
     if (devices && Array.isArray(devices)) {
       const statusMap = {};
       devices.forEach(device => {
-        // Gabungkan data dari database dengan real-time status dari WebSocket
+        // Combine database data dengan WebSocket real-time status
         const wsStatus = wsDeviceStatuses.get(device.id);
         statusMap[device.id] = {
-          status: wsStatus?.status || device.status || 'offline',
+          status: wsStatus?.status || device.status || 'offline', // Real-time priority
           lastSeenAt: wsStatus?.timestamp || device.last_seen_at,
           activityLevel: device.activity_level || 'unknown',
           secondsSinceLastSeen: device.seconds_since_last_seen || null
@@ -26,7 +27,7 @@ export function useDeviceStatus(devices) {
     }
   }, [devices, wsDeviceStatuses]);
 
-  // Listen for WebSocket status updates
+  // Listen for WebSocket real-time status updates
   useEffect(() => {
     if (wsDeviceStatuses && wsDeviceStatuses.size > 0) {
       setDeviceStatuses(prev => {

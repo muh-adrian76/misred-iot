@@ -1,14 +1,15 @@
-// Fungsi untuk mendeteksi apakah ini auth error berdasarkan response
+// Utility function untuk mendeteksi authentication errors berdasarkan response
+// Digunakan untuk auto-redirect ke halaman 401 saat token expired/invalid
 const isAuthError = (response, errorData, errorText, endpoint) => {
-  // Skip auto-redirect untuk login endpoint - biarkan form handle error sendiri
+  // Skip auto-redirect untuk endpoint auth - biarkan form handle sendiri
   if (endpoint && (endpoint.includes('/auth'))) {
     return false;
   }
   
-  // 1. Status 401 untuk endpoint selain login/register adalah auth error (token expired, etc)
+  // 1. Status 401 selalu auth error (token expired/invalid)
   if (response.status === 401) return true;
   
-  // 2. Status 500 dengan message pattern dari authorizeRequest atau auth-related errors
+  // 2. Status 500 dengan message pattern auth-related
   if (response.status === 500) {
     // Check JSON error message
     if (errorData?.message) {
@@ -22,7 +23,7 @@ const isAuthError = (response, errorData, errorText, endpoint) => {
              message.includes('token') && (message.includes('expired') || message.includes('kadaluwarsa'));
     }
     
-    // Check text response
+    // Check text response untuk pattern yang sama
     if (errorText) {
       const text = errorText.toLowerCase();
       return text.includes('unauthorized') ||
@@ -38,13 +39,13 @@ const isAuthError = (response, errorData, errorText, endpoint) => {
   return false;
 };
 
-// Fungsi untuk handle auth error redirect
+// Fungsi untuk handle authentication error dengan cleanup dan redirect
 const handleAuthError = (response, errorDetails) => {
   console.error("❌ Authentication error detected - redirecting to 401 page");
   console.error("Response status:", response.status);
   console.error("Error details:", errorDetails);
   
-  // Clear auth state
+  // Clear auth state dari localStorage
   if (typeof window !== 'undefined') {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
@@ -54,7 +55,8 @@ const handleAuthError = (response, errorDetails) => {
   }
 };
 
-// Fungsi fetch ke API Backend dengan error handling untuk auth
+// Fungsi utama untuk fetch data dari backend API dengan error handling otomatis
+// Includes: credentials, auto auth error detection, dan redirect handling
 export async function fetchFromBackend(endpoint, options = {}) {
   const server = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -65,36 +67,35 @@ export async function fetchFromBackend(endpoint, options = {}) {
         "Content-Type": "application/json",
         ...(options.headers || {}),
       },
-      credentials: "include", // penting untuk cookie
+      credentials: "include", // penting untuk HttpOnly cookies
     });
 
-    // Handle authentication errors - tapi skip untuk login/register endpoints
+    // Handle direct 401 responses (token expired/invalid)
     if (response.status === 401) {
       if (isAuthError(response, null, null, endpoint)) {
         handleAuthError(response, "Direct 401 response");
-        return response; // Return response untuk compatibility
+        return response; // Return untuk compatibility
       }
     }
 
-    // Handle server errors yang mungkin terkait auth (refresh token expired)
+    // Handle 500 errors yang mungkin auth-related (refresh token issues)
     if (response.status === 500) {
       try {
         const errorData = await response.clone().json();
         
-        // Use isAuthError function to detect auth-related errors
+        // Detect auth-related 500 errors
         if (isAuthError(response, errorData, null, endpoint)) {
           handleAuthError(response, errorData);
-          return response; // Return response untuk compatibility
+          return response;
         }
       } catch (parseError) {
-        // Jika tidak bisa parse response, cek text response
+        // Fallback: cek text response jika JSON parse gagal
         try {
           const errorText = await response.clone().text();
           
-          // Use isAuthError function for text response
           if (isAuthError(response, null, errorText, endpoint)) {
             handleAuthError(response, errorText);
-            return response; // Return response untuk compatibility
+            return response;
           }
         } catch (textError) {
           // Ignore parsing errors for non-auth 500 errors
@@ -158,9 +159,9 @@ export function convertUTCToLocalTime(utcTimestamp) {
     return null;
   }
   
-  // Konversi UTC ke timezone yang dikonfigurasi
-  const localTime = new Date(utcTime.getTime() + timezoneConfig.offsetMs);
-  return localTime;
+  // Tambahkan offset timezone sesuai konfigurasi (misal GMT+7)
+  const localDate = new Date(utcTime.getTime() + (timezoneConfig.offset * 60 * 60 * 1000));
+  return localDate;
 }
 
 // Fungsi untuk konversi tanggal ke zona waktu yang dikonfigurasi

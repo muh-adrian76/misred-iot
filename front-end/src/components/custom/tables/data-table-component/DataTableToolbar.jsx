@@ -1,3 +1,4 @@
+// Import komponen UI dan utilities yang diperlukan
 import { Input } from "@/components/ui/input";
 import { Link } from "next-view-transitions";
 import {
@@ -14,52 +15,59 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+
+// Import icons untuk berbagai fungsi toolbar
 import {
-  Plus,
-  Globe,
-  MessageCircle,
-  Search,
-  CloudCog,
-  HelpCircle,
-  WifiCog,
-  ChartBar,
+  Plus, // Icon untuk tambah data
+  Globe, // Icon untuk global/public access
+  MessageCircle, // Icon untuk WhatsApp/pesan
+  Search, // Icon untuk pencarian
+  CloudCog, // Icon untuk cloud configuration
+  HelpCircle, // Icon untuk bantuan
+  WifiCog, // Icon untuk WiFi/network settings
+  ChartBar, // Icon untuk analytics/reporting
 } from "lucide-react";
+
+// Import komponen dan hooks custom
 import DescriptionTooltip from "../../other/description-tooltip";
 import { useWhatsAppStatusStandalone } from "@/hooks/use-whatsapp-status";
 import { useAuth } from "@/hooks/use-auth";
 
+// Komponen DataTableToolbar untuk header table dengan search, add, dan berbagai aksi
 export default function DataTableToolbar({
-  search,
-  setSearch,
-  searchPlaceholder,
-  onAdd,
-  onUploadFirmware,
-  isMobile,
-  content,
-  showUploadFirmware = false,
-  showNotificationInfo = false,
-  limit = 10,
-  setLimit,
+  search, // Value untuk search input
+  setSearch, // Setter untuk mengubah search value
+  searchPlaceholder, // Placeholder text untuk search input
+  onAdd, // Handler untuk menambah data baru
+  onUploadFirmware, // Handler untuk upload firmware (IoT specific)
+  isMobile, // Flag untuk responsive behavior
+  content, // Context/label untuk content yang sedang ditampilkan
+  showUploadFirmware = false, // Flag untuk menampilkan tombol upload firmware
+  showNotificationInfo = false, // Flag untuk menampilkan info notifikasi WhatsApp
+  limit = 10, // Jumlah item per halaman
+  setLimit, // Setter untuk mengubah limit pagination
 }) {
+  // State untuk kontrol popover dan UI interactions
   const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth(); // Hook untuk status authentication
 
-  // Use the custom hook for WhatsApp status
+  // Hook custom untuk status WhatsApp service (untuk notifikasi IoT)
   const { whatsappEnabled, loading, refreshWhatsAppStatus } =
     useWhatsAppStatusStandalone();
 
-  // Listen for custom events to refresh WhatsApp status
+  // Event listener untuk update status WhatsApp secara real-time
   useEffect(() => {
     const handleWhatsAppStatusUpdate = () => {
-      refreshWhatsAppStatus();
+      refreshWhatsAppStatus(); // Refresh status saat ada update
     };
 
-    // Listen for custom event
+    // Listen untuk custom event dari aplikasi
     window.addEventListener(
       "whatsapp-status-updated",
       handleWhatsAppStatusUpdate
     );
 
+    // Cleanup event listener saat component unmount
     return () => {
       window.removeEventListener(
         "whatsapp-status-updated",
@@ -68,7 +76,7 @@ export default function DataTableToolbar({
     };
   }, [refreshWhatsAppStatus]);
 
-  // Refresh when component becomes visible and authenticated
+  // Auto refresh WhatsApp status saat component menjadi visible dan user authenticated
   useEffect(() => {
     if (isAuthenticated && showNotificationInfo) {
       refreshWhatsAppStatus();
@@ -77,12 +85,14 @@ export default function DataTableToolbar({
 
   return (
     <div className="w-full rounded-2xl pb-3 gap-3">
-      {/* Mobile Layout: Buttons on top */}
+      {/* Layout Mobile: Tombol-tombol di bagian atas */}
       <div className="lg:hidden flex flex-col gap-3 mb-3">
-        {/* Action buttons row for mobile */}
+        {/* Baris tombol aksi untuk tampilan mobile */}
         <div className="flex gap-2 w-full">
+          {/* Tombol upload firmware dan panduan untuk mobile */}
           {showUploadFirmware && onUploadFirmware && (
             <>
+              {/* Link ke dokumentasi GitHub untuk konfigurasi hardware */}
               <Link
                 target="_blank"
                 href="https://github.com/ArthZ01/misred-iot-arduino-examples"

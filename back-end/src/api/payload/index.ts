@@ -1,3 +1,9 @@
+/**
+ * ===== PAYLOAD API ROUTES - ENDPOINT DATA SENSOR IoT =====
+ * File ini mengatur penerimaan dan pembacaan data sensor dari device IoT
+ * Meliputi: HTTP payload, LoRa payload, widget data, time series data
+ */
+
 import { Elysia } from "elysia";
 import { PayloadService } from "../../services/PayloadService";
 import {
@@ -13,7 +19,8 @@ export function payloadRoutes(payloadService: PayloadService) {
   return (
     new Elysia({ prefix: "/payload" })
 
-      // CREATE Data Sensor HTTP
+      // ===== CREATE HTTP PAYLOAD ENDPOINT =====
+      // POST /payload/http - Terima data sensor dari device via HTTP
       .post(
         "/http",
         //@ts-ignore
@@ -39,7 +46,7 @@ export function payloadRoutes(payloadService: PayloadService) {
               };
             }
 
-            // Extract device_id from header or JWT payload
+            // Extract device_id dari header atau JWT payload
             if (!deviceId) {
               const extractedDeviceId = extractDeviceIdFromJWT(token);
               if (!extractedDeviceId) {
@@ -52,11 +59,13 @@ export function payloadRoutes(payloadService: PayloadService) {
               deviceId = extractedDeviceId;
             }
 
+            // Verify JWT device dan decrypt payload data
             const decrypted = await payloadService.verifyDeviceJWTAndDecrypt({
               deviceId,
               token,
             });
 
+            // Simpan payload data ke database
             const insertId = await payloadService.saveHttpPayload({
               deviceId,
               decrypted,
@@ -70,7 +79,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.error("Error processing HTTP payload:", error);
             set.status = 500;
             return {
-              error: "Failed to process payload",
+              error: "Gagal memproses payload",
               message: error.message || "Internal server error",
             };
           }
@@ -78,7 +87,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         postPayloadHttpSchema
       )
 
-      // CREATE Data Sensor LoRaWAN
+      // ===== CREATE LORA PAYLOAD ENDPOINT =====
+      // POST /payload/lora - Terima data sensor dari device LoRaWAN
       .post(
         "/lora",
         async ({ body, set }) => {
@@ -89,11 +99,12 @@ export function payloadRoutes(payloadService: PayloadService) {
             if (!dev_eui || !datastream_id || value === undefined) {
               set.status = 400;
               return {
-                error: "Missing required parameters",
-                message: "dev_eui, datastream_id, and value are required",
+                error: "Parameter tidak lengkap",
+                message: "dev_eui, datastream_id, dan value diperlukan",
               };
             }
 
+            // Simpan payload LoRa ke database
             const insertId = await payloadService.saveLoraPayload(
               dev_eui,
               datastream_id,
@@ -108,7 +119,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.error("Error processing LoRa payload:", e);
             set.status = e.message === "Device not found" ? 404 : 500;
             return {
-              error: "Failed to process LoRa payload",
+              error: "Gagal memproses payload LoRa",
               message: e.message || "Internal server error",
             };
           }
@@ -116,7 +127,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         postPayloadLoraSchema
       )
 
-      // READ Payload by Device ID
+      // ===== GET PAYLOAD BY DEVICE ID ENDPOINT =====
+      // GET /payload/:device_id - Ambil payload berdasarkan device ID
       .get(
         "/:device_id",
         //@ts-ignore
@@ -131,7 +143,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.error("Error fetching payloads by device ID:", error);
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch payloads",
+                error: "Gagal mengambil payload",
                 message: error.message || "Internal server error",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
@@ -141,7 +153,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         getPayloadByDeviceIdSchema
       )
 
-      // READ Payload by Device ID & Datastream ID
+      // ===== GET PAYLOAD BY DEVICE & DATASTREAM ENDPOINT =====
+      // GET /payload/:device_id/:datastream_id - Ambil payload berdasarkan device dan datastream
       .get(
         "/:device_id/:datastream_id",
         //@ts-ignore
@@ -162,7 +175,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             );
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch payloads",
+                error: "Gagal mengambil payload",
                 message: error.message || "Internal server error",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
@@ -172,7 +185,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         getPayloadByDeviceAndDatastreamSchema
       )
 
-      // GET Widget Data (menggunakan view widget_data)
+      // ===== GET WIDGET DATA ENDPOINT =====
+      // GET /payload/widget/:widget_id - Ambil data untuk widget dashboard
       .get(
         "/widget/:widget_id",
         //@ts-ignore
@@ -187,7 +201,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.error("Error fetching widget data:", error);
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch widget data",
+                error: "Gagal mengambil data widget",
                 message: error.message || "Internal server error",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
@@ -196,7 +210,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         }
       )
 
-      // GET Time Series Data untuk Chart
+      // ===== GET TIME SERIES DATA ENDPOINT =====
+      // GET /payload/timeseries/:device_id/:datastream_id - Ambil time series data untuk chart
       .get(
         "/timeseries/:device_id/:datastream_id",
         //@ts-ignore
@@ -205,12 +220,15 @@ export function payloadRoutes(payloadService: PayloadService) {
             // await authorizeRequest(jwt, cookie);
             const timeRange = query.range || "1h"; // Default 1 jam
             const count = query.count; // Parameter count untuk filter berdasarkan jumlah data
+            
+            // Ambil time series data dengan filter range atau count
             const data = await payloadService.getTimeSeriesData(
               params.device_id,
               params.datastream_id,
               timeRange,
               count
             );
+            
             return new Response(
               JSON.stringify({
                 result: data,
@@ -227,7 +245,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.error("Error fetching time series data:", error);
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch time series data",
+                error: "Gagal mengambil time series data",
                 message: error.message || "Internal server error",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }

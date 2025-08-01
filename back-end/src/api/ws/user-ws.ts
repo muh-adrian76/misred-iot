@@ -1,9 +1,15 @@
+/**
+ * ===== USER WEBSOCKET ROUTES - KOMUNIKASI REAL-TIME DENGAN USER DASHBOARD =====
+ * File ini mengatur koneksi WebSocket untuk user dashboard real-time
+ * Meliputi: user authentication, device command, broadcast data sensor, ping/pong heartbeat
+ */
+
 import { Elysia, t } from "elysia";
 import { jwt } from "@elysiajs/jwt";
 import { authorizeRequest } from "../../lib/utils";
 import { sendToDevice } from "./device-ws"; // pastikan path benar
 
-// Map untuk menyimpan user clients dengan user_id mereka
+// Map untuk menyimpan koneksi user clients dengan user_id mereka
 const userClients = new Map<string, Set<any>>(); // user_id -> Set of WebSocket connections
 const wsPingIntervals = new Map<any, NodeJS.Timeout>();
 const wsUserMapping = new Map<any, string>(); // WebSocket -> user_id
@@ -23,6 +29,7 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
       value: t.Optional(t.Any()),
       timestamp: t.Optional(t.String()),
     }),
+    // ===== WEBSOCKET CONNECTION OPEN HANDLER =====
     async open(ws) {
       try {
         
@@ -34,10 +41,10 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
           return;
         }
         
-        // Verify WebSocket token
+        // Verify WebSocket token dengan JWT
         let decoded;
         try {
-          // Debug token websocket
+          // Debug token websocket untuk development
           // console.log("- Params:", ws.data.params);
           // console.log("🔍 Token length:", wsToken.length);
           // console.log("🔍 Token first 50 chars:", wsToken.substring(0, 50) + "...");
@@ -58,14 +65,14 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
             return;
           }
           
-          // Check if token is specifically for WebSocket
+          // Check jika token khusus untuk WebSocket
           if (decoded.type !== "websocket") {
             console.log("❌ Token is not a WebSocket token, type:", decoded.type);
             ws.close(1008, "Authentication failed: Invalid token type");
             return;
           }
 
-          // Check if token is not expired
+          // Check jika token belum expired
           if (decoded.exp && typeof decoded.exp === 'number' && decoded.exp < Math.floor(Date.now() / 1000)) {
             console.log("❌ WebSocket token has expired, exp:", decoded.exp, "now:", Math.floor(Date.now() / 1000));
             ws.close(1008, "Authentication failed: Token expired");
@@ -94,10 +101,10 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
         }
         userClients.get(userId)!.add(ws);
         
-        // Mulai interval ping
+        // Mulai interval ping untuk menjaga koneksi tetap hidup
         const pingInterval = setInterval(() => {
           try {
-            ws.send({ type: "ping", timestamp: new Date().toISOString() });
+            ws.send(JSON.stringify({ type: "ping", timestamp: new Date().toISOString() })); // Serialize ping message
           } catch (err) {
             // Jika error, kemungkinan koneksi sudah tutup
             clearInterval(pingInterval);
@@ -109,7 +116,7 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
         console.error("❌ WebSocket authentication failed:", error?.message || error);
         console.error("Full error:", error);
         
-        // Provide more specific error messages
+        // Provide error message yang lebih spesifik
         if (error?.message?.includes("token")) {
           ws.close(1008, "Authentication failed: Invalid token");
         } else {
@@ -117,14 +124,16 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
         }
       }
     },
+    // ===== MESSAGE HANDLER DARI USER =====
     message(ws, data) {
-      // Handler untuk pong dari client
+      // Handler untuk pong response dari client
       if (data.type === "pong") {
         // Bisa tambahkan logika jika ingin cek latency, dsb
         return;
       }
       
-      // 1. Send device command (NEW - improved command structure)
+      // ===== SEND DEVICE COMMAND (NEW FORMAT) =====
+      // Kirim command ke device dengan struktur command yang lebih baik
       if (data.type === "device_command" && data.device_id && data.control_id) {
         const commandPayload = {
           type: "device_command",
@@ -136,29 +145,33 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
           timestamp: new Date().toISOString()
         };
         sendToDevice(data.device_id, commandPayload);
-        ws.send({ 
+        ws.send(JSON.stringify({ // Serialize command_sent response
           type: "command_sent", 
           device_id: data.device_id,
           command_id: commandPayload.command_id,
-          message: `Command sent to device ${data.device_id}`
-        });
+          message: `Command berhasil dikirim ke device ${data.device_id}`
+        }));
       }
       
-      // 2. Legacy command support (backward compatibility)
+      // ===== LEGACY COMMAND SUPPORT =====
+      // Support untuk command format lama (backward compatibility)
       if (data.type === "command" && data.device_id && data.command) {
         sendToDevice(data.device_id, {
           type: "command",
           command: data.command,
           value: data.value,
         });
-        ws.send({ type: "command_sent", device_id: data.device_id });
+        ws.send(JSON.stringify({ type: "command_sent", device_id: data.device_id })); // Serialize response
       }
       
-      // 3. Echo handler for testing
+      // ===== ECHO HANDLER =====
+      // Echo handler untuk testing koneksi WebSocket
       if (data.type === "echo") {
-        ws.send({ type: "echo", message: data.message });
+        ws.send(JSON.stringify({ type: "echo", message: data.message })); // Serialize echo response
       }
     },
+    
+    // ===== WEBSOCKET CONNECTION CLOSE HANDLER =====
     close(ws) {
       // Ambil user_id dari mapping
       const userId = wsUserMapping.get(ws);
@@ -184,7 +197,8 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
     }
   });
 
-// Broadcast data sensor HANYA ke user yang memiliki device tersebut
+// ===== BROADCAST TO USERS BY DEVICE OWNERSHIP =====
+// Broadcast data sensor HANYA ke user yang memiliki device tersebut (SECURE)
 export async function broadcastToUsersByDevice(db: any, deviceId: number, data: any) {
   try {
     // Ambil user_id pemilik device dari database
@@ -200,12 +214,13 @@ export async function broadcastToUsersByDevice(db: any, deviceId: number, data: 
     
     const ownerId = deviceRows[0].user_id.toString();
     
-    // Broadcast hanya ke user pemilik devicek
+    // Broadcast hanya ke user pemilik device (SECURE)
     const userSockets = userClients.get(ownerId);
     if (userSockets && userSockets.size > 0) {
+      const jsonData = JSON.stringify(data); // Serialize data ke JSON string
       for (const ws of userSockets) {
         try {
-          ws.send(data);
+          ws.send(jsonData); // Kirim JSON string, bukan objek JavaScript
         } catch (error) {
           console.error(`Error sending to user ${ownerId}:`, error);
         }
@@ -219,13 +234,15 @@ export async function broadcastToUsersByDevice(db: any, deviceId: number, data: 
   }
 }
 
-// Backward compatibility - fungsi lama untuk broadcast ke semua user (DEPRECATED)
+// ===== BROADCAST TO ALL USERS (DEPRECATED) =====
+// Fungsi lama untuk broadcast ke semua user - TIDAK AMAN, gunakan broadcastToUsersByDevice()
 export function broadcastToUsers(data: any) {
   console.warn("⚠️ DEPRECATED: broadcastToUsers() broadcasts to ALL users. Use broadcastToUsersByDevice() instead for security.");
+  const jsonData = JSON.stringify(data); // Serialize data ke JSON string
   for (const [userId, userSockets] of userClients) {
     for (const ws of userSockets) {
       try {
-        ws.send(data);
+        ws.send(jsonData); // Kirim JSON string, bukan objek JavaScript
       } catch (error) {
         console.error(`Error broadcasting to user ${userId}:`, error);
       }
@@ -233,13 +250,15 @@ export function broadcastToUsers(data: any) {
   }
 }
 
+// ===== BROADCAST TO SPECIFIC USER =====
 // Fungsi untuk broadcast ke user spesifik berdasarkan user_id
 export function broadcastToSpecificUser(userId: string, data: any) {
   const userSockets = userClients.get(userId);
   if (userSockets && userSockets.size > 0) {
+    const jsonData = JSON.stringify(data); // Serialize data ke JSON string
     for (const ws of userSockets) {
       try {
-        ws.send(data);
+        ws.send(jsonData); // Kirim JSON string, bukan objek JavaScript
       } catch (error) {
         console.error(`Error sending to user ${userId}:`, error);
       }

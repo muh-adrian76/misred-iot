@@ -1,4 +1,7 @@
+// Import React hooks untuk state management
 import { useState } from "react";
+
+// Import komponen UI untuk form dan layout
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,41 +12,54 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+// Import komponen toast notification untuk feedback user
 import { successToast, errorToast } from "../../other/toaster";
+
+// Import library animasi untuk smooth transitions
 import { motion } from "framer-motion";
 
+// Import utilities dan helper functions
 import { cn } from "@/lib/utils";
 import { fetchFromBackend } from "@/lib/helper";
 import { brandLogo } from "@/lib/helper";
+
+// Import komponen khusus untuk authentication
 import GoogleButton from "../../buttons/google-button";
 import { PasswordStrengthMeter } from "../../other/strength-meter";
 import OTPInput from "./otp-input";
 
+// Komponen RegisterForm untuk registrasi user baru ke sistem IoT
 export default function RegisterForm({
-  className,
-  logoFont,
-  router,
-  setUser,
-  isLoading,
-  setIsLoading,
-  setShowRegister,
-  ...props
+  className, // CSS classes tambahan untuk styling
+  logoFont, // Font untuk logo branding
+  router, // Next.js router untuk navigation
+  setUser, // Setter untuk user state management
+  isLoading, // State loading untuk UI feedback
+  setIsLoading, // Setter untuk loading state
+  setShowRegister, // Function untuk toggle antara login/register
+  ...props // Props tambahan lainnya
 }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showOTPInput, setShowOTPInput] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
+  // State management untuk form fields registration
+  const [email, setEmail] = useState(""); // Email address user
+  const [password, setPassword] = useState(""); // Password user
+  const [showPassword, setShowPassword] = useState(false); // Toggle visibility password
+  const [showOTPInput, setShowOTPInput] = useState(false); // State untuk menampilkan OTP input
+  const [registeredEmail, setRegisteredEmail] = useState(""); // Email yang sudah diregister untuk OTP
 
+  // Handler untuk proses registrasi dengan validasi lengkap
   const handleRegister = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault(); // Prevent default form submission
+    setIsLoading(true); // Tampilkan loading state
 
+    // Validasi input fields - email dan password harus diisi
     if (!email || !password) {
       errorToast("Peringatan", "Email dan password tidak boleh kosong!");
       setIsLoading(false);
       return;
     }
+    
+    // Validasi panjang password minimum untuk keamanan
     if (password.length < 6) {
       errorToast("Peringatan", "Password harus lebih dari 6 karakter!");
       setIsLoading(false);

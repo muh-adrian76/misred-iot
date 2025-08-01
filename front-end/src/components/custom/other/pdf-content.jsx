@@ -1,6 +1,16 @@
 /**
  * Komponen React PDF yang Disempurnakan untuk Sistem MiSREd IoT
- * Menghasilkan dokumen PDF yang indah menggunakan @react-pdf/renderer
+ * 
+ * Menghasilkan dokumen PDF yang indah dan profesional menggunakan @react-pdf/renderer
+ * untuk ekspor data IoT dengan styling yang konsisten dengan branding perusahaan.
+ * 
+ * Fitur utama:
+ * - Layout responsive dengan styling modern
+ * - Support untuk multiple device dan datastream
+ * - Metadata lengkap dan statistik
+ * - Tabel data terstruktur dengan alternating colors
+ * - Header dengan branding MiSREd-IoT
+ * - Export notification history dan datastream data
  */
 
 import React from "react";
@@ -14,27 +24,31 @@ import {
 } from "@react-pdf/renderer";
 import { formatDateTime } from "../../../lib/export-utils";
 
-// Gaya yang disempurnakan untuk PDF dengan desain modern
+/**
+ * Gaya yang disempurnakan untuk PDF dengan desain modern
+ * Menggunakan color scheme yang konsisten dengan branding MiSREd-IoT
+ */
 const styles = StyleSheet.create({
+  // Halaman PDF dengan layout yang bersih dan profesional
   page: {
     flexDirection: "column",
     backgroundColor: "#ffffff",
     padding: 0,
+    paddingTop: 20,
+    paddingBottom: 20,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
 
-  // Header dengan efek gradient simulasi
+  // Header dengan desain yang menarik dan branding MiSREd-IoT
   header: {
-    backgroundColor: "#dc3545",
-    background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
-    color: "white",
     padding: 15,
     marginBottom: 0,
     alignItems: "center",
     position: "relative",
   },
 
+  // Pattern dekoratif untuk header (simulasi gradient)
   headerPattern: {
     position: "absolute",
     top: 0,
@@ -45,12 +59,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
 
+  // Container logo dengan alignment yang rapi
   logoContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 5,
   },
 
+  // Logo perusahaan dengan ukuran yang proporsional
+  logo: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+
+  // Teks logo dengan styling yang bold dan branded
   logoText: {
     fontSize: 18,
     fontWeight: "bold",
@@ -58,6 +81,7 @@ const styles = StyleSheet.create({
     textShadow: "0 2px 4px rgba(0,0,0,0.3)",
   },
 
+  // Subtext logo dengan style yang subtle
   logoSubtext: {
     fontSize: 8,
     opacity: 0.8,
@@ -65,6 +89,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
+  // Judul dokumen dengan emphasis yang kuat
   title: {
     fontSize: 16,
     fontWeight: "bold",
@@ -73,6 +98,7 @@ const styles = StyleSheet.create({
     textShadow: "0 1px 2px rgba(0,0,0,0.2)",
   },
 
+  // Subtitle dengan informasi waktu pembuatan
   subtitle: {
     fontSize: 11,
     opacity: 0.9,
@@ -80,28 +106,29 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
-  // Kontainer konten dengan padding
+  // Kontainer konten utama dengan padding yang nyaman
   content: {
     padding: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
     flex: 1,
   },
 
-  // Bagian metadata yang disempurnakan
+  // Bagian metadata dengan background dan border yang menarik
   metadata: {
     backgroundColor: "#f8f9fa",
     padding: 12,
-    marginBottom: 15,
+    marginBottom: 20,
+    marginTop: 10,
     borderRadius: 8,
-    borderLeft: "4 solid #dc3545",
+    borderLeft: "4 solid #dc3545", // Accent border dengan warna merah MiSREd
     boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
   },
 
   metadataTitle: {
     fontSize: 11,
     fontWeight: "bold",
-    color: "#dc3545",
     marginBottom: 8,
-    textAlign: "center",
   },
 
   metadataGrid: {
@@ -133,38 +160,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // Bagian statistik
-  statisticsContainer: {
-    flexDirection: "row",
-    marginBottom: 15,
-    gap: 8,
-  },
-
-  statisticsCard: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    border: "1 solid #e9ecef",
-    borderRadius: 6,
-    padding: 8,
-    alignItems: "center",
-  },
-
-  statisticsNumber: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#dc3545",
-    marginBottom: 2,
-  },
-
-  statisticsLabel: {
-    fontSize: 7,
-    color: "#6c757d",
-    textAlign: "center",
-  },
-
   // Tabel yang disempurnakan
   tableContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
+    marginTop: 10,
+    breakInside: "avoid",
   },
 
   tableTitle: {
@@ -233,40 +233,11 @@ const styles = StyleSheet.create({
     color: "#dc3545",
     textAlign: "center",
   },
-
-  // Footer yang disempurnakan
-  footer: {
-    backgroundColor: "#f8f9fa",
-    padding: 20,
-    textAlign: "center",
-    borderTop: "2 solid #dee2e6",
-    marginTop: "auto",
-  },
-
-  footerLogo: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#dc3545",
-    marginBottom: 8,
-  },
-
-  footerText: {
-    fontSize: 8,
-    color: "#6c757d",
-    marginBottom: 3,
-  },
-
-  footerCopyright: {
-    fontSize: 7,
-    color: "#adb5bd",
-    marginTop: 5,
-  },
-
   // Elemen dekoratif
   divider: {
     height: 3,
     backgroundColor: "#dc3545",
-    marginVertical: 20,
+    marginVertical: 25,
     borderRadius: 2,
     background: "linear-gradient(90deg, #dc3545 0%, #c82333 50%, #dc3545 100%)",
   },
@@ -319,60 +290,108 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: "bold",
   },
+
+  // Device grouping styles
+  deviceGroup: {
+    marginBottom: 8,
+  },
+
+  deviceTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#495057",
+    marginBottom: 3,
+  },
 });
 
 /**
  * Dokumen PDF Ekspor Datastream yang Disempurnakan
+ * 
+ * Komponen utama untuk menghasilkan laporan PDF data IoT dengan:
+ * - Support untuk multiple datastream dan device
+ * - Grouping data berdasarkan perangkat
+ * - Metadata lengkap dan statistik
+ * - Tabel data yang terstruktur dan mudah dibaca
+ * - Compatibility dengan format data legacy dan baru
+ * 
+ * @param {Array} datastreams - Array datastream yang akan diekspor
+ * @param {Array} allData - Array data dengan struktur { datastream, data }
  */
-export const DatastreamPDFDocument = ({ datastream, data }) => {
-  // Urutkan data dari yang terlama ke yang terbaru
-  const sortedData = [...data].sort((a, b) => {
-    const dateA = new Date(a.device_time || a.created_at);
-    const dateB = new Date(b.device_time || b.created_at);
-    return dateA.getTime() - dateB.getTime();
+export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
+  // Konversi format legacy ke format baru untuk backward compatibility
+  if (!Array.isArray(datastreams) && allData.datastream) {
+    datastreams = [allData.datastream];
+    allData = [{ datastream: allData.datastream, data: allData.data || allData }];
+  }
+  
+  // Fallback jika tidak ada data
+  if (!allData.length) {
+    allData = [{ datastream: datastreams[0], data: [] }];
+  }
+
+  // Kelompokkan data berdasarkan device untuk organisasi yang lebih baik
+  const deviceGroups = {};
+  allData.forEach(({ datastream, data }) => {
+    const deviceId = datastream.device_id;
+    if (!deviceGroups[deviceId]) {
+      deviceGroups[deviceId] = {
+        device: {
+          id: deviceId,
+          description: datastream.device_description
+        },
+        datastreams: [],
+        combinedData: []
+      };
+    }
+    
+    deviceGroups[deviceId].datastreams.push(datastream);
+    
+    // Tambahkan informasi datastream ke setiap data point untuk referensi
+    if (data && data.length > 0) {
+      data.forEach(item => {
+        deviceGroups[deviceId].combinedData.push({
+          ...item,
+          datastream_id: datastream.id,
+          datastream_description: datastream.description,
+          datastream_pin: datastream.pin,
+          device_id: datastream.device_id,
+          device_description: datastream.device_description
+        });
+      });
+    }
   });
 
-  // Hitung statistik
-  const values = sortedData
-    .map((item) => parseFloat(item.value))
-    .filter((v) => !isNaN(v));
-  const statistics = {
-    total: sortedData.length,
-    average:
-      values.length > 0
-        ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
-        : "T/A",
-    max: values.length > 0 ? Math.max(...values).toFixed(2) : "T/A",
-    min: values.length > 0 ? Math.min(...values).toFixed(2) : "T/A",
-  };
+  // Urutkan data dalam setiap group berdasarkan waktu (ascending)
+  Object.values(deviceGroups).forEach(group => {
+    group.combinedData.sort((a, b) => {
+      const dateA = new Date(a.device_time || a.created_at);
+      const dateB = new Date(b.device_time || b.created_at);
+      return dateA.getTime() - dateB.getTime();
+    });
+  });
 
+  // Kalkulasi statistik keseluruhan untuk metadata
+  const allCombinedData = Object.values(deviceGroups).flatMap(group => group.combinedData);
   const metadata = {
-    "ID Perangkat": datastream.device_id,
-    "Nama Perangkat":
-      datastream.device_description || `Perangkat ${datastream.device_id}`,
-    Datastream: datastream.description,
-    "Total Rekaman": `${sortedData.length} titik data`,
+    "Jumlah Perangkat": `${Object.keys(deviceGroups).length} perangkat`,
+    "Jumlah Datastream": `${datastreams.length} sensor`,
+    "Jumlah Data": `${allCombinedData.length} titik data`,
     "Rentang Tanggal":
-      sortedData.length > 0
-        ? `${formatDateTime(sortedData[0].device_time || sortedData[0].created_at)} - ${formatDateTime(sortedData[sortedData.length - 1].device_time || sortedData[sortedData.length - 1].created_at)}`
+      allCombinedData.length > 0
+        ? `${formatDateTime(allCombinedData[0].device_time || allCombinedData[0].created_at)} - ${formatDateTime(allCombinedData[allCombinedData.length - 1].device_time || allCombinedData[allCombinedData.length - 1].created_at)}`
         : "Tidak ada data",
-    Dibuat: formatDateTime(new Date().toISOString()),
   };
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header yang Disempurnakan */}
-        {/* <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Image src={"./web-logo.svg"} />
-            <Text style={styles.logoText}>MiSREd IoT</Text>
-          </View>
-          <Text style={styles.title}>Laporan Ekspor Data</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Laporan Data Perangkat</Text>
           <Text style={styles.subtitle}>
-            {datastream.description} • Sistem Pemantauan
+            Laporan ini dibuat secara otomatis pada {formatDateTime(new Date().toISOString())}
           </Text>
-        </View> */}
+        </View>
 
         <View style={styles.content}>
           {/* Metadata yang Disempurnakan */}
@@ -388,105 +407,82 @@ export const DatastreamPDFDocument = ({ datastream, data }) => {
             </View>
           </View>
 
-          {/* Kartu Statistik */}
-          {values.length > 0 && (
-            <View style={styles.statisticsContainer}>
-              <View style={styles.statisticsCard}>
-                <Text style={styles.statisticsNumber}>{statistics.total}</Text>
-                <Text style={styles.statisticsLabel}>Total Rekaman</Text>
-              </View>
-              <View style={styles.statisticsCard}>
-                <Text style={styles.statisticsNumber}>
-                  {statistics.average}
-                </Text>
-                <Text style={styles.statisticsLabel}>Nilai Rata-rata</Text>
-              </View>
-              <View style={styles.statisticsCard}>
-                <Text style={styles.statisticsNumber}>{statistics.max}</Text>
-                <Text style={styles.statisticsLabel}>Nilai Maksimum</Text>
-              </View>
-              <View style={styles.statisticsCard}>
-                <Text style={styles.statisticsNumber}>{statistics.min}</Text>
-                <Text style={styles.statisticsLabel}>Nilai Minimum</Text>
+          <View style={styles.divider} />
+
+          {/* Informasi Datastream yang Dipilih */}
+          {datastreams.length > 0 && (
+            <View style={styles.metadata}>
+              <Text style={styles.metadataTitle}>Datastream yang Dipilih</Text>
+              <View style={styles.metadataGrid}>
+                {Object.entries(deviceGroups).map(([deviceId, group]) => (
+                  <View key={deviceId} style={styles.deviceGroup}>
+                    <Text style={styles.deviceTitle}>{group.device.description}:</Text>
+                    {group.datastreams.map((ds, index) => (
+                      <View key={index} style={styles.metadataItem}>
+                        <Text style={styles.metadataLabel}>{ds.pin}</Text>
+                        <Text style={styles.metadataValue}>{ds.description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ))}
               </View>
             </View>
           )}
 
-          <View style={styles.divider} />
+          {/* Tabel Data per Perangkat */}
+          {Object.entries(deviceGroups).map(([deviceId, group]) => (
+            <View key={deviceId} style={styles.tableContainer}>
+              <Text style={styles.tableTitle}>
+                Data {group.device.description} (UID: {deviceId})
+              </Text>
 
-          {/* Tabel yang Disempurnakan */}
-          <View style={styles.tableContainer}>
-            <Text style={styles.tableTitle}>Rekaman Data Sensor</Text>
+              <View style={styles.table}>
+                {/* Header Tabel */}
+                <View style={styles.tableRow}>
+                  <View style={[styles.tableColHeader, { width: "30%" }]}>
+                    <Text style={styles.tableCellHeader}>Tanggal dan Waktu</Text>
+                  </View>
+                  <View style={[styles.tableColHeader, { width: "25%" }]}>
+                    <Text style={styles.tableCellHeader}>Datastream</Text>
+                  </View>
+                  <View style={[styles.tableColHeader, { width: "20%" }]}>
+                    <Text style={styles.tableCellHeader}>Virtual Pin</Text>
+                  </View>
+                  <View style={[styles.tableColHeader, { width: "25%" }]}>
+                    <Text style={styles.tableCellHeader}>Nilai</Text>
+                  </View>
+                </View>
 
-            <View style={styles.table}>
-              {/* Header Tabel */}
-              <View style={styles.tableRow}>
-                <View style={styles.tableColHeader}>
-                  <Text style={styles.tableCellHeader}>Tanggal dan Waktu</Text>
-                </View>
-                <View style={styles.tableColHeader}>
-                  <Text style={styles.tableCellHeader}>UID Perangkat</Text>
-                </View>
-                <View style={styles.tableColHeader}>
-                  <Text style={styles.tableCellHeader}>Deskripsi</Text>
-                </View>
-                <View style={styles.tableColHeader}>
-                  <Text style={styles.tableCellHeader}>Datastream</Text>
-                </View>
-                <View style={styles.tableColHeader}>
-                  <Text style={styles.tableCellHeader}>Nilai</Text>
-                </View>
+                {/* Baris Tabel dengan warna bergantian */}
+                {group.combinedData.map((item, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.tableRow,
+                      index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd,
+                    ]}
+                  >
+                    <View style={[styles.tableCol, { width: "30%" }]}>
+                      <Text style={styles.tableCell}>
+                        {formatDateTime(item.device_time || item.created_at)}
+                      </Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: "25%" }]}>
+                      <Text style={styles.tableCell}>
+                        {item.datastream_description}
+                      </Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: "20%" }]}>
+                      <Text style={styles.tableCell}>{item.datastream_pin}</Text>
+                    </View>
+                    <View style={[styles.tableCol, { width: "25%" }]}>
+                      <Text style={styles.tableCellValue}>{item.value}</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-
-              {/* Baris Tabel dengan warna bergantian */}
-              {sortedData.map((item, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.tableRow,
-                    index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd,
-                  ]}
-                >
-                  <View style={styles.tableCol}>
-                    <Text style={styles.tableCell}>
-                      {formatDateTime(item.device_time || item.created_at)}
-                    </Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={styles.tableCell}>{datastream.device_id}</Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={styles.tableCell}>
-                      {datastream.device_description ||
-                        `Perangkat ${datastream.device_id}`}
-                    </Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={styles.tableCell}>
-                      {datastream.description}
-                    </Text>
-                  </View>
-                  <View style={styles.tableCol}>
-                    <Text style={styles.tableCellValue}>{item.value}</Text>
-                  </View>
-                </View>
-              ))}
             </View>
-          </View>
-        </View>
-
-        {/* Footer yang Disempurnakan */}
-        <View style={styles.footer}>
-          <Text style={styles.footerLogo}>MiSREd IoT</Text>
-          <Text style={styles.footerText}>
-            Sistem Pemantauan & Analitik Lanjutan
-          </Text>
-          <Text style={styles.footerText}>
-            Dokumen ini dibuat secara otomatis pada {formatDateTime(new Date().toISOString())}
-          </Text>
-          <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} MiSREd IoT. Semua hak dilindungi.
-          </Text>
+          ))}
         </View>
       </Page>
     </Document>
@@ -506,73 +502,42 @@ export const NotificationHistoryPDFDocument = ({
     return dateB.getTime() - dateA.getTime(); // Terbaru dulu untuk notifikasi
   });
 
-  // Hitung statistik notifikasi
-  const severityCount = {
-    high: sortedNotifications.filter(
-      (n) =>
-        n.severity === "high" ||
-        n.alarm_description?.toLowerCase().includes("critical")
-    ).length,
-    medium: sortedNotifications.filter(
-      (n) =>
-        n.severity === "medium" ||
-        n.alarm_description?.toLowerCase().includes("warning")
-    ).length,
-    low:
-      sortedNotifications.length -
-      sortedNotifications.filter(
-        (n) =>
-          n.severity === "high" ||
-          n.alarm_description?.toLowerCase().includes("critical")
-      ).length -
-      sortedNotifications.filter(
-        (n) =>
-          n.severity === "medium" ||
-          n.alarm_description?.toLowerCase().includes("warning")
-      ).length,
-  };
-
-  const timeRangeText =
-    {
-      today: "Hari Ini",
-      week: "Minggu Ini",
-      month: "Bulan Ini",
-      all: "Semua Waktu",
-    }[timeRange] || "Rentang Khusus";
-
+  // Group notifications by device
+  const deviceGroups = {};
+  sortedNotifications.forEach(notification => {
+    const deviceId = notification.device_id || 'unknown';
+    const deviceName = notification.device_description || `Device ${deviceId}`;
+    
+    if (!deviceGroups[deviceId]) {
+      deviceGroups[deviceId] = {
+        device: {
+          id: deviceId,
+          description: deviceName
+        },
+        notifications: []
+      };
+    }
+    
+    deviceGroups[deviceId].notifications.push(notification);
+  });
+  
   const metadata = {
-    "Periode Waktu": timeRangeText,
+    "Jumlah Perangkat": `${Object.keys(deviceGroups).length} perangkat`,
     "Total Notifikasi": `${sortedNotifications.length} peringatan`,
-    "Prioritas Tinggi": `${severityCount.high} peringatan`,
-    "Prioritas Sedang": `${severityCount.medium} peringatan`,
-    "Prioritas Rendah": `${severityCount.low} peringatan`,
     Dibuat: formatDateTime(new Date().toISOString()),
-  };
-
-  // Fungsi untuk mendapatkan gaya tingkat keparahan
-  const getSeverityStyle = (notification) => {
-    const desc = notification.alarm_description?.toLowerCase() || "";
-    if (desc.includes("critical") || desc.includes("emergency"))
-      return styles.statusHigh;
-    if (desc.includes("warning") || desc.includes("caution"))
-      return styles.statusMedium;
-    return styles.statusLow;
   };
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header yang Disempurnakan */}
-        {/* <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>MiSREd IoT</Text>
-            <Text style={styles.logoSubtext}>Manajemen Peringatan</Text>
-          </View>
+        <View style={styles.header}>
           <Text style={styles.title}>Laporan Riwayat Notifikasi</Text>
+          
           <Text style={styles.subtitle}>
-            Sistem Pemantauan Peringatan & Alarm
+            Laporan ini dibuat secara otomatis pada {formatDateTime(new Date().toISOString())}
           </Text>
-        </View> */}
+        </View>
 
         <View style={styles.content}>
           {/* Metadata yang Disempurnakan */}
@@ -588,133 +553,84 @@ export const NotificationHistoryPDFDocument = ({
             </View>
           </View>
 
-          {/* Statistik Tingkat Keparahan */}
-          {/* <View style={styles.statisticsContainer}>
-            <View style={styles.statisticsCard}>
-              <Text style={[styles.statisticsNumber, { color: "#dc3545" }]}>
-                {severityCount.high}
-              </Text>
-              <Text style={styles.statisticsLabel}>Prioritas Tinggi</Text>
-            </View>
-            <View style={styles.statisticsCard}>
-              <Text style={[styles.statisticsNumber, { color: "#ffc107" }]}>
-                {severityCount.medium}
-              </Text>
-              <Text style={styles.statisticsLabel}>Prioritas Sedang</Text>
-            </View>
-            <View style={styles.statisticsCard}>
-              <Text style={[styles.statisticsNumber, { color: "#28a745" }]}>
-                {severityCount.low}
-              </Text>
-              <Text style={styles.statisticsLabel}>Prioritas Rendah</Text>
-            </View>
-            <View style={styles.statisticsCard}>
-              <Text style={styles.statisticsNumber}>
-                {sortedNotifications.length}
-              </Text>
-              <Text style={styles.statisticsLabel}>📊 Total Peringatan</Text>
-            </View>
-          </View> */}
-
           <View style={styles.divider} />
 
-          {/* Tabel Notifikasi yang Disempurnakan */}
-          <View style={styles.tableContainer}>
-            <Text style={styles.tableTitle}>Riwayat Notifikasi</Text>
+          {/* Tabel Notifikasi per Perangkat */}
+          {Object.entries(deviceGroups).map(([deviceId, group]) => (
+            <View key={deviceId} style={styles.tableContainer}>
+              <Text style={styles.tableTitle}>
+                Notifikasi {group.device.description} (UID: {deviceId === 'unknown' ? 'Tidak Diketahui' : deviceId})
+              </Text>
 
-            {sortedNotifications.length === 0 ? (
-              <View style={styles.alertBox}>
-                <Text style={styles.alertText}>
-                  ✅ Tidak ada notifikasi yang ditemukan untuk periode waktu yang dipilih.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.table}>
-                {/* Header Tabel */}
-                <View style={styles.tableRow}>
-                  <View style={[styles.tableColHeader, { width: "25%" }]}>
-                    <Text style={styles.tableCellHeader}>Tanggal & Waktu</Text>
-                  </View>
-                  <View style={[styles.tableColHeader, { width: "20%" }]}>
-                    <Text style={styles.tableCellHeader}>Jenis Alarm</Text>
-                  </View>
-                  <View style={[styles.tableColHeader, { width: "15%" }]}>
-                    <Text style={styles.tableCellHeader}>Perangkat</Text>
-                  </View>
-                  <View style={[styles.tableColHeader, { width: "15%" }]}>
-                    <Text style={styles.tableCellHeader}>Sensor</Text>
-                  </View>
-                  <View style={[styles.tableColHeader, { width: "10%" }]}>
-                    <Text style={styles.tableCellHeader}>Nilai</Text>
-                  </View>
-                  <View style={[styles.tableColHeader, { width: "15%" }]}>
-                    <Text style={styles.tableCellHeader}>Kondisi</Text>
-                  </View>
+              {group.notifications.length === 0 ? (
+                <View style={styles.alertBox}>
+                  <Text style={styles.alertText}>
+                    ✅ Tidak ada notifikasi untuk perangkat ini.
+                  </Text>
                 </View>
-
-                {/* Baris Tabel */}
-                {sortedNotifications.map((notif, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.tableRow,
-                      index % 2 === 0
-                        ? styles.tableRowEven
-                        : styles.tableRowOdd,
-                    ]}
-                  >
-                    <View style={[styles.tableCol, { width: "25%" }]}>
-                      <Text style={styles.tableCell}>
-                        {formatDateTime(notif.triggered_at)}
-                      </Text>
+              ) : (
+                <View style={styles.table}>
+                  {/* Header Tabel */}
+                  <View style={styles.tableRow}>
+                    <View style={[styles.tableColHeader, { width: "25%" }]}>
+                      <Text style={styles.tableCellHeader}>Tanggal & Waktu</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: "20%" }]}>
-                      <Text style={styles.tableCell}>
-                        {notif.alarm_description}
-                      </Text>
+                    <View style={[styles.tableColHeader, { width: "25%" }]}>
+                      <Text style={styles.tableCellHeader}>Jenis Alarm</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: "15%" }]}>
-                      <Text style={styles.tableCell}>
-                        {notif.device_description}
-                      </Text>
+                    <View style={[styles.tableColHeader, { width: "20%" }]}>
+                      <Text style={styles.tableCellHeader}>Sensor</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: "15%" }]}>
-                      <Text style={styles.tableCell}>
-                        {notif.datastream_description}
-                      </Text>
+                    <View style={[styles.tableColHeader, { width: "15%" }]}>
+                      <Text style={styles.tableCellHeader}>Nilai</Text>
                     </View>
-                    <View style={[styles.tableCol, { width: "10%" }]}>
-                      <Text style={styles.tableCellValue}>
-                        {notif.sensor_value}
-                      </Text>
-                    </View>
-                    <View style={[styles.tableCol, { width: "15%" }]}>
-                      <Text style={styles.tableCell}>
-                        {notif.conditions_text}
-                      </Text>
+                    <View style={[styles.tableColHeader, { width: "15%" }]}>
+                      <Text style={styles.tableCellHeader}>Kondisi</Text>
                     </View>
                   </View>
-                ))}
-              </View>
-            )}
-          </View>
-        </View>
 
-        {/* Footer yang Disempurnakan */}
-        <View style={styles.footer}>
-          <Text style={styles.footerLogo}>MiSREd IoT</Text>
-          <Text style={styles.footerText}>
-            Sistem Peringatan & Pemantauan Lanjutan
-          </Text>
-          <Text style={styles.footerText}>
-            Laporan notifikasi ini dibuat secara otomatis
-          </Text>
-          <Text style={styles.footerText}>
-            Dibuat pada {formatDateTime(new Date().toISOString())}
-          </Text>
-          <Text style={styles.footerCopyright}>
-            © {new Date().getFullYear()} MiSREd IoT. Semua hak dilindungi.
-          </Text>
+                  {/* Baris Tabel */}
+                  {group.notifications.map((notif, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.tableRow,
+                        index % 2 === 0
+                          ? styles.tableRowEven
+                          : styles.tableRowOdd,
+                      ]}
+                    >
+                      <View style={[styles.tableCol, { width: "25%" }]}>
+                        <Text style={styles.tableCell}>
+                          {formatDateTime(notif.triggered_at)}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: "25%" }]}>
+                        <Text style={styles.tableCell}>
+                          {notif.alarm_description}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: "20%" }]}>
+                        <Text style={styles.tableCell}>
+                          {notif.datastream_description}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: "15%" }]}>
+                        <Text style={styles.tableCellValue}>
+                          {notif.sensor_value}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: "15%" }]}>
+                        <Text style={styles.tableCell}>
+                          {notif.conditions_text}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
         </View>
       </Page>
     </Document>

@@ -1,3 +1,16 @@
+/**
+ * ===== OTAA UPDATE SERVICE =====
+ * Service untuk mengelola Over-The-Air (OTA) firmware updates
+ * Menyediakan upload, management, dan distribusi firmware untuk IoT devices
+ * 
+ * Fitur utama:
+ * - Firmware upload dan versioning per board type
+ * - Multi-user firmware management
+ * - Automatic old firmware cleanup
+ * - Firmware update checking untuk devices
+ * - File management dengan path handling
+ * - Board type compatibility checking
+ */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { existsSync, unlinkSync } from "fs";
 
@@ -8,6 +21,8 @@ export class OtaaUpdateService {
     this.db = db;
   }
 
+  // ===== CREATE OR UPDATE FIRMWARE =====
+  // Membuat atau update firmware untuk board type tertentu
   async createOrUpdateFirmware({
     board_type,
     firmware_version,
@@ -20,7 +35,7 @@ export class OtaaUpdateService {
     user_id: number;
   }) {
     try {
-      // Check if firmware already exists for this board type and user
+      // Cek apakah firmware sudah ada untuk board type dan user ini
       const [existing]: any = await this.db.query(
         "SELECT id, firmware_url FROM otaa_updates WHERE board_type = ? AND user_id = ?",
         [board_type, user_id]
@@ -39,14 +54,14 @@ export class OtaaUpdateService {
           }
         }
 
-        // Update existing firmware
+        // Update firmware yang sudah ada
         await this.db.query(
           "UPDATE otaa_updates SET firmware_version = ?, firmware_url = ?, updated_at = CURRENT_TIMESTAMP WHERE board_type = ? AND user_id = ?",
           [firmware_version, firmware_url, board_type, user_id]
         );
         return existing[0].id;
       } else {
-        // Create new firmware entry
+        // Buat entry firmware baru
         const [result] = await this.db.query<ResultSetHeader>(
           "INSERT INTO otaa_updates (board_type, firmware_version, firmware_url, user_id) VALUES (?, ?, ?, ?)",
           [board_type, firmware_version, firmware_url, user_id]
@@ -59,6 +74,8 @@ export class OtaaUpdateService {
     }
   }
 
+  // ===== GET FIRMWARE BY BOARD TYPE =====
+  // Mengambil firmware berdasarkan tipe board dan user
   async getFirmwareByBoardType(board_type: string, user_id?: number) {
     try {
       let query = "SELECT * FROM otaa_updates WHERE board_type = ? ORDER BY updated_at DESC LIMIT 1";
@@ -77,6 +94,8 @@ export class OtaaUpdateService {
     }
   }
 
+  // ===== GET ALL FIRMWARES =====
+  // Mengambil semua firmware milik user tertentu
   async getAllFirmwares(user_id: number) {
     try {
       const query = "SELECT * FROM otaa_updates WHERE user_id = ? ORDER BY updated_at DESC";
@@ -90,33 +109,50 @@ export class OtaaUpdateService {
     }
   }
 
+  // ===== DELETE FIRMWARE =====
+  // Menghapus firmware beserta file fisiknya
   async deleteFirmware(id: string, user_id: number) {
     try {
-      // Get firmware info before deleting
+      console.log(`🗑️ [DELETE FIRMWARE] Starting deletion for ID: ${id}, User: ${user_id}`);
+      
+      // Get firmware info sebelum menghapus
       const [firmware]: any = await this.db.query(
         "SELECT firmware_url FROM otaa_updates WHERE id = ? AND user_id = ?",
         [id, user_id]
       );
 
       if (firmware.length > 0 && firmware[0].firmware_url) {
-        // Delete physical file
+        // Hapus file fisik dari storage
         try {
           const filePath = firmware[0].firmware_url.replace('/public/', `${process.cwd()}/src/assets/`);
-          await Bun.write(filePath, ''); // Delete file
-          console.log(`🗑️ Deleted firmware file: ${filePath}`);
-        } catch (error) {
-          console.warn("Failed to delete firmware file:", error);
+          console.log(`🔍 [DELETE FIRMWARE] Attempting to delete file: ${filePath}`);
+          
+          // Cek apakah file ada sebelum mencoba menghapus
+          if (existsSync(filePath)) {
+            unlinkSync(filePath); // Hapus file secara sinkron
+            console.log(`✅ [DELETE FIRMWARE] Successfully deleted firmware file: ${filePath}`);
+          } else {
+            console.warn(`⚠️ [DELETE FIRMWARE] File not found: ${filePath}`);
+          }
+        } catch (fileError) {
+          console.error(`❌ [DELETE FIRMWARE] Failed to delete firmware file:`, fileError);
         }
+      } else {
+        console.warn(`⚠️ [DELETE FIRMWARE] No firmware found with ID ${id} for user ${user_id}`);
       }
 
-      // Delete from database
+      // Hapus dari database
       const [result] = await this.db.query<ResultSetHeader>(
         "DELETE FROM otaa_updates WHERE id = ? AND user_id = ?",
         [id, user_id]
       );
-      return result.affectedRows > 0;
+      
+      const success = result.affectedRows > 0;
+      console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Database deletion result: ${result.affectedRows} rows affected`);
+      
+      return success;
     } catch (error) {
-      console.error("Error deleting firmware:", error);
+      console.error("❌ [DELETE FIRMWARE] Error deleting firmware:", error);
       throw new Error("Failed to delete firmware");
     }
   }

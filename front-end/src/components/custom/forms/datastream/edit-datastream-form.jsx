@@ -1,6 +1,11 @@
+// Import komponen dialog responsif untuk modal form
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
+
+// Import komponen UI untuk form elements
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+// Import komponen Command untuk searchable dropdown
 import {
   Command,
   CommandEmpty,
@@ -8,14 +13,20 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+
+// Import komponen Popover untuk dropdown positioning
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+
+// Import komponen UI dan utilities
 import { Button } from "@/components/ui/button";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Import komponen Select untuk dropdown selections
 import {
   Select,
   SelectTrigger,
@@ -25,29 +36,35 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+
+// Import React hooks untuk state management
 import { useState, useEffect } from "react";
 
+// Komponen EditDatastreamForm untuk mengedit datastream yang sudah ada
 export default function EditDatastreamForm({
-  open,
-  setOpen,
-  editDatastream,
-  handleEditDatastream,
-  unitOptions,
-  usedPins,
-  devices,
-  decimalOptions,
-  isMobile,
+  open, // State untuk kontrol visibility modal
+  setOpen, // Setter untuk mengubah state modal
+  editDatastream, // Data datastream yang akan diedit
+  handleEditDatastream, // Handler function untuk update datastream
+  unitOptions, // Array opsi unit pengukuran (volt, ampere, dll)
+  usedPins, // Array pin yang sudah digunakan untuk validasi
+  devices, // Array device yang tersedia untuk dipilih
+  decimalOptions, // Array opsi jumlah decimal places
+  isMobile, // Flag untuk responsive behavior
 }) {
-  const [description, setDescription] = useState("");
-  const [pin, setPin] = useState("");
-  const [type, setType] = useState("");
-  const [unit, setUnit] = useState("");
-  const [minValue, setMinValue] = useState(0);
-  const [maxValue, setMaxValue] = useState(1);
-  const [deviceId, setDeviceId] = useState("");
-  const [openDevicePopover, setOpenDevicePopover] = useState(false);
-  const [openUnitPopover, setOpenUnitPopover] = useState(false);
-  const [showDecimal, setShowDecimal] = useState(false);
+  // State management untuk form fields datastream configuration dengan data existing
+  const [description, setDescription] = useState(""); // Deskripsi/nama datastream
+  const [pin, setPin] = useState(""); // Pin hardware yang digunakan
+  const [type, setType] = useState(""); // Tipe data (sensor/actuator)
+  const [unit, setUnit] = useState(""); // Unit pengukuran data
+  const [minValue, setMinValue] = useState(0); // Nilai minimum yang diharapkan
+  const [maxValue, setMaxValue] = useState(1); // Nilai maximum yang diharapkan
+  const [deviceId, setDeviceId] = useState(""); // ID device yang akan menampung datastream
+  
+  // State untuk kontrol popover selections
+  const [openDevicePopover, setOpenDevicePopover] = useState(false); // State popover device dropdown
+  const [openUnitPopover, setOpenUnitPopover] = useState(false); // State popover unit dropdown
+  const [showDecimal, setShowDecimal] = useState(false); // Flag untuk show decimal format
   const [decimalValue, setdecimalValue] = useState("0.0");
   const [booleanValue, setBooleanValue] = useState("0");
 

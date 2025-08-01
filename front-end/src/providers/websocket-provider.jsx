@@ -1,28 +1,39 @@
+// Directive untuk Next.js - menandakan bahwa komponen ini berjalan di client-side
 "use client";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useUser } from "./user-provider";
 import { fetchFromBackend } from "@/lib/helper";
 
+// Context untuk WebSocket connection dan real-time data
 const WebSocketContext = createContext(null);
 
+// Provider utama untuk WebSocket - mengelola koneksi real-time dengan backend
+// Handles: device status updates, device controls, alarm notifications
 export function WebSocketProvider({ children }) {
   const { user } = useUser();
-  const wsRef = useRef(null);
-  const reconnectTimeoutRef = useRef(null);
-  const reconnectAttemptsRef = useRef(0);
-  const connectionAttemptRef = useRef(false);
+  
+  // Refs untuk menyimpan state yang persisten across re-renders
+  const wsRef = useRef(null); // WebSocket instance
+  const reconnectTimeoutRef = useRef(null); // Timeout untuk auto-reconnect
+  const reconnectAttemptsRef = useRef(0); // Counter percobaan reconnect
+  const connectionAttemptRef = useRef(false); // Flag untuk prevent multiple connections
+  
+  // Konfigurasi koneksi
   const maxReconnectAttempts = 10;
   const reconnectDelay = 2000; // 2 seconds
   const connectionTimeout = 10000; // 10 seconds
+  
+  // States untuk WebSocket dan real-time data
   const [ws, setWs] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [deviceStatuses, setDeviceStatuses] = useState(new Map());
-  const [deviceControls, setDeviceControls] = useState(new Map());
-  const [alarmNotifications, setAlarmNotifications] = useState([]);
+  const [deviceStatuses, setDeviceStatuses] = useState(new Map()); // Status device real-time
+  const [deviceControls, setDeviceControls] = useState(new Map()); // Control states
+  const [alarmNotifications, setAlarmNotifications] = useState([]); // Notifikasi alarm
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasAuthChecked, setHasAuthChecked] = useState(false);
 
-  // Helper function to check if user is truly logged in
+  // Helper function untuk validasi user login
+  // Memastikan user memiliki credentials yang lengkap sebelum koneksi WebSocket
   const isUserLoggedIn = (user) => {
     // First check if user exists and is not null
     if (!user || user.id === "") {
@@ -36,8 +47,7 @@ export function WebSocketProvider({ children }) {
            user.id !== undefined &&
            user.email !== undefined;
     
-    // Only log when there's a user object but incomplete credentials
-    // This helps debug login issues without spamming the console
+    // Debug logging untuk troubleshooting login issues (commented out)
     // if (user && !isLoggedIn) {
     //   console.log("🔍 User object exists but missing credentials:", { 
     //     hasUser: !!user, 
@@ -51,7 +61,8 @@ export function WebSocketProvider({ children }) {
     return isLoggedIn;
   };
 
-  // Helper function to verify authentication with backend
+  // Helper function untuk verifikasi autentikasi dengan backend
+  // Double-check token validity sebelum establish WebSocket connection
   const verifyAuthentication = async () => {
     try {
       const response = await fetchFromBackend("/auth/verify-token");
@@ -62,13 +73,14 @@ export function WebSocketProvider({ children }) {
     }
   };
 
-  // Load notifications dari localStorage saat component mount (seperti pattern dashboard-provider)
+  // Effect untuk load notifications dari localStorage saat component mount
+  // Mengikuti pattern yang sama dengan dashboard-provider untuk konsistensi
   useEffect(() => {
     try {
       const storedNotifications = localStorage.getItem("notifications");
       if (storedNotifications) {
         const parsed = JSON.parse(storedNotifications);
-        // Validate structure
+        // Validate structure - pastikan data adalah array
         if (Array.isArray(parsed)) {
           setAlarmNotifications(parsed);
         } else {
@@ -84,7 +96,8 @@ export function WebSocketProvider({ children }) {
     }
   }, []);
 
-  // Save notifications ke localStorage setiap kali berubah (hanya setelah initialized)
+  // Effect untuk save notifications ke localStorage setiap kali berubah
+  // Hanya berjalan setelah initialized untuk avoid overwrite data awal
   useEffect(() => {
     if (isInitialized && isUserLoggedIn(user)) {
       try {
@@ -99,7 +112,8 @@ export function WebSocketProvider({ children }) {
     }
   }, [alarmNotifications, user, isInitialized]);
 
-  // Clear notifications saat user logout
+  // Effect untuk cleanup saat user logout
+  // Clear semua data dan close WebSocket connection
   useEffect(() => {
     if (isInitialized && !isUserLoggedIn(user)) {
       setAlarmNotifications([]);
@@ -118,24 +132,22 @@ export function WebSocketProvider({ children }) {
     }
   }, [user, isInitialized]);
 
-  // Safe and reliable WebSocket connection
+  // Fungsi utama untuk membuat koneksi WebSocket yang aman dan reliable
+  // Handles authentication, connection timeout, dan error handling
   const createWebSocketConnection = async () => {
     // Prevent multiple simultaneous connection attempts
     if (connectionAttemptRef.current || !isUserLoggedIn(user)) {
-      // if (!isUserLoggedIn(user)) {
-      //   console.log("❌ Cannot create WebSocket connection: User not fully logged in");
-      // }
       return;
     }
 
     connectionAttemptRef.current = true;
 
-    // Clean up existing connection
+    // Clean up existing connection jika ada
     if (wsRef.current) {
       wsRef.current.close(1000, "Reconnecting");
     }
 
-    // console.log(`🔄 Connecting... (${reconnectAttemptsRef.current + 1}/${maxReconnectAttempts})`);
+    // Setup connection timeout untuk avoid hanging connections
     const connectionTimer = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
         console.warn("⏰ Connection timeout - closing socket");
@@ -144,7 +156,7 @@ export function WebSocketProvider({ children }) {
     }, connectionTimeout);
 
     try {
-      // Build WebSocket URL with fallback
+      // Build WebSocket URL dengan fallback untuk development/production
       const backendWsUrl = process.env.NEXT_PUBLIC_BACKEND_WS;
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
       
@@ -152,15 +164,15 @@ export function WebSocketProvider({ children }) {
       if (backendWsUrl) {
         wsBaseUrl = `${backendWsUrl}/ws/user`;
       } else if (backendUrl) {
-        // Convert HTTP to WS URL
+        // Convert HTTP ke WS URL
         wsBaseUrl = backendUrl.replace(/^https?:/, backendUrl.startsWith('https:') ? 'wss:' : 'ws:') + '/ws/user';
       } else {
-        // Fallback to default development URL
+        // Fallback untuk development
         wsBaseUrl = 'ws://localhost:7601/ws/user';
       }
 
-      // Generate WebSocket token melalui backend API
-      // Karena HttpOnly cookies tidak bisa diakses JavaScript
+      // Generate WebSocket token dari backend API
+      // Diperlukan karena HttpOnly cookies tidak accessible via JavaScript
       let wsToken = null;
       try {
         const tokenResponse = await fetchFromBackend("/auth/ws-token", {
@@ -181,7 +193,7 @@ export function WebSocketProvider({ children }) {
         return;
       }
       
-      // Tambahkan token ke WebSocket URL sebagai path parameter
+      // Construct final WebSocket URL dengan token
       let wsUrl;
       if (wsToken) {
         wsUrl = `${wsBaseUrl}/${encodeURIComponent(wsToken)}`;
@@ -190,9 +202,8 @@ export function WebSocketProvider({ children }) {
         connectionAttemptRef.current = false;
         return;
       }
-
-      // console.log(`🔗 Mencoba memulai koneksi WebSocket ke alamat: ${wsUrl.replace(/\/[^\/]*$/, '/[hidden_token]')}`);
       
+      // Create WebSocket connection
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
       setWs(socket);
@@ -238,7 +249,18 @@ export function WebSocketProvider({ children }) {
           }
 
           if (data.type === "alarm_notification") {
-            setAlarmNotifications(prev => [data.data, ...prev].slice(0, 100));
+            // Tambahkan notifikasi real-time dengan check duplikasi
+            setAlarmNotifications(prev => {
+              // Check apakah notifikasi dengan ID yang sama sudah ada
+              const existingIds = prev.map(n => n.id);
+              if (existingIds.includes(data.data.id)) {
+                console.log("⚠️ Duplicate notification detected, skipping:", data.data.id);
+                return prev; // Skip jika sudah ada
+              }
+              
+              // Tambahkan notifikasi baru dan limit ke 100 item
+              return [data.data, ...prev].slice(0, 100);
+            });
             
             if (Notification.permission === "granted") {
               new Notification(data.data.title, {
@@ -342,10 +364,16 @@ export function WebSocketProvider({ children }) {
           // Fetch notifications dari backend (hanya sekali setelah auth verified)
           const fetchLoginNotifications = async () => {
             try {
-              // Final check before fetching - ensure user is still logged in
               if (!isUserLoggedIn(user)) {
                 console.log("❌ User logged out before fetch, skipping notifications fetch");
                 return;
+              }
+
+              // Clear localStorage untuk menghindari data stale/duplikat
+              try {
+                localStorage.removeItem("notifications");
+              } catch (error) {
+                console.warn("Error clearing notifications from localStorage:", error);
               }
 
               // console.log("🔍 Fetching notifications from backend...");
@@ -361,14 +389,23 @@ export function WebSocketProvider({ children }) {
                     return;
                   }
                   
-                  // Merge dengan notifications yang sudah ada di localStorage
+                  // Replace notifications dengan data fresh dari backend
+                  // Tidak merge dengan localStorage untuk menghindari duplikasi
                   setAlarmNotifications(prev => {
-                    const combined = [...data.notifications, ...prev];
-                    // Remove duplicates based on ID
-                    const unique = combined.filter((notification, index, self) => 
-                      index === self.findIndex(n => n.id === notification.id)
+                    // Hanya ambil data fresh dari backend untuk konsistensi
+                    // dan hindari duplikasi dengan localStorage yang mungkin stale
+                    const freshNotifications = data.notifications || [];
+                    
+                    // Filter hanya notifikasi yang belum dibaca (isRead: false)
+                    const unreadNotifications = freshNotifications.filter(notification => 
+                      !notification.isRead && notification.isRead !== true
                     );
-                    const sorted = unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    
+                    // Sort berdasarkan waktu terbaru
+                    const sorted = unreadNotifications.sort((a, b) => 
+                      new Date(b.createdAt) - new Date(a.createdAt)
+                    );
+                    
                     return sorted;
                   });
                 }

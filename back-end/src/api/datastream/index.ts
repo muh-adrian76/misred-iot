@@ -1,3 +1,9 @@
+/**
+ * ===== DATASTREAM API ROUTES - ENDPOINT MANAJEMEN SENSOR DATASTREAM IoT =====
+ * File ini mengatur CRUD operations untuk konfigurasi sensor pada device IoT
+ * Meliputi: pin mapping, sensor types, validation ranges, unit measurements
+ */
+
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { DatastreamService } from "../../services/DatastreamService";
@@ -11,7 +17,8 @@ import {
 export function datastreamRoutes(datastreamService: DatastreamService) {
   return (
     new Elysia({ prefix: "/datastream" })
-      // Get all datastreams for a device
+      // ===== GET ALL DATASTREAMS ENDPOINT =====
+      // GET /datastream - Ambil semua datastream milik user
       .get(
         "/",
         //@ts-ignore
@@ -27,7 +34,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in get all datastreams:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -50,7 +57,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         getAllDatastreamsSchema
       )
 
-      // Get datastreams by device ID
+      // ===== GET DATASTREAMS BY DEVICE ENDPOINT =====
+      // GET /datastream/device/:deviceId - Ambil datastream berdasarkan device ID
       .get(
         "/device/:deviceId",
         //@ts-ignore
@@ -67,7 +75,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in get datastreams by device ID:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -89,7 +97,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         }
       )
 
-      // Get single datastream by ID
+      // ===== GET SINGLE DATASTREAM ENDPOINT =====
+      // GET /datastream/:id - Ambil datastream tertentu berdasarkan ID
       .get(
         "/:id",
         //@ts-ignore
@@ -112,7 +121,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in get datastream by ID:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -132,13 +141,15 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         }
       )
 
-      // Create a new datastream
+      // ===== CREATE DATASTREAM ENDPOINT =====
+      // POST /datastream - Buat datastream baru untuk sensor device
       .post(
         "/",
         //@ts-ignore
         async ({ jwt, cookie, body, set }) => {
           try {
             const user = await authorizeRequest(jwt, cookie);
+            // Ekstrak data yang dibutuhkan dari request body
             const {
               deviceId,
               pin,
@@ -150,6 +161,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               decimalValue,
               booleanValue,
             } = body;
+            
+            // Buat datastream baru dengan validasi user ownership
             const datastreamId = await datastreamService.createDatastream({
               userId: user.sub,
               deviceId,
@@ -162,6 +175,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               decimalValue,
               booleanValue,
             });
+            
+            // Return response sukses dengan ID datastream baru
             return new Response(
               JSON.stringify({
                 message: "Datastream berhasil dibuat",
@@ -172,7 +187,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in create datastream:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -182,7 +197,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               };
             }
             
-            // Handle other errors
+            // Handle other errors (validation, duplicate pin, etc)
             set.status = 500;
             return {
               success: false,
@@ -193,13 +208,16 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         postDatastreamSchema
       )
 
-      // Update datastream
+      // ===== UPDATE DATASTREAM ENDPOINT =====
+      // PUT /datastream/:id - Update konfigurasi datastream sensor yang ada
       .put(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            await authorizeRequest(jwt, cookie);
+            const user = await authorizeRequest(jwt, cookie);
+            
+            // Ekstrak data yang akan diupdate dari request body
             const {
               deviceId,
               pin,
@@ -211,6 +229,8 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               decimalValue,
               booleanValue,
             } = body;
+            
+            // Update datastream dengan validasi user ownership
             const updated = await datastreamService.updateDatastream(params.id, {
               deviceId,
               pin,
@@ -222,9 +242,13 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               decimalValue,
               booleanValue,
             });
+            
+            // Check jika update gagal
             if (!updated) {
               return new Response("Datastream gagal diupdate", { status: 400 });
             }
+            
+            // Return response sukses
             return new Response(
               JSON.stringify({ message: "Datastream berhasil diupdate" }),
               { status: 200 }
@@ -232,7 +256,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in update datastream:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -242,7 +266,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               };
             }
             
-            // Handle other errors
+            // Handle other errors (validation, not found, etc)
             set.status = 500;
             return {
               success: false,
@@ -253,17 +277,24 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         putDatastreamSchema
       )
 
-      // Delete a datastream
+      // ===== DELETE DATASTREAM ENDPOINT =====
+      // DELETE /datastream/:id - Hapus datastream sensor berdasarkan ID
       .delete(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            await authorizeRequest(jwt, cookie);
+            const user = await authorizeRequest(jwt, cookie);
+            
+            // Hapus datastream dengan validasi user ownership
             const deleted = await datastreamService.deleteDatastream(params.id);
+            
+            // Check jika delete gagal
             if (!deleted) {
               return new Response("Datastream gagal dihapus", { status: 400 });
             }
+            
+            // Return response sukses
             return new Response(
               JSON.stringify({ message: "Datastream berhasil dihapus" }),
               { status: 200 }
@@ -271,7 +302,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
           } catch (error: any) {
             console.error("Error in delete datastream:", error);
             
-            // Check if it's an authentication error from authorizeRequest
+            // Handle authentication error dari authorizeRequest
             if (error.message && error.message.includes('Unauthorized')) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
@@ -281,7 +312,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               };
             }
             
-            // Handle other errors
+            // Handle other errors (not found, validation, etc)
             set.status = 500;
             return {
               success: false,

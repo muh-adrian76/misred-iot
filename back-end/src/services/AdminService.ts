@@ -1,4 +1,8 @@
-import { Database } from "bun:sqlite";
+/**
+ * ===== ADMIN SERVICE - LAYANAN ADMINISTRASI SISTEM IoT =====
+ * File ini menyediakan layanan untuk admin dashboard dan manajemen sistem
+ * Meliputi: overview stats, user management, device locations, system health
+ */
 
 interface AdminStats {
   totalUsers: number;
@@ -43,21 +47,23 @@ interface SystemHealth {
 export class AdminService {
   constructor(private db: any) {}
 
+  // ===== GET OVERVIEW STATISTICS =====
+  // Mengambil statistik overview untuk admin dashboard
   async getOverviewStats(): Promise<AdminStats> {
     try {
-      // Get total users
+      // Ambil total users dari database
       const [totalUsersResult] = await this.db.query("SELECT COUNT(*) as count FROM users");
       const totalUsers = totalUsersResult[0]?.count || 0;
 
-      // Get total devices
+      // Ambil total devices yang terdaftar
       const [totalDevicesResult] = await this.db.query("SELECT COUNT(*) as count FROM devices");
       const totalDevices = totalDevicesResult[0]?.count || 0;
 
-      // Get total dashboards
+      // Ambil total dashboards yang dibuat
       const [totalDashboardsResult] = await this.db.query("SELECT COUNT(*) as count FROM dashboards");
       const totalDashboards = totalDashboardsResult[0]?.count || 0;
 
-      // Get active users (have refresh_token and logged in within last 24 hours)
+      // Ambil active users (login dalam 24 jam terakhir)
       const [activeUsersResult] = await this.db.query(`
         SELECT COUNT(*) as count FROM users 
         WHERE refresh_token IS NOT NULL 
@@ -66,17 +72,17 @@ export class AdminService {
       `);
       const activeUsers = activeUsersResult[0]?.count || 0;
 
-      // Get online devices
+      // Ambil devices yang sedang online
       const [onlineDevicesResult] = await this.db.query(`
         SELECT COUNT(*) as count FROM devices WHERE status = 'online'
       `);
       const onlineDevices = onlineDevicesResult[0]?.count || 0;
 
-      // Get total alarms
+      // Ambil total alarms yang dibuat
       const [totalAlarmsResult] = await this.db.query("SELECT COUNT(*) as count FROM alarms");
       const totalAlarms = totalAlarmsResult[0]?.count || 0;
 
-      // Get total payloads
+      // Ambil total payloads data sensor
       const [totalPayloadsResult] = await this.db.query("SELECT COUNT(*) as count FROM payloads");
       const totalPayloads = totalPayloadsResult[0]?.count || 0;
 
@@ -95,6 +101,8 @@ export class AdminService {
     }
   }
 
+  // ===== GET RECENT USERS =====
+  // Mengambil daftar user yang baru terdaftar
   async getRecentUsers(limit: number = 10): Promise<RecentUser[]> {
     try {
       const query = `
@@ -112,6 +120,8 @@ export class AdminService {
     }
   }
 
+  // ===== GET ACTIVE USERS =====
+  // Mengambil daftar user yang aktif dalam 24 jam terakhir
   async getActiveUsers(limit: number = 10): Promise<RecentUser[]> {
     try {
       const query = `
@@ -132,6 +142,8 @@ export class AdminService {
     }
   }
 
+  // ===== GET DEVICE LOCATIONS =====
+  // Mengambil lokasi semua device untuk peta admin
   async getDeviceLocations(): Promise<DeviceLocation[]> {
     try {
       const query = `
@@ -168,6 +180,8 @@ export class AdminService {
     }
   }
 
+  // ===== UPDATE DEVICE LOCATION =====
+  // Update koordinat dan alamat device
   async updateDeviceLocation(deviceId: number, latitude: number, longitude: number, address?: string): Promise<boolean> {
     try {
       console.log("Updating device location:", { deviceId, latitude, longitude, address });
@@ -189,9 +203,11 @@ export class AdminService {
     }
   }
 
+  // ===== GET SYSTEM HEALTH =====
+  // Mengecek kesehatan sistem secara keseluruhan
   async getSystemHealth(): Promise<SystemHealth> {
     try {
-      // Test database connection
+      // Test koneksi database dengan query sederhana
       let database = true;
       try {
         await this.db.query("SELECT 1");
@@ -199,28 +215,28 @@ export class AdminService {
         database = false;
       }
 
-      // For MQTT and WebSocket, we'll assume they're working
-      // In a real implementation, you'd check their actual status
+      // Untuk MQTT dan WebSocket, asumsikan berjalan normal
+      // Dalam implementasi nyata, perlu pengecekan status sebenarnya
       const mqtt = true;
       const websocket = true;
 
-      // Get system uptime
+      // Dapatkan waktu server berjalan dalam detik
       const uptime = process.uptime();
 
-      // Determine overall status
+      // Tentukan status keseluruhan berdasarkan komponen
       let status: 'good' | 'warning' | 'error' = 'good';
       if (!database) {
-        status = 'error';
+        status = 'error';  // Database mati = sistem error
       } else if (!mqtt || !websocket) {
-        status = 'warning';
+        status = 'warning';  // Service lain mati = peringatan
       }
 
       return {
         status,
-        database,
-        mqtt,
-        websocket,
-        uptime
+        database,  // Status koneksi database
+        mqtt,      // Status MQTT broker
+        websocket, // Status WebSocket
+        uptime     // Waktu server berjalan
       };
     } catch (error) {
       console.error("Error getting system health:", error);
@@ -234,14 +250,16 @@ export class AdminService {
     }
   }
 
+  // ===== GET ALL USERS WITH STATS =====
+  // Mengambil semua user beserta statistik device/dashboard/alarm mereka
   async getAllUsersWithStats(): Promise<any[]> {
     try {
-      // First, try a simple query to get all users
+      // Coba query sederhana dulu untuk memastikan tabel users ada
       const simpleQuery = `SELECT * FROM users ORDER BY created_at DESC`;
       const [simpleUsers] = await this.db.query(simpleQuery);
       
       if (simpleUsers && simpleUsers.length > 0) {
-        // If simple query works, try the complex one
+        // Jika berhasil, jalankan query kompleks dengan JOIN
         const query = `
           SELECT 
             u.id,
@@ -253,9 +271,9 @@ export class AdminService {
             u.phone,
             u.whatsapp_notif,
             u.onboarding_completed,
-            COUNT(DISTINCT d.id) as device_count,
-            COUNT(DISTINCT dash.id) as dashboard_count,
-            COUNT(DISTINCT a.id) as alarm_count
+            COUNT(DISTINCT d.id) as device_count,      -- Jumlah device user
+            COUNT(DISTINCT dash.id) as dashboard_count, -- Jumlah dashboard user
+            COUNT(DISTINCT a.id) as alarm_count        -- Jumlah alarm user
           FROM users u
           LEFT JOIN devices d ON u.id = d.user_id
           LEFT JOIN dashboards dash ON u.id = dash.user_id
@@ -267,11 +285,11 @@ export class AdminService {
         const [users] = await this.db.query(query);
         return users;
       } else {
-        return [];
+        return [];  // Tidak ada user
       }
     } catch (error) {
       console.error("💥 Error getting users with stats:", error);
-      // If complex query fails, return simple users
+      // Jika query kompleks gagal, gunakan data user biasa
       try {
         const [fallbackUsers] = await this.db.query(`SELECT * FROM users ORDER BY created_at DESC`);
         return fallbackUsers.map((user: any) => ({
@@ -287,24 +305,26 @@ export class AdminService {
     }
   }
 
+  // ===== GET ALL DEVICES WITH STATS =====
+  // Mengambil semua device beserta statistik datastream dan payload
   async getAllDevicesWithStats(): Promise<any[]> {
     try {
       const query = `
         SELECT 
           d.id,
           d.description,
-          d.board_type,
-          d.protocol,
-          d.status,
+          d.board_type,      -- Jenis board (ESP32, Arduino, dll)
+          d.protocol,        -- Protokol komunikasi (LoRa, WiFi, dll)
+          d.status,          -- Status online/offline
           d.created_at,
-          d.latitude,
-          d.longitude,
-          d.address,
+          d.latitude,        -- Koordinat latitude
+          d.longitude,       -- Koordinat longitude
+          d.address,         -- Alamat lengkap
           u.name as user_name,
           u.email as user_email,
-          COUNT(DISTINCT ds.id) as datastream_count,
-          COUNT(DISTINCT p.id) as payload_count,
-          MAX(p.server_time) as last_data_time
+          COUNT(DISTINCT ds.id) as datastream_count,  -- Jumlah datastream
+          COUNT(DISTINCT p.id) as payload_count,      -- Total payload diterima
+          MAX(p.server_time) as last_data_time        -- Waktu data terakhir
         FROM devices d
         LEFT JOIN users u ON d.user_id = u.id
         LEFT JOIN datastreams ds ON d.id = ds.device_id

@@ -1,4 +1,6 @@
 "use client";
+
+// Import dependencies untuk komponen riwayat notifikasi IoT
 import { useState, useEffect } from "react";
 import { useUser } from "@/providers/user-provider";
 import {
@@ -54,8 +56,10 @@ import { errorToast, successToast } from "./toaster";
 import { exportToCSV as exportCSVUtil, formatDateTime, generateReactPDF } from "@/lib/export-utils";
 import { NotificationHistoryPDFDocument } from "@/components/custom/other/pdf-content";
 
-// formatDateTime is now imported from export-utils
-
+/**
+ * Fungsi utilitas untuk memformat waktu relatif  
+ * formatDateTime sudah diimport dari export-utils untuk format lengkap
+ */
 const formatTimeAgo = (dateString) => {
   const now = new Date();
   const date = new Date(dateString);
@@ -71,11 +75,24 @@ const formatTimeAgo = (dateString) => {
   return `${days} hari yang lalu`;
 };
 
+/**
+ * Komponen NotificationHistoryItem
+ * 
+ * Menampilkan item individual dari riwayat notifikasi alarm IoT dengan:
+ * - Detail lengkap alarm yang terpicu (device, sensor, nilai, kondisi)  
+ * - Status pengiriman notifikasi (browser/WhatsApp)
+ * - Timestamp dengan format yang user-friendly
+ * - Hover effects untuk interaksi yang baik
+ * 
+ * @param {Object} notification - Data notifikasi dari API backend
+ */
 const NotificationHistoryItem = ({ notification }) => {
   return (
+    // Container utama dengan hover effect dan border styling
     <div className="border rounded-lg p-4 space-y-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
+          {/* Header alarm dengan ikon warning */}
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
             <h4 className="font-medium text-foreground">
@@ -83,6 +100,7 @@ const NotificationHistoryItem = ({ notification }) => {
             </h4>
           </div>
 
+          {/* Detail informasi alarm dalam format yang mudah dibaca */}
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <div>
               <span className="font-medium">Device:</span>{" "}
@@ -104,8 +122,10 @@ const NotificationHistoryItem = ({ notification }) => {
         </div>
       </div>
 
+      {/* Footer dengan status pengiriman notifikasi */}
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="flex items-center gap-2">
+          {/* Indikator status pengiriman WhatsApp */}
           {notification.whatsapp_sent ? (
             <div className="flex items-center gap-1 text-green-600">
               <CheckCircle className="w-3 h-3" />
@@ -120,19 +140,9 @@ const NotificationHistoryItem = ({ notification }) => {
             </div>
           )}
         </div>
-
-        {/* <Badge
-          variant={
-            notification.notification_type === "all" ? "default" : "secondary"
-          }
-          className="text-xs"
-        >
-          {notification.notification_type === "all"
-            ? "Browser dan WhatsApp"
-            : "Hanya Browser"}
-        </Badge> */}
       </div>
 
+      {/* Timestamp dengan format relatif dan absolut */}
       <div className="text-right text-xs text-muted-foreground space-y-1">
         <div className="flex justify-between items-center gap-1">
           <div className="flex items-center gap-1">
@@ -148,18 +158,43 @@ const NotificationHistoryItem = ({ notification }) => {
   );
 };
 
+/**
+ * Komponen NotifHistory (Notification History)
+ * 
+ * Sheet dialog yang menampilkan riwayat lengkap notifikasi alarm IoT dengan fitur:
+ * - Pagination untuk handling data besar
+ * - Filter berdasarkan rentang waktu (hari ini, minggu ini, bulan ini, semua)
+ * - Export ke CSV dan PDF
+ * - Bulk delete dengan konfirmasi
+ * - Loading states dan error handling
+ * - Responsive design untuk mobile dan desktop
+ * 
+ * @param {boolean} open - Status dialog terbuka/tertutup
+ * @param {function} setOpen - Callback untuk mengubah status dialog
+ */
 export default function NotifHistory({ open, setOpen }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [timeRange, setTimeRange] = useState("all");
-  const [pageSize, setPageSize] = useState(10);
+  // State untuk pagination dan filtering
+  const [currentPage, setCurrentPage] = useState(1); // Halaman saat ini
+  const [timeRange, setTimeRange] = useState("all"); // Filter waktu
+  const [pageSize, setPageSize] = useState(10); // Jumlah item per halaman
+  
+  // State untuk dialog konfirmasi delete
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteChecked, setDeleteChecked] = useState(false);
-  const [historyData, setHistoryData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // State untuk data dan loading
+  const [historyData, setHistoryData] = useState(null); // Data riwayat dari API
+  const [isLoading, setIsLoading] = useState(false); // Loading saat fetch data
+  const [error, setError] = useState(null); // Error state
+  const [isDeleting, setIsDeleting] = useState(false); // Loading saat delete
+  
+  // Hook untuk user authentication
   const { user } = useUser();
 
+  /**
+   * Utility untuk memvalidasi status login user
+   * Memastikan user memiliki id dan email yang valid
+   */
   const isUserLoggedIn = (user) => {
     return user && user.id && user.email && user.id !== "" && user.email !== "";
   };

@@ -1,3 +1,9 @@
+/**
+ * ===== OTAA (OVER-THE-AIR AUTHENTICATION) API ROUTES - FIRMWARE MANAGEMENT =====
+ * File ini mengatur OTAA firmware management untuk device IoT
+ * Meliputi: upload firmware, download, update check, board type management
+ */
+
 import Elysia, { t } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { OtaaUpdateService } from "../../services/OtaaUpdateService";
@@ -12,6 +18,8 @@ import {
 
 export function otaaRoutes(otaaService: OtaaUpdateService) {
   return new Elysia({ prefix: "/otaa" })
+    // ===== UPLOAD FIRMWARE ENDPOINT =====
+    // POST /otaa/upload - Upload firmware file untuk OTAA update
     .post(
       "/upload",
       //@ts-ignore
@@ -22,29 +30,29 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
 
           if (!file_base64) {
             return new Response(
-              JSON.stringify({ error: "No firmware file provided" }),
+              JSON.stringify({ error: "File firmware tidak ditemukan" }),
               { status: 400, headers: { "Content-Type": "application/json" } }
             );
           }
 
-          // Validate file type
+          // Validasi tipe file yang diizinkan
           const allowedTypes = [".bin", ".hex"];
           const ext = filename.substring(filename.lastIndexOf(".")).toLowerCase();
           
           if (!allowedTypes.includes(ext)) {
             return new Response(
-              JSON.stringify({ error: "Invalid file type. Only .bin and .hex files are allowed." }),
+              JSON.stringify({ error: "Tipe file tidak valid. Hanya file .bin dan .hex yang diizinkan." }),
               { status: 400, headers: { "Content-Type": "application/json" } }
             );
           }
 
-          // Save file dengan struktur folder berdasarkan user dan board
+          // Simpan file dengan struktur folder berdasarkan user dan board
           const timestamp = Date.now();
           const newFileName = `${board_type}_v${firmware_version}_${timestamp}${ext}`;
           const userFirmwareDir = `user-${decoded.sub}`;
           const firmware_url = `/public/firmware/${userFirmwareDir}/${newFileName}`;
 
-          // Convert base64 to buffer and write file
+          // Convert base64 ke buffer dan tulis file
           const buffer = Buffer.from(file_base64, 'base64');
           
           const uploadDir = `${process.cwd()}/src/assets/firmware/${userFirmwareDir}`;
@@ -53,6 +61,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           await Bun.write(`${uploadDir}/.gitkeep`, ''); // Pastikan direktori dibuat
           await Bun.write(`${uploadDir}/${newFileName}`, buffer);
 
+          // Simpan metadata firmware ke database
           const firmwareId = await otaaService.createOrUpdateFirmware({
             board_type,
             firmware_version,
@@ -62,7 +71,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
 
           return {
             success: true,
-            message: "Firmware uploaded successfully",
+            message: "Firmware berhasil diupload",
             data: {
               id: firmwareId,
               board_type,
@@ -73,13 +82,15 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
         } catch (error: any) {
           console.error("Error uploading firmware:", error);
           return new Response(
-            JSON.stringify({ error: error.message || "Failed to upload firmware" }),
+            JSON.stringify({ error: error.message || "Gagal upload firmware" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
       },
       uploadFirmwareSchema
     )
+    // ===== GET ALL FIRMWARES ENDPOINT =====
+    // GET /otaa - Ambil semua firmware milik user
     .get(
       "/",
       //@ts-ignore
@@ -92,8 +103,8 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           console.error("Error fetching firmwares:", error);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to fetch firmwares",
-              message: error.message || "Failed to fetch firmwares"
+              error: "Gagal mengambil data firmware",
+              message: error.message || "Gagal mengambil data firmware"
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -101,6 +112,9 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
       },
       getFirmwaresSchema
     )
+    
+    // ===== GET FIRMWARE BY BOARD TYPE ENDPOINT =====
+    // GET /otaa/board/:board_type - Ambil firmware berdasarkan tipe board
     .get(
       "/board/:board_type",
       //@ts-ignore
@@ -115,8 +129,8 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           if (!firmware) {
             return new Response(
               JSON.stringify({ 
-                error: "Firmware not found",
-                message: "No firmware found for this board type"
+                error: "Firmware tidak ditemukan",
+                message: "Tidak ada firmware untuk tipe board ini"
               }),
               { status: 404, headers: { "Content-Type": "application/json" } }
             );
@@ -127,8 +141,8 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           console.error("Error fetching firmware:", error);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to fetch firmware",
-              message: error.message || "Failed to fetch firmware"
+              error: "Gagal mengambil firmware",
+              message: error.message || "Gagal mengambil firmware"
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -136,6 +150,8 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
       },
       getFirmwareByBoardSchema
     )
+    // ===== DOWNLOAD FIRMWARE ENDPOINT =====
+    // GET /otaa/download/:board_type/:filename - Download file firmware
     .get(
       "/download/:board_type/:filename",
       //@ts-ignore
@@ -151,13 +167,14 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           if (!(await file.exists())) {
             return new Response(
               JSON.stringify({ 
-                error: "File not found",
-                message: "Firmware file does not exist"
+                error: "File tidak ditemukan",
+                message: "File firmware tidak ada"
               }),
               { status: 404, headers: { "Content-Type": "application/json" } }
             );
           }
           
+          // Return file untuk download
           return new Response(file, {
             headers: {
               "Content-Type": "application/octet-stream",
@@ -168,14 +185,16 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           console.error("Error downloading firmware:", error);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to download firmware",
-              message: error.message || "Failed to download firmware"
+              error: "Gagal download firmware",
+              message: error.message || "Gagal download firmware"
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
         }
       }
     )
+    // ===== CHECK FIRMWARE UPDATE ENDPOINT =====
+    // GET /otaa/check-update/:device_id - Cek apakah ada update firmware untuk device
     .get(
       "/check-update/:device_id",
       //@ts-ignore
@@ -188,8 +207,8 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           console.error("Error checking firmware update:", error);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to check firmware update",
-              message: error.message || "Failed to check firmware update"
+              error: "Gagal cek update firmware",
+              message: error.message || "Gagal cek update firmware"
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );
@@ -197,6 +216,9 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
       },
       checkUpdateSchema
     )
+    
+    // ===== DELETE FIRMWARE ENDPOINT =====
+    // DELETE /otaa/:id - Hapus firmware berdasarkan ID
     .delete(
       "/:id",
       //@ts-ignore
@@ -208,20 +230,20 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           if (!success) {
             return new Response(
               JSON.stringify({ 
-                error: "Firmware not found or unauthorized",
-                message: "Firmware not found or unauthorized to delete"
+                error: "Firmware tidak ditemukan atau tidak berwenang",
+                message: "Firmware tidak ditemukan atau tidak berwenang untuk menghapus"
               }),
               { status: 404, headers: { "Content-Type": "application/json" } }
             );
           }
 
-          return { success: true, message: "Firmware deleted successfully" };
+          return { success: true, message: "Firmware berhasil dihapus" };
         } catch (error: any) {
           console.error("Error deleting firmware:", error);
           return new Response(
             JSON.stringify({ 
-              error: "Failed to delete firmware",
-              message: error.message || "Failed to delete firmware"
+              error: "Gagal menghapus firmware",
+              message: error.message || "Gagal menghapus firmware"
             }),
             { status: 500, headers: { "Content-Type": "application/json" } }
           );

@@ -1,21 +1,29 @@
+// Menggunakan "use client" untuk komponen React sisi klien
 "use client";
+// Import utility untuk class names
 import { cn } from "@/lib/utils";
+// Import hooks React
 import { useRef, useEffect } from "react";
+// Import styled-components untuk styling kustom
 import styled from "styled-components";
 
+// Komponen checkbox button dengan styling kustom dan animasi
 const CheckboxButton = ({
-  id,
-  text,
-  checked = false,
-  onChange,
-  indeterminate,
-  disabled = false,
-  ...props
+  id, // ID unik untuk checkbox
+  text, // Teks label checkbox
+  checked = false, // Status checked default
+  onChange, // Handler untuk perubahan state
+  indeterminate, // Status indeterminate (partially checked)
+  disabled = false, // Status disabled
+  ...props // Props tambahan yang akan diteruskan
 }) => {
+  // Ref untuk mengakses DOM element checkbox
   const ref = useRef();
 
+  // Effect untuk mengatur indeterminate state
   useEffect(() => {
     if (ref.current) {
+      // Set indeterminate property pada DOM element
       ref.current.indeterminate = !!indeterminate;
     }
   }, [indeterminate]);
@@ -23,6 +31,7 @@ const CheckboxButton = ({
   return (
     <StyledWrapper>
       <div className="checkbox-wrapper-46">
+        {/* Input checkbox dengan ref dan props */}
         <input
           type="checkbox"
           id={id}
@@ -32,19 +41,29 @@ const CheckboxButton = ({
           ref={ref}
           {...props}
         />
+        {/* Label dengan SVG checkmark dan teks */}
         <label htmlFor={id} className="cbx">
           <span>
+            {/* SVG icon untuk checkmark */}
             <svg viewBox="0 0 12 10" height="10px" width="12px">
               <polyline points="1.5 6 4.5 9 10.5 1" />
             </svg>
           </span>
-          <span className={cn("max-sm:text-sm", text ? "ml-2" : "", disabled ? "text-muted-foreground line-through" : "")}>{text}</span>
+          {/* Teks label dengan conditional styling */}
+          <span className={cn(
+            "max-sm:text-sm", // Small text di mobile
+            text ? "ml-2" : "", // Margin left jika ada teks
+            disabled ? "text-muted-foreground line-through" : "" // Styling untuk disabled state
+          )}>
+            {text}
+          </span>
         </label>
       </div>
     </StyledWrapper>
   );
 };
 
+// Styled wrapper dengan CSS kustom untuk animasi checkbox
 const StyledWrapper = styled.div`
   .checkbox-wrapper-46 input[type="checkbox"] {
     position: absolute;
