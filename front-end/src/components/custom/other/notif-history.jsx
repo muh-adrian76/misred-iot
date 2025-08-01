@@ -573,7 +573,8 @@ export default function NotifHistory({ open, setOpen }) {
                   variant="destructive"
                   size="sm"
                   onClick={() => setDeleteDialogOpen(true)}
-                  disabled={isDeleting}
+                  // disabled={isDeleting}
+                  disabled={true}
                   className="w-full"
                 >
                   {isDeleting ? (

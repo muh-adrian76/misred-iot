@@ -261,8 +261,8 @@ export class MQTTService {
 
     this.mqttClient.on("message", async (topic, message) => {
       try {
-        const timestamp = Math.floor(Date.now() / 1000);
-        console.log(`Timestamp saat payload diterima di server: ${timestamp}`);
+        const timestamp = Math.floor(Date.now());
+        console.log(`⏰ [TIMESTAMP] Waktu saat payload diterima di server: ${timestamp}`);
         console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic}`);
         console.log(`📊 [MQTT] Raw message:`, message.toString());
 
