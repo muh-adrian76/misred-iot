@@ -350,6 +350,7 @@ async function verifyDeviceJWTAndDecrypt({
     try {
       // Method 1: Try parsing as JSON directly (untuk CustomJWT format terbaru)
       decrypted = JSON.parse(decodedPayload.encryptedData);
+      console.log(`timestamp: ${decodedPayload.timestamp}`);
       console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan JSON parsing`);
     } catch (parseError) {
       try {

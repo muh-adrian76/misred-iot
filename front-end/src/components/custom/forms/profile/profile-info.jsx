@@ -191,6 +191,7 @@ export default function ProfileInfoSection({
               ? handleResetProfile // Jika editing, batalkan perubahan
               : () => setOpenDeleteAccountDialog(true) // Jika tidak editing, buka modal hapus akun
           }
+          disabled={!isEditing}
         >
           {isEditing ? "Batalkan" : "Hapus Akun"} {/* Dynamic text berdasarkan mode */}
           {/* Dynamic icon berdasarkan mode */}

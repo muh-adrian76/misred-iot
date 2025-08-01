@@ -139,6 +139,7 @@ export default function ProfilePasswordSection({
           variant="outline" // Button style variant
           onClick={handleSavePassword} // Handler untuk save password
           className="w-full cursor-pointer transition-all duration-500" // Full width dengan transition animation
+          disabled={true}
         >
           Simpan Perubahan {/* Button text */}
           <UserLock className="h-5 w-5" /> {/* Icon lock */}
