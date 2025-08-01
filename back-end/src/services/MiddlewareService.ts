@@ -182,7 +182,7 @@ export class MQTTService {
         rawResult.insertId
       );
 
-      console.log(`✅ [MQTT PAYLOAD] Berhasil memproses ${normalizedPayloads.length} sensor readings`);
+      console.log(`✅ [MQTT PAYLOAD] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database - Timestamp: ${Date.now()} ms`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       console.log(`📡 [MQTT PAYLOAD] Mengirim data real-time ke WebSocket...`);

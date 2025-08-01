@@ -31,7 +31,8 @@ jobs:
             cd ./back-end
             bun install
             cd ../front-end
+            rm -r .next/
             bun install
-            cd ../
             bun run build-bun
+            cd ../
             bun run pm2:restart

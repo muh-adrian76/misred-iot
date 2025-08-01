@@ -89,7 +89,7 @@ export class PayloadService {
         rawResult.insertId
       );
       
-      console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} sensor readings ke database`);
+      console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database - Timestamp: ${Date.now()} ms`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       console.log(`📡 [BROADCAST] Mengirim data real-time ke user via WebSocket...`);
