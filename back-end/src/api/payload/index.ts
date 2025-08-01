@@ -26,6 +26,8 @@ export function payloadRoutes(payloadService: PayloadService) {
         //@ts-ignore
         async ({ headers, set }) => {
           try {
+            const timestamp = Math.floor(Date.now() / 1000);
+            console.log(`Timestamp saat payload diterima di server: ${timestamp}`);
             let deviceId = headers["x-device-id"];
             const authHeader = headers["authorization"];
 

@@ -2,10 +2,10 @@
  * ===== MQTT SERVICE =====
  * Service untuk mengelola komunikasi MQTT dengan IoT devices
  * Menangani receive data dari devices dan forward ke sistem
- * 
+ *
  * Fitur utama:
  * - MQTT client management dan connection handling
- * - Topic subscription/unsubscription management  
+ * - Topic subscription/unsubscription management
  * - JWT verification dan AES decryption untuk security
  * - Real-time data processing dan normalization
  * - WebSocket broadcasting untuk frontend updates
@@ -32,7 +32,11 @@ export class MQTTService {
   private alarmNotificationService?: AlarmNotificationService;
   private deviceStatusService?: DeviceStatusService;
 
-  constructor(db: Pool, alarmNotificationService?: AlarmNotificationService, deviceStatusService?: DeviceStatusService) {
+  constructor(
+    db: Pool,
+    alarmNotificationService?: AlarmNotificationService,
+    deviceStatusService?: DeviceStatusService
+  ) {
     this.db = db;
     this.mqttClient = MQTTClient.getInstance();
     this.alarmNotificationService = alarmNotificationService;
@@ -126,34 +130,48 @@ export class MQTTService {
     try {
       console.log(`📡 [MQTT PAYLOAD] Memulai proses penyimpanan payload MQTT`);
       console.log(`📊 [MQTT PAYLOAD] Data yang diterima:`, data);
-      
+
       // Ambil JWT dan device_id dari payload MQTT
       let { device_id, jwt: token } = data;
       if (!token) {
-        console.error(`❌ [MQTT PAYLOAD] device_id atau jwt tidak ada di payload`);
+        console.error(
+          `❌ [MQTT PAYLOAD] device_id atau jwt tidak ada di payload`
+        );
         throw new Error("device_id atau jwt tidak ada di payload");
       }
 
       // Atau ambil dari payload JWT
       if (!device_id) {
-        console.log(`🔍 [MQTT PAYLOAD] Device ID tidak ada, mengekstrak dari JWT...`);
+        console.log(
+          `🔍 [MQTT PAYLOAD] Device ID tidak ada, mengekstrak dari JWT...`
+        );
         device_id = extractDeviceIdFromJWT(token);
         if (!device_id) {
-          console.error(`❌ [MQTT PAYLOAD] Device ID tidak ditemukan di payload atau JWT token`);
-          throw new Error("Device ID tidak ditemukan di payload atau JWT token");
+          console.error(
+            `❌ [MQTT PAYLOAD] Device ID tidak ditemukan di payload atau JWT token`
+          );
+          throw new Error(
+            "Device ID tidak ditemukan di payload atau JWT token"
+          );
         }
-        console.log(`✅ [MQTT PAYLOAD] Device ID berhasil diekstrak dari JWT: ${device_id}`);
+        console.log(
+          `✅ [MQTT PAYLOAD] Device ID berhasil diekstrak dari JWT: ${device_id}`
+        );
       }
 
-      console.log(`🔐 [MQTT PAYLOAD] Memulai verifikasi JWT dan dekripsi untuk device: ${device_id}`);
-      
+      console.log(
+        `🔐 [MQTT PAYLOAD] Memulai verifikasi JWT dan dekripsi untuk device: ${device_id}`
+      );
+
       // Verifikasi JWT dan dekripsi AES (gunakan fungsi yang sama seperti HTTP)
       const decrypted = await this.verifyDeviceJWTAndDecrypt({
         device_id,
         token,
       });
 
-      console.log(`✅ [MQTT PAYLOAD] JWT berhasil diverifikasi dan data didekripsi`);
+      console.log(
+        `✅ [MQTT PAYLOAD] JWT berhasil diverifikasi dan data didekripsi`
+      );
       console.log(`📊 [MQTT PAYLOAD] Data hasil dekripsi:`, decrypted);
 
       // STEP 1: Simpan raw data untuk backup dan debugging
@@ -171,7 +189,9 @@ export class MQTTService {
         ]
       );
 
-      console.log(`✅ [MQTT PAYLOAD] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
+      console.log(
+        `✅ [MQTT PAYLOAD] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`
+      );
 
       // STEP 2: Parse dan normalisasi data ke tabel payloads
       console.log(`🔄 [MQTT PAYLOAD] Memulai parsing dan normalisasi data...`);
@@ -182,7 +202,11 @@ export class MQTTService {
         rawResult.insertId
       );
 
-      console.log(`✅ [MQTT PAYLOAD] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database - Timestamp: ${Date.now()} ms`);
+      console.log(
+        `✅ [MQTT PAYLOAD] Berhasil memproses ${
+          normalizedPayloads.length
+        } pembacaan sensor ke database - Timestamp: ${Date.now()} ms`
+      );
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       console.log(`📡 [MQTT PAYLOAD] Mengirim data real-time ke WebSocket...`);
@@ -197,14 +221,18 @@ export class MQTTService {
 
       // STEP 4: Update device status to online (real-time)
       if (this.deviceStatusService) {
-        console.log(`⏰ [MQTT PAYLOAD] Memperbarui status device terakhir dilihat...`);
+        console.log(
+          `⏰ [MQTT PAYLOAD] Memperbarui status device terakhir dilihat...`
+        );
         await this.deviceStatusService.updateDeviceLastSeen(Number(device_id));
         console.log(`✅ [MQTT PAYLOAD] Status device berhasil diperbarui`);
       }
 
       // STEP 5: Check alarms setelah payload disimpan (sama seperti HTTP)
       if (this.alarmNotificationService) {
-        console.log(`🚨 [MQTT PAYLOAD] Memeriksa kondisi alarm untuk device ${device_id}...`);
+        console.log(
+          `🚨 [MQTT PAYLOAD] Memeriksa kondisi alarm untuk device ${device_id}...`
+        );
         await this.alarmNotificationService.checkAlarms(
           Number(device_id),
           decrypted
@@ -212,10 +240,15 @@ export class MQTTService {
         console.log(`✅ [MQTT PAYLOAD] Pemeriksaan alarm selesai`);
       }
 
-      console.log(`🎉 [MQTT PAYLOAD] Semua proses MQTT payload berhasil diselesaikan untuk device ${device_id}`);
+      console.log(
+        `🎉 [MQTT PAYLOAD] Semua proses MQTT payload berhasil diselesaikan untuk device ${device_id}`
+      );
       return rawResult.insertId;
     } catch (error) {
-      console.error("❌ [MQTT PAYLOAD] Error dalam menyimpan MQTT payload:", error);
+      console.error(
+        "❌ [MQTT PAYLOAD] Error dalam menyimpan MQTT payload:",
+        error
+      );
       throw new Error("Failed to save MQTT payload");
     }
   }
@@ -228,9 +261,11 @@ export class MQTTService {
 
     this.mqttClient.on("message", async (topic, message) => {
       try {
+        const timestamp = Math.floor(Date.now() / 1000);
+        console.log(`Timestamp saat payload diterima di server: ${timestamp}`);
         console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic}`);
         console.log(`📊 [MQTT] Raw message:`, message.toString());
-        
+
         const data = JSON.parse(message.toString());
         console.log(`✅ [MQTT] Pesan berhasil diparsing:`, data);
 
@@ -238,9 +273,14 @@ export class MQTTService {
         const dataWithTopic = { ...data, topic };
         await this.saveMqttPayload(dataWithTopic);
 
-        console.log(`🎉 [MQTT] Berhasil menyimpan data sensor MQTT dari topik ${topic} ke database`);
+        console.log(
+          `🎉 [MQTT] Berhasil menyimpan data sensor MQTT dari topik ${topic} ke database`
+        );
       } catch (error) {
-        console.error(`❌ [MQTT] Gagal memproses pesan MQTT dari topik ${topic}:`, error);
+        console.error(
+          `❌ [MQTT] Gagal memproses pesan MQTT dari topik ${topic}:`,
+          error
+        );
       }
     });
 

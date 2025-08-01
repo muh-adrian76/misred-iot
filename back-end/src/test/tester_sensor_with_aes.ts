@@ -1,3 +1,4 @@
+import { timeStamp } from "console";
 import crypto from "crypto";
 import mqtt, { MqttClient } from "mqtt";
 import mysql from "mysql2/promise";
@@ -235,6 +236,7 @@ function createJWTToken(
     sub: deviceId,
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 3600,
+    timestamp: Math.floor(Date.now() / 1000), // Unix timestamp in seconds
   };
 
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString(

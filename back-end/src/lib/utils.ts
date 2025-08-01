@@ -275,6 +275,7 @@ async function verifyDeviceJWTAndDecrypt({
   deviceId: string;
   token: string;
 }) {
+
   console.log(`🔐 [JWT VERIFY] Memulai verifikasi JWT untuk device: ${deviceId}`);
   
   // STEP 1: Ambil device secret dari database untuk verifikasi
@@ -350,19 +351,21 @@ async function verifyDeviceJWTAndDecrypt({
     try {
       // Method 1: Try parsing as JSON directly (untuk CustomJWT format terbaru)
       decrypted = JSON.parse(decodedPayload.encryptedData);
-      console.log(`timestamp: ${decodedPayload.timestamp}`);
+      console.log(`Timestamp device: ${decodedPayload.timestamp}`);
       console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan JSON parsing`);
     } catch (parseError) {
       try {
         // Method 2: Try base64 decode (untuk format base64 encoded)
         const decodedData = Buffer.from(decodedPayload.encryptedData, 'base64').toString();
         decrypted = JSON.parse(decodedData);
+        console.log(`Timestamp device: ${decodedPayload.timestamp}`);
         console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan base64 decode`);
       } catch (base64Error) {
         // Method 3: Fallback ke AES decryption (untuk backward compatibility)
         try {
           const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
           decrypted = JSON.parse(decryptedString);
+          console.log(`Timestamp device: ${decodedPayload.timestamp}`);
           console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan AES decryption`);
         } catch (aesError) {
           console.error("❌ [DECRYPT] Semua metode dekripsi gagal:", aesError);
