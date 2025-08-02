@@ -11,8 +11,8 @@ import { AreaChartWidget } from "@/components/custom/widgets/widget-component/mo
 import { BarChartWidget } from "@/components/custom/widgets/widget-component/monitor/bar";
 import { LineChartWidget } from "@/components/custom/widgets/widget-component/monitor/line";
 import { PieChartWidget } from "./widget-component/monitor/pie";
-import GaugeWidget from "./widget-component/monitor/gauge-widget";
-import TextWidgetWrapper from "./widget-component/monitor/text-widget";
+import GaugeWidget from "./widget-component/monitor/gauge";
+import TextWidgetWrapper from "./widget-component/monitor/text";
 // Import komponen widget untuk kontrol IoT
 import { SwitchWidget } from "@/components/custom/widgets/widget-component/control/switch";
 import { SliderWidget } from "@/components/custom/widgets/widget-component/control/slider";

@@ -8,6 +8,7 @@ import { UserPen, ShieldUser, Undo2, MessageCircle } from "lucide-react";
 import { convertDate, fetchFromBackend } from "@/lib/helper";
 // Import toaster untuk notifications
 import { successToast, errorToast } from "../../other/toaster";
+import DescriptionTooltip from "./../../other/description-tooltip";
 
 // Komponen ProfileInfoSection untuk mengedit informasi dasar profil user
 export default function ProfileInfoSection({
@@ -33,13 +34,13 @@ export default function ProfileInfoSection({
         phone: phoneNumber || "", // Nomor telepon (kosong jika tidak diisi)
         whatsapp_notif: whatsappNotif, // Setting notifikasi WhatsApp
       };
-      
+
       // API call untuk update profil user
       const res = await fetchFromBackend("/user/", {
         method: "PUT", // HTTP method PUT untuk update
         body: JSON.stringify(payload), // Convert payload to JSON string
       });
-      
+
       if (!res.ok) {
         errorToast("Gagal mengubah profil!"); // Error notification
       } else {
@@ -49,12 +50,14 @@ export default function ProfileInfoSection({
           ...prevUser, // Spread existing user data
           ...updatedUser, // Override dengan data yang baru
         }));
-        
+
         // Dispatch custom event untuk notify komponen lain tentang perubahan WhatsApp status
-        window.dispatchEvent(new CustomEvent('whatsapp-status-updated', {
-          detail: { whatsappEnabled: whatsappNotif } // Data untuk event listener
-        }));
-        
+        window.dispatchEvent(
+          new CustomEvent("whatsapp-status-updated", {
+            detail: { whatsappEnabled: whatsappNotif }, // Data untuk event listener
+          })
+        );
+
         successToast("Berhasil mengubah profil!"); // Success notification
       }
     } catch (error) {
@@ -91,13 +94,13 @@ export default function ProfileInfoSection({
             required // Field wajib diisi
           />
         </div>
-        
+
         {/* Field Email User (read-only) */}
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Email:</p>
           <p className="ml-2">{user.email}</p> {/* Email tidak bisa diedit */}
         </div>
-        
+
         {/* Field Nomor Telepon */}
         <div className="flex flex-col gap-2">
           <p className="font-semibold">No. Telepon:</p>
@@ -116,29 +119,48 @@ export default function ProfileInfoSection({
         </div>
 
         {/* Section WhatsApp Notification Toggle dengan conditional styling */}
-        <div className={`flex items-center justify-between gap-3 p-4 border rounded-lg transition-colors ${
-          phoneNumber ? 'bg-green-50/30 border-green-200/50' : 'bg-gray-50/30 border-gray-200/50 '
-        }`}>
+        <div
+          className={`flex items-center justify-between gap-3 p-4 border rounded-lg transition-colors ${
+            phoneNumber
+              ? "bg-green-50/30 border-green-200/50"
+              : "bg-gray-50/30 border-gray-200/50 "
+          }`}
+        >
           <div className="flex items-center gap-3">
             {/* Icon WhatsApp dengan conditional styling */}
-            <div className={`p-2 rounded-full ${
-              phoneNumber ? 'bg-green-100' : 'bg-gray-100'
-            }`}>
-              <MessageCircle className={`w-5 h-5 ${
-                phoneNumber ? 'text-green-600' : 'text-gray-500'
-              }`} />
+            <div
+              className={`p-2 rounded-full ${
+                phoneNumber ? "bg-green-100" : "bg-gray-100"
+              }`}
+            >
+              <MessageCircle
+                className={`w-5 h-5 ${
+                  phoneNumber ? "text-green-600" : "text-gray-500"
+                }`}
+              />
             </div>
             <div>
-              <p className={`font-semibold ${
-                phoneNumber ? 'text-green-800 dark:text-green-300' : 'text-gray-700 dark:text-white'
-              }`}>Notifikasi WhatsApp</p>
-              <p className={`text-xs ${
-                phoneNumber ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
-              }`}>
+              <p
+                className={`font-semibold ${
+                  phoneNumber
+                    ? "text-green-800 dark:text-green-300"
+                    : "text-gray-700 dark:text-white"
+                }`}
+              >
+                Notifikasi WhatsApp
+              </p>
+              <p
+                className={`text-xs ${
+                  phoneNumber
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+              >
                 {/* Dynamic description berdasarkan apakah nomor telepon sudah diisi */}
-                {phoneNumber 
-                  ? `Gunakan nomor ${phoneNumber} untuk menerima notifikasi alarm` // Jika ada nomor
-                  : "Tambahkan nomor telepon untuk mengaktifkan notifikasi WhatsApp" // Jika belum ada nomor
+                {
+                  phoneNumber
+                    ? `Gunakan nomor ${phoneNumber} untuk menerima notifikasi alarm` // Jika ada nomor
+                    : "Tambahkan nomor telepon untuk mengaktifkan notifikasi WhatsApp" // Jika belum ada nomor
                 }
               </p>
             </div>
@@ -159,14 +181,16 @@ export default function ProfileInfoSection({
         {/* Section informasi akun read-only */}
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Tanggal Pembuatan Akun:</p>
-          <p className="ml-2">{convertDate(user.created_at)}</p> {/* Format tanggal dengan helper function */}
+          <p className="ml-2">{convertDate(user.created_at)}</p>{" "}
+          {/* Format tanggal dengan helper function */}
         </div>
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Log In Terakhir:</p>
-          <p className="ml-2">{convertDate(user.last_login)}</p> {/* Format tanggal dengan helper function */}
+          <p className="ml-2">{convertDate(user.last_login)}</p>{" "}
+          {/* Format tanggal dengan helper function */}
         </div>
       </div>
-      
+
       {/* Section action buttons dengan dynamic behavior */}
       <div className="flex gap-4 justify-center">
         {/* Button utama - Edit/Simpan */}
@@ -180,27 +204,32 @@ export default function ProfileInfoSection({
           {isEditing ? "Simpan" : "Edit"} {/* Dynamic text berdasarkan mode */}
           <UserPen className="h-5 w-5" /> {/* Icon edit */}
         </Button>
-        
+
         {/* Button sekunder - Batalkan/Hapus Akun */}
-        <Button
-          size="lg"
-          variant={isEditing ? "outline" : "default"} // Dynamic variant berdasarkan mode
-          className="rounded-lg cursor-pointer transition-all duration-500"
-          onClick={
-            isEditing
-              ? handleResetProfile // Jika editing, batalkan perubahan
-              : () => setOpenDeleteAccountDialog(true) // Jika tidak editing, buka modal hapus akun
-          }
-          disabled={!isEditing}
-        >
-          {isEditing ? "Batalkan" : "Hapus Akun"} {/* Dynamic text berdasarkan mode */}
-          {/* Dynamic icon berdasarkan mode */}
-          {isEditing ? (
-            <Undo2 className="h-5 w-5" /> // Icon undo untuk batalkan
-          ) : (
-            <ShieldUser className="h-5 w-5" /> // Icon shield untuk hapus akun
-          )}
-        </Button>
+        <DescriptionTooltip className={isEditing ? "hidden" : ""} content="Sementara dinonaktifkan saat kuisioner berlangsung.">
+          <div>
+            <Button
+              size="lg"
+              variant={isEditing ? "outline" : "default"} // Dynamic variant berdasarkan mode
+              className="rounded-lg cursor-pointer transition-all duration-500"
+              onClick={
+                isEditing
+                  ? handleResetProfile // Jika editing, batalkan perubahan
+                  : () => setOpenDeleteAccountDialog(true) // Jika tidak editing, buka modal hapus akun
+              }
+              disabled={!isEditing}
+            >
+              {isEditing ? "Batalkan" : "Hapus Akun"}{" "}
+              {/* Dynamic text berdasarkan mode */}
+              {/* Dynamic icon berdasarkan mode */}
+              {isEditing ? (
+                <Undo2 className="h-5 w-5" /> // Icon undo untuk batalkan
+              ) : (
+                <ShieldUser className="h-5 w-5" /> // Icon shield untuk hapus akun
+              )}
+            </Button>
+          </div>
+        </DescriptionTooltip>
       </div>
     </>
   );

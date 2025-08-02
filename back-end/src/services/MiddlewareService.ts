@@ -72,6 +72,37 @@ export class MQTTService {
     });
   }
 
+  // ===== PUBLISH RESPONSE =====
+  // Publish respons balik ke ESP setelah berhasil memproses payload
+  // Topic respons: {originalTopic}/response
+  // Format: JSON dengan status, message, data, dan timestamp
+  async publishResponse(topic: string,responseData: any) {
+    try {
+      // Format respons sebagai JSON
+      const responseMessage = JSON.stringify({
+        ...responseData,
+        serverTimestamp: Math.floor(Date.now()),
+      });
+
+      console.log(`📊 [MQTT RESPONSE] Data respons:`, responseMessage);
+
+      // Publish respons ke MQTT broker
+      this.mqttClient.publish(topic, responseMessage, { 
+        retain: false,
+        qos: 1, // QoS 1 untuk memastikan delivery
+      }, (err) => {
+        if (!err) {
+          console.log(`✅ [MQTT RESPONSE] Berhasil mengirim respons ke topik ${topic}`);
+        } else {
+          console.error(`❌ [MQTT RESPONSE] Gagal mengirim respons ke topik ${topic}:`, err);
+        }
+      });
+
+    } catch (error) {
+      console.error(`❌ [MQTT RESPONSE] Error dalam mengirim respons:`, error);
+    }
+  }
+
   // ===== SUBSCRIBE ALL DEVICE TOPICS =====
   // Subscribe ke semua topic aktif dari devices
   async subscribeAllDeviceTopics() {
@@ -133,30 +164,29 @@ export class MQTTService {
 
       // Ambil JWT dan device_id dari payload MQTT
       let { device_id, jwt: token } = data;
+      
+      // Validasi JWT token ada
       if (!token) {
-        console.error(
-          `❌ [MQTT PAYLOAD] device_id atau jwt tidak ada di payload`
-        );
-        throw new Error("device_id atau jwt tidak ada di payload");
+        console.error(`❌ [MQTT PAYLOAD] JWT token tidak ada di payload`);
+        throw new Error("JWT token tidak ada di payload");
       }
 
-      // Atau ambil dari payload JWT
+      // Ekstrak device_id dari JWT jika tidak ada di payload
       if (!device_id) {
-        console.log(
-          `🔍 [MQTT PAYLOAD] Device ID tidak ada, mengekstrak dari JWT...`
-        );
-        device_id = extractDeviceIdFromJWT(token);
-        if (!device_id) {
-          console.error(
-            `❌ [MQTT PAYLOAD] Device ID tidak ditemukan di payload atau JWT token`
-          );
-          throw new Error(
-            "Device ID tidak ditemukan di payload atau JWT token"
-          );
+        console.log(`🔍 [MQTT PAYLOAD] Device ID tidak ada, mengekstrak dari JWT...`);
+        try {
+          device_id = extractDeviceIdFromJWT(token);
+          if (!device_id) {
+            throw new Error("Device ID tidak ditemukan di JWT token");
+          }
+          console.log(`✅ [MQTT PAYLOAD] Device ID berhasil diekstrak dari JWT: ${device_id}`);
+        } catch (extractError) {
+          console.error(`❌ [MQTT PAYLOAD] Gagal mengekstrak device_id dari JWT:`, extractError);
+          const errorMessage = extractError instanceof Error ? extractError.message : 'Unknown error';
+          throw new Error(`Gagal mengekstrak device_id dari JWT: ${errorMessage}`);
         }
-        console.log(
-          `✅ [MQTT PAYLOAD] Device ID berhasil diekstrak dari JWT: ${device_id}`
-        );
+      } else {
+        console.log(`✅ [MQTT PAYLOAD] Device ID tersedia di payload: ${device_id}`);
       }
 
       console.log(
@@ -239,10 +269,6 @@ export class MQTTService {
         );
         console.log(`✅ [MQTT PAYLOAD] Pemeriksaan alarm selesai`);
       }
-
-      console.log(
-        `🎉 [MQTT PAYLOAD] Semua proses MQTT payload berhasil diselesaikan untuk device ${device_id}`
-      );
       return rawResult.insertId;
     } catch (error) {
       console.error(
@@ -260,23 +286,55 @@ export class MQTTService {
     });
 
     this.mqttClient.on("message", async (topic, message) => {
+      const timestamp = Math.floor(Date.now());
       try {
-        const timestamp = Math.floor(Date.now());
-        console.log(`⏰ [TIMESTAMP] Waktu saat payload diterima di server: ${timestamp}`);
-        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic}`);
-        console.log(`📊 [MQTT] Raw message:`, message.toString());
+        console.log(`[TIMESTAMP] Waktu saat payload diterima di server: ${timestamp}`);
+        console.log(`[MQTT] Menerima pesan dari topik: ${topic}`);
+        console.log(`📊 [MQTT] Payload:`, message.toString());
 
-        const data = JSON.parse(message.toString());
-        console.log(`✅ [MQTT] Pesan berhasil diparsing:`, data);
+        const messageStr = message.toString().trim();
+        let data: any;
+
+        // Cek apakah payload adalah JWT token langsung atau JSON object
+        if (messageStr.startsWith('eyJ') && messageStr.includes('.')) {
+          // Payload adalah JWT token langsung
+          console.log(`🔐 [MQTT] Payload adalah JWT token langsung`);
+          data = { jwt: messageStr };
+        } else {
+          // Payload adalah JSON object
+          try {
+            data = JSON.parse(messageStr);
+            console.log(`✅ [MQTT] Pesan berhasil diparsing sebagai JSON:`, data);
+          } catch (parseError) {
+            console.error(`❌ [MQTT] Gagal parsing JSON payload:`, parseError);
+            const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+            throw new Error(`Invalid payload format: ${errorMessage}`);
+          }
+        }
+
+        console.log(`✅ [MQTT] Data yang akan diproses:`, data);
 
         // Tambahkan informasi topic ke data untuk debugging
         const dataWithTopic = { ...data, topic };
-        await this.saveMqttPayload(dataWithTopic);
+        const insertId = await this.saveMqttPayload(dataWithTopic);
+
+        // Kirim respons balik ke ESP setelah berhasil menyimpan
+        await this.publishResponse(topic, {
+          status: "success",
+          message: "Payload berhasil disimpan dan diproses",
+        });
 
         console.log(
           `🎉 [MQTT] Berhasil menyimpan data sensor MQTT dari topik ${topic} ke database`
         );
       } catch (error) {
+        // Kirim respons error balik ke ESP
+        await this.publishResponse(topic, {
+          status: "failed",
+          message: "Gagal memproses payload",
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
         console.error(
           `❌ [MQTT] Gagal memproses pesan MQTT dari topik ${topic}:`,
           error
@@ -288,35 +346,35 @@ export class MQTTService {
       console.log("⚠️  MQTT client offline");
     });
 
-    // Optional: Periodic sync setiap 5 menit untuk memastikan consistency
-    // setInterval(async () => {
-    //   const topicManager = this.deviceService?.getMQTTTopicManager();
-    //   if (topicManager) {
-    //     try {
-    //       await topicManager.syncSubscriptions(
-    //         (topic: string) => {
-    //           this.mqttClient.subscribe(topic, (err) => {
-    //             if (!err) {
-    //               console.log(`✅ Sync: Subscribed to topic: ${topic}`);
-    //             } else {
-    //               console.error(`❌ Sync: Failed to subscribe to topic: ${topic}`, err);
-    //             }
-    //           });
-    //         },
-    //         (topic: string) => {
-    //           this.mqttClient.unsubscribe(topic, (err) => {
-    //             if (!err) {
-    //               console.log(`✅ Sync: Unsubscribed from topic: ${topic}`);
-    //             } else {
-    //               console.error(`❌ Sync: Failed to unsubscribe from topic: ${topic}`, err);
-    //             }
-    //           });
-    //         }
-    //       );
-    //     } catch (error) {
-    //       console.error("❌ MQTT topic sync error:", error);
-    //     }
-    //   }
-    // }, 5 * 60 * 1000); // 5 minutes
+    // Optional: Cek penggunaan topik setiap 5 menit
+    setInterval(async () => {
+      const topicManager = this.deviceService?.getMQTTTopicManager();
+      if (topicManager) {
+        try {
+          await topicManager.syncSubscriptions(
+            (topic: string) => {
+              this.mqttClient.subscribe(topic, (err) => {
+                if (!err) {
+                  console.log(`✅ Sync: Subscribed to topic: ${topic}`);
+                } else {
+                  console.error(`❌ Sync: Failed to subscribe to topic: ${topic}`, err);
+                }
+              });
+            },
+            (topic: string) => {
+              this.mqttClient.unsubscribe(topic, (err) => {
+                if (!err) {
+                  console.log(`✅ Sync: Unsubscribed from topic: ${topic}`);
+                } else {
+                  console.error(`❌ Sync: Failed to unsubscribe from topic: ${topic}`, err);
+                }
+              });
+            }
+          );
+        } catch (error) {
+          console.error("❌ MQTT topic sync error:", error);
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes
   }
 }

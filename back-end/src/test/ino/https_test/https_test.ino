@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <CustomJWT.h>
@@ -11,21 +12,44 @@
 
 // Waktu lokal (GMT +7)
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org");
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 7*3600, 60000);
 
 // WiFi configuration
 const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // Server configuration
-const char* server_url = "http://192.168.18.238:7601";
+const char* server_url = "https://api.misred-iot.com";
+
+// Sertifikat server VPS
+const char* root_ca = \
+"-----BEGIN CERTIFICATE-----
+MIIDyDCCA06gAwIBAgISBnoA4tDtvQfROfBi0AlsNwrsMAoGCCqGSM49BAMDMDIxCzAJBgNVBAYT
+AlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJFNTAeFw0yNTA2MjYwMzU2NDJa
+Fw0yNTA5MjQwMzU2NDFaMBkxFzAVBgNVBAMTDm1pc3JlZC1pb3QuY29tMFkwEwYHKoZIzj0CAQYI
+KoZIzj0DAQcDQgAEP3QQVE4x5D2zGztl9jE6HQZARfTZsSHQwNZLOKO2XBDMhmILESz5FBjgw9+H
+OQYMGVi5u1X6Ll2wAN/UwjpBBKOCAlswggJXMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAUBggr
+BgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUlL4M04I2LwUJUo6P97aw
+AomhVs4wHwYDVR0jBBgwFoAUnytfzzwhT50Et+0rLMTGcIvS1w0wMgYIKwYBBQUHAQEEJjAkMCIG
+CCsGAQUFBzAChhZodHRwOi8vZTUuaS5sZW5jci5vcmcvMFcGA1UdEQRQME6CFGFkbWluLm1pc3Jl
+ZC1pb3QuY29tghJhcGkubWlzcmVkLWlvdC5jb22CDm1pc3JlZC1pb3QuY29tghJ3d3cubWlzcmVk
+LWlvdC5jb20wEwYDVR0gBAwwCjAIBgZngQwBAgEwLgYDVR0fBCcwJTAjoCGgH4YdaHR0cDovL2U1
+LmMubGVuY3Iub3JnLzEwOS5jcmwwggEEBgorBgEEAdZ5AgQCBIH1BIHyAPAAdwCkQsUGSWBhVI8P
+1Oqc+3otJkVNh6l/L99FWfYnTzqEVAAAAZeqlwExAAAEAwBIMEYCIQDjg+ttTHx46AjnqSXJ58s+
+xkAVB38c5+SR+FwOT2pEnQIhAMrcKQHZH4k68rFFav7ve2SQrTujCDQFa3io75/AuNFBAHUArxga
+KNaMo+CpikycZ6sJ+Lu8IrquvLE4o6Gd0/m2Aw0AAAGXqpcCBAAABAMARjBEAiBMW2kIjjzwzsPs
+zRtKKQkWeTt/Tdd8WVT+S3LuatNe8AIgBFIVo08u1HuExG0H/HONsqCEDQg805gmAFS4DQILMU0w
+CgYIKoZIzj0EAwMDaAAwZQIwIPIuKha9KvibQ+WxVc6ydYviJLTNkzSVR+v95Sxsk7Zgpnxg+U9W
+FjDHGJaTKiFkAjEAmAVD8jwSLDwJYqt6Y35rLIbn5ZBqgPod7yJzyWH0/rpcN0gA4LFrfR7L2dqM
+tzwT
+-----END CERTIFICATE-----\n";
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;
 String device_id = DEVICE_ID;
 
 // JWT configuration
-CustomJWT jwt(device_secret, 256); // 256 bytes for payload
+CustomJWT jwt(device_secret, 512); // 512 bytes for payload
 
 // Sensor pins
 const int PH_SENSOR   = 36;
@@ -76,6 +100,8 @@ void setup() {
   // Inisialisasi NTP
   timeClient.begin();
   
+  WiFiClientSecure *client = new WiFiClientSecure;
+
   lastSensorSend = millis() - SENSOR_INTERVAL; // Send immediately
 }
 
@@ -86,13 +112,13 @@ void loop() {
   if (now - lastSensorSend >= SENSOR_INTERVAL && messageCount < 10) {
     lastSensorSend = now;
     messageCount++;
-    sendSensorDataHTTP();
+    sendSensorDataHTTPS();
   }
   
   // Stop after 10 messages
   if (messageCount >= 2) {
     Serial.println("🏁 Testing completed");
-    Serial.println("✅ ESP32 HTTP test finished. Check server logs for database storage.");
+    Serial.println("✅ ESP32 HTTPS  test finished. Check server logs for database storage.");
     while (true) {
       delay(1000);
       // Optional: Print periodic status
@@ -105,7 +131,7 @@ void loop() {
   delay(100);
 }
 
-void sendSensorDataHTTP() {
+void sendSensorDataHTTPS() {
   Serial.println("\n📊 Reading sensors (" + String(messageCount) + "/10)...");
   
   // Read sensor values (realistic simulation)
@@ -117,7 +143,7 @@ void sendSensorDataHTTP() {
   float ntuValue = readNTUSensor();
   
   // Create sensor data payload
-  StaticJsonDocument<256> sensorDoc;
+  StaticJsonDocument<512> sensorDoc;
   sensorDoc["V0"] = phValue;        // pH sensor on pin A0
   sensorDoc["V1"] = flowValue;      // Flow sensor on pin A1  
   sensorDoc["V2"] = codValue;       // COD sensor on pin A2
@@ -144,7 +170,7 @@ void sendSensorDataHTTP() {
     // Empty body since data is in JWT
     String requestBody = "{}";
     
-    Serial.println("📤 Mengirim data ke server menggunakan protokol HTTP...");
+    Serial.println("📤 Mengirim data ke server menggunakan protokol HTTPS...");
     int httpResponseCode = http.POST(requestBody);
     
     if (httpResponseCode > 0) {
@@ -164,7 +190,7 @@ void sendSensorDataHTTP() {
         if (renewDeviceSecret()) {
           Serial.println("🔄 Retrying with new secret...");
           // Rekursif call dengan secret baru
-          sendSensorDataHTTP();
+          sendSensorDataHTTPS();
           return;
         }
       }
@@ -209,8 +235,8 @@ float readNTUSensor() {
 
 // Create JWT token using CustomJWT library
 String createJWTWithCustomJWT(String data) {
-  Serial.println("🔐 Membuat JWT menggunakan library CustomJWT...");
-  unsigned long currentTime = timeClient.getEpochTime() + (7*3600); // Sesuai dengan waktu lokal (Zona waktu Asia/Jakarta, +7 jam)
+  Serial.println("🔐 Creating JWT token with CustomJWT...");
+  unsigned long currentTime = timeClient.getEpochTime();
   unsigned long expiryTime = currentTime + 3600; // 1 hour from now
   
   // Create payload JSON with encryptedData field
@@ -230,7 +256,7 @@ String createJWTWithCustomJWT(String data) {
   
   if (success) {
     String token = String(jwt.out);
-    Serial.println("✅ Berhasil membuat token JWT");
+    Serial.println("✅ JWT Token created successfully");
     Serial.println("🔑 Token length: " + String(token.length()));
     return token;
   } else {
@@ -242,7 +268,6 @@ String createJWTWithCustomJWT(String data) {
 // Renew device secret when JWT fails
 bool renewDeviceSecret() {
   Serial.println("🔄 Attempting to renew device secret...");
-  
   HTTPClient http;
   http.begin(server_url + String("/device/renew-secret/") + device_id);
   http.addHeader("Content-Type", "application/json");

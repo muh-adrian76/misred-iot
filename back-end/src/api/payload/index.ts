@@ -24,10 +24,12 @@ export function payloadRoutes(payloadService: PayloadService) {
       .post(
         "/http",
         //@ts-ignore
-        async ({ headers, set }) => {
+        async ({ headers, body, set }) => {
           try {
             const timestamp = Math.floor(Date.now() / 1000);
             console.log(`Timestamp saat payload diterima di server: ${timestamp}`);
+            console.log("Header Payload diterima:", headers);
+            console.log("Body Payload diterima:", body);
             let deviceId = headers["x-device-id"];
             const authHeader = headers["authorization"];
 

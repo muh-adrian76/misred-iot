@@ -9,6 +9,8 @@ import { successToast, errorToast } from "../../other/toaster";
 import { fetchFromBackend } from "@/lib/helper";
 // Import komponen strength meter untuk validasi password
 import { PasswordStrengthMeter } from "@/components/custom/other/strength-meter";
+// Import komponen tooltip untuk deskripsi
+import DescriptionTooltip from "../../other/description-tooltip";
 
 // Komponen ProfilePasswordSection untuk mengubah password user
 export default function ProfilePasswordSection({
@@ -29,13 +31,13 @@ export default function ProfilePasswordSection({
       errorToast("Password baru tidak boleh sama dengan password lama!");
       return; // Stop execution jika validasi gagal
     }
-    
+
     // Validasi panjang password minimal 8 karakter
     if (newPassword.length < 8) {
       errorToast("Password baru harus memiliki setidaknya 8 karakter!");
       return; // Stop execution jika validasi gagal
     }
-    
+
     try {
       // Payload data untuk API request
       const payload = {
@@ -80,7 +82,7 @@ export default function ProfilePasswordSection({
               readOnly // Read-only karena tidak bisa diubah
             />
           </div>
-          
+
           {/* Container untuk password fields */}
           <div className="relative flex flex-col gap-3 mb-3">
             {/* Input Password Lama dengan toggle visibility */}
@@ -110,7 +112,7 @@ export default function ProfilePasswordSection({
                 )}
               </div>
             </div>
-            
+
             {/* Password Strength Meter untuk password baru dengan advanced features */}
             <PasswordStrengthMeter
               id="new-password"
@@ -133,17 +135,21 @@ export default function ProfilePasswordSection({
             />
           </div>
         </form>
-        
+
         {/* Button untuk save password changes */}
-        <Button
-          variant="outline" // Button style variant
-          onClick={handleSavePassword} // Handler untuk save password
-          className="w-full cursor-pointer transition-all duration-500" // Full width dengan transition animation
-          disabled={true}
-        >
-          Simpan Perubahan {/* Button text */}
-          <UserLock className="h-5 w-5" /> {/* Icon lock */}
-        </Button>
+        <DescriptionTooltip content="Sementara dinonaktifkan saat kuisioner berlangsung.">
+          <div>
+            <Button
+              variant="outline" // Button style variant
+              onClick={handleSavePassword} // Handler untuk save password
+              className="w-full cursor-pointer transition-all duration-500" // Full width dengan transition animation
+              disabled={true}
+            >
+              Simpan Perubahan {/* Button text */}
+              <UserLock className="h-5 w-5" /> {/* Icon lock */}
+            </Button>
+          </div>
+        </DescriptionTooltip>
       </div>
     </>
   );

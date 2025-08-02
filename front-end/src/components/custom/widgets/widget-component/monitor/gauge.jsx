@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useWidgetData } from "@/hooks/use-widget-data";
+import { Loader2, WifiOff, AlertCircle } from "lucide-react";
 
+// Gauge UI Component (merged from /components/ui/gauge.jsx)
 const StatusGaugeChart = ({
   // Data props
   value = 0,
@@ -138,113 +141,260 @@ const StatusGaugeChart = ({
   };
 
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`} style={{ height: "100%" }}>
-      {/* Main Gauge */}
-      <div
-        className="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-full shadow-2xl flex-shrink-0"
-        style={{ width: size, height: size }}
+    <div className="relative flex items-center justify-center w-full h-full">
+      <svg
+        width={size}
+        height={size}
+        className="absolute inset-0"
+        style={{ transform: "rotate(-90deg)" }}
       >
-        {/* Radial lines background effect */}
-        <div className="absolute inset-0 rounded-full opacity-10">
-          <div className="absolute inset-4 rounded-full border border-slate-600"></div>
-          <div className="absolute inset-8 rounded-full border border-slate-600"></div>
-        </div>
-
-        <svg
-          width={size}
-          height={size}
-          className="absolute inset-0"
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          <defs>
-            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-              {createGradientStops()}
-            </linearGradient>
-            {glowEffect && (
-              <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                <feMerge>
-                  <feMergeNode in="coloredBlur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            )}
-          </defs>
-
-          {/* Background track */}
-          <path
-            d={backgroundPath}
-            fill="none"
-            stroke="rgba(148, 163, 184, 0.2)"
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            transform={`translate(10, 10)`}
-          />
-
-          {/* Progress arc */}
-          <path
-            d={backgroundPath}
-            fill="none"
-            stroke={`url(#${gradientId})`}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={`${progressLength} ${totalLength}`}
-            filter={glowEffect ? `url(#${glowId})` : undefined}
-            transform={`translate(10, 10)`}
-            style={{
-              transition: animated ? "none" : "stroke-dasharray 0.5s ease",
-            }}
-          />
-
-          {/* Value indicator dot */}
-          {progress > 0 && (
-            <circle
-              cx={
-                polarToCartesian(
-                  center,
-                  center,
-                  radius,
-                  startAngle + totalAngle * progress
-                ).x
-              }
-              cy={
-                polarToCartesian(
-                  center,
-                  center,
-                  radius,
-                  startAngle + totalAngle * progress
-                ).y
-              }
-              r="6"
-              fill="white"
-              stroke={statusInfo.color}
-              strokeWidth="2"
-              filter={glowEffect ? `url(#${glowId})` : undefined}
-            />
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            {createGradientStops()}
+          </linearGradient>
+          {glowEffect && (
+            <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+              <feMerge>
+                <feMergeNode in="coloredBlur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           )}
-        </svg>
+        </defs>
 
-        {/* Center content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <div className="text-2xl md:text-3xl font-bold mb-1">
-            {formatValue(animatedValue)}
-            {unit && <span className="text-sm md:text-lg text-slate-400 ml-1">{unit}</span>}
-          </div>
-          <div className="text-xs text-slate-400 mb-2 text-center px-2">{title}</div>
-          <div
-            className="px-2 py-1 rounded-full text-xs font-medium"
-            style={{
-              backgroundColor: `${statusInfo.color}20`,
-              color: statusInfo.color,
-              border: `1px solid ${statusInfo.color}40`,
-            }}
-          >
-            {statusInfo.label}
-          </div>
+        {/* Background track */}
+        <path
+          d={backgroundPath}
+          fill="none"
+          stroke="rgba(148, 163, 184, 0.2)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          transform={`translate(10, 10)`}
+        />
+
+        {/* Progress arc */}
+        <path
+          d={backgroundPath}
+          fill="none"
+          stroke={`url(#${gradientId})`}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={`${progressLength} ${totalLength}`}
+          filter={glowEffect ? `url(#${glowId})` : undefined}
+          transform={`translate(10, 10)`}
+          style={{
+            transition: animated ? "none" : "stroke-dasharray 0.5s ease",
+          }}
+        />
+
+        {/* Value indicator dot */}
+        {progress > 0 && (
+          <circle
+            cx={
+              polarToCartesian(
+                center,
+                center,
+                radius,
+                startAngle + totalAngle * progress
+              ).x
+            }
+            cy={
+              polarToCartesian(
+                center,
+                center,
+                radius,
+                startAngle + totalAngle * progress
+              ).y
+            }
+            r="6"
+            fill="white"
+            stroke={statusInfo.color}
+            strokeWidth="2"
+            filter={glowEffect ? `url(#${glowId})` : undefined}
+          />
+        )}
+      </svg>
+
+      {/* Center content */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+        <div className="text-2xl md:text-3xl font-bold mb-1">
+          {formatValue(animatedValue)}
+          {unit && <span className="text-sm md:text-lg ml-1">{unit}</span>}
+        </div>
+        <div className="text-xs mb-2 text-center px-2">{title}</div>
+        <div
+          className="px-2 py-1 rounded-full text-xs font-medium"
+          style={{
+            backgroundColor: `${statusInfo.color}20`,
+            color: statusInfo.color,
+            border: `1px solid ${statusInfo.color}40`,
+          }}
+        >
+          {statusInfo.label}
         </div>
       </div>
     </div>
   );
 };
 
-export default StatusGaugeChart;
+// Wrapper component untuk StatusGaugeChart yang terintegrasi dengan dashboard system
+export const GaugeWidget = ({
+  previewMode = false,
+  widget,
+  timeRange = "1h",
+  dataCount = 100,
+  filterType = "latest",
+  className = "",
+  ...props
+}) => {
+  // Preview mode dengan data dummy
+  if (previewMode) {
+    const previewConfig = {
+      maxValue: 100,
+      unit: "°C",
+      size: 200,
+      strokeWidth: 10,
+      ranges: [
+        { min: 0, max: 25, label: "Low", color: "#ef4444", status: "critical" },
+        { min: 25, max: 50, label: "Medium", color: "#f97316", status: "warning" },
+        { min: 50, max: 75, label: "High", color: "#eab308", status: "ok" },
+        { min: 75, max: 100, label: "Very High", color: "#22c55e", status: "excellent" },
+      ],
+      animated: true,
+      animationDuration: 1500,
+      glowEffect: true,
+    };
+
+    // Return hanya gauge component tanpa wrapper tambahan
+    return (
+      <StatusGaugeChart
+        value={87}
+        total={previewConfig.maxValue}
+        title="Temperature"
+        unit={previewConfig.unit}
+        size={previewConfig.size}
+        strokeWidth={previewConfig.strokeWidth}
+        ranges={previewConfig.ranges}
+        animated={previewConfig.animated}
+        animationDuration={previewConfig.animationDuration}
+        glowEffect={previewConfig.glowEffect}
+        className={className}
+        {...props}
+      />
+    );
+  }
+
+  // Safety check
+  if (!widget) {
+    return (
+      <div className="h-full w-full min-h-[200px] flex items-center justify-center bg-muted/30 rounded-lg">
+        <div className="text-center space-y-2">
+          <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">Widget tidak tersedia</p>
+        </div>
+      </div>
+    );
+  }
+  // Get pairs dari widget inputs
+  const pairs = widget?.inputs?.map(input => ({
+    device_id: input.device_id,
+    datastream_id: input.datastream_id
+  })) || [];
+
+  // Hook untuk mengambil data widget dari server
+  const { 
+    data, 
+    isLoading, 
+    error, 
+    isConnected 
+  } = useWidgetData(widget, timeRange, dataCount, filterType, pairs);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px]">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="text-sm">Loading sensor data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px]">
+        <div className="flex flex-col items-center gap-2 text-red-500">
+          <AlertCircle className="h-6 w-6" />
+          <span className="text-sm text-center">
+            Error loading data: {error.message}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  // No connection state
+  if (!isConnected) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px]">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <WifiOff className="h-6 w-6" />
+          <span className="text-sm">No connection</span>
+        </div>
+      </div>
+    );
+  }
+
+  // No data state
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[200px]">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <AlertCircle className="h-6 w-6" />
+          <span className="text-sm">No data available</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Get the latest value from the data
+  const latestData = data[data.length - 1];
+  const value = latestData ? parseFloat(latestData.value) || 0 : 0;
+
+  // Get widget configuration
+  const config = widget.config || {};
+  
+  // Default ranges if not configured
+  const defaultRanges = [
+    { min: 0, max: 25, label: "Low", color: "#ef4444", status: "critical" },
+    { min: 25, max: 50, label: "Medium", color: "#f97316", status: "warning" },
+    { min: 50, max: 75, label: "High", color: "#eab308", status: "ok" },
+    { min: 75, max: 100, label: "Very High", color: "#22c55e", status: "excellent" },
+  ];
+
+  // Get sensor information for title
+  const sensorInfo = pairs[0];
+  const title = widget.description || "Sensor Reading";
+
+  return (
+    <StatusGaugeChart
+      value={value}
+      total={config.maxValue || 100}
+      title={title}
+      unit={config.unit || ""}
+      size={config.size || 240}
+      strokeWidth={config.strokeWidth || 12}
+      ranges={config.ranges || defaultRanges}
+      animated={config.animated !== undefined ? config.animated : true}
+      animationDuration={config.animationDuration || 2000}
+      glowEffect={config.glowEffect !== undefined ? config.glowEffect : true}
+      className={className}
+      {...props}
+    />
+  );
+};
+
+export default GaugeWidget;

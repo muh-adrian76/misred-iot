@@ -2,30 +2,40 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <CustomJWT.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+
+// ---- SETUP VARIABEL ------
+#define DEVICE_ID "2"
+#define JWT_SECRET "0d538e03bbcd6184bae59b4d96f3eb0c"
+
+// Waktu UTC
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org");
 
 // WiFi configuration
 const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // MQTT configuration
-const char* mqtt_server = "192.168.18.121";
+const char* mqtt_server = "192.168.18.238";
 const int mqtt_port = 1883;
 const char* mqtt_topic = "device/data";
 
-// Device configuration (device 2 for MQTT)
-char device_secret[] = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
-String device_id = "2"; // Device 2 is configured for MQTT in database
+// Device configuration (akan di-update otomatis dari server)
+char device_secret[] = JWT_SECRET;
+String device_id = DEVICE_ID;
 
 // JWT configuration
-CustomJWT jwt(device_secret, 512); // 512 bytes for payload
+CustomJWT jwt(device_secret, 256); // 256 bytes for payload
 
 // Sensor pins
-const int PH_SENSOR = A0;
-const int FLOW_SENSOR = A1;
-const int COD_SENSOR = A2;
-const int TEMP_SENSOR = A3;
-const int NH3N_SENSOR = A4;
-const int NTU_SENSOR = A5;
+const int PH_SENSOR   = 36;
+const int FLOW_SENSOR = 39;
+const int COD_SENSOR  = 34;
+const int TEMP_SENSOR = 35;
+const int NH3N_SENSOR = 32;
+const int NTU_SENSOR  = 33;
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -59,6 +69,7 @@ void setup() {
 
   // Setup MQTT
   mqttClient.setServer(mqtt_server, mqtt_port);
+  mqttClient.setBufferSize(512);
   mqttClient.setCallback(onMqttMessage);
 
   // Initialize random seed
@@ -68,6 +79,9 @@ void setup() {
   Serial.println("Target: Publish sensor data via MQTT for database storage");
   Serial.println("Expected: Server processes MQTT data and stores in database");
   
+  // Inisialisasi NTP
+  timeClient.begin();
+
   // Initialize JWT memory
   jwt.allocateJWTMemory();
   Serial.println("✅ JWT memory allocated");
@@ -83,6 +97,7 @@ void loop() {
   mqttClient.loop();
 
   unsigned long now = millis();
+  timeClient.update();
   
   // Send sensor data every 5 seconds (limit to 10 messages for testing)
   if (now - lastSensorSend >= SENSOR_INTERVAL && messageCount < 10) {
@@ -92,11 +107,16 @@ void loop() {
   }
   
   // Stop after 10 messages
-  if (messageCount >= 10) {
-    Serial.println("🏁 MQTT Testing completed - published 10 messages");
+  if (messageCount >= 2) {
+    Serial.println("🏁 MQTT Testing completed");
     Serial.println("✅ ESP32 MQTT test finished. Check server logs for database storage.");
-    delay(60000); // Wait 1 minute
-    messageCount = 0; // Reset for continuous testing
+    while (true) {
+      delay(1000);
+      // Optional: Print periodic status
+      Serial.println("💤 Reset to restart");
+      delay(590000); // Print every 10 seconds total
+      messageCount = 0; // Reset for continuous testing
+    }
   }
   
   delay(100);
@@ -106,7 +126,7 @@ void reconnectMQTT() {
   while (!mqttClient.connected()) {
     Serial.println("📡 Connecting to MQTT broker...");
     
-    String clientId = "ESP32_Simple_Test_" + device_id;
+    String clientId = "ESP32Client_" + String(random(0xffff), HEX);
     
     if (mqttClient.connect(clientId.c_str())) {
       Serial.println("✅ Connected to MQTT broker");
@@ -131,15 +151,14 @@ void sendSensorDataMQTT() {
   float ntuValue = readNTUSensor();
   
   // Create sensor data payload
-  StaticJsonDocument<512> sensorDoc;
-  sensorDoc["A0"] = phValue;        // pH sensor on pin A0
-  sensorDoc["A1"] = flowValue;      // Flow sensor on pin A1  
-  sensorDoc["A2"] = codValue;       // COD sensor on pin A2
-  sensorDoc["A3"] = tempValue;      // Temperature sensor on pin A3
-  sensorDoc["A4"] = nh3nValue;      // NH3N sensor on pin A4
-  sensorDoc["A5"] = ntuValue;       // NTU sensor on pin A5
-  sensorDoc["timestamp"] = millis();
-  sensorDoc["device_id"] = device_id;
+  StaticJsonDocument<256> sensorDoc;
+  sensorDoc["V0"] = phValue;        // pH sensor on pin A0
+  sensorDoc["V1"] = flowValue;      // Flow sensor on pin A1  
+  sensorDoc["V2"] = codValue;       // COD sensor on pin A2
+  sensorDoc["V3"] = tempValue;      // Temperature sensor on pin A3
+  sensorDoc["V4"] = nh3nValue;      // NH3N sensor on pin A4
+  sensorDoc["V5"] = ntuValue;       // NTU sensor on pin A5
+  sensorDoc["timestamp"] = timeClient.getEpochTime();
   
   String sensorPayload;
   serializeJson(sensorDoc, sensorPayload);
@@ -147,21 +166,13 @@ void sendSensorDataMQTT() {
   Serial.println("📦 Sensor payload: " + sensorPayload);
   
   // Create JWT with encrypted payload
-  String jwt_token = createJWTWithCustomJWT(sensorPayload);
+  String mqttPayload = createJWTWithCustomJWT(sensorPayload);
+  Serial.println("🔑 Token length: " + String(mqttPayload.length()));
   
-  if (jwt_token.length() > 0) {
-    // Create MQTT message with JWT
-    StaticJsonDocument<256> mqttDoc;
-    mqttDoc["device_id"] = device_id;
-    mqttDoc["jwt"] = jwt_token;
-    mqttDoc["timestamp"] = millis();
-    mqttDoc["message_count"] = messageCount;
-    
-    String mqttPayload;
-    serializeJson(mqttDoc, mqttPayload);
-    
+  if (mqttPayload.length() > 0) {
     Serial.println("📤 Publishing to MQTT topic: " + String(mqtt_topic));
     
+    // Syntax: publish(topic, payload)
     if (mqttClient.publish(mqtt_topic, mqttPayload.c_str())) {
       Serial.println("✅ MQTT published successfully");
     } else {
@@ -180,7 +191,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     message += (char)payload[i];
   }
-  Serial.println("📄 Message: " + message);
+  Serial.println("📄 Pesan yang diterima dari publisher: " + message);
 }
 
 // Simple sensor reading functions with realistic values
@@ -216,26 +227,27 @@ float readNTUSensor() {
 
 // Create JWT token using CustomJWT library
 String createJWTWithCustomJWT(String data) {
-  Serial.println("🔐 Creating MQTT JWT token with CustomJWT...");
+  Serial.println("🔐 Membuat JWT menggunakan library CustomJWT...");
+  unsigned long currentTime = timeClient.getEpochTime() + (7*3600); // Sesuai dengan waktu lokal (Zona waktu Asia/Jakarta, +7 jam)
+  unsigned long expiryTime = currentTime + 3600; // 1 dari sekarang
   
-  // Create payload JSON with encryptedData field
   StaticJsonDocument<256> payloadDoc;
-  payloadDoc["encryptedData"] = data; // For simplicity, we'll send plain data as "encrypted"
-  payloadDoc["deviceId"] = device_id;
-  payloadDoc["iat"] = millis() / 1000;
-  payloadDoc["exp"] = (millis() / 1000) + 3600; // 1 hour expiry
-  
+  payloadDoc["data"] = data;
+  payloadDoc["sub"] = device_id;
+  payloadDoc["iat"] = currentTime;
+  payloadDoc["exp"] = expiryTime;
+
   String payloadStr;
   serializeJson(payloadDoc, payloadStr);
   
-  Serial.println("📦 JWT Payload: " + payloadStr);
+  Serial.println("📦 Payload JWT: " + payloadStr);
   
   // Create JWT using CustomJWT library
   bool success = jwt.encodeJWT((char*)payloadStr.c_str());
   
   if (success) {
     String token = String(jwt.out);
-    Serial.println("✅ JWT Token created successfully");
+    Serial.println("✅ Berhasil membuat Token JWT");
     Serial.println("🔑 Token length: " + String(token.length()));
     return token;
   } else {

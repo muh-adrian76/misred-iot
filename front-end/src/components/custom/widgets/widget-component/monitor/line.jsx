@@ -79,6 +79,7 @@ const chartColors = [
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
+  "var(--chart-6)",
 ];
 
 export function LineChartWidget({
@@ -112,9 +113,9 @@ export function LineChartWidget({
       },
       {
         month: "April",
-        datastream_1: 73,
+        datastream_1: 103,
         datastream_2: 190,
-        datastream_3: 170,
+        datastream_3: 30,
       },
       { month: "May", datastream_1: 209, datastream_2: 130, datastream_3: 130 },
       {
@@ -132,7 +133,7 @@ export function LineChartWidget({
       },
       datastream_2: {
         label: "Datastream 2",
-        color: "var(--chart-4)",
+        color: "var(--chart-2)",
       },
       datastream_3: {
         label: "Datastream 3",
@@ -148,17 +149,9 @@ export function LineChartWidget({
             data={chartData}
             width={undefined}
             height={undefined}
-            margin={{ left: 12, right: 12 }}
           >
             <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <ChartTooltip cursor={false} hideLabel content={<ChartTooltipContent />} />
             <Line
               dataKey="datastream_1"
               type="monotone"

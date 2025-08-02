@@ -42,7 +42,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
           className="z-10 rounded-md bg-card shadow-lg dark:shadow-[0px_0px_30px_0_rgba(255,255,255,0.15)] p-4"
         >
           {/* Header widget box dengan kontrol minimize/maximize */}
-          <div className="flex gap-2 justify-between items-center">
+          <div className="flex gap-2 justify-between items-center sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700 bg-card">
             <div className="flex gap-3 font-semibold">
               <ChartNoAxesCombined />
               <span>Kotak Widget</span>
@@ -52,7 +52,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
               <Button
                 size="xs"
                 variant="ghost"
-                className="opacity-80 hover:opacity-100"
+                className="opacity-100"
                 onClick={() => {
                   setMinimize(false);
                 }}
@@ -116,7 +116,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
           {/* Header widget box desktop dengan kontrol minimize/maximize */}
           <div
             className={cn(
-              "flex pl-4 pr-3 justify-between items-center bg-card",
+              "flex pl-4 pr-3 justify-between items-center bg-card sticky top-0 z-20",
               minimize === true ? "rounded-md border py-2" : "rounded-t-md py-4"
             )}
           >

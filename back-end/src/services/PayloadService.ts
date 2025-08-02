@@ -68,7 +68,7 @@ export class PayloadService {
     decrypted: any;
   }): Promise<number> {
     try {
-      console.log(`📡 [HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
+      console.log(`[HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
       console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
       
       // STEP 1: Simpan raw data untuk backup dan debugging
@@ -78,7 +78,7 @@ export class PayloadService {
         [deviceId, JSON.stringify(decrypted)]
       );
 
-      console.log(`� [DATABASE] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
+      console.log(`[DATABASE] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
       
       // STEP 2: Parse dan normalisasi data ke tabel payloads
       console.log(`🔄 [PARSING] Memulai parsing dan normalisasi data sensor...`);
@@ -92,20 +92,20 @@ export class PayloadService {
       console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
-      console.log(`📡 [BROADCAST] Mengirim data real-time ke user via WebSocket...`);
+      console.log(`[BROADCAST] Mengirim data real-time ke user via WebSocket...`);
       await broadcastSensorUpdates(this.db, broadcastToUsersByDevice, Number(deviceId), decrypted, "http");
       console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
       // STEP 4: Update device status to online (real-time)
       if (this.deviceStatusService) {
-        console.log(`⏰ [DEVICE STATUS] Memperbarui status device terakhir dilihat...`);
+        console.log(`[DEVICE STATUS] Memperbarui status device terakhir dilihat...`);
         await this.deviceStatusService.updateDeviceLastSeen(Number(deviceId));
         console.log(`✅ [DEVICE STATUS] Status device berhasil diperbarui`);
       }
 
       // STEP 5: Check alarms setelah payload disimpan
       if (this.alarmNotificationService) {
-        console.log(`� [ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
+        console.log(`[ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
         await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
         console.log(`✅ [ALARM] Pemeriksaan alarm selesai`);
       }
@@ -193,7 +193,6 @@ export class PayloadService {
           query = `SELECT 
             p.value, 
             p.device_time as timestamp,
-            p.device_time,
             ds.unit, ds.description as sensor_name,
             d.description as device_name
           FROM payloads p
@@ -232,7 +231,6 @@ export class PayloadService {
         query = `SELECT 
           p.value, 
           p.device_time as timestamp,
-          p.device_time,
           ds.unit, ds.description as sensor_name,
           d.description as device_name
         FROM payloads p
@@ -303,11 +301,12 @@ export class PayloadService {
       
       // Simpan ke payloads (normalized) dengan nilai yang sudah divalidasi
       const [result] = await this.db.query<ResultSetHeader>(
-        `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
+        `INSERT INTO payloads (device_id, datastream_id, raw_payload_id, value, device_time, server_time)
         VALUES (?, ?, ?, ?, NULL, NOW())`,
         [
           device_id, 
           datastream_id, 
+          rawResult.insertId, // Simpan ID raw payload untuk referensi
           validatedValue, // Gunakan nilai yang sudah divalidasi
           JSON.stringify({ 
             raw_payload_id: rawResult.insertId, 

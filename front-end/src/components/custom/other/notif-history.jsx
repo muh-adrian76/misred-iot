@@ -53,11 +53,16 @@ import {
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
 import { errorToast, successToast } from "./toaster";
-import { exportToCSV as exportCSVUtil, formatDateTime, generateReactPDF } from "@/lib/export-utils";
+import {
+  exportToCSV as exportCSVUtil,
+  formatDateTime,
+  generateReactPDF,
+} from "@/lib/export-utils";
 import { NotificationHistoryPDFDocument } from "@/components/custom/other/pdf-content";
+import DescriptionTooltip from "./description-tooltip";
 
 /**
- * Fungsi utilitas untuk memformat waktu relatif  
+ * Fungsi utilitas untuk memformat waktu relatif
  * formatDateTime sudah diimport dari export-utils untuk format lengkap
  */
 const formatTimeAgo = (dateString) => {
@@ -77,13 +82,13 @@ const formatTimeAgo = (dateString) => {
 
 /**
  * Komponen NotificationHistoryItem
- * 
+ *
  * Menampilkan item individual dari riwayat notifikasi alarm IoT dengan:
- * - Detail lengkap alarm yang terpicu (device, sensor, nilai, kondisi)  
+ * - Detail lengkap alarm yang terpicu (device, sensor, nilai, kondisi)
  * - Status pengiriman notifikasi (browser/WhatsApp)
  * - Timestamp dengan format yang user-friendly
  * - Hover effects untuk interaksi yang baik
- * 
+ *
  * @param {Object} notification - Data notifikasi dari API backend
  */
 const NotificationHistoryItem = ({ notification }) => {
@@ -160,7 +165,7 @@ const NotificationHistoryItem = ({ notification }) => {
 
 /**
  * Komponen NotifHistory (Notification History)
- * 
+ *
  * Sheet dialog yang menampilkan riwayat lengkap notifikasi alarm IoT dengan fitur:
  * - Pagination untuk handling data besar
  * - Filter berdasarkan rentang waktu (hari ini, minggu ini, bulan ini, semua)
@@ -168,7 +173,7 @@ const NotificationHistoryItem = ({ notification }) => {
  * - Bulk delete dengan konfirmasi
  * - Loading states dan error handling
  * - Responsive design untuk mobile dan desktop
- * 
+ *
  * @param {boolean} open - Status dialog terbuka/tertutup
  * @param {function} setOpen - Callback untuk mengubah status dialog
  */
@@ -177,17 +182,17 @@ export default function NotifHistory({ open, setOpen }) {
   const [currentPage, setCurrentPage] = useState(1); // Halaman saat ini
   const [timeRange, setTimeRange] = useState("all"); // Filter waktu
   const [pageSize, setPageSize] = useState(10); // Jumlah item per halaman
-  
+
   // State untuk dialog konfirmasi delete
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteChecked, setDeleteChecked] = useState(false);
-  
+
   // State untuk data dan loading
   const [historyData, setHistoryData] = useState(null); // Data riwayat dari API
   const [isLoading, setIsLoading] = useState(false); // Loading saat fetch data
   const [error, setError] = useState(null); // Error state
   const [isDeleting, setIsDeleting] = useState(false); // Loading saat delete
-  
+
   // Hook untuk user authentication
   const { user } = useUser();
 
@@ -278,7 +283,7 @@ export default function NotifHistory({ open, setOpen }) {
       }
 
       await response.json();
-      
+
       setDeleteDialogOpen(false);
       setDeleteChecked(false);
       await fetchHistoryData();
@@ -330,7 +335,10 @@ export default function NotifHistory({ open, setOpen }) {
 
     const filename = "riwayat-notifikasi";
     exportCSVUtil(headers, rows, filename);
-    successToast("CSV berhasil diekspor", `${sortedNotifications.length} notifikasi berhasil diekspor ke CSV`);
+    successToast(
+      "CSV berhasil diekspor",
+      `${sortedNotifications.length} notifikasi berhasil diekspor ke CSV`
+    );
   };
 
   const exportToPDF = async () => {
@@ -342,16 +350,22 @@ export default function NotifHistory({ open, setOpen }) {
 
     try {
       // Generate filename with timestamp
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
       const filename = `notification-history-${timestamp}`;
 
       // Create React PDF Document component and generate PDF
-      const DocumentComponent = NotificationHistoryPDFDocument({ 
-        notifications: historyData.notifications, 
-        timeRange 
+      const DocumentComponent = NotificationHistoryPDFDocument({
+        notifications: historyData.notifications,
+        timeRange,
       });
       await generateReactPDF(DocumentComponent, filename);
-      successToast("PDF berhasil diekspor", `${historyData.notifications.length} notifikasi berhasil diekspor ke PDF`);
+      successToast(
+        "PDF berhasil diekspor",
+        `${historyData.notifications.length} notifikasi berhasil diekspor ke PDF`
+      );
     } catch (error) {
       console.error("Error exporting PDF:", error);
       errorToast("Gagal mengekspor PDF", error.message);
@@ -359,10 +373,7 @@ export default function NotifHistory({ open, setOpen }) {
   };
 
   return (
-    <Sheet 
-      open={open} 
-      onOpenChange={setOpen}
-    >
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent side="right" className="max-w-4xl w-full">
         <SheetHeader className="border-b-2">
           <SheetTitle>Riwayat Notifikasi</SheetTitle>
@@ -568,28 +579,30 @@ export default function NotifHistory({ open, setOpen }) {
 
             {/* Delete All History Button */}
             {historyData?.notifications?.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  // disabled={isDeleting}
-                  disabled={true}
-                  className="w-full"
-                >
-                  {isDeleting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
-                      Menghapus...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Hapus Semua Riwayat
-                    </>
-                  )}
-                </Button>
-              </div>
+              <DescriptionTooltip content="Sementara dinonaktifkan saat kuisioner berlangsung.">
+                <div className="mt-4 pt-4 border-t">
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setDeleteDialogOpen(true)}
+                    // disabled={isDeleting}
+                    disabled={true}
+                    className="w-full"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground mr-2"></div>
+                        Menghapus...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Hapus Semua Riwayat
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </DescriptionTooltip>
             )}
           </div>
         </div>

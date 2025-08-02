@@ -332,36 +332,36 @@ async function verifyDeviceJWTAndDecrypt({
     
     // STEP 4: Check expiration menggunakan UTC timestamp (JWT standard)
     const currentUtcTimestamp = Math.floor(Date.now() / 1000);
+    console.log(`⏳ [JWT VERIFY] Timestamp server: ${currentUtcTimestamp} - Timestamp JWT: ${decodedPayload.exp}`);
     if (decodedPayload.exp && currentUtcTimestamp > decodedPayload.exp) {
-      console.error(`❌ [JWT VERIFY] JWT sudah expired. Current: ${currentUtcTimestamp}, Exp: ${decodedPayload.exp}`);
+      console.error(`❌ [JWT VERIFY] JWT sudah expired. Waktu Epoch Server: ${currentUtcTimestamp}, Waktu Epoch Client: ${decodedPayload.exp}`);
       throw new Error("JWT expired");
     }
     
     console.log(`✅ [JWT VERIFY] JWT belum expired`);
     
     // STEP 5: Validasi keberadaan encrypted data
-    if (!decodedPayload.encryptedData) {
-      console.error(`❌ [JWT VERIFY] encryptedData tidak ditemukan di JWT`);
-      throw new Error("Missing encryptedData in JWT");
+    if (!decodedPayload.data) {
+      console.error(`❌ [JWT VERIFY] data tidak ditemukan di JWT`);
+      throw new Error("Missing data in JWT");
     }
     
-    console.log(`🔓 [DECRYPT] Memulai proses dekripsi data...`);
     // STEP 6: Handle different encryption methods (backward compatibility)
     let decrypted;
     try {
       // Method 1: Try parsing as JSON directly (untuk CustomJWT format terbaru)
-      decrypted = JSON.parse(decodedPayload.encryptedData);
-      console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan JSON parsing`);
+      decrypted = JSON.parse(decodedPayload.data);
+      console.log(`✅ [DECRYPT] Data berhasil diambil menggunakan JSON parsing: `, decrypted);
     } catch (parseError) {
       try {
         // Method 2: Try base64 decode (untuk format base64 encoded)
-        const decodedData = Buffer.from(decodedPayload.encryptedData, 'base64').toString();
+        const decodedData = Buffer.from(decodedPayload.data, 'base64').toString();
         decrypted = JSON.parse(decodedData);
         console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan base64 decode`);
       } catch (base64Error) {
         // Method 3: Fallback ke AES decryption (untuk backward compatibility)
         try {
-          const decryptedString = decryptAES(crypto, decodedPayload.encryptedData, secret);
+          const decryptedString = decryptAES(crypto, decodedPayload.data, secret);
           decrypted = JSON.parse(decryptedString);
           console.log(`✅ [DECRYPT] Data berhasil didekripsi menggunakan AES decryption`);
         } catch (aesError) {
@@ -530,8 +530,6 @@ async function parseAndNormalizePayload(
       console.warn(`⚠️ [PARSE] Validation warnings ditemukan:`);
       validationWarnings.forEach(warning => console.warn(`   • ${warning}`));
     }
-    
-    console.log(`🎉 [PARSE] Parsing selesai. Total ${insertedIds.length} payload berhasil disimpan`);
     return insertedIds;
   } catch (error) {
     console.error("Error in parseAndNormalizePayload:", error);

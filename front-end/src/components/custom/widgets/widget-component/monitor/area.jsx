@@ -79,6 +79,7 @@ const chartColors = [
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
+  "var(--chart-6)",
 ];
 
 export function AreaChartWidget({
@@ -93,32 +94,32 @@ export function AreaChartWidget({
   if (previewMode) {
     const dummyData = [
       {
-        month: "January",
+        month: "09.00",
         datastream_1: 186,
         datastream_2: 80,
         datastream_3: 120,
       },
       {
-        month: "February",
+        month: "10.00",
         datastream_1: 305,
         datastream_2: 200,
         datastream_3: 150,
       },
       {
-        month: "March",
+        month: "11.00",
         datastream_1: 237,
         datastream_2: 120,
         datastream_3: 140,
       },
       {
-        month: "April",
+        month: "12.00",
         datastream_1: 73,
         datastream_2: 190,
         datastream_3: 170,
       },
-      { month: "May", datastream_1: 209, datastream_2: 130, datastream_3: 130 },
+      { month: "13.00", datastream_1: 209, datastream_2: 130, datastream_3: 130 },
       {
-        month: "June",
+        month: "14.00",
         datastream_1: 214,
         datastream_2: 140,
         datastream_3: 110,
@@ -132,7 +133,7 @@ export function AreaChartWidget({
       },
       datastream_2: {
         label: "Datastream 2",
-        color: "var(--chart-5)",
+        color: "var(--chart-4)",
       },
       datastream_3: {
         label: "Datastream 3",
@@ -148,7 +149,6 @@ export function AreaChartWidget({
             width={undefined}
             height={undefined}
             data={dummyData}
-            margin={{ left: 12, right: 12 }}
           >
             <defs>
               <linearGradient id="fillDatastream1" x1="0" y1="0" x2="0" y2="1">
@@ -166,12 +166,12 @@ export function AreaChartWidget({
               <linearGradient id="fillDatastream2" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
-                  stopColor="var(--chart-5)"
+                  stopColor="var(--chart-2)"
                   stopOpacity={0.8}
                 />
                 <stop
                   offset="95%"
-                  stopColor="var(--chart-5)"
+                  stopColor="var(--chart-2)"
                   stopOpacity={0.1}
                 />
               </linearGradient>
@@ -189,14 +189,7 @@ export function AreaChartWidget({
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+            <ChartTooltip cursor={false} hideLabel content={<ChartTooltipContent />} />
             <Area
               dataKey="datastream_1"
               type="natural"
@@ -209,7 +202,7 @@ export function AreaChartWidget({
               dataKey="datastream_2"
               type="natural"
               fill="url(#fillDatastream2)"
-              stroke="var(--chart-5)"
+              stroke="var(--chart-2)"
               strokeWidth={1}
               stackId="1"
             />

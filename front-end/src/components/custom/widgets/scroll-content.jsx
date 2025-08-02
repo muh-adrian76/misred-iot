@@ -3,8 +3,8 @@ import { AreaChartWidget } from "./widget-component/monitor/area";
 import { BarChartWidget } from "./widget-component/monitor/bar";
 import { LineChartWidget } from "./widget-component/monitor/line";
 import { PieChartWidget } from "./widget-component/monitor/pie";
-import GaugeWidget from "./widget-component/monitor/gauge-widget";
-import TextWidgetWrapper from "./widget-component/monitor/text-widget";
+import GaugeWidget from "./widget-component/monitor/gauge";
+import TextWidgetWrapper from "./widget-component/monitor/text";
 import { SliderWidget } from "./widget-component/control/slider";
 import { SwitchWidget } from "./widget-component/control/switch";
 
@@ -16,57 +16,57 @@ import DescriptionTooltip from "../other/description-tooltip";
 
 // Konfigurasi daftar widget yang tersedia untuk dashboard IoT
 const widgetList = [
-  {
-    key: "switch", // Identifier unik untuk widget switch
-    label: "Switch", // Label yang ditampilkan di UI
-    component: SwitchWidget, // Komponen React untuk widget
-    width: "w-50", // Kelas CSS untuk lebar widget
-    tooltip: "Gunakan untuk menghidupkan/mematikan sesuatu", // Deskripsi fungsi
-  },
-  {
-    key: "slider",
-    label: "Slider",
-    component: SliderWidget,
-    width: "w-50",
-    tooltip: "Gunakan untuk mengatur nilai dalam rentang tertentu",
-  },
+  // {
+  //   key: "switch", // Identifier unik untuk widget switch
+  //   label: "Switch", // Label yang ditampilkan di UI
+  //   component: SwitchWidget, // Komponen React untuk widget
+  //   width: "w-50", // Kelas CSS untuk lebar widget
+  //   tooltip: "Gunakan untuk menghidupkan/mematikan sesuatu", // Deskripsi fungsi
+  // },
+  // {
+  //   key: "slider",
+  //   label: "Slider",
+  //   component: SliderWidget,
+  //   width: "w-50",
+  //   tooltip: "Gunakan untuk mengatur nilai dalam rentang tertentu",
+  // },
   {
     key: "text",
-    label: "Text Widget",
+    label: "Teks",
     component: TextWidgetWrapper,
     width: "w-50",
     tooltip: "Gunakan untuk menampilkan nilai sensor dalam format teks",
   },
   {
     key: "gauge",
-    label: "Gauge Chart",
+    label: "Gauge",
     component: GaugeWidget,
     width: "w-50",
     tooltip: "Gunakan untuk memantau status sensor dengan indikator visual",
   },
   {
     key: "line",
-    label: "Line Chart",
+    label: "Diagram Garis",
     component: LineChartWidget,
     width: "lg:w-50 w-full", // Responsive width: 50% di layar besar, full di layar kecil
     tooltip: "Gunakan untuk melihat tren data dari waktu ke waktu",
   },
-  {
-    key: "bar",
-    label: "Bar Chart",
-    component: BarChartWidget,
-    tooltip: "Gunakan untuk membandingkan nilai antar kategori",
-  },
+  // {
+  //   key: "bar",
+  //   label: "Diagram Batang",
+  //   component: BarChartWidget,
+  //   tooltip: "Gunakan untuk membandingkan nilai antar kategori",
+  // },
   {
     key: "area",
-    label: "Area Chart",
+    label: "Diagram Area",
     component: AreaChartWidget,
     tooltip: "Gunakan untuk melihat total kumulatif atau volume dari data",
   },
   // Pie chart sementara dinonaktifkan
   // {
   //   key: "pie",
-  //   label: "Pie Chart",
+  //   label: "Diagram Lingkaran",
   //   component: PieChartWidget,
   //   tooltip: "Gunakan untuk melihat proporsi antar kategori",
   // },
@@ -109,7 +109,7 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
           <div
             className={cn(
               "flex w-full items-center justify-between mb-2",
-              mobileView ? "px-5" : "px-10" // Responsive padding
+              mobileView ? "px-5" : "px-6" // Responsive padding
             )}
             // title={`Tarik ke kanvas untuk menambah ${w.label}`}
             >
