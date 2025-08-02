@@ -201,6 +201,9 @@ export const userWsRoutes = new Elysia({ prefix: "/ws" })
 // Broadcast data sensor HANYA ke user yang memiliki device tersebut (SECURE)
 export async function broadcastToUsersByDevice(db: any, deviceId: number, data: any) {
   try {
+    console.log(`🔍 [WS BROADCAST] Memulai broadcast untuk device ${deviceId}`);
+    console.log(`📊 [WS BROADCAST] Data yang akan dikirim:`, data);
+    
     // Ambil user_id pemilik device dari database
     const [deviceRows]: any = await db.query(
       "SELECT user_id FROM devices WHERE id = ?",
@@ -208,47 +211,37 @@ export async function broadcastToUsersByDevice(db: any, deviceId: number, data: 
     );
     
     if (!deviceRows.length) {
-      console.warn(`Device ${deviceId} not found for broadcasting`);
+      console.warn(`❌ [WS BROADCAST] Device ${deviceId} not found for broadcasting`);
       return;
     }
     
     const ownerId = deviceRows[0].user_id.toString();
+    console.log(`✅ [WS BROADCAST] Device ${deviceId} dimiliki oleh user ${ownerId}`);
     
     // Broadcast hanya ke user pemilik device (SECURE)
     const userSockets = userClients.get(ownerId);
     if (userSockets && userSockets.size > 0) {
+      console.log(`🔌 [WS BROADCAST] User ${ownerId} memiliki ${userSockets.size} koneksi WebSocket aktif`);
       const jsonData = JSON.stringify(data); // Serialize data ke JSON string
+      let successCount = 0;
       for (const ws of userSockets) {
         try {
           ws.send(jsonData); // Kirim JSON string, bukan objek JavaScript
+          successCount++;
         } catch (error) {
-          console.error(`Error sending to user ${ownerId}:`, error);
+          console.error(`❌ [WS BROADCAST] Error sending to user ${ownerId}:`, error);
         }
       }
+      console.log(`✅ [WS BROADCAST] Berhasil mengirim ke ${successCount}/${userSockets.size} koneksi user ${ownerId}`);
     } else {
-      // Debug koneksi websocket user
-      // console.log(`📭 User ${ownerId} tidak terhubung via WebSocket`);
+      console.log(`📭 [WS BROADCAST] User ${ownerId} tidak terhubung via WebSocket (${userClients.size} total users online)`);
+      console.log(`🔍 [WS BROADCAST] Online users:`, Array.from(userClients.keys()));
     }
   } catch (error) {
-    console.error("Error in broadcastToUsersByDevice:", error);
+    console.error("❌ [WS BROADCAST] Error in broadcastToUsersByDevice:", error);
   }
 }
 
-// ===== BROADCAST TO ALL USERS (DEPRECATED) =====
-// Fungsi lama untuk broadcast ke semua user - TIDAK AMAN, gunakan broadcastToUsersByDevice()
-export function broadcastToUsers(data: any) {
-  console.warn("⚠️ DEPRECATED: broadcastToUsers() broadcasts to ALL users. Use broadcastToUsersByDevice() instead for security.");
-  const jsonData = JSON.stringify(data); // Serialize data ke JSON string
-  for (const [userId, userSockets] of userClients) {
-    for (const ws of userSockets) {
-      try {
-        ws.send(jsonData); // Kirim JSON string, bukan objek JavaScript
-      } catch (error) {
-        console.error(`Error broadcasting to user ${userId}:`, error);
-      }
-    }
-  }
-}
 
 // ===== BROADCAST TO SPECIFIC USER =====
 // Fungsi untuk broadcast ke user spesifik berdasarkan user_id
@@ -266,4 +259,28 @@ export function broadcastToSpecificUser(userId: string, data: any) {
     return true;
   }
   return false;
+}
+
+// ===== BROADCAST TO ALL USERS =====
+// Fungsi untuk broadcast ke semua user yang terhubung (untuk notifikasi global)
+export function broadcastToAllUsers(data: any) {
+  console.log(`📢 [GLOBAL BROADCAST] Mengirim ke semua user online (${userClients.size} users)`);
+  const jsonData = JSON.stringify(data);
+  let totalSent = 0;
+  
+  for (const [userId, userSockets] of userClients.entries()) {
+    if (userSockets && userSockets.size > 0) {
+      for (const ws of userSockets) {
+        try {
+          ws.send(jsonData);
+          totalSent++;
+        } catch (error) {
+          console.error(`Error sending global broadcast to user ${userId}:`, error);
+        }
+      }
+    }
+  }
+  
+  console.log(`✅ [GLOBAL BROADCAST] Berhasil mengirim ke ${totalSent} koneksi`);
+  return totalSent;
 }

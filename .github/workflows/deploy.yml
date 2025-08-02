@@ -20,6 +20,7 @@ jobs:
           port: 8288
           script: |
             cd ./misred-iot
+            bun run pm2:stop
             git pull origin main
             if [ ! -f "$HOME/.bun/bin/bun" ]; then
               curl -fsSL https://bun.sh/install | bash
@@ -31,7 +32,7 @@ jobs:
             cd ./back-end
             bun install
             cd ../front-end
-            rm -r .next/
+            rm -rf .next/
             bun install
             bun run build-bun
             cd ../

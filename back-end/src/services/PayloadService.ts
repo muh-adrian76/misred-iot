@@ -51,11 +51,14 @@ export class PayloadService {
     deviceId: string;
     token: string;
   }) {
-    return await verifyDeviceJWTAndDecrypt({
+    const result = await verifyDeviceJWTAndDecrypt({
       deviceService: this.deviceService,
       deviceId,
       token,
     });
+    
+    // Backward compatibility: return hanya decrypted data
+    return result.decryptedData;
   }
 
   // ===== SAVE HTTP PAYLOAD =====
@@ -86,7 +89,8 @@ export class PayloadService {
         this.db,
         Number(deviceId), 
         decrypted, 
-        rawResult.insertId
+        rawResult.insertId,
+        undefined // Tidak ada JWT payload tersedia di HTTP endpoint
       );
       
       console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);

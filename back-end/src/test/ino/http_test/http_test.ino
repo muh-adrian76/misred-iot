@@ -1,3 +1,4 @@
+#include <AESUtils.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
@@ -19,6 +20,7 @@ const char* password = "KentungMusthofa";
 
 // Server configuration
 const char* server_url = "http://192.168.18.238:7601";
+// const char* server_url = "https://api.misred-iot.com";
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;
@@ -34,6 +36,9 @@ const int COD_SENSOR  = 34;
 const int TEMP_SENSOR = 35;
 const int NH3N_SENSOR = 32;
 const int NTU_SENSOR  = 33;
+
+byte aesKey[16];
+byte iv[16];
 
 unsigned long lastSensorSend = 0;
 const unsigned long SENSOR_INTERVAL = 5000; // 5 seconds
@@ -65,18 +70,15 @@ void setup() {
   // Initialize random seed
   randomSeed(analogRead(0));
   
-  Serial.println("🧪 SIMPLE HTTP Sensor Data Test with CustomJWT");
-  Serial.println("Target: Send sensor data to server for database storage");
-  Serial.println("Expected response: 'Berhasil menyimpan data sensor ke VPS'");
-  
   // Initialize JWT memory
   jwt.allocateJWTMemory();
-  Serial.println("✅ JWT memory allocated");
 
   // Inisialisasi NTP
   timeClient.begin();
   
   lastSensorSend = millis() - SENSOR_INTERVAL; // Send immediately
+
+  convertHexToBytes(JWT_SECRET, aesKey);
 }
 
 void loop() {
@@ -105,6 +107,13 @@ void loop() {
   delay(100);
 }
 
+void convertHexToBytes(const String& hexString, byte* output){
+  for(int i = 0; i < 16 && i * 2 < hexString.length(); i++){
+    String byteString = hexString.substring(i * 2, i * 2 + 2);
+    output[i] = (byte)strtol(byteString.c_str(), NULL, 16);
+  }
+}
+
 void sendSensorDataHTTP() {
   Serial.println("\n📊 Reading sensors (" + String(messageCount) + "/10)...");
   
@@ -124,15 +133,18 @@ void sendSensorDataHTTP() {
   sensorDoc["V3"] = tempValue;      // Temperature sensor on pin A3
   sensorDoc["V4"] = nh3nValue;      // NH3N sensor on pin A4
   sensorDoc["V5"] = ntuValue;       // NTU sensor on pin A5
-  sensorDoc["timestamp"] = timeClient.getEpochTime() - (7*3600);
+  sensorDoc["timestamp"] = timeClient.getEpochTime();
   
   String sensorPayload;
   serializeJson(sensorDoc, sensorPayload);
   
+
+  String encrypted = AESUtils::encryptPayload(sensorPayload, aesKey, iv);
+
   Serial.println("📦 Sensor payload: " + sensorPayload);
   
   // Create JWT with encrypted payload
-  String jwt_token = createJWTWithCustomJWT(sensorPayload);
+  String jwt_token = createJWTWithCustomJWT(encrypted);
   
   if (jwt_token.length() > 0) {
     // Send HTTP POST request
@@ -210,12 +222,12 @@ float readNTUSensor() {
 // Create JWT token using CustomJWT library
 String createJWTWithCustomJWT(String data) {
   Serial.println("🔐 Membuat JWT menggunakan library CustomJWT...");
-  unsigned long currentTime = timeClient.getEpochTime() + (7*3600); // Sesuai dengan waktu lokal (Zona waktu Asia/Jakarta, +7 jam)
-  unsigned long expiryTime = currentTime + 3600; // 1 hour from now
+  unsigned long currentTime = timeClient.getEpochTime(); 
+  unsigned long expiryTime = currentTime + 3600; // 1 jam dari sekarang
   
   // Create payload JSON with encryptedData field
   StaticJsonDocument<256> payloadDoc;
-  payloadDoc["data"] = data; // For simplicity, we'll send plain data as "encrypted"
+  payloadDoc["data"] = data; // Payload sensor
   payloadDoc["sub"] = device_id;
   payloadDoc["iat"] = currentTime;
   payloadDoc["exp"] = expiryTime; // 1 hour expiry

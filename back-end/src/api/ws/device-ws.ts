@@ -5,7 +5,7 @@
  */
 
 import { Elysia, t } from "elysia";
-import { broadcastToUsers } from "./user-ws";
+import { broadcastToUsersByDevice } from "./user-ws";
 import { DeviceService } from '../../services/DeviceService';
 import { DeviceCommandService } from '../../services/DeviceCommandService';
 import { Pool } from "mysql2/promise";
@@ -13,16 +13,24 @@ import { Pool } from "mysql2/promise";
 // Map untuk menyimpan koneksi WebSocket dari device yang aktif
 const deviceClients = new Map<string, any>();
 
+// Variabel global untuk database dan deviceService
+let globalDb: Pool;
+let globalDeviceService: DeviceService;
+
 // Update aktivitas device dan simpan koneksi WebSocket
 function updateDeviceActivity(device_id: string, ws: any) {
   deviceClients.set(device_id, { ws, lastSeen: Date.now() });
 }
 
 export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
+  // Simpan reference untuk digunakan di fungsi lain
+  globalDb = db;
+  globalDeviceService = deviceService;
+  
   const deviceCommandService = new DeviceCommandService(db);
   
   // Mulai heartbeat checker untuk deteksi device offline otomatis
-  startHeartbeatChecker(deviceService);
+  startHeartbeatChecker(deviceService, db);
   
   return new Elysia({ prefix: "/ws" }).ws("/connect", {
     body: t.Object({
@@ -85,8 +93,8 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
       if (data.type === "sensor_update" && data.device_id && data.datastream_id && data.value !== undefined) {
         updateDeviceActivity(data.device_id, ws);
         
-        // Broadcast data sensor ke semua user yang terhubung
-        broadcastToUsers({
+        // Broadcast data sensor ke user pemilik device
+        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
           type: "sensor_update",
           device_id: parseInt(data.device_id),
           datastream_id: data.datastream_id,
@@ -113,8 +121,8 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
           console.error("Error updating device status:", error);
         }
         
-        // Broadcast status online ke user
-        broadcastToUsers({
+        // Broadcast status online ke user pemilik device
+        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
           type: "status_update",
           device_id: parseInt(data.device_id),
           status: "online",
@@ -140,8 +148,8 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
           
           console.log(`✅ Command ${data.command_id} acknowledged by device ${data.device_id}: ${data.success ? 'SUCCESS' : 'FAILED'}`);
           
-          // Broadcast ke user bahwa command telah dieksekusi
-          broadcastToUsers({
+          // Broadcast ke user pemilik device bahwa command telah dieksekusi
+          await broadcastToUsersByDevice(db, parseInt(data.device_id), {
             type: "command_executed",
             device_id: parseInt(data.device_id),
             command_id: data.command_id,
@@ -168,8 +176,8 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
       if (data.type === "control_status" && data.device_id && data.datastream_id !== undefined && data.value !== undefined) {
         updateDeviceActivity(data.device_id, ws);
         
-        // Broadcast status control saat ini ke user
-        broadcastToUsers({
+        // Broadcast status control saat ini ke user pemilik device
+        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
           type: "control_status_update",
           device_id: parseInt(data.device_id),
           datastream_id: data.datastream_id,
@@ -194,13 +202,13 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
           // Update status di database
           deviceService.updateDeviceStatus(device_id, "offline").catch(console.error);
           
-          // Broadcast status offline ke user
-          broadcastToUsers({
+          // Broadcast status offline ke user pemilik device
+          broadcastToUsersByDevice(globalDb, parseInt(device_id), {
             type: "status_update",
             device_id: parseInt(device_id),
             status: "offline",
             last_seen: new Date().toISOString(),
-          });
+          }).catch(console.error);
         }
       }
     },
@@ -210,7 +218,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
 
 // ===== HEARTBEAT CHECKER - AUTO OFFLINE DETECTION =====
 // Fungsi untuk mengecek device yang tidak mengirim heartbeat
-export function startHeartbeatChecker(deviceService: DeviceService) {
+export function startHeartbeatChecker(deviceService: DeviceService, db: Pool) {
   return setInterval(async () => {
     const now = Date.now();
     for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
@@ -222,8 +230,8 @@ export function startHeartbeatChecker(deviceService: DeviceService) {
           // Update status database ke offline
           await deviceService.updateDeviceStatus(device_id, "offline");
           
-          // Broadcast status offline ke user
-          broadcastToUsers({
+          // Broadcast status offline ke user pemilik device
+          await broadcastToUsersByDevice(db, parseInt(device_id), {
             type: "status_update",
             device_id: parseInt(device_id),
             status: "offline",

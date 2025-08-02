@@ -1,3 +1,4 @@
+#include <AESUtils.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
@@ -39,6 +40,9 @@ const int NTU_SENSOR  = 33;
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
+
+byte aesKey[16];
+byte iv[16];
 
 unsigned long lastSensorSend = 0;
 const unsigned long SENSOR_INTERVAL = 5000; // 5 seconds
@@ -86,6 +90,7 @@ void setup() {
   jwt.allocateJWTMemory();
   Serial.println("✅ JWT memory allocated");
   
+  convertHexToBytes(JWT_SECRET, aesKey);
   lastSensorSend = millis() - SENSOR_INTERVAL; // Send immediately
 }
 
@@ -163,10 +168,11 @@ void sendSensorDataMQTT() {
   String sensorPayload;
   serializeJson(sensorDoc, sensorPayload);
   
+  String encrypted = AESUtils::encryptPayload(sensorPayload, aesKey, iv);
   Serial.println("📦 Sensor payload: " + sensorPayload);
   
   // Create JWT with encrypted payload
-  String mqttPayload = createJWTWithCustomJWT(sensorPayload);
+  String mqttPayload = createJWTWithCustomJWT(encrypted);
   Serial.println("🔑 Token length: " + String(mqttPayload.length()));
   
   if (mqttPayload.length() > 0) {
@@ -228,11 +234,11 @@ float readNTUSensor() {
 // Create JWT token using CustomJWT library
 String createJWTWithCustomJWT(String data) {
   Serial.println("🔐 Membuat JWT menggunakan library CustomJWT...");
-  unsigned long currentTime = timeClient.getEpochTime() + (7*3600); // Sesuai dengan waktu lokal (Zona waktu Asia/Jakarta, +7 jam)
+  unsigned long currentTime = timeClient.getEpochTime(); // Sesuai dengan waktu lokal (Zona waktu Asia/Jakarta, +7 jam)
   unsigned long expiryTime = currentTime + 3600; // 1 dari sekarang
   
   StaticJsonDocument<256> payloadDoc;
-  payloadDoc["data"] = data;
+  payloadDoc["data"] = data; // Payload sensor
   payloadDoc["sub"] = device_id;
   payloadDoc["iat"] = currentTime;
   payloadDoc["exp"] = expiryTime;
@@ -255,3 +261,12 @@ String createJWTWithCustomJWT(String data) {
     return "";
   }
 }
+
+
+void convertHexToBytes(const String& hexString, byte* output){
+  for(int i = 0; i < 16 && i * 2 < hexString.length(); i++){
+    String byteString = hexString.substring(i * 2, i * 2 + 2);
+    output[i] = (byte)strtol(byteString.c_str(), NULL, 16);
+  }
+}
+

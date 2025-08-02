@@ -1,4 +1,12 @@
-import { timeStamp } from "console";
+/**
+ * SENSOR TESTER - Compatible with ESP32 AESUtils Library Format
+ * ✅ SINKRON DENGAN ESP32: Menggunakan format yang sama dengan ESP32 AESUtils
+ * - AES ENCRYPTION: ESP32 menggunakan AESUtils::encryptPayload dengan device_secret sebagai key
+ * - JWT dengan data field berisi encrypted data (Base64)
+ * - Timezone +7 jam seperti ESP32
+ * - Format sensor data sama persis (V0-V5) dengan timestamp
+ */
+
 import crypto from "crypto";
 import mqtt, { MqttClient } from "mqtt";
 import mysql from "mysql2/promise";
@@ -7,7 +15,7 @@ const SERVER_URL = "http://localhost:7601";
 const MQTT_CONFIG = {
   host: "localhost",
   port: 1883,
-  clientId: "AES_Test_Client",
+  clientId: "ESP32_Compatible_Test_Client", // ✅ Update nama client
 };
 
 // Database configuration
@@ -24,14 +32,14 @@ let HTTP_DEVICE = {
   device_id: "1",
   device_secret: "",
   old_secret: "",
-  name: "HTTP Test Device (AES)",
+  name: "HTTP Test Device (ESP32 Compatible)", // ✅ Update nama
 };
 
 let MQTT_DEVICE = {
   device_id: "2",
   device_secret: "",
   old_secret: "",
-  name: "MQTT Test Device (AES)",
+  name: "MQTT Test Device (ESP32 Compatible)", // ✅ Update nama
   topic: "device/data",
 };
 
@@ -47,32 +55,41 @@ const SENSOR_RANGES = {
 
 /**
  * Generate sensor data with ALARM TRIGGER values
+ * ✅ SINKRON DENGAN ESP32: Timestamp field sama seperti ESP32
  * - V0 (pH): Set to 8.5 (trigger alarm > 8.0)
  * - V1 (Flow): Set to 12.0 (trigger alarm < 15.0)
  * - Other sensors: normal values
  */
 function generateAlarmTriggerData(): any {
+  // ✅ SAMA SEPERTI ESP32: Timestamp menggunakan timeClient.getEpochTime() (seconds)
+  const timestamp = Math.floor(Date.now() / 1000);
+  
   return {
+    timestamp: timestamp, // ✅ SAMA SEPERTI ESP32: Timestamp field dalam seconds
     V0: 8.5, // pH > 8.0 → TRIGGER ALARM 1
     V1: 12.0, // Flow < 15.0 → TRIGGER ALARM 2
     V2: 45.8, // COD normal
     V3: 28.3, // Temperature normal
     V4: 2.1, // NH3N normal
     V5: 8.7, // NTU normal
-    timestamp: Date.now(),
   };
 }
 
 /**
- * Generate realistic sensor data (normal values, no alarms)
+ * Generate realistic sensor data matching ESP32 format
+ * ✅ SINKRON DENGAN ESP32: Format V0-V5, timestamp sama seperti ESP32
  */
 function generateSensorData(): any {
+  // ✅ SAMA SEPERTI ESP32: Timestamp menggunakan timeClient.getEpochTime() (seconds)
+  const timestamp = Math.floor(Date.now() / 1000);
+  
   const data: any = {
-    timestamp: Date.now(),
+    timestamp: timestamp, // ✅ SAMA SEPERTI ESP32: Timestamp field dalam seconds
   };
 
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
     const randomValue = range.min + Math.random() * (range.max - range.min);
+    // ✅ SAMA SEPERTI ESP32: Round to 2 decimal places seperti ESP32 sensor functions
     data[pin] = Math.round(randomValue * 100) / 100;
   });
 
@@ -80,34 +97,22 @@ function generateSensorData(): any {
 }
 
 /**
- * Generate random IV for AES encryption (16 bytes)
- */
-function generateIV(): Buffer {
-  return crypto.randomBytes(16);
-}
-
-/**
- * AES-128-CBC Encryption (Compatible with ESP32 mbedtls)
- * Same format as ESP32: IV (16 bytes) + encrypted data
+ * AES-128-CBC Encryption (Compatible with ESP32 AESUtils library)
+ * ✅ SINKRON DENGAN ESP32: Same format as ESP32 AESUtils::encryptPayload
  */
 function encryptPayloadAES(payload: string, secret: string): string {
   try {
     console.log(`🔒 AES Encrypting payload: ${payload.substring(0, 50)}...`);
 
-    // Generate random IV (16 bytes)
-    const iv = generateIV();
+    // ✅ SAMA SEPERTI ESP32: Convert hex secret to bytes untuk AES key
+    const key = Buffer.from(secret, "hex").subarray(0, 16);
+    console.log(`🔑 Key length: ${key.length} bytes (from hex: ${secret.substring(0, 16)}...)`);
+
+    // ✅ SAMA SEPERTI ESP32: Generate random IV (16 bytes) - ESP32 juga generate IV secara random
+    const iv = crypto.randomBytes(16);
     console.log(`🔑 Generated IV: ${iv.toString("hex")}`);
 
-    // Use secret as hex key (server format: 32 char hex = 16 bytes)
-    const key = Buffer.from(secret, "hex").subarray(0, 16);
-    console.log(
-      `🔑 Key length: ${key.length} bytes (from hex: ${secret.substring(
-        0,
-        16
-      )}...)`
-    );
-
-    // Create cipher with AES-128-CBC
+    // ✅ SAMA SEPERTI ESP32: Create cipher with AES-128-CBC
     const cipher = crypto.createCipheriv("aes-128-cbc", key, iv);
     cipher.setAutoPadding(true); // PKCS#7 padding like ESP32
 
@@ -117,7 +122,7 @@ function encryptPayloadAES(payload: string, secret: string): string {
 
     console.log(`🔐 Encrypted data: ${encrypted.substring(0, 32)}...`);
 
-    // Combine IV + encrypted data (same format as ESP32)
+    // ✅ SAMA SEPERTI ESP32: Combine IV + encrypted data (same format as AESUtils)
     const combined = Buffer.concat([iv, Buffer.from(encrypted, "hex")]);
     const result = combined.toString("base64");
 
@@ -180,49 +185,53 @@ function testAESEncryptionDecryption(): boolean {
   console.log("─".repeat(50));
 
   try {
-    const testPayload = JSON.stringify({
+    const testData = JSON.stringify({
       V0: 7.2,
-      V1: 25.5,
+      V1: 35.5,
       V2: 45.8,
       V3: 28.3,
       V4: 2.1,
       V5: 8.7,
-      timestamp: Date.now(),
-      device_id: "1",
+      timestamp: Math.floor(Date.now() / 1000)
     });
-
-    // Use proper hex secret (32 chars = 16 bytes)
-    const testSecret = "69380f947129a5dcebd55673e61d3c59"; // Same format as database
-
-    console.log(`📝 Payload asli: ${testPayload}`);
-    console.log(`🔑 Kunci (hex): ${testSecret}`);
-
-    // Encrypt
-    const encrypted = encryptPayloadAES(testPayload, testSecret);
-    console.log(`🔒 Terenkripsi: ${encrypted.substring(0, 64)}...`);
-
-    // Decrypt
+    
+    const testSecret = "8358a7b6add3b33daf060be8345f0af4";
+    
+    console.log("📦 Original data:", testData);
+    
+    // Test encryption
+    const encrypted = encryptPayloadAES(testData, testSecret);
+    console.log("🔒 Encrypted data:", encrypted.substring(0, 64) + "...");
+    
+    // Test decryption
     const decrypted = decryptPayloadAES(encrypted, testSecret);
-    console.log(`🔓 Terdekripsi: ${decrypted}`);
-
-    // Verify
-    const isMatch = testPayload === decrypted;
-    console.log(
-      `✅ Pengujian Enkripsi/Dekripsi: ${isMatch ? "LULUS" : "GAGAL"}`
-    );
-
-    return isMatch;
+    console.log("🔓 Decrypted data:", decrypted);
+    
+    // Verify data integrity
+    const originalObj = JSON.parse(testData);
+    const decryptedObj = JSON.parse(decrypted);
+    
+    const isValid = JSON.stringify(originalObj) === JSON.stringify(decryptedObj);
+    
+    if (isValid) {
+      console.log("✅ AES Enkripsi/Dekripsi berhasil! Data utuh dan sama.");
+      return true;
+    } else {
+      console.log("❌ AES Enkripsi/Dekripsi gagal! Data tidak sama.");
+      return false;
+    }
   } catch (error) {
-    console.error("❌ Pengujian AES gagal:", error);
+    console.error("❌ Error dalam pengujian AES:", error);
     return false;
   }
 }
 
 /**
- * Create proper JWT token with HMAC-SHA256
+ * Create JWT token compatible with ESP32 CustomJWT library
+ * ✅ SINKRON DENGAN ESP32: Timezone +7 dan encrypted data sama seperti ESP32
  */
 function createJWTToken(
-  encryptedPayload: string,
+  encryptedPayload: string, // ✅ ENCRYPTED: Data sudah terenkripsi AES
   deviceId: string,
   secret: string
 ): string {
@@ -231,11 +240,15 @@ function createJWTToken(
     typ: "JWT",
   };
 
+  // ✅ SAMA SEPERTI ESP32: timeClient.getEpochTime() + (7*3600) untuk timezone +7
+  const currentTime = Math.floor(Date.now() / 1000) + (7 * 3600);
+  const expiryTime = currentTime + 3600; // 1 hour
+
   const payload = {
-    data: encryptedPayload,
-    sub: deviceId,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600,
+    data: encryptedPayload, // ✅ SAMA SEPERTI ESP32: Encrypted data (Base64)
+    sub: deviceId,          // ✅ SAMA SEPERTI ESP32: Device ID
+    iat: currentTime,       // ✅ SAMA SEPERTI ESP32: Waktu lokal +7
+    exp: expiryTime,        // ✅ SAMA SEPERTI ESP32: Expire 1 hour
   };
 
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
@@ -355,7 +368,8 @@ async function testSecretRenewal(
 }
 
 /**
- * Test HTTP payload endpoint with AES encryption (normal values)
+ * Test HTTP payload endpoint with plain JSON (ESP32 compatible)
+ * ✅ SINKRON DENGAN ESP32: Plain JSON dalam JWT data field
  */
 async function testHTTPPayloadWithAES(
   deviceId: string,
@@ -364,18 +378,14 @@ async function testHTTPPayloadWithAES(
   try {
     // Step 1: Generate normal sensor data
     const sensorData = generateSensorData();
-    const payload = JSON.stringify({
-      ...sensorData,
-    });
+    const payload = JSON.stringify(sensorData);
     console.log(`📊 Generated sensor data: ${payload.substring(0, 100)}...`);
 
-    // Step 2: AES encrypt the payload
+    // Step 2: ✅ SAMA SEPERTI ESP32: AES encrypt the payload menggunakan device_secret
     const encryptedPayload = encryptPayloadAES(payload, secret);
-    console.log(
-      `🔒 AES encrypted payload: ${encryptedPayload.substring(0, 64)}...`
-    );
+    console.log(`🔒 AES encrypted payload: ${encryptedPayload.substring(0, 64)}...`);
 
-    // Step 3: Create JWT with encrypted payload
+    // Step 3: Create JWT with encrypted payload (ESP32 format)
     const jwtToken = createJWTToken(encryptedPayload, deviceId, secret);
     console.log(`🎫 JWT token created: ${jwtToken.substring(0, 64)}...`);
 
@@ -393,7 +403,7 @@ async function testHTTPPayloadWithAES(
     if (response.ok) {
       const result = await response.json();
       console.log(
-        `✅ HTTP AES test successful for device ${deviceId}:`,
+        `✅ HTTP Plain JSON test successful for device ${deviceId}:`,
         result.message
       );
       return true;
@@ -409,7 +419,8 @@ async function testHTTPPayloadWithAES(
 }
 
 /**
- * Test HTTP payload with ALARM triggering values
+ * Test HTTP payload with ALARM triggering values (ESP32 compatible)
+ * ✅ SINKRON DENGAN ESP32: Plain JSON dalam JWT data field
  */
 async function testHTTPPayloadWithAlarms(
   deviceId: string,
@@ -418,19 +429,14 @@ async function testHTTPPayloadWithAlarms(
   try {
     // Step 1: Generate ALARM triggering sensor data
     const alarmData = generateAlarmTriggerData();
-    const payload = JSON.stringify({
-      ...alarmData,
-    });
-    console.log(`� Generated ALARM data: ${JSON.stringify(alarmData)}`);
+    const payload = JSON.stringify(alarmData);
+    console.log(`🚨 Generated ALARM data: ${JSON.stringify(alarmData)}`);
 
-    // Step 2: AES encrypt the payload
-    const encryptedPayload = encryptPayloadAES(payload, secret);
-    console.log(
-      `🔒 AES encrypted payload: ${encryptedPayload.substring(0, 64)}...`
-    );
+    // Step 2: ✅ SAMA SEPERTI ESP32: Langsung gunakan plain JSON, TIDAK ada enkripsi
+    console.log(`� Plain JSON alarm payload: ${payload.substring(0, 64)}...`);
 
-    // Step 3: Create JWT with encrypted payload
-    const jwtToken = createJWTToken(encryptedPayload, deviceId, secret);
+    // Step 3: Create JWT with plain JSON payload (ESP32 format)
+    const jwtToken = createJWTToken(payload, deviceId, secret);
     console.log(`🎫 JWT token created: ${jwtToken.substring(0, 64)}...`);
 
     // Step 4: Send to server
@@ -608,7 +614,8 @@ async function checkAlarmsConfig(): Promise<void> {
 }
 
 /**
- * Test MQTT publishing with AES encryption
+ * Test MQTT publishing with AES encryption (ESP32 AESUtils compatible)
+ * ✅ SINKRON DENGAN ESP32: AES encrypted data dalam JWT data field
  */
 async function testMQTTPublishWithAES(
   deviceId: string,
@@ -637,35 +644,25 @@ async function testMQTTPublishWithAES(
       try {
         // Step 1: Generate sensor data
         const sensorData = generateSensorData();
-        const payload = JSON.stringify({
-          ...sensorData,
-        });
+        const payload = JSON.stringify(sensorData);
         console.log(
           `📊 Generated sensor data: ${payload.substring(0, 100)}...`
         );
 
-        // Step 2: AES encrypt the payload
+        // Step 2: ✅ SAMA SEPERTI ESP32: AES encrypt payload menggunakan device_secret
         const encryptedPayload = encryptPayloadAES(payload, secret);
-        console.log(
-          `🔒 AES encrypted payload: ${encryptedPayload.substring(0, 64)}...`
-        );
+        console.log(`🔒 AES encrypted payload: ${encryptedPayload.substring(0, 64)}...`);
 
-        // Step 3: Create JWT with encrypted payload
+        // Step 3: Create JWT with encrypted payload (ESP32 AESUtils format)
         const jwtToken = createJWTToken(encryptedPayload, deviceId, secret);
         console.log(`🎫 JWT token created: ${jwtToken.substring(0, 64)}...`);
 
-        // Step 4: Create MQTT message
-        const mqttMessage = JSON.stringify({
-          device_id: deviceId,
-          jwt: jwtToken,
-        });
-
-        // Step 5: Publish to MQTT
-        console.log("📤 Publishing to MQTT...");
-        client.publish(MQTT_DEVICE.topic, mqttMessage, (error) => {
+        // Step 4: ✅ SAMA SEPERTI ESP32: Publish JWT token langsung ke topic
+        console.log("📤 Publishing JWT token directly to MQTT...");
+        client.publish(MQTT_DEVICE.topic, jwtToken, (error) => {
           if (error) {
             console.log(
-              `❌ MQTT AES publish failed for device ${deviceId}:`,
+              `❌ MQTT Plain JSON publish failed for device ${deviceId}:`,
               error.message
             );
             published = false;
@@ -707,19 +704,20 @@ async function testMQTTPublishWithAES(
 }
 
 /**
- * Complete AES test workflow with ALARM testing
+ * Complete Plain JSON test workflow with ALARM testing
+ * ✅ SINKRON DENGAN ESP32: Menggunakan Plain JSON, TIDAK ada enkripsi AES
  */
 async function runCompleteAESTest(): Promise<void> {
-  console.log("🧪 PENGUJIAN SENSOR DENGAN AES + ALARM - Pengujian Lengkap");
-  console.log("============================================================");
-  console.log("🔄 Pengujian Logika Bisnis:");
-  console.log("  ESP32: Data Sensor -> Enkripsi AES -> JWT -> Kirim");
+  console.log("🧪 PENGUJIAN SENSOR DENGAN AES ENCRYPTION + ALARM - Pengujian Lengkap");
+  console.log("===================================================================");
+  console.log("🔄 Pengujian Logika Bisnis (ESP32 AESUtils Compatible):");
+  console.log("  ESP32: Data Sensor -> AES Encrypt -> JWT -> Kirim");
   console.log(
-    "  Server: Terima -> Decode JWT -> Dekripsi AES -> Simpan -> Cek Alarm → WhatsApp!"
+    "  Server: Terima -> Decode JWT -> AES Decrypt -> Simpan -> Cek Alarm → WhatsApp!"
   );
   console.log("");
   console.log("📋 Rencana Pengujian:");
-  console.log("  1. Uji enkripsi/dekripsi AES secara lokal");
+  console.log("  1. ✅ Uji enkripsi/dekripsi AES (ESP32 AESUtils compatible)");
   console.log("  2. Periksa kunci perangkat saat ini dari database");
   console.log("  3. Periksa konfigurasi alarm");
   console.log("  4. Uji payload HTTP dengan nilai normal");
@@ -742,9 +740,9 @@ async function runCompleteAESTest(): Promise<void> {
     alarmNotifications: false,
   };
 
-  // Step 1: Test AES encryption/decryption locally
-  console.log("📋 LANGKAH 1: Pengujian Enkripsi/Dekripsi AES");
-  console.log("─".repeat(40));
+  // Step 1: ✅ Test AES Encryption - ESP32 menggunakan AESUtils
+  console.log("📋 LANGKAH 1: ✅ Test AES Encryption (ESP32 AESUtils compatible)");
+  console.log("─".repeat(40)); 
   results.aesTest = testAESEncryptionDecryption();
 
   if (!results.aesTest) {
@@ -956,7 +954,8 @@ async function testAlarmAPIEndpoints(): Promise<void> {
 }
 
 /**
- * Test MQTT payload with ALARM triggering values
+ * Test MQTT payload with ALARM triggering values (ESP32 compatible)
+ * ✅ SINKRON DENGAN ESP32: Plain JSON dalam JWT data field
  */
 async function testMQTTPayloadWithAlarms(
   deviceId: string,
@@ -980,29 +979,19 @@ async function testMQTTPayloadWithAlarms(
       try {
         // Step 1: Generate ALARM triggering sensor data
         const alarmData = generateAlarmTriggerData();
-        const payload = JSON.stringify({
-          ...alarmData,
-        });
-        // Step 2: AES encrypt the payload
-        const encryptedPayload = encryptPayloadAES(payload, secret);
-        console.log(
-          `🔒 Payload terenkripsi AES: ${encryptedPayload.substring(0, 64)}...`
-        );
+        const payload = JSON.stringify(alarmData);
+        console.log(`🚨 Data ALARM generated: ${JSON.stringify(alarmData)}`);
+        
+        // Step 2: ✅ SAMA SEPERTI ESP32: Langsung gunakan plain JSON, TIDAK ada enkripsi
+        console.log(`� Plain JSON alarm payload: ${payload.substring(0, 64)}...`);
 
-        // Step 3: Create JWT with encrypted payload
-        const jwtToken = createJWTToken(encryptedPayload, deviceId, secret);
+        // Step 3: Create JWT with plain JSON payload (ESP32 format)
+        const jwtToken = createJWTToken(payload, deviceId, secret);
         console.log(`🎫 Token JWT dibuat: ${jwtToken.substring(0, 64)}...`);
 
-        // Step 4: Create MQTT message
-        const mqttMessage = JSON.stringify({
-          device_id: deviceId,
-          jwt: jwtToken,
-          test_type: "alarm_trigger",
-        });
-
-        // Step 5: Publish to MQTT
+        // Step 4: ✅ SAMA SEPERTI ESP32: Publish JWT token langsung ke topic
         console.log("📤 Mengirim data ALARM ke MQTT...");
-        client.publish(MQTT_DEVICE.topic, mqttMessage, (error) => {
+        client.publish(MQTT_DEVICE.topic, jwtToken, (error) => {
           if (error) {
             console.log(
               `❌ Publikasi MQTT ALARM gagal untuk device ${deviceId}:`,
@@ -1056,7 +1045,7 @@ export async function quickAESTest(): Promise<void> {
   testAESEncryptionDecryption();
 }
 
-export async function quickAESHTTPTest(): Promise<void> {
+export async function quickHTTPAESTest(): Promise<void> {
   await checkDeviceSecretsFromDB();
   if (HTTP_DEVICE.device_secret) {
     await testHTTPPayloadWithAES("1", HTTP_DEVICE.device_secret);
@@ -1082,50 +1071,6 @@ export async function quickAlarmTest(): Promise<void> {
 //   await testWhatsAppWebConnection();
 // }
 
-export async function quickPayloadDebug(): Promise<void> {
-  console.log("🚀 Quick Payload Debug Test");
-
-  await checkDeviceSecretsFromDB();
-  if (HTTP_DEVICE.device_secret) {
-    // Test simple payload first
-    const simplePayload = {
-      V0: 8.5, // pH > 8.0 should trigger alarm
-      V1: 12.0, // Flow < 15.0 should trigger alarm
-      timestamp: Date.now(),
-    };
-    const encryptedPayload = encryptPayloadAES(
-      JSON.stringify(simplePayload),
-      HTTP_DEVICE.device_secret
-    );
-    const jwtToken = createJWTToken(
-      encryptedPayload,
-      "1",
-      HTTP_DEVICE.device_secret
-    );
-
-    try {
-      const response = await fetch(`${SERVER_URL}/payload/http`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwtToken}`,
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log(`✅ Simple payload test successful:`, result);
-      } else {
-        const error = await response.text();
-        console.log(`❌ Simple payload test failed:`, error);
-      }
-    } catch (error) {
-      console.log(`💥 Simple payload test error:`, error);
-    }
-  }
-}
-
 // export async function quickAlarmAPITest(): Promise<void> {
 //   await testAlarmAPIEndpoints();
 //   // await checkAlarmNotifications();
@@ -1141,7 +1086,7 @@ export async function quickMQTTAlarmTest(): Promise<void> {
   }
 }
 
-export async function quickAESMQTTTest(): Promise<void> {
+export async function quickMQTTAESTest(): Promise<void> {
   await checkDeviceSecretsFromDB();
   if (MQTT_DEVICE.device_secret) {
     await testMQTTPublishWithAES("2", MQTT_DEVICE.device_secret);
@@ -1161,7 +1106,7 @@ export async function showAESConfig(): Promise<void> {
   await checkDeviceSecretsFromDB();
 }
 
-// Run complete AES test if called directly
+// Run complete Plain JSON test if called directly
 if (import.meta.main) {
   runCompleteAESTest().catch(console.error);
 }

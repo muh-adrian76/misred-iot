@@ -41,7 +41,7 @@ import { adminRoutes } from "./api/admin"; // Route admin panel
 
 // ===== IMPORTS WEBSOCKET ROUTES =====
 // Import route WebSocket untuk komunikasi real-time
-import { userWsRoutes, broadcastToUsers } from "./api/ws/user-ws"; // WebSocket user
+import { userWsRoutes, broadcastToSpecificUser, broadcastToAllUsers } from "./api/ws/user-ws"; // WebSocket user
 import { deviceWsRoutes } from "./api/ws/device-ws"; // WebSocket device
 
 // ===== IMPORTS SERVICES =====
@@ -369,7 +369,7 @@ class Server {
         
         // ===== BROADCAST UPDATE TO USERS =====
         // Broadcast notifikasi ke semua user melalui WebSocket
-        broadcastToUsers({
+        broadcastToAllUsers({
           type: "device_secret_refreshed", // Tipe event
           message: "Secret perangkat telah diperbarui", // Pesan notifikasi
         });

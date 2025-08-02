@@ -9,7 +9,9 @@ const nextConfig = {
     devIndicators: false,
     experimental: {
         viewTransition: true,
+        turbo: true,
     },
+    swcMinify: true,
     trailingSlash: true,
     images: {
         unoptimized: true

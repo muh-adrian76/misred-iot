@@ -1,9 +1,10 @@
 /**
  * REAL-TIME TESTER - Continuous Payload Sender
+ * ✅ SINKRON DENGAN ESP32: Menggunakan format yang sama dengan ESP32
  * - Sends HTTP and MQTT payloads every second
  * - Realistic sensor data simulation
  * - Perfect for testing real-time dashboard monitoring
- * - Uses Base64 encryption (NO AES for simplicity)
+ * - AES ENCRYPTION: ESP32 menggunakan device_secret sebagai AES key (data field encrypted dalam JWT)
  */
 
 import crypto from "crypto";
@@ -68,10 +69,14 @@ let mqttSuccessCount = 0;
 
 /**
  * Generate realistic sensor data with gradual changes
+ * ✅ SINKRON DENGAN ESP32: Format data sensor sama persis dengan ESP32
  */
 function generateRealtimeSensorData(): any {
+  // ✅ SAMA SEPERTI ESP32: Timestamp menggunakan timeClient.getEpochTime() (seconds, bukan milliseconds)
+  const timestamp = Math.floor(Date.now() / 1000);
+  
   const data: any = {
-    timestamp: Math.floor(Date.now() / 1000), // Unix timestamp dalam SECONDS untuk kompatibilitas
+    timestamp: timestamp, // ✅ SAMA SEPERTI ESP32: Unix timestamp dalam SECONDS
   };
 
   // Generate gradual variations (±5% change from current value)
@@ -85,7 +90,7 @@ function generateRealtimeSensorData(): any {
     // Update current value for next iteration
     range.current = newValue;
 
-    // Round to 2 decimal places
+    // ✅ SAMA SEPERTI ESP32: Round to 2 decimal places seperti ESP32
     data[pin] = Math.round(newValue * 100) / 100;
   });
 
@@ -134,7 +139,45 @@ async function loadDeviceSecrets(): Promise<boolean> {
 }
 
 /**
- * Encrypt payload using Base64 (NO AES)
+ * AES-128-CBC Encryption (Compatible with ESP32 AESUtils library)
+ * ✅ SINKRON DENGAN ESP32: Same format as ESP32 AESUtils::encryptPayload
+ */
+function encryptPayloadAES(payload: string, secret: string): string {
+  try {
+    console.log(`🔒 AES Encrypting payload: ${payload.substring(0, 50)}...`);
+
+    // ✅ SAMA SEPERTI ESP32: Convert hex secret to bytes untuk AES key
+    const key = Buffer.from(secret, "hex").subarray(0, 16);
+    console.log(`🔑 Key length: ${key.length} bytes (from hex: ${secret.substring(0, 16)}...)`);
+
+    // ✅ SAMA SEPERTI ESP32: Generate random IV (16 bytes) - ESP32 juga generate IV secara random
+    const iv = crypto.randomBytes(16);
+    console.log(`🔑 Generated IV: ${iv.toString("hex")}`);
+
+    // ✅ SAMA SEPERTI ESP32: Create cipher with AES-128-CBC
+    const cipher = crypto.createCipheriv("aes-128-cbc", key, iv);
+    cipher.setAutoPadding(true); // PKCS#7 padding like ESP32
+
+    // Encrypt the payload
+    let encrypted = cipher.update(payload, "utf8", "hex");
+    encrypted += cipher.final("hex");
+
+    console.log(`🔐 Encrypted data: ${encrypted.substring(0, 32)}...`);
+
+    // ✅ SAMA SEPERTI ESP32: Combine IV + encrypted data (same format as AESUtils)
+    const combined = Buffer.concat([iv, Buffer.from(encrypted, "hex")]);
+    const result = combined.toString("base64");
+
+    console.log(`📦 Final encrypted payload length: ${result.length}`);
+    return result;
+  } catch (error) {
+    console.error("❌ AES encryption error:", error);
+    throw error;
+  }
+}
+
+/**
+ * OLD: Encrypt payload using Base64 (NO AES) - DEPRECATED
  */
 function encryptPayload(payload: string): string {
   return Buffer.from(payload).toString("base64");
@@ -142,9 +185,10 @@ function encryptPayload(payload: string): string {
 
 /**
  * Create JWT token with HMAC-SHA256
+ * ✅ SINKRON DENGAN ESP32: AES encrypted data + timezone +7 sama seperti ESP32
  */
 function createJWTToken(
-  encryptedPayload: string,
+  encryptedPayload: string, // ✅ ENCRYPTED: Data sudah terenkripsi AES
   deviceId: string,
   secret: string
 ): string {
@@ -153,11 +197,15 @@ function createJWTToken(
     typ: "JWT",
   };
 
+  // ✅ SAMA SEPERTI ESP32: timeClient.getEpochTime() + (7*3600) untuk timezone +7
+  const currentTime = Math.floor(Date.now() / 1000) + (7 * 3600);
+  const expiryTime = currentTime + 3600; // 1 hour
+
   const payload = {
-    data: encryptedPayload,
-    sub: deviceId,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 3600,
+    data: encryptedPayload, // ✅ SAMA SEPERTI ESP32: Encrypted data (Base64)
+    sub: deviceId,          // ✅ SAMA SEPERTI ESP32: Device ID
+    iat: currentTime,       // ✅ SAMA SEPERTI ESP32: Waktu lokal +7
+    exp: expiryTime,        // ✅ SAMA SEPERTI ESP32: Expire 1 hour
   };
 
   const encodedHeader = Buffer.from(JSON.stringify(header)).toString(
@@ -178,19 +226,20 @@ function createJWTToken(
 
 /**
  * Send HTTP payload
+ * ✅ SINKRON DENGAN ESP32: Hapus enkripsi Base64, langsung JSON seperti ESP32
  */
 async function sendHTTPPayload(): Promise<boolean> {
   try {
     httpCount++;
 
     const sensorData = generateRealtimeSensorData();
-    const payload = JSON.stringify({
-      ...sensorData,
-    });
+    const payload = JSON.stringify(sensorData);
 
-    const encryptedPayload = encryptPayload(payload);
+    // ✅ SAMA SEPERTI ESP32: AES encrypt payload menggunakan device_secret
+    const encryptedPayload = encryptPayloadAES(payload, HTTP_DEVICE.device_secret);
+    
     const jwtToken = createJWTToken(
-      encryptedPayload,
+      encryptedPayload, // ✅ ENCRYPTED: Data sudah terenkripsi AES
       HTTP_DEVICE.device_id,
       HTTP_DEVICE.device_secret
     );
@@ -201,7 +250,7 @@ async function sendHTTPPayload(): Promise<boolean> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${jwtToken}`,
       },
-      body: JSON.stringify({}),
+      body: JSON.stringify({}), // ✅ SAMA SEPERTI ESP32: Empty body, data di JWT
     });
 
     if (response.ok) {
@@ -222,6 +271,7 @@ async function sendHTTPPayload(): Promise<boolean> {
 
 /**
  * Send MQTT payload
+ * ✅ SINKRON DENGAN ESP32: Kirim JWT token langsung seperti ESP32
  */
 function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
   return new Promise((resolve) => {
@@ -229,22 +279,20 @@ function sendMQTTPayload(mqttClient: MqttClient): Promise<boolean> {
       mqttCount++;
 
       const sensorData = generateRealtimeSensorData();
-      const payload = JSON.stringify({
-        ...sensorData,
-      });
+      const payload = JSON.stringify(sensorData);
 
-      const encryptedPayload = encryptPayload(payload);
+      // ✅ SAMA SEPERTI ESP32: AES encrypt payload menggunakan device_secret
+      const encryptedPayload = encryptPayloadAES(payload, MQTT_DEVICE.device_secret);
+      
       const jwtToken = createJWTToken(
-        encryptedPayload,
+        encryptedPayload, // ✅ ENCRYPTED: Data sudah terenkripsi AES
         MQTT_DEVICE.device_id,
         MQTT_DEVICE.device_secret
       );
 
-      const mqttMessage = JSON.stringify({
-        jwt: jwtToken,
-      });
-
-      mqttClient.publish(MQTT_DEVICE.topic, mqttMessage, (error) => {
+      // ✅ SAMA SEPERTI ESP32: Kirim JWT token langsung, bukan dalam object
+      // ESP32: mqttClient.publish(mqtt_topic, mqttPayload.c_str())
+      mqttClient.publish(MQTT_DEVICE.topic, jwtToken, (error) => {
         if (error) {
           console.error(`❌ MQTT error:`, error.message);
           resolve(false);
