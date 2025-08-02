@@ -176,7 +176,7 @@ class Server {
 
       // ===== WEBSOCKET ROUTES =====
       // Registrasi route WebSocket untuk komunikasi real-time
-      .use(userWsRoutes) // WebSocket untuk user
+      .use(userWsRoutes(this.db)) // WebSocket untuk user dengan database injection
       .use(deviceWsRoutes(this.deviceService, this.db)) // WebSocket untuk device
 
       // ===== PLUGINS CONFIGURATION =====

@@ -61,18 +61,6 @@ export function WebSocketProvider({ children }) {
     return isLoggedIn;
   };
 
-  // Helper function untuk verifikasi autentikasi dengan backend
-  // Double-check token validity sebelum establish WebSocket connection
-  const verifyAuthentication = async () => {
-    try {
-      const response = await fetchFromBackend("/auth/verify-token");
-      return response.ok;
-    } catch (error) {
-      console.error("Auth verification failed:", error);
-      return false;
-    }
-  };
-
   // Effect untuk load notifications dari localStorage saat component mount
   // Mengikuti pattern yang sama dengan dashboard-provider untuk konsistensi
   useEffect(() => {
@@ -155,55 +143,8 @@ export function WebSocketProvider({ children }) {
       }
     }, connectionTimeout);
 
-    try {
-      // Build WebSocket URL dengan fallback untuk development/production
-      const backendWsUrl = process.env.NEXT_PUBLIC_BACKEND_WS;
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-      
-      let wsBaseUrl;
-      if (backendWsUrl) {
-        wsBaseUrl = `${backendWsUrl}/ws/user`;
-      } else if (backendUrl) {
-        // Convert HTTP ke WS URL
-        wsBaseUrl = backendUrl.replace(/^https?:/, backendUrl.startsWith('https:') ? 'wss:' : 'ws:') + '/ws/user';
-      } else {
-        // Fallback untuk development
-        wsBaseUrl = 'ws://localhost:7601/ws/user';
-      }
-
-      // Generate WebSocket token dari backend API
-      // Diperlukan karena HttpOnly cookies tidak accessible via JavaScript
-      let wsToken = null;
-      try {
-        const tokenResponse = await fetchFromBackend("/auth/ws-token", {
-          method: "GET",
-        });
-        
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          wsToken = tokenData.ws_token;
-        } else {
-          console.error("❌ Failed to get WebSocket token:", tokenResponse.status);
-          connectionAttemptRef.current = false;
-          return;
-        }
-      } catch (error) {
-        console.error("❌ Error getting WebSocket token:", error);
-        connectionAttemptRef.current = false;
-        return;
-      }
-      
-      // Construct final WebSocket URL dengan token
-      let wsUrl;
-      if (wsToken) {
-        wsUrl = `${wsBaseUrl}/${encodeURIComponent(wsToken)}`;
-      } else {
-        console.warn("❌ No WebSocket token available, cannot connect");
-        connectionAttemptRef.current = false;
-        return;
-      }
-      
-      // Create WebSocket connection
+      // Create WebSocket connection dengan user_id parameter
+      const wsUrl = `${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user/${user.id}`;
       const socket = new WebSocket(wsUrl);
       wsRef.current = socket;
       setWs(socket);
@@ -219,8 +160,36 @@ export function WebSocketProvider({ children }) {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          
+          // Handle ping from server
+          if (data.type === "ping") {
+            // Respond with pong
+            socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+            return;
+          }
+          
           // Debug websocket
           console.log("📥 Pesan diterima:", data);
+          
+          // Handle sensor data updates
+          if (data.type === "sensor_update") {
+            // Update device controls dengan data sensor terbaru
+            setDeviceControls(prev => {
+              const newMap = new Map(prev);
+              const deviceId = data.device_id;
+              const existing = newMap.get(deviceId) || { controls: {}, timestamp: data.timestamp };
+              
+              // Update specific datastream value
+              existing.controls[data.datastream_id] = {
+                value: data.value,
+                timestamp: data.timestamp
+              };
+              existing.timestamp = data.timestamp;
+              
+              newMap.set(deviceId, existing);
+              return newMap;
+            });
+          }
           
           if (data.type === "status_update") {
             setDeviceStatuses(prev => {
@@ -246,6 +215,19 @@ export function WebSocketProvider({ children }) {
 
           if (data.type === "command_executed") {
             console.log(`Command executed:`, data.success ? 'SUCCESS' : 'FAILED');
+            // Update UI atau state jika diperlukan berdasarkan response command
+          }
+          
+          if (data.type === "command_sent") {
+            console.log(`✅ Command sent to device ${data.device_id}:`, data.message);
+          }
+          
+          if (data.type === "command_status") {
+            console.log(`📋 Command status update:`, data);
+          }
+          
+          if (data.type === "echo") {
+            console.log(`🔊 Echo response:`, data.message);
           }
 
           if (data.type === "alarm_notification") {
@@ -283,22 +265,18 @@ export function WebSocketProvider({ children }) {
 
         console.log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
 
-        // Handle specific authentication failures - don't reconnect immediately
-        if (event.code === 1008 && event.reason?.includes("Authentication")) {
-          console.error("🚨 Authentication failed - will retry after verifying credentials");
+        // Handle specific close codes - don't reconnect immediately for certain failures
+        if (event.code === 1008 && event.reason?.includes("not online")) {
+          console.error("🚨 User not online - will retry after delay");
           
-          // Verify authentication before attempting reconnection
+          // Retry connection after delay
           if (isUserLoggedIn(user)) {
             setTimeout(async () => {
-              const isAuthenticated = await verifyAuthentication();
-              if (isAuthenticated && reconnectAttemptsRef.current < maxReconnectAttempts) {
+              if (reconnectAttemptsRef.current < maxReconnectAttempts) {
                 reconnectAttemptsRef.current += 1;
-                // console.log(`🔄 Auth verified, reconnecting... (Attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts})`);
                 await createWebSocketConnection();
-              } else {
-                console.error("❌ Authentication verification failed or max attempts reached");
               }
-            }, reconnectDelay * 2); // Longer delay for auth failures
+            }, reconnectDelay * 2); // Longer delay for user status issues
           }
           return;
         }
@@ -321,12 +299,6 @@ export function WebSocketProvider({ children }) {
         connectionAttemptRef.current = false;
         console.error("🚨 WebSocket error:", error);
       };
-
-    } catch (error) {
-      clearTimeout(connectionTimer);
-      connectionAttemptRef.current = false;
-      console.error("Socket creation failed:", error);
-    }
   };
 
   useEffect(() => {
@@ -349,17 +321,6 @@ export function WebSocketProvider({ children }) {
             setHasAuthChecked(true);
             return;
           }
-
-          const isAuthenticated = await verifyAuthentication();
-          
-          if (!isAuthenticated) {
-            // console.log("❌ Authentication verification failed, skipping initialization");
-            setHasAuthChecked(true);
-            return;
-          }
-
-          // console.log("✅ Authentication verified, proceeding with initialization");
-          setHasAuthChecked(true);
           
           // Fetch notifications dari backend (hanya sekali setelah auth verified)
           const fetchLoginNotifications = async () => {
@@ -482,30 +443,13 @@ export function WebSocketProvider({ children }) {
     };
   }, [user, isInitialized, hasAuthChecked]);
 
-  // Manual reconnection
-  const reconnectWebSocket = async () => {
-    if (isUserLoggedIn(user) && !connectionAttemptRef.current) {
-      // console.log("🔄 Mencoba reconnect...");
-      
-      // Verify auth before reconnecting
-      const isAuthenticated = await verifyAuthentication();
-      if (!isAuthenticated) {
-        console.log("❌ Authentication failed, cannot reconnect");
-        return;
-      }
-      
-      reconnectAttemptsRef.current = 0;
-      await createWebSocketConnection();
-    }
-  };
-
   // Function to send device commands
   const sendDeviceCommand = (deviceId, datastreamId, commandType, value) => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       const command = {
         type: "device_command",
-        device_id: deviceId,
-        datastream_id: datastreamId,
+        device_id: deviceId.toString(),
+        control_id: datastreamId.toString(), // Backend expects control_id
         command_type: commandType,
         value: value,
         timestamp: new Date().toISOString()
@@ -545,6 +489,41 @@ export function WebSocketProvider({ children }) {
     }
   };
 
+  // Function to test echo (untuk debugging)
+  const testWebSocketConnection = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const testMessage = {
+        type: "echo",
+        message: "Hello from frontend!",
+        timestamp: new Date().toISOString()
+      };
+      console.log(`🧪 Sending test message:`, testMessage);
+      ws.send(JSON.stringify(testMessage));
+      return true;
+    }
+    console.warn("❌ Cannot test: WebSocket not connected");
+    return false;
+  };
+
+  // Function untuk test device command
+  const testDeviceCommand = (deviceId = "1") => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      const testCommand = {
+        type: "device_command",
+        device_id: deviceId,
+        control_id: "led1",
+        command_type: "set_value",
+        value: 1,
+        timestamp: new Date().toISOString()
+      };
+      console.log(`🧪 Sending test device command:`, testCommand);
+      ws.send(JSON.stringify(testCommand));
+      return true;
+    }
+    console.warn("❌ Cannot test command: WebSocket not connected");
+    return false;
+  };
+
   const contextValue = {
     ws,
     isConnected,
@@ -555,7 +534,8 @@ export function WebSocketProvider({ children }) {
     removeAlarmNotification,
     clearAlarmNotifications,
     sendDeviceCommand,
-    reconnectWebSocket,
+    testWebSocketConnection, // Tambah function untuk testing echo
+    testDeviceCommand, // Tambah function untuk testing device command
   };
 
   return (

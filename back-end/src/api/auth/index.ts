@@ -354,52 +354,5 @@ export function authRoutes(authService: AuthService, userService: UserService) {
           }
         }
       )
-
-      // ===== WEBSOCKET TOKEN GENERATION ENDPOINT =====
-      // GET /auth/ws-token - Generate temporary token untuk WebSocket connection
-      .get(
-        "/ws-token",
-        // @ts-ignore
-        async ({ jwt, cookie }) => {
-          try {
-            const decoded = await authorizeRequest(jwt, cookie);
-            if (!decoded) {
-              console.log("❌ WebSocket token request: Authorization failed");
-              return new Response(JSON.stringify({ 
-                status: 401,
-                message: "Unauthorized" 
-              }), { status: 401 });
-            }
-            
-            // Generate temporary WebSocket token (valid selama 30 menit)
-            const wsTokenPayload = { 
-              sub: decoded.sub, // User ID dari JWT yang ada
-              type: "websocket", // Tipe khusus untuk WebSocket authentication
-              exp: Date.now() + (30 * 60 * 1000) // Expired dalam 30 menit
-            };
-            
-            // Debug token websocket (server-side logging)
-            // console.log("🔑 Generating WebSocket token for user:", decoded.sub, "with payload:", wsTokenPayload);
-            
-            const wsToken = await jwt.sign(wsTokenPayload);
-            
-            return new Response(JSON.stringify({
-              status: 200,
-              ws_token: wsToken // Token untuk digunakan di WebSocket connection
-            }), { 
-              status: 200,
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-          } catch (error) {
-            console.error("❌ WebSocket token generation error:", error);
-            return new Response(JSON.stringify({
-              status: 401,
-              message: "Unauthorized"
-            }), { status: 401 });
-          }
-        }
-      )
   );
 }

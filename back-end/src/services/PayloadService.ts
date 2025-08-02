@@ -16,7 +16,7 @@ import { Pool, ResultSetHeader } from "mysql2/promise";
 import { DeviceService } from "./DeviceService";
 import { AlarmNotificationService } from "./AlarmNotificationService";
 import { DeviceStatusService } from "./DeviceStatusService";
-import { broadcastToUsersByDevice } from "../api/ws/user-ws";
+import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 import { 
   verifyDeviceJWTAndDecrypt, 
   parseAndNormalizePayload, 
@@ -97,7 +97,7 @@ export class PayloadService {
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       console.log(`[BROADCAST] Mengirim data real-time ke user via WebSocket...`);
-      await broadcastSensorUpdates(this.db, broadcastToUsersByDevice, Number(deviceId), decrypted, "http");
+      await broadcastSensorUpdates(this.db, broadcastToDeviceOwner, Number(deviceId), decrypted, "http");
       console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
       // STEP 4: Update device status to online (real-time)

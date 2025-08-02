@@ -618,97 +618,62 @@ async function broadcastSensorUpdates(
   protocol?: string
 ) {
   try {
-    console.log(`📡 [BROADCAST] Memulai broadcast data real-time untuk device ${deviceId}`);
-    
-    // STEP 1: Extract device timestamp dari rawData (konsisten dengan parseAndNormalizePayload)
+    // Extract device timestamp
     let deviceTimestamp = null;
     if (rawData.timestamp && typeof rawData.timestamp === 'number') {
       let timestamp = rawData.timestamp;
-      
-      // Handle berbagai format timestamp (seconds vs milliseconds)
       if (timestamp < 10000000000) {
-        timestamp = timestamp * 1000; // Konversi seconds ke milliseconds
+        timestamp = timestamp * 1000;
       }
-      
-      // Gunakan timestamp asli dari device untuk akurasi waktu
       deviceTimestamp = new Date(timestamp).toISOString();
     } else {
-      // Fallback ke server time jika tidak ada device timestamp
       deviceTimestamp = new Date().toISOString();
     }
     
-    // STEP 2: Get device info dan pemilik untuk authorization
+    // Get device info dan datastreams
     const [deviceRows]: any = await db.query(
-      `SELECT d.id, d.description as device_name, d.user_id, u.name as user_name
-       FROM devices d 
-       LEFT JOIN users u ON d.user_id = u.id 
-       WHERE d.id = ?`,
+      `SELECT d.id, d.description as device_name, d.user_id 
+       FROM devices d WHERE d.id = ?`,
       [deviceId]
     );
 
-    if (!deviceRows.length) {
-      console.warn(`⚠️ [BROADCAST] Device ${deviceId} tidak ditemukan untuk broadcast`);
-      return;
-    }
+    if (!deviceRows.length) return;
 
     const device = deviceRows[0];
-    console.log(`✅ [BROADCAST] Device ditemukan: ${device.device_name} (Owner: ${device.user_name || 'Unknown'})`);
     
-    // STEP 3: Get datastreams untuk mapping pin data ke informasi sensor
     const [datastreams]: any = await db.query(
-      `SELECT id, pin, description, unit, type FROM datastreams WHERE device_id = ?`,
+      `SELECT id, pin, description, unit FROM datastreams WHERE device_id = ?`,
       [deviceId]
     );
 
-    console.log(`🔍 [BROADCAST] Ditemukan ${datastreams.length} datastream untuk broadcast`);
-
-    // STEP 4: Broadcast setiap sensor value dengan datastream info
-    let broadcastCount = 0;
+    // Broadcast setiap sensor value
     for (const [pin, value] of Object.entries(rawData)) {
-      // Skip timestamp dan device_id, hanya proses data sensor
       if (typeof value === 'number' && pin !== 'timestamp' && pin !== 'device_id') {
         const datastream = datastreams.find((ds: any) => ds.pin === pin);
         
         if (datastream) {
-          console.log(`📤 [BROADCAST] Mengirim data sensor: Pin "${pin}" → ${datastream.description} = ${value} ${datastream.unit || ''}`);
-          
-          // Buat payload untuk WebSocket broadcast
-          const broadcastData: any = {
-            type: "sensor_update", // Jenis message WebSocket
+          const broadcastData = {
+            type: "sensor_update",
             device_id: deviceId,
             datastream_id: datastream.id,
             value: value,
-            timestamp: deviceTimestamp, // PENTING: Gunakan timestamp asli dari device
-            device_time: deviceTimestamp, // TAMBAHAN: Field device_time untuk frontend compatibility
+            timestamp: deviceTimestamp,
+            device_time: deviceTimestamp,
             device_name: device.device_name,
             sensor_name: datastream.description,
             unit: datastream.unit,
-            user_id: device.user_id, // KEAMANAN: Hanya kirim ke pemilik device
-            pin: pin
+            user_id: device.user_id,
+            pin: pin,
+            protocol: protocol || "unknown"
           };
 
-          // Tambah protocol info jika ada
-          if (protocol) {
-            broadcastData.protocol = protocol;
-          }
-
-          // KEAMANAN: Gunakan broadcast function yang aman (broadcastToUsersByDevice)
-          if (typeof broadcastFunction === 'function' && broadcastFunction.name === 'broadcastToUsersByDevice') {
-            await broadcastFunction(db, deviceId, broadcastData);
-            console.log(`✅ [BROADCAST] Data berhasil dikirim ke WebSocket user ${device.user_id}`);
-          } else {
-            console.warn("⚠️ [BROADCAST] Menggunakan legacy broadcast function. Harap update ke broadcastToUsersByDevice untuk keamanan.");
-            broadcastFunction(broadcastData);
-          }
-          broadcastCount++;
-        } else {
-          console.warn(`⚠️ [BROADCAST] Datastream tidak ditemukan untuk pin "${pin}" - tidak di-broadcast`);
+          // Gunakan broadcastToDeviceOwner yang sudah dioptimasi
+          await broadcastFunction(db, deviceId, broadcastData);
         }
       }
     }
   } catch (error) {
-    console.error("❌ [BROADCAST] Error dalam broadcast sensor updates:", error);
-    // Don't throw error untuk avoid breaking payload saving process
+    console.error("❌ Error in broadcastSensorUpdates:", error);
   }
 }
 

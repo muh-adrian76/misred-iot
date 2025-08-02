@@ -14,22 +14,13 @@
 import mysql, { Pool } from "mysql2/promise";
 import { type DeviceCommand, type CommandStatus } from "../lib/types";
 import { MQTTClient } from "../lib/middleware";
+import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 
 // Lazy import untuk menghindari circular dependency
-let broadcastToUsersByDevice: any = null;
 let sendToDevice: any = null;
 
 // Initialize broadcast functions untuk WebSocket communication
 const initializeBroadcasting = async () => {
-  if (!broadcastToUsersByDevice) {
-    try {
-      const userWs = await import("../api/ws/user-ws");
-      broadcastToUsersByDevice = userWs.broadcastToUsersByDevice;
-    } catch (error) {
-      console.warn("Failed to import broadcastToUsersByDevice:", error);
-    }
-  }
-  
   if (!sendToDevice) {
     try {
       const deviceWs = await import("../api/ws/device-ws");
@@ -106,16 +97,14 @@ export class DeviceCommandService {
       await this.sendCommandToDevice(commandId, deviceId, datastream, commandType, value);
 
       // Broadcast status command ke frontend via WebSocket
-      if (broadcastToUsersByDevice) {
-        await broadcastToUsersByDevice(this.db, deviceId, {
-          type: "command_status",
-          command_id: commandId,
-          device_id: deviceId,
-          datastream_id: datastreamId,
-          status: "sent",
-          timestamp: new Date().toISOString()
-        });
-      }
+      await broadcastToDeviceOwner(this.db, deviceId, {
+        type: "command_status",
+        command_id: commandId,
+        device_id: deviceId,
+        datastream_id: datastreamId,
+        status: "sent",
+        timestamp: new Date().toISOString()
+      });
 
       return commandId;
     } catch (error) {

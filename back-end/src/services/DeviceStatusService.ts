@@ -13,7 +13,7 @@
  */
 // DeviceStatusService.ts - Service untuk manage status device realtime
 import { Pool } from 'mysql2/promise';
-import { broadcastToUsersByDevice } from '../api/ws/user-ws';
+import { broadcastToDeviceOwner } from '../api/ws/user-ws';
 
 export class DeviceStatusService {
   private static instance: DeviceStatusService;
@@ -57,7 +57,7 @@ export class DeviceStatusService {
       // console.log(`🟢 Status Device ${deviceId} diupdate menjadi online`);
 
       // Broadcast status update via WebSocket HANYA ke pemilik device
-      await broadcastToUsersByDevice(this.db, deviceId, {
+      await broadcastToDeviceOwner(this.db, deviceId, {
         type: "status_update",
         device_id: deviceId,
         status: "online",
@@ -142,7 +142,7 @@ export class DeviceStatusService {
           const [affectedDevices] = await this.db.query(getAffectedDevicesQuery);
           
           (affectedDevices as any[]).forEach(async device => {
-            await broadcastToUsersByDevice(this.db, device.id, {
+            await broadcastToDeviceOwner(this.db, device.id, {
               type: "status_update",
               device_id: device.id,
               status: device.status,

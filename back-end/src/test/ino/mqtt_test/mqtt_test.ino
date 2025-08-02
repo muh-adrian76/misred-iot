@@ -19,6 +19,7 @@ const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // MQTT configuration
+// const char* mqtt_server = "103.82.241.46";
 const char* mqtt_server = "192.168.18.238";
 const int mqtt_port = 1883;
 const char* mqtt_topic = "device/data";

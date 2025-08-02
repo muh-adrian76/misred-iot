@@ -23,7 +23,7 @@ import {
 import { DeviceService } from "./DeviceService";
 import { AlarmNotificationService } from "./AlarmNotificationService";
 import { DeviceStatusService } from "./DeviceStatusService";
-import { broadcastToUsersByDevice } from "../api/ws/user-ws";
+import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 
 export class MQTTService {
   private mqttClient: ReturnType<typeof MQTTClient.getInstance>;
@@ -220,7 +220,7 @@ export class MQTTService {
       console.log(`📡 [MQTT PAYLOAD] Mengirim data real-time ke WebSocket...`);
       await broadcastSensorUpdates(
         this.db,
-        broadcastToUsersByDevice,
+        broadcastToDeviceOwner,
         Number(device_id),
         verificationResult.decryptedData,
         "mqtt"

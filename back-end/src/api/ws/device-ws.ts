@@ -5,7 +5,7 @@
  */
 
 import { Elysia, t } from "elysia";
-import { broadcastToUsersByDevice } from "./user-ws";
+import { broadcastToDeviceOwner } from "./user-ws";
 import { DeviceService } from '../../services/DeviceService';
 import { DeviceCommandService } from '../../services/DeviceCommandService';
 import { Pool } from "mysql2/promise";
@@ -94,7 +94,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
         updateDeviceActivity(data.device_id, ws);
         
         // Broadcast data sensor ke user pemilik device
-        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
+        await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "sensor_update",
           device_id: parseInt(data.device_id),
           datastream_id: data.datastream_id,
@@ -122,7 +122,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
         }
         
         // Broadcast status online ke user pemilik device
-        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
+        await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "status_update",
           device_id: parseInt(data.device_id),
           status: "online",
@@ -149,7 +149,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
           console.log(`✅ Command ${data.command_id} acknowledged by device ${data.device_id}: ${data.success ? 'SUCCESS' : 'FAILED'}`);
           
           // Broadcast ke user pemilik device bahwa command telah dieksekusi
-          await broadcastToUsersByDevice(db, parseInt(data.device_id), {
+          await broadcastToDeviceOwner(db, parseInt(data.device_id), {
             type: "command_executed",
             device_id: parseInt(data.device_id),
             command_id: data.command_id,
@@ -177,7 +177,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
         updateDeviceActivity(data.device_id, ws);
         
         // Broadcast status control saat ini ke user pemilik device
-        await broadcastToUsersByDevice(db, parseInt(data.device_id), {
+        await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "control_status_update",
           device_id: parseInt(data.device_id),
           datastream_id: data.datastream_id,
@@ -203,7 +203,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
           deviceService.updateDeviceStatus(device_id, "offline").catch(console.error);
           
           // Broadcast status offline ke user pemilik device
-          broadcastToUsersByDevice(globalDb, parseInt(device_id), {
+          broadcastToDeviceOwner(globalDb, parseInt(device_id), {
             type: "status_update",
             device_id: parseInt(device_id),
             status: "offline",
@@ -231,7 +231,7 @@ export function startHeartbeatChecker(deviceService: DeviceService, db: Pool) {
           await deviceService.updateDeviceStatus(device_id, "offline");
           
           // Broadcast status offline ke user pemilik device
-          await broadcastToUsersByDevice(db, parseInt(device_id), {
+          await broadcastToDeviceOwner(db, parseInt(device_id), {
             type: "status_update",
             device_id: parseInt(device_id),
             status: "offline",
