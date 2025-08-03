@@ -1,15 +1,16 @@
 import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
-import { AlarmNotificationService } from "../../services/AlarmNotificationService";
+import { NotificationService } from "../../services/NotificationService";
 import {
   getRecentNotificationsSchema,
   getNotificationHistorySchema,
   testApiConnectionSchema,
   sendTestNotificationSchema,
+  sendDeviceOfflineNotificationSchema,
 } from "./elysiaSchema";
 
-export function alarmNotificationRoutes(
-  notificationService: AlarmNotificationService
+export function notificationRoutes(
+  notificationService: NotificationService
 ) {
   return new Elysia({ prefix: "/notifications" })
     // 📋 GET Notifications saat user login (semua notifikasi dengan status read/unread)
@@ -45,32 +46,36 @@ export function alarmNotificationRoutes(
             };
           }
 
-          // Get all notifications for the user
-          const notifications = await notificationService.getRecentNotifications(userId);
+          // Get all notifications for the user (not just unread)
+          console.log(`🔍 Fetching recent notifications for user ${userId}`);
+          const historyResult = await notificationService.getNotificationHistory(
+            userId, 1, 50, "all" // page 1, limit 50, all time range
+          );
+          console.log(`📊 Found ${historyResult.total} total notifications, showing ${historyResult.notifications.length} recent`);
 
-          // Format notifications untuk frontend
-          const formattedNotifications = notifications.map((row: any) => ({
+          // Format notifications untuk frontend dengan schema baru
+          const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: String(row.id),
-            title: row.alarm_description,
-            message: `Device: ${row.device_description}\nDatastream: ${row.datastream_description}(${row.field_name})\nNilai: ${row.sensor_value} (${row.conditions_text})`,
-            createdAt: String(row.triggered_at),
+            type: row.type || 'alarm',
+            title: row.title || row.alarm_description || 'Notification',
+            message: row.message || `Perangkat: ${row.device_description}\nDatastream: ${row.datastream_description}(${row.field_name})\nNilai: ${row.sensor_value} (${row.conditions_text})`,
+            priority: row.priority || 'medium',
             isRead: Boolean(row.is_read),
-            priority: "high",
-            alarm_id: row.alarm_id,
-            device_description: row.device_description,
-            datastream_description: row.datastream_description,
-            sensor_value: Number(row.sensor_value),
-            condition_text: row.conditions_text,
-            user_email: row.user_email,
-            is_read: Boolean(row.is_read),
-            read_at: String(row.read_at)
+            createdAt: String(row.triggered_at),
+            alarm_id: row.alarm_id || null,
+            device_id: row.device_id || null,
+            device_description: row.device_description || null,
+            datastream_description: row.datastream_description || null,
+            sensor_value: row.sensor_value ? Number(row.sensor_value) : null,
+            condition_text: row.conditions_text || null,
+            user_email: row.user_email
           }));
 
           return {
             success: true,
             message: formattedNotifications.length === 0 ? "Belum ada notifikasi" : "Berhasil mengambil notifikasi",
             notifications: formattedNotifications,
-            total: formattedNotifications.length,
+            total: historyResult.total,
             last_seen: new Date().toISOString()
           };
         } catch (error: any) {
@@ -138,6 +143,7 @@ export function alarmNotificationRoutes(
           const limit = Math.min(100, Math.max(1, parseInt(query.limit as string) || 20));
           const offset = (page - 1) * limit;
           const timeRange = query.timeRange as string || "all";
+          const type = query.type as string || ""; // Add type filter parameter
 
           // console.log("📊 API Debug - Parsed parameters:", {
           //   userId: userId,
@@ -179,26 +185,30 @@ export function alarmNotificationRoutes(
           }
           
           // Get notification history from service
+          console.log(`🔍 Fetching notification history for user ${userId}, page ${page}, limit ${limit}, timeRange ${timeRange}, type ${type}`);
           const historyResult = await notificationService.getNotificationHistory(
-            userId, page, limit, timeRange
+            userId, page, limit, timeRange, type
           );
+          console.log(`📊 Found ${historyResult.total} total notifications, returning ${historyResult.notifications.length} for this page`);
 
           const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: row.id,
-            alarm_id: row.alarm_id,
-            device_id: row.device_id,
-            datastream_id: row.datastream_id,
-            alarm_description: row.alarm_description,
-            datastream_description: row.datastream_description,
-            device_description: row.device_description,
-            sensor_value: Number(row.sensor_value),
-            conditions_text: row.conditions_text,
+            type: row.type || 'alarm',
+            title: row.title || row.alarm_description || 'Notification',
+            message: row.message || `Perangkat: ${row.device_description}\nDatastream: ${row.datastream_description}\nNilai: ${row.sensor_value}`,
+            priority: row.priority || 'medium',
+            alarm_id: row.alarm_id || null,
+            device_id: row.device_id || null,
+            datastream_id: row.datastream_id || null,
+            alarm_description: row.alarm_description || null,
+            datastream_description: row.datastream_description || null,
+            device_description: row.device_description || null,
+            sensor_value: row.sensor_value ? Number(row.sensor_value) : null,
+            conditions_text: row.conditions_text || null,
             triggered_at: String(row.triggered_at),
-            notification_type: row.notification_type,
-            whatsapp_message_id: row.whatsapp_message_id,
-            whatsapp_sent: !!row.whatsapp_message_id,
+            whatsapp_sent: false, // Field tidak ada lagi di schema baru
             is_read: Boolean(row.is_read),
-            read_at: String(row.read_at)
+            read_at: String(row.triggered_at) // Gunakan triggered_at sebagai fallback
           }));
 
           return {
@@ -548,5 +558,128 @@ export function alarmNotificationRoutes(
           };
         }
       }
+    )
+
+    // 📱 DEVICE OFFLINE NOTIFICATION
+    // Endpoint untuk mengirim notifikasi ketika device offline
+    .post(
+      "/device-offline",
+      //@ts-ignore
+      async ({ body, jwt, cookie, set }) => {
+        try {
+          const user = await authorizeRequest(jwt, cookie);
+          
+          if (!user || !user.sub) {
+            set.status = 401;
+            return {
+              success: false,
+              message: "Unauthorized access"
+            };
+          }
+
+          const userId = parseInt(user.sub);
+          const { device_id, device_name } = body as { device_id: string; device_name: string };
+
+          if (!device_id || !device_name) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "Missing device_id or device_name"
+            };
+          }
+
+          // Verify device ownership
+          const db = notificationService.db;
+          const [deviceRows]: any = await db.query(
+            "SELECT id, user_id FROM devices WHERE id = ?",
+            [device_id]
+          );
+
+          if (!deviceRows.length || deviceRows[0].user_id !== userId) {
+            set.status = 403;
+            return {
+              success: false,
+              message: "Device not found or access denied"
+            };
+          }
+
+          // Create device offline notification
+          console.log(`🔄 Creating device offline notification via API for device ${device_id}, user ${userId}`);
+          
+          await db.query(
+            "INSERT INTO notifications (user_id, type, title, message, priority, device_id, triggered_at, is_read) VALUES (?, ?, ?, ?, ?, ?, NOW(), FALSE)",
+            [
+              userId,
+              "device_status",
+              "Device Offline",
+              `Device "${device_name}" telah offline dan tidak merespons`,
+              "high",
+              device_id
+            ]
+          );
+          
+          console.log(`✅ Device offline notification created via API for device ${device_id}`);
+
+          // Send real-time browser notification via WebSocket
+          try {
+            const { broadcastToSpecificUser } = await import('../ws/user-ws');
+            const notificationData = {
+              type: 'notification',
+              data: {
+                id: Date.now(), // Temporary ID for real-time notification
+                type: 'device_status',
+                title: 'Perubahan Status Perangkat',
+                message: `Perangkat "${device_name}" telah offline dan tidak merespons`,
+                priority: 'high',
+                device_id: device_id,
+                device_name: device_name,
+                triggered_at: new Date().toISOString(),
+                is_read: false
+              }
+            };
+            
+            console.log(`📡 Broadcasting device offline notification to user ${userId} via WebSocket`);
+            broadcastToSpecificUser(userId.toString(), notificationData);
+          } catch (wsError) {
+            console.error('Error broadcasting WebSocket notification:', wsError);
+          }
+
+          // Get user data for WhatsApp notification
+          const [userRows]: any = await db.query(
+            "SELECT name, phone, whatsapp_notif FROM users WHERE id = ?",
+            [userId]
+          );
+
+          const userData = userRows[0];
+
+          // Send WhatsApp notification if enabled
+          if (userData && userData.whatsapp_notif && userData.phone) {
+            try {
+              await notificationService.sendWhatsAppNotification(
+                userData.phone,
+                `🔴 *Perubahan Status Perangkat*\n\nPerangkat "${device_name}" telah offline dan tidak merespons.\n\nSilakan periksa koneksi perangkat Anda.`
+              );
+            } catch (whatsappError) {
+              console.error('Error sending WhatsApp notification for device offline:', whatsappError);
+            }
+          }
+
+          console.log(`✅ Device offline notification sent for device ${device_id} (${device_name}) to user ${userId}`);
+
+          return {
+            success: true,
+            message: "Device offline notification sent successfully"
+          };
+
+        } catch (error) {
+          console.error("Error sending device offline notification:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Internal server error"
+          };
+        }
+      },
+      sendDeviceOfflineNotificationSchema
     );
 }

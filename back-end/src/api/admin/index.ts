@@ -8,6 +8,7 @@ import { Elysia } from "elysia";
 import { authorizeRequest } from "../../lib/utils";
 import { AdminService } from "../../services/AdminService";
 import { UserService } from "../../services/UserService";
+import { OtaaUpdateService } from "../../services/OtaaUpdateService";
 import {
   getOverviewStatsSchema,
   getRecentUsersSchema,
@@ -18,7 +19,57 @@ import {
   getAllDevicesWithStatsSchema
 } from "./elysiaSchema";
 
-export function adminRoutes(adminService: AdminService, userService: UserService) {
+export function adminRoutes(adminService: AdminService, userService: UserService, otaaService: OtaaUpdateService) {
+  
+  /**
+   * Kirim notifikasi firmware baru ke semua user yang memiliki device dengan board type tertentu
+   */
+  async function sendFirmwareUpdateNotifications(affectedUsers: any[], boardType: string, firmwareVersion: string, service: OtaaUpdateService) {
+    try {
+      const title = `🔄 Firmware Terbaru Tersedia`;
+      const message = `Admin telah mengunggah firmware baru untuk board ${boardType} versi ${firmwareVersion}.\nSilakan cek halaman OTAA Update untuk mengunduh firmware terbaru.\nWaktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
+
+      // Access database through the service's public method
+      const db = service.getDatabase();
+
+      for (const user of affectedUsers) {
+        await db.execute(
+          `INSERT INTO notifications (type, title, message, priority, user_id, triggered_at, is_read) 
+           VALUES (?, ?, ?, ?, ?, NOW(), FALSE)`,
+          [
+            'firmware_update',
+            title,
+            message,
+            'low', // Priority rendah untuk firmware update
+            user.user_id
+          ]
+        );
+
+        // Broadcast notifikasi real-time via WebSocket (optional)
+        try {
+          const { broadcastToSpecificUser } = await import('../ws/user-ws');
+          broadcastToSpecificUser(user.user_id.toString(), {
+            type: 'notification',
+            notification_type: 'firmware_update',
+            title,
+            message,
+            priority: 'low',
+            board_type: boardType,
+            firmware_version: firmwareVersion,
+            timestamp: new Date().toISOString()
+          });
+        } catch (wsError: any) {
+          // WebSocket broadcast adalah optional
+          console.log(`WebSocket broadcast skipped for user ${user.user_id}:`, wsError?.message || "Unknown error");
+        }
+      }
+
+      console.log(`📦 Firmware update notifications sent to ${affectedUsers.length} users for board type ${boardType}`);
+    } catch (error) {
+      console.error("Error sending firmware update notifications:", error);
+    }
+  }
+
   return new Elysia({ prefix: "/admin" })
 
     // ===== GET OVERVIEW STATISTICS ENDPOINT =====
@@ -335,5 +386,240 @@ export function adminRoutes(adminService: AdminService, userService: UserService
         }
       },
       getSystemHealthSchema
+    )
+
+    // ===== ADMIN OTAA MANAGEMENT ENDPOINTS =====
+    
+    // GET /admin/otaa - Admin melihat semua firmware dari semua user
+    .get(
+      "/otaa",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          // Validasi akses admin
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const firmwares = await otaaService.getAllFirmwaresForAdmin();
+          return { success: true, data: firmwares };
+        } catch (error: any) {
+          console.error("Error fetching all firmwares for admin:", error);
+          return new Response(JSON.stringify({
+            status: "error", 
+            message: "Gagal mengambil data firmware",
+            error: error.message
+          }), { status: 500 });
+        }
+      }
+    )
+
+    // GET /admin/otaa/global - Admin melihat firmware global yang dikelompokkan berdasarkan board type
+    .get(
+      "/otaa/global",
+      // @ts-ignore
+      async ({ jwt, cookie }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          // Validasi akses admin
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const globalFirmwares = await otaaService.getGlobalFirmwaresGroupedByBoard();
+          return { success: true, data: globalFirmwares };
+        } catch (error: any) {
+          console.error("Error fetching global firmwares:", error);
+          return new Response(JSON.stringify({
+            status: "error", 
+            message: "Gagal mengambil data firmware global",
+            error: error.message
+          }), { status: 500 });
+        }
+      }
+    )
+
+    // POST /admin/otaa - Admin upload firmware global untuk semua user
+    .post(
+      "/otaa",
+      // @ts-ignore
+      async ({ jwt, cookie, body }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          // Validasi akses admin
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          const { board_type, firmware_version, file } = body as any;
+
+          if (!file) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "File firmware diperlukan"
+            }), { status: 400 });
+          }
+
+          if (!board_type || !firmware_version) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Board type dan versi firmware diperlukan"
+            }), { status: 400 });
+          }
+
+          // Validasi file format
+          const allowedExtensions = ['bin', 'hex'];
+          const fileExtension = file.name?.split('.').pop()?.toLowerCase();
+          if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Format file tidak valid. Hanya file .bin dan .hex yang diizinkan"
+            }), { status: 400 });
+          }
+
+          // Validasi ukuran file (10MB)
+          if (file.size > 10 * 1024 * 1024) {
+             return new Response(JSON.stringify({
+              status: "error",
+              message: "Ukuran file terlalu besar. Maksimal 10MB"
+            }), { status: 400 });
+          }
+
+          // Generate unique filename untuk global firmware 
+          const timestamp = Date.now();
+          const filename = `global_${board_type}_${firmware_version}_${timestamp}.${fileExtension}`;
+          const firmwarePath = `${process.cwd()}/src/assets/firmware/${filename}`;
+          const firmwareUrl = `/public/firmware/${filename}`;
+
+          // Pastikan direktori firmware ada
+          const { existsSync, mkdirSync } = await import('fs');
+          const path = await import('path');
+          const firmwareDir = path.dirname(firmwarePath);
+          if (!existsSync(firmwareDir)) {
+            mkdirSync(firmwareDir, { recursive: true });
+          }
+
+          // Simpan file firmware
+          await Bun.write(firmwarePath, file);
+
+          // Calculate file size and checksum
+          const fileStats = await import('fs').then(fs => fs.statSync(firmwarePath));
+          const fileSize = fileStats.size;
+          
+          // Simple checksum calculation (you might want to use crypto for SHA256)
+          const crypto = await import('crypto');
+          const fileBuffer = await Bun.file(firmwarePath).arrayBuffer();
+          const checksum = crypto.createHash('sha256').update(Buffer.from(fileBuffer)).digest('hex');
+
+          // Simpan ke database sebagai global firmware (user_id = 0)  
+          const firmwareId = await otaaService.createGlobalFirmwareWithVersioning({
+            board_type,
+            firmware_version,  
+            firmware_url: firmwareUrl,
+            file_size: fileSize,
+            original_filename: file.name,
+            checksum: checksum,
+            description: `Global firmware untuk ${board_type} v${firmware_version}`,
+          });
+
+          // Dapatkan user yang memiliki device dengan board type ini
+          const affectedUsers = await otaaService.getUsersWithBoardType(board_type);
+
+          // Kirim notifikasi firmware baru ke user yang terdampak
+          if (Array.isArray(affectedUsers) && affectedUsers.length > 0) {
+            await sendFirmwareUpdateNotifications(
+              affectedUsers, 
+              board_type, 
+              firmware_version,
+              otaaService
+            );
+          }
+
+          return {
+            success: true,
+            message: "Firmware global berhasil diupload",
+            data: {
+              firmware_id: firmwareId,
+              affected_users: Array.isArray(affectedUsers) ? affectedUsers.length : 0,
+              board_type,
+              firmware_version,
+              filename
+            }
+          };
+
+        } catch (error: any) {
+          console.error("Error uploading global firmware:", error);
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Gagal mengupload firmware global",
+            error: error.message
+          }), { status: 500 });
+        }
+      }
+    )
+
+    // DELETE /admin/otaa/:id - Admin menghapus firmware user mana pun
+    .delete(
+      "/otaa/:id",
+      // @ts-ignore
+      async ({ jwt, cookie, params }) => {
+        try {
+          const decoded = await authorizeRequest(jwt, cookie);
+          const adminUser = await userService.getUserById(decoded.sub);
+          
+          // Validasi akses admin
+          if (!adminUser?.is_admin) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Unauthorized: Admin access required"
+            }), { status: 403 });
+          }
+
+          // Untuk admin, tidak perlu validasi user_id saat delete
+          // Ambil firmware info dulu untuk mendapatkan user_id
+          const firmwareInfo = await otaaService.getFirmwareById(parseInt(params.id));
+
+          if (!firmwareInfo) {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Firmware tidak ditemukan"
+            }), { status: 404 });
+          }
+
+          const success = await otaaService.deleteFirmware(params.id, firmwareInfo.user_id);
+          
+          if (success) {
+            return { success: true, message: "Firmware berhasil dihapus" };
+          } else {
+            return new Response(JSON.stringify({
+              status: "error",
+              message: "Gagal menghapus firmware"
+            }), { status: 500 });
+          }
+        } catch (error: any) {
+          console.error("Error deleting firmware (admin):", error);
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Gagal menghapus firmware",
+            error: error.message
+          }), { status: 500 });
+        }
+      }
     );
 }

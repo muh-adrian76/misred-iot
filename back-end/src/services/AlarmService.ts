@@ -290,6 +290,16 @@ export class AlarmService {
    */
   async deleteAlarm(alarmId: number, userId: number): Promise<boolean> {
     try {
+      // Delete data terkait dalam urutan yang tepat untuk menghindari foreign key constraint errors
+      
+      // 1. Delete notifications yang terkait dengan alarm (FK ke alarm_id - CASCADE)
+      await this.db.query("DELETE FROM notifications WHERE alarm_id = ?", [alarmId]);
+      
+      // 2. Delete alarm_conditions yang terkait dengan alarm (FK ke alarm_id - CASCADE)
+      // Ini sebenarnya otomatis CASCADE, tapi untuk safety kita hapus manual
+      await this.db.query("DELETE FROM alarm_conditions WHERE alarm_id = ?", [alarmId]);
+      
+      // 3. Finally, delete the alarm itself (akan trigger CASCADE untuk yang tersisa)
       const query = "DELETE FROM alarms WHERE id = ? AND user_id = ?";
       const [result] = await this.db.query(query, [alarmId, userId]);
       

@@ -31,8 +31,8 @@ import {
   getFirmwareListSchema,
   downloadFirmwareFileSchema,
   renewSecretSchema,
+  updateDeviceStatusSchema,
 } from "./elysiaSchema";
-import { datastreamRoutes } from "../datastream";
 
 export function deviceRoutes(deviceService: DeviceService, deviceStatusService?: DeviceStatusService) {
   return (
@@ -626,6 +626,82 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
           }
         },
         deleteDeviceSchema
+      )
+
+      // ===== UPDATE DEVICE STATUS ENDPOINT =====
+      // PUT /device/:id/status - Update status device (online/offline)
+      .put(
+        "/:id/status",
+        //@ts-ignore
+        async ({ jwt, cookie, params, body, set }) => {
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const { status } = body as { status: "online" | "offline" };
+            const deviceId = params.id;
+
+            if (!status || !["online", "offline"].includes(status)) {
+              set.status = 400;
+              return {
+                success: false,
+                message: "Invalid status. Must be 'online' or 'offline'"
+              };
+            }
+
+            // Verify device ownership
+            const deviceResult = await deviceService.getDeviceById(deviceId);
+            const devices = deviceResult as any[];
+            
+            if (!devices || devices.length === 0) {
+              set.status = 404;
+              return {
+                success: false,
+                message: "Device not found"
+              };
+            }
+
+            // Check if device belongs to the user
+            if (devices[0].user_id !== parseInt(decoded.sub)) {
+              set.status = 403;
+              return {
+                success: false,
+                message: "Access denied"
+              };
+            }
+
+            // Update only the device status in database (without notification)
+            if (deviceStatusService) {
+              await deviceStatusService.updateDeviceStatusOnly(deviceId, status);
+            } else {
+              // Fallback if deviceStatusService is not available
+              throw new Error("DeviceStatusService not available");
+            }
+
+            return {
+              success: true,
+              message: `Device status updated to ${status}`,
+              device_id: deviceId,
+              status: status
+            };
+
+          } catch (error: any) {
+            console.error("Error updating device status:", error);
+            
+            if (error.message && error.message.includes('Unauthorized')) {
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed"
+              };
+            }
+            
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error"
+            };
+          }
+        },
+        updateDeviceStatusSchema
       )
   );
 }

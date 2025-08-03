@@ -291,15 +291,20 @@ export default function ExportDashboardDialog({
     datastreams.forEach(({ datastream, data }) => {
       if (data && data.length > 0) {
         data.forEach((item) => {
+          // Get the date string and validate it - use timestamp from backend first
+          const dateStr = item.timestamp || item.device_time || item.created_at;
+          const dateObj = new Date(dateStr);
+          const timestamp = isNaN(dateObj.getTime()) ? 0 : dateObj.getTime(); // Use 0 for invalid dates to sort them last
+          
           allRows.push({
-            timestamp: new Date(item.device_time || item.created_at).getTime(),
+            timestamp: timestamp,
             row: [
-              formatDateTime(item.device_time || item.created_at),
+              formatDateTime(dateStr), // formatDateTime will handle invalid dates
               deviceId,
               deviceName,
               datastream.description,
               datastream.pin,
-              item.value
+              item.value || 'N/A'
             ]
           });
         });

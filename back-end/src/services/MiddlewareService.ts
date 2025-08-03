@@ -21,7 +21,7 @@ import {
   extractDeviceIdFromJWT,
 } from "../lib/utils";
 import { DeviceService } from "./DeviceService";
-import { AlarmNotificationService } from "./AlarmNotificationService";
+import { NotificationService } from "./NotificationService";
 import { DeviceStatusService } from "./DeviceStatusService";
 import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 
@@ -29,17 +29,17 @@ export class MQTTService {
   private mqttClient: ReturnType<typeof MQTTClient.getInstance>;
   private db: Pool;
   private deviceService!: DeviceService;
-  private alarmNotificationService?: AlarmNotificationService;
+  private notificationService?: NotificationService;
   private deviceStatusService?: DeviceStatusService;
 
   constructor(
     db: Pool,
-    alarmNotificationService?: AlarmNotificationService,
+    notificationService?: NotificationService,
     deviceStatusService?: DeviceStatusService
   ) {
     this.db = db;
     this.mqttClient = MQTTClient.getInstance();
-    this.alarmNotificationService = alarmNotificationService;
+    this.notificationService = notificationService;
     this.deviceStatusService = deviceStatusService;
   }
 
@@ -235,9 +235,9 @@ export class MQTTService {
       }
 
       // STEP 5: Check alarms setelah payload disimpan
-      if (this.alarmNotificationService) {
+      if (this.notificationService) {
         console.log(`🚨 [MQTT PAYLOAD] Memeriksa kondisi alarm untuk device ${device_id}...`);
-        await this.alarmNotificationService.checkAlarms(
+        await this.notificationService.checkAlarms(
           Number(device_id),
           verificationResult.decryptedData
         );

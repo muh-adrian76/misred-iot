@@ -7,30 +7,33 @@
 import { Elysia, t } from "elysia";
 import { broadcastToDeviceOwner } from "./user-ws";
 import { DeviceService } from '../../services/DeviceService';
+import { DeviceStatusService } from '../../services/DeviceStatusService';
 import { DeviceCommandService } from '../../services/DeviceCommandService';
 import { Pool } from "mysql2/promise";
 
 // Map untuk menyimpan koneksi WebSocket dari device yang aktif
 const deviceClients = new Map<string, any>();
 
-// Variabel global untuk database dan deviceService
+// Variabel global untuk database dan services
 let globalDb: Pool;
 let globalDeviceService: DeviceService;
+let globalDeviceStatusService: DeviceStatusService;
 
 // Update aktivitas device dan simpan koneksi WebSocket
 function updateDeviceActivity(device_id: string, ws: any) {
   deviceClients.set(device_id, { ws, lastSeen: Date.now() });
 }
 
-export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
+export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService: DeviceStatusService, db: Pool) {
   // Simpan reference untuk digunakan di fungsi lain
   globalDb = db;
   globalDeviceService = deviceService;
+  globalDeviceStatusService = deviceStatusService;
   
   const deviceCommandService = new DeviceCommandService(db);
   
   // Mulai heartbeat checker untuk deteksi device offline otomatis
-  startHeartbeatChecker(deviceService, db);
+  startHeartbeatChecker(deviceService, deviceStatusService, db);
   
   return new Elysia({ prefix: "/ws" }).ws("/connect", {
     body: t.Object({
@@ -58,18 +61,20 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
       // Registrasi device menggunakan secret key
       if (data.type === "register" && data.secret) {
         try {
-          // Cari device berdasarkan secret key
-          // @ts-ignore
-          const deviceArr = await deviceService.getDeviceBySecret(data.secret);
-          const device = Array.isArray(deviceArr) ? deviceArr[0] : deviceArr;
-          // @ts-ignore
+          // Cari device berdasarkan secret key menggunakan raw query
+          const [rows] = await db.query(
+            "SELECT id, description FROM devices WHERE new_secret = ? OR old_secret = ?",
+            [data.secret, data.secret]
+          );
+          const devices = rows as any[];
+          const device = devices.length > 0 ? devices[0] : null;
+          
           if (device && device.id) {
             // Update aktivitas device dan simpan koneksi
             updateDeviceActivity(device.id.toString(), ws);
             ws.send(JSON.stringify({
               type: "registered",
               message: "Device berhasil didaftarkan",
-              // @ts-ignore
               device_id: device.id.toString(),
             }));
           } else {
@@ -114,9 +119,9 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
       if (data.type === "heartbeat" && data.device_id) {
         updateDeviceActivity(data.device_id, ws);
         
-        // Update status device ke online di database
+        // Update status device ke online di database menggunakan DeviceStatusService
         try {
-          await deviceService.updateDeviceStatus(data.device_id, "online");
+          await deviceStatusService.updateDeviceStatusOnly(data.device_id, "online");
         } catch (error) {
           console.error("Error updating device status:", error);
         }
@@ -199,16 +204,23 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
         if (client.ws === ws) {
           deviceClients.delete(device_id);
           
-          // Update status di database
-          deviceService.updateDeviceStatus(device_id, "offline").catch(console.error);
-          
-          // Broadcast status offline ke user pemilik device
-          broadcastToDeviceOwner(globalDb, parseInt(device_id), {
-            type: "status_update",
-            device_id: parseInt(device_id),
-            status: "offline",
-            last_seen: new Date().toISOString(),
-          }).catch(console.error);
+          // Update status di database menggunakan DeviceStatusService
+          globalDeviceStatusService.updateDeviceStatusOnly(device_id, "offline")
+            .then(async () => {
+              // BROADCAST STATUS UPDATE ke frontend untuk real-time update
+              await broadcastToDeviceOwner(globalDb, parseInt(device_id), {
+                type: "status_update",
+                device_id: parseInt(device_id),
+                status: "offline",
+                last_seen: new Date().toISOString(),
+              });
+              
+              // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
+              await globalDeviceStatusService.sendDeviceOfflineNotification(parseInt(device_id));
+              
+              console.log(`🔴 Device ${device_id} marked as offline due to connection close`);
+            })
+            .catch(console.error);
         }
       }
     },
@@ -218,7 +230,7 @@ export function deviceWsRoutes(deviceService: DeviceService, db: Pool) {
 
 // ===== HEARTBEAT CHECKER - AUTO OFFLINE DETECTION =====
 // Fungsi untuk mengecek device yang tidak mengirim heartbeat
-export function startHeartbeatChecker(deviceService: DeviceService, db: Pool) {
+export function startHeartbeatChecker(deviceService: DeviceService, deviceStatusService: DeviceStatusService, db: Pool) {
   return setInterval(async () => {
     const now = Date.now();
     for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
@@ -227,16 +239,21 @@ export function startHeartbeatChecker(deviceService: DeviceService, db: Pool) {
         deviceClients.delete(device_id);
         
         try {
-          // Update status database ke offline
-          await deviceService.updateDeviceStatus(device_id, "offline");
+          // Update status database ke offline menggunakan DeviceStatusService
+          await deviceStatusService.updateDeviceStatusOnly(device_id, "offline");
           
-          // Broadcast status offline ke user pemilik device
+          // BROADCAST STATUS UPDATE ke frontend untuk real-time update
           await broadcastToDeviceOwner(db, parseInt(device_id), {
             type: "status_update",
             device_id: parseInt(device_id),
             status: "offline",
-            last_seen: new Date(lastSeen).toISOString(),
+            last_seen: new Date().toISOString(),
           });
+          
+          // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
+          await deviceStatusService.sendDeviceOfflineNotification(parseInt(device_id));
+          
+          console.log(`🔴 Device ${device_id} marked as offline due to heartbeat timeout`);
         } catch (error) {
           console.error("Error updating offline status:", error);
         }

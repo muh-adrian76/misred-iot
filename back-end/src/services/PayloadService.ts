@@ -14,7 +14,7 @@
  */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { DeviceService } from "./DeviceService";
-import { AlarmNotificationService } from "./AlarmNotificationService";
+import { NotificationService } from "./NotificationService";
 import { DeviceStatusService } from "./DeviceStatusService";
 import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 import { 
@@ -27,18 +27,18 @@ import {
 export class PayloadService {
   private db: Pool;
   private deviceService: DeviceService;
-  private alarmNotificationService?: AlarmNotificationService;
+  private notificationService?: NotificationService;
   private deviceStatusService?: DeviceStatusService;
 
   constructor(
     db: Pool, 
     deviceService: DeviceService, 
-    alarmNotificationService?: AlarmNotificationService,
+    notificationService?: NotificationService,
     deviceStatusService?: DeviceStatusService
   ) {
     this.db = db;
     this.deviceService = deviceService;
-    this.alarmNotificationService = alarmNotificationService;
+    this.notificationService = notificationService;
     this.deviceStatusService = deviceStatusService;
   }
 
@@ -108,9 +108,9 @@ export class PayloadService {
       }
 
       // STEP 5: Check alarms setelah payload disimpan
-      if (this.alarmNotificationService) {
+      if (this.notificationService) {
         console.log(`[ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
-        await this.alarmNotificationService.checkAlarms(Number(deviceId), decrypted);
+        await this.notificationService.checkAlarms(Number(deviceId), decrypted);
         console.log(`✅ [ALARM] Pemeriksaan alarm selesai`);
       }
 
@@ -150,16 +150,17 @@ export class PayloadService {
       const [rows] = await this.db.query(
         `SELECT 
           p.id, p.device_id, p.datastream_id, p.value, 
-          p.device_time as timestamp,
+          COALESCE(p.device_time, p.server_time) as timestamp,
           p.device_time,
+          p.server_time,
           ds.description as sensor_name, ds.pin, ds.unit, ds.type,
           ds.min_value, ds.max_value,
           d.description as device_name
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
         LEFT JOIN devices d ON p.device_id = d.id
-        WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL
-        ORDER BY p.device_time DESC 
+        WHERE p.device_id = ? AND p.datastream_id = ?
+        ORDER BY COALESCE(p.device_time, p.server_time) DESC 
         LIMIT 500`, // Tingkatkan limit untuk memastikan semua data terambil
         [device_id, datastream_id]
       );
@@ -196,14 +197,16 @@ export class PayloadService {
         if (!isNaN(limitCount) && limitCount > 0) {
           query = `SELECT 
             p.value, 
-            p.device_time as timestamp,
+            COALESCE(p.device_time, p.server_time) as timestamp,
+            p.device_time,
+            p.server_time,
             ds.unit, ds.description as sensor_name,
             d.description as device_name
           FROM payloads p
           LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
           LEFT JOIN devices d ON p.device_id = d.id
-          WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL
-          ORDER BY p.device_time DESC
+          WHERE p.device_id = ? AND p.datastream_id = ?
+          ORDER BY COALESCE(p.device_time, p.server_time) DESC
           LIMIT ?`;
           queryParams.push(limitCount);
         } else {
@@ -223,28 +226,47 @@ export class PayloadService {
           // PERBAIKAN: Gunakan UTC_TIMESTAMP() untuk konsistensi dengan frontend
           // dan pastikan perbandingan timezone yang tepat
           switch (timeRange) {
-            case '1h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
-            case '12h': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
-            case '1d': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
-            case '1w': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
-            case '1m': timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 30 DAY'; break; // Tambahan: Support filter 1 bulan (30 hari)
-            default: timeCondition = 'AND p.device_time >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
+            case '1h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
+            case '12h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
+            case '1d': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
+            case '1w': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
+            case '1m': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 30 DAY'; break; // Tambahan: Support filter 1 bulan (30 hari)
+            default: timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
           }
         }
 
         query = `SELECT 
           p.value, 
-          p.device_time as timestamp,
+          COALESCE(p.device_time, p.server_time) as timestamp,
+          p.device_time,
+          p.server_time,
           ds.unit, ds.description as sensor_name,
           d.description as device_name
         FROM payloads p
         LEFT JOIN datastreams ds ON p.datastream_id = ds.id 
         LEFT JOIN devices d ON p.device_id = d.id
-        WHERE p.device_id = ? AND p.datastream_id = ? AND p.device_time IS NOT NULL ${timeCondition}
-        ORDER BY p.device_time ASC`;
+        WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
+        ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
       }
 
-      const [rows] = await this.db.query(query, queryParams);
+      const [rows]: any = await this.db.query(query, queryParams);
+      
+      // Debug: Log sample of returned data
+      if (rows && rows.length > 0) {
+        console.log(`📊 [PAYLOAD SERVICE] Time series data sample for device ${device_id}, datastream ${datastream_id}:`, {
+          totalRows: rows.length,
+          firstRow: rows[0],
+          lastRow: rows[rows.length - 1],
+          sampleTimestamps: rows.slice(0, 3).map((r: any) => ({
+            timestamp: r.timestamp,
+            device_time: r.device_time,
+            server_time: r.server_time,
+            value: r.value
+          }))
+        });
+      } else {
+        console.log(`⚠️ [PAYLOAD SERVICE] No data found for device ${device_id}, datastream ${datastream_id}`);
+      }
       
       // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
       if (count && count !== 'all') {

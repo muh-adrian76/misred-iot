@@ -61,12 +61,21 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           await Bun.write(`${uploadDir}/.gitkeep`, ''); // Pastikan direktori dibuat
           await Bun.write(`${uploadDir}/${newFileName}`, buffer);
 
+          // Calculate file metadata
+          const fileSize = buffer.length;
+          const crypto = await import('crypto');
+          const checksum = crypto.createHash('sha256').update(buffer).digest('hex');
+
           // Simpan metadata firmware ke database
           const firmwareId = await otaaService.createOrUpdateFirmware({
             board_type,
             firmware_version,
             firmware_url,
             user_id: decoded.sub,
+            file_size: fileSize,
+            original_filename: filename,
+            checksum: checksum,
+            description: `User firmware untuk ${board_type} v${firmware_version}`,
           });
 
           return {

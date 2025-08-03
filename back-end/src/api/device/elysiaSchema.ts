@@ -631,6 +631,83 @@ const deleteDeviceSchema = {
   },
 };
 
+const updateDeviceStatusSchema = {
+  type: "json",
+  body: t.Object({
+    status: t.Union([
+      t.Literal("online"),
+      t.Literal("offline")
+    ], {
+      description: "Status device (online atau offline)",
+      example: "offline"
+    })
+  }),
+  response: {
+    200: t.Object(
+      {
+        success: t.Boolean({
+          description: "Status berhasil",
+          example: true
+        }),
+        message: t.String({
+          description: "Pesan berhasil update status",
+          example: "Device status updated to offline"
+        }),
+        device_id: t.String({
+          description: "ID device yang diupdate",
+          example: "1"
+        }),
+        status: t.String({
+          description: "Status baru device",
+          example: "offline"
+        })
+      },
+      { description: "Status device berhasil diupdate" }
+    ),
+    400: t.Object(
+      {
+        success: t.Boolean({
+          example: false
+        }),
+        message: t.String({
+          description: "Pesan error jika input tidak valid",
+          example: "Invalid status. Must be 'online' or 'offline'"
+        })
+      },
+      { description: "Input tidak valid" }
+    ),
+    404: t.Object(
+      {
+        success: t.Boolean({
+          example: false
+        }),
+        message: t.String({
+          description: "Pesan error jika device tidak ditemukan",
+          example: "Device not found or access denied"
+        })
+      },
+      { description: "Device tidak ditemukan" }
+    ),
+    401: t.Object(
+      {
+        success: t.Boolean({
+          example: false
+        }),
+        message: t.String({
+          description: "Pesan error jika tidak authorized",
+          example: "Authentication failed"
+        })
+      },
+      { description: "Tidak authorized" }
+    )
+  },
+  detail: {
+    tags: ["Device"],
+    description: "Update status device (online/offline)",
+    summary: "Update device status"
+  }
+};
+
 export {
   postDeviceSchema,
   getAllDevicesSchema,
@@ -644,4 +721,5 @@ export {
   getFirmwareListSchema,
   downloadFirmwareFileSchema,
   renewSecretSchema,
+  updateDeviceStatusSchema,
 };

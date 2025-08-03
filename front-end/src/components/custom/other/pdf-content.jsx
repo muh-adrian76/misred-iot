@@ -329,6 +329,9 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
     allData = [{ datastream: datastreams[0], data: [] }];
   }
 
+  // Debug: Log data untuk memeriksa format tanggal
+  console.log('📊 PDF Debug - Sample data items:', allData.slice(0, 2));
+
   // Kelompokkan data berdasarkan device untuk organisasi yang lebih baik
   const deviceGroups = {};
   allData.forEach(({ datastream, data }) => {
@@ -349,6 +352,15 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
     // Tambahkan informasi datastream ke setiap data point untuk referensi
     if (data && data.length > 0) {
       data.forEach(item => {
+        // Debug: Log sample date fields
+        if (Math.random() < 0.1) { // 10% sampling untuk debugging
+          console.log('📊 PDF Debug - Date fields:', {
+            device_time: item.device_time,
+            created_at: item.created_at,
+            triggered_at: item.triggered_at
+          });
+        }
+        
         deviceGroups[deviceId].combinedData.push({
           ...item,
           datastream_id: datastream.id,
@@ -364,22 +376,33 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
   // Urutkan data dalam setiap group berdasarkan waktu (ascending)
   Object.values(deviceGroups).forEach(group => {
     group.combinedData.sort((a, b) => {
-      const dateA = new Date(a.device_time || a.created_at);
-      const dateB = new Date(b.device_time || b.created_at);
+      const dateA = new Date(a.timestamp || a.device_time || a.created_at || a.triggered_at);
+      const dateB = new Date(b.timestamp || b.device_time || b.created_at || b.triggered_at);
+      
+      // Handle invalid dates
+      if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+      if (isNaN(dateA.getTime())) return 1;
+      if (isNaN(dateB.getTime())) return -1;
+      
       return dateA.getTime() - dateB.getTime();
     });
   });
 
   // Kalkulasi statistik keseluruhan untuk metadata
   const allCombinedData = Object.values(deviceGroups).flatMap(group => group.combinedData);
+  const validDataWithDates = allCombinedData.filter(item => {
+    const dateStr = item.timestamp || item.device_time || item.created_at || item.triggered_at;
+    return dateStr && !isNaN(new Date(dateStr).getTime());
+  });
+  
   const metadata = {
     "Jumlah Perangkat": `${Object.keys(deviceGroups).length} perangkat`,
     "Jumlah Datastream": `${datastreams.length} sensor`,
     "Jumlah Data": `${allCombinedData.length} titik data`,
     "Rentang Tanggal":
-      allCombinedData.length > 0
-        ? `${formatDateTime(allCombinedData[0].device_time || allCombinedData[0].created_at)} - ${formatDateTime(allCombinedData[allCombinedData.length - 1].device_time || allCombinedData[allCombinedData.length - 1].created_at)}`
-        : "Tidak ada data",
+      validDataWithDates.length > 0
+        ? `${formatDateTime(validDataWithDates[0].timestamp || validDataWithDates[0].device_time || validDataWithDates[0].created_at || validDataWithDates[0].triggered_at)} - ${formatDateTime(validDataWithDates[validDataWithDates.length - 1].timestamp || validDataWithDates[validDataWithDates.length - 1].device_time || validDataWithDates[validDataWithDates.length - 1].created_at || validDataWithDates[validDataWithDates.length - 1].triggered_at)}`
+        : "Tidak ada data dengan tanggal valid",
   };
 
   return (
@@ -464,19 +487,19 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
                   >
                     <View style={[styles.tableCol, { width: "30%" }]}>
                       <Text style={styles.tableCell}>
-                        {formatDateTime(item.device_time || item.created_at)}
+                        {formatDateTime(item.timestamp || item.device_time || item.created_at || item.triggered_at)}
                       </Text>
                     </View>
                     <View style={[styles.tableCol, { width: "25%" }]}>
                       <Text style={styles.tableCell}>
-                        {item.datastream_description}
+                        {item.datastream_description || 'N/A'}
                       </Text>
                     </View>
                     <View style={[styles.tableCol, { width: "20%" }]}>
-                      <Text style={styles.tableCell}>{item.datastream_pin}</Text>
+                      <Text style={styles.tableCell}>{item.datastream_pin || 'N/A'}</Text>
                     </View>
                     <View style={[styles.tableCol, { width: "25%" }]}>
-                      <Text style={styles.tableCellValue}>{item.value}</Text>
+                      <Text style={styles.tableCellValue}>{item.value || 'N/A'}</Text>
                     </View>
                   </View>
                 ))}
@@ -499,6 +522,12 @@ export const NotificationHistoryPDFDocument = ({
   const sortedNotifications = [...notifications].sort((a, b) => {
     const dateA = new Date(a.triggered_at);
     const dateB = new Date(b.triggered_at);
+    
+    // Handle invalid dates
+    if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+    if (isNaN(dateA.getTime())) return 1;
+    if (isNaN(dateB.getTime())) return -1;
+    
     return dateB.getTime() - dateA.getTime(); // Terbaru dulu untuk notifikasi
   });
 
@@ -572,16 +601,19 @@ export const NotificationHistoryPDFDocument = ({
                 <View style={styles.table}>
                   {/* Header Tabel */}
                   <View style={styles.tableRow}>
-                    <View style={[styles.tableColHeader, { width: "25%" }]}>
+                    <View style={[styles.tableColHeader, { width: "20%" }]}>
                       <Text style={styles.tableCellHeader}>Tanggal & Waktu</Text>
                     </View>
-                    <View style={[styles.tableColHeader, { width: "25%" }]}>
-                      <Text style={styles.tableCellHeader}>Jenis Alarm</Text>
+                    <View style={[styles.tableColHeader, { width: "15%" }]}>
+                      <Text style={styles.tableCellHeader}>Tipe</Text>
                     </View>
-                    <View style={[styles.tableColHeader, { width: "20%" }]}>
-                      <Text style={styles.tableCellHeader}>Sensor</Text>
+                    <View style={[styles.tableColHeader, { width: "25%" }]}>
+                      <Text style={styles.tableCellHeader}>Judul/Alarm</Text>
                     </View>
                     <View style={[styles.tableColHeader, { width: "15%" }]}>
+                      <Text style={styles.tableCellHeader}>Sensor</Text>
+                    </View>
+                    <View style={[styles.tableColHeader, { width: "10%" }]}>
                       <Text style={styles.tableCellHeader}>Nilai</Text>
                     </View>
                     <View style={[styles.tableColHeader, { width: "15%" }]}>
@@ -600,29 +632,34 @@ export const NotificationHistoryPDFDocument = ({
                           : styles.tableRowOdd,
                       ]}
                     >
-                      <View style={[styles.tableCol, { width: "25%" }]}>
+                      <View style={[styles.tableCol, { width: "20%" }]}>
                         <Text style={styles.tableCell}>
                           {formatDateTime(notif.triggered_at)}
                         </Text>
                       </View>
+                      <View style={[styles.tableCol, { width: "15%" }]}>
+                        <Text style={styles.tableCell}>
+                          {notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status' : 'Notif'}
+                        </Text>
+                      </View>
                       <View style={[styles.tableCol, { width: "25%" }]}>
                         <Text style={styles.tableCell}>
-                          {notif.alarm_description}
-                        </Text>
-                      </View>
-                      <View style={[styles.tableCol, { width: "20%" }]}>
-                        <Text style={styles.tableCell}>
-                          {notif.datastream_description}
+                          {notif.title || notif.alarm_description || 'N/A'}
                         </Text>
                       </View>
                       <View style={[styles.tableCol, { width: "15%" }]}>
+                        <Text style={styles.tableCell}>
+                          {notif.datastream_description || 'N/A'}
+                        </Text>
+                      </View>
+                      <View style={[styles.tableCol, { width: "10%" }]}>
                         <Text style={styles.tableCellValue}>
-                          {notif.sensor_value}
+                          {notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : 'N/A'}
                         </Text>
                       </View>
                       <View style={[styles.tableCol, { width: "15%" }]}>
                         <Text style={styles.tableCell}>
-                          {notif.conditions_text}
+                          {notif.conditions_text || 'N/A'}
                         </Text>
                       </View>
                     </View>

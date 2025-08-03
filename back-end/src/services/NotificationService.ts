@@ -48,22 +48,24 @@ export interface NotificationResult {
   error_message?: string;          // Pesan error jika gagal
 }
 
-// Interface log alarm untuk database
-export interface AlarmLog {
+// Interface log alarm untuk database (Updated untuk new schema)
+export interface NotificationLog {
   id?: number;
-  alarm_id: number;                // ID alarm yang trigger
+  type: "alarm" | "device_status" | "firmware_update";  // Tipe notifikasi
+  title: string;                   // Judul notifikasi
+  message: string;                 // Isi pesan notifikasi
+  priority: "low" | "medium" | "high";  // Prioritas notifikasi
   user_id: number;                 // ID user penerima notifikasi
-  device_id: number;               // ID device sumber alarm
-  datastream_id: number;           // ID datastream yang memicu
-  sensor_value: number;            // Nilai sensor saat trigger
-  conditions_text: string;         // Kondisi dalam bentuk text
-  notification_type: "browser" | "all";  // Tipe notifikasi
-  whatsapp_message_id?: string;    // ID pesan WhatsApp
-  error_message?: string;          // Pesan error jika ada
+  device_id?: number;              // ID device (nullable untuk firmware notifications)
+  alarm_id?: number;               // ID alarm (nullable untuk non-alarm notifications)
+  datastream_id?: number;          // ID datastream (nullable untuk non-alarm notifications)
+  sensor_value?: number;           // Nilai sensor (nullable untuk non-alarm notifications)
+  conditions_text?: string;        // Kondisi dalam bentuk text (nullable)
   triggered_at: Date;              // Waktu trigger
+  is_read: boolean;                // Status sudah dibaca atau belum
 }
 
-export class AlarmNotificationService {
+export class NotificationService {
   public db: Pool; // Public untuk akses dari API
   private lastNotificationTime: number = 0;
   private minNotificationInterval = 500; // Delay 500ms antar notifikasi
@@ -617,7 +619,7 @@ export class AlarmNotificationService {
         data: {
           id: `alarm_${alarm.id}_${Date.now()}`,
           title: alarm.description,
-          message: `Device: ${alarm.device_description}\nDatastream: ${alarm.datastream_description}(${alarm.field_name})\nNilai: ${sensorValue} (${alarm.condition_operator} ${alarm.condition_value})`,
+          message: `Perangkat: ${alarm.device_description}\nDatastream: ${alarm.datastream_description}(${alarm.field_name})\nNilai: ${sensorValue} (${alarm.condition_operator} ${alarm.condition_value})`,
           isRead: false,
           createdAt: triggeredAt.toISOString(),
           priority: "high",
@@ -774,20 +776,26 @@ export class AlarmNotificationService {
               [alarm.id]
             );
 
-            // Log alarm ke database
+            // Log alarm ke database dengan schema baru
             console.log(`📝 [ALARM TRIGGERED] Menyimpan log alarm ke database`);
             const conditionsText = `${alarm.field_name} ${alarm.condition_operator} ${alarm.condition_value}`;
+            const alarmTitle = `${alarm.description}`;
+            const alarmMessage = `Perangkat: ${alarm.device_description}\nDatastream: ${alarm.datastream_description} (${alarm.field_name})\nNilai pemicu: ${numericValue}\nKondisi: ${conditionsText}\nWaktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
+            
             const [logResult] = await this.db.execute(
-              `INSERT INTO alarm_notifications (alarm_id, user_id, device_id, datastream_id, sensor_value, conditions_text, notification_type, triggered_at) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+              `INSERT INTO notifications (type, title, message, priority, user_id, device_id, alarm_id, datastream_id, sensor_value, conditions_text, triggered_at, is_read) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), FALSE)`,
               [
-                alarm.id,
+                'alarm',
+                alarmTitle,
+                alarmMessage,
+                'high',
                 alarm.user_id,
                 alarm.device_id,
+                alarm.id,
                 alarm.datastream_id,
                 numericValue,
-                conditionsText,
-                "all"
+                conditionsText
               ]
             );
             const logId = (logResult as any).insertId;
@@ -1096,31 +1104,37 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Get recent notifications for a user
+   * Get recent notifications for a user (Updated untuk schema baru)
    */
   async getRecentNotifications(userId: number): Promise<any[]> {
     try {
       const [rows] = await this.db.execute(
         `
         SELECT 
-          an.id,
-          an.alarm_id,
-          an.sensor_value,
-          an.conditions_text,
-          an.triggered_at,
-          COALESCE(an.is_read, 0) as is_read,
-          a.description as alarm_description,
-          ds.description as datastream_description,
-          ds.pin as field_name,
-          dev.description as device_description,
+          n.id,
+          n.type,
+          n.title,
+          n.message,
+          n.priority,
+          n.alarm_id,
+          n.device_id,
+          n.datastream_id,
+          n.sensor_value,
+          n.conditions_text,
+          n.triggered_at,
+          n.is_read,
+          COALESCE(a.description, '') as alarm_description,
+          COALESCE(ds.description, '') as datastream_description,
+          COALESCE(ds.pin, '') as field_name,
+          COALESCE(dev.description, '') as device_description,
           u.email as user_email
-        FROM alarm_notifications an
-        JOIN alarms a ON an.alarm_id = a.id
-        JOIN datastreams ds ON an.datastream_id = ds.id
-        JOIN devices dev ON an.device_id = dev.id
-        JOIN users u ON an.user_id = u.id
-        WHERE an.user_id = ? AND COALESCE(an.is_read, 0) = 0
-        ORDER BY an.triggered_at DESC
+        FROM notifications n
+        LEFT JOIN alarms a ON n.alarm_id = a.id
+        LEFT JOIN datastreams ds ON n.datastream_id = ds.id
+        LEFT JOIN devices dev ON n.device_id = dev.id
+        JOIN users u ON n.user_id = u.id
+        WHERE n.user_id = ? AND n.is_read = FALSE
+        ORDER BY n.triggered_at DESC
         LIMIT 50
       `,
         [userId]
@@ -1134,94 +1148,85 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Get notification history with pagination and time range filter
+   * Get notification history with pagination, time range filter, and type filter
    */
   async getNotificationHistory(
     userId: number,
     page: number = 1,
     limit: number = 20,
-    timeRange: string = "all"
+    timeRange: string = "all",
+    type: string = ""
   ): Promise<{ notifications: any[]; total: number }> {
     try {
       const offset = (page - 1) * limit;
 
       // Build time range condition
       let timeCondition = "";
-      let timeParams: any[] = [];
 
       switch (timeRange) {
-        case "1m":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)";
-          break;
-        case "1h":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)";
-          break;
-        case "12h":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 12 HOUR)";
-          break;
-        case "1d":
         case "today":
-          timeCondition = "AND an.triggered_at >= CURDATE()";
+          timeCondition = "AND n.triggered_at >= CURDATE()";
           break;
-        case "1w":
         case "week":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+          timeCondition = "AND n.triggered_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
           break;
-        case "1M":
         case "month":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-          break;
-        case "1y":
-          timeCondition =
-            "AND an.triggered_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)";
+          timeCondition = "AND n.triggered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
           break;
         case "all":
         default:
           timeCondition = "";
       }
 
-      // Build queries - filter only read notifications for history
+      // Build type filter condition
+      let typeCondition = "";
+      if (type && type !== "" && (type === "alarm" || type === "device_status")) {
+        typeCondition = "AND n.type = ?";
+      }
+
+      // Build queries untuk schema baru
       const baseCountQuery = `
         SELECT COUNT(*) as total
-        FROM alarm_notifications an
-        WHERE an.user_id = ? AND an.is_read = 1
+        FROM notifications n
+        WHERE n.user_id = ?
       `;
 
       const baseDataQuery = `
         SELECT 
-          an.id,
-          an.alarm_id,
-          an.device_id,
-          an.datastream_id,
-          an.sensor_value,
-          an.conditions_text,
-          an.triggered_at,
-          COALESCE(an.notification_type, 'browser') as notification_type,
-          an.whatsapp_message_id,
-          COALESCE(an.is_read, 0) as is_read,
-          a.description as alarm_description,
-          ds.description as datastream_description,
-          ds.pin as field_name,
-          dev.description as device_description
-        FROM alarm_notifications an
-        LEFT JOIN alarms a ON an.alarm_id = a.id
-        LEFT JOIN datastreams ds ON an.datastream_id = ds.id
-        LEFT JOIN devices dev ON an.device_id = dev.id
-        WHERE an.user_id = ?
+          n.id,
+          n.type,
+          n.title,
+          n.message,
+          n.priority,
+          n.alarm_id,
+          n.device_id,
+          n.datastream_id,
+          n.sensor_value,
+          n.conditions_text,
+          n.triggered_at,
+          n.is_read,
+          COALESCE(a.description, '') as alarm_description,
+          COALESCE(ds.description, '') as datastream_description,
+          COALESCE(ds.pin, '') as field_name,
+          COALESCE(dev.description, '') as device_description
+        FROM notifications n
+        LEFT JOIN alarms a ON n.alarm_id = a.id
+        LEFT JOIN datastreams ds ON n.datastream_id = ds.id
+        LEFT JOIN devices dev ON n.device_id = dev.id
+        WHERE n.user_id = ?
       `;
 
       const countQuery =
-        baseCountQuery + (timeCondition ? ` ${timeCondition}` : "");
+        baseCountQuery + 
+        (timeCondition ? ` ${timeCondition}` : "") +
+        (typeCondition ? ` ${typeCondition}` : "");
+        
       const dataQuery =
         baseDataQuery +
         (timeCondition ? ` ${timeCondition}` : "") +
+        (typeCondition ? ` ${typeCondition}` : "") +
         `
-        ORDER BY an.triggered_at DESC 
+        ORDER BY n.triggered_at DESC 
         LIMIT ? OFFSET ?
       `;
 
@@ -1235,31 +1240,39 @@ export class AlarmNotificationService {
       //   offset: offset,
       // });
 
+      // Build parameter arrays
+      const countParams: any[] = [userId];
+      const dataParams: any[] = [userId];
+
+      // Add type parameter if type filter is applied
+      if (typeCondition) {
+        countParams.push(type);
+        dataParams.push(type);
+      }
+
+      // Add pagination parameters to data query
+      dataParams.push(parseInt(String(limit)), parseInt(String(offset)));
+
       // Execute count query first
-      // console.log("🔍 Service executing count query with params:", [userId]);
-      const [countResult] = await this.db.execute(countQuery, [
-        parseInt(String(userId)),
-      ]);
+      console.log("🔍 Service executing count query with params:", countParams);
+      const [countResult] = await this.db.execute(countQuery, countParams);
       const total = (countResult as any[])[0]?.total || 0;
+      console.log(`📊 Total notifications found: ${total}`);
 
       // Execute data query with pagination - ensure all parameters are integers
-      const dataParams = [
-        userId,
-        parseInt(String(limit)),
-        parseInt(String(offset)),
-      ];
-      // console.log("🔍 Service executing data query with params:", dataParams);
+      console.log("🔍 Service executing data query with params:", dataParams);
       // console.log(
       //   "🔍 Parameter types:",
       //   dataParams.map((p) => ({ value: p, type: typeof p }))
       // );
 
-      // Additional validation to ensure parameters are valid integers
-      if (dataParams.some((p) => isNaN(p) || !Number.isInteger(p))) {
-        throw new Error("Invalid integer parameters for SQL query");
+      // Additional validation to ensure parameters are valid integers for pagination
+      if (isNaN(dataParams[dataParams.length - 2]) || isNaN(dataParams[dataParams.length - 1])) {
+        throw new Error("Invalid integer parameters for SQL query pagination");
       }
 
       const [rows] = await this.db.execute(dataQuery, dataParams);
+      console.log(`📊 Data query returned ${(rows as any[]).length} rows`);
 
       return {
         notifications: rows as any[],
@@ -1272,7 +1285,7 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Mark all notifications as read for a user
+   * Mark all notifications as read for a user (Updated untuk schema baru)
    */
   async markAllAsRead(userId: number): Promise<number> {
     try {
@@ -1282,8 +1295,8 @@ export class AlarmNotificationService {
       const [checkResult] = await this.db.execute(
         `
         SELECT COUNT(*) as unread_count 
-        FROM alarm_notifications 
-        WHERE user_id = ? AND (is_read IS NULL OR is_read = 0)
+        FROM notifications 
+        WHERE user_id = ? AND is_read = FALSE
       `,
         [userId]
       );
@@ -1296,9 +1309,9 @@ export class AlarmNotificationService {
       // Now mark them as read
       const [result] = await this.db.execute(
         `
-        UPDATE alarm_notifications 
-        SET is_read = 1
-        WHERE user_id = ? AND (is_read IS NULL OR is_read = 0)
+        UPDATE notifications 
+        SET is_read = TRUE
+        WHERE user_id = ? AND is_read = FALSE
       `,
         [userId]
       );
@@ -1312,13 +1325,13 @@ export class AlarmNotificationService {
   }
 
   /**
-   * Delete all notifications for a user
+   * Delete all notifications for a user (Updated untuk schema baru)
    */
   async deleteAllNotifications(userId: number): Promise<number> {
     try {
       const [result] = await this.db.execute(
         `
-        DELETE FROM alarm_notifications 
+        DELETE FROM notifications 
         WHERE user_id = ?
       `,
         [userId]

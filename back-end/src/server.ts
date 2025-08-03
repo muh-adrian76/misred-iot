@@ -33,7 +33,7 @@ import { deviceCommandRoutes } from "./api/device-command"; // Route command dev
 import { payloadRoutes } from "./api/payload"; // Route data payload dari sensor
 import { widgetRoutes } from "./api/widget"; // Route widget dashboard
 import { alarmRoutes } from "./api/alarm"; // Route sistem alarm
-import { alarmNotificationRoutes } from "./api/alarm/notifications"; // Route notifikasi alarm
+import { notificationRoutes } from "./api/notification"; // Route notifikasi alarm
 import { dashboardRoutes } from "./api/dashboard"; // Route dashboard
 import { datastreamRoutes } from "./api/datastream"; // Route datastream sensor
 import { otaaRoutes } from "./api/otaa"; // Route Over-The-Air-Activation
@@ -52,7 +52,7 @@ import { DeviceService } from "./services/DeviceService"; // Service manajemen d
 import { PayloadService } from "./services/PayloadService"; // Service data payload sensor
 import { WidgetService } from "./services/WidgetService"; // Service widget dashboard
 import { AlarmService } from "./services/AlarmService"; // Service sistem alarm
-import { AlarmNotificationService } from "./services/AlarmNotificationService"; // Service notifikasi alarm
+import { NotificationService } from "./services/NotificationService"; // Service notifikasi alarm
 import { DashboardService } from "./services/DashboardService"; // Service dashboard
 import { DatastreamService } from "./services/DatastreamService"; // Service datastream sensor
 import { DeviceCommandService } from "./services/DeviceCommandService"; // Service command device
@@ -77,7 +77,7 @@ class Server {
   private payloadService!: PayloadService; // Service untuk data sensor payload
   private widgetService!: WidgetService; // Service untuk widget dashboard
   private alarmService!: AlarmService; // Service untuk sistem alarm
-  private alarmNotificationService!: AlarmNotificationService; // Service untuk notifikasi alarm
+  private notificationService!: NotificationService; // Service untuk notifikasi alarm
   private dashboardService!: DashboardService; // Service untuk dashboard
   private datastreamService!: DatastreamService; // Service untuk datastream
   private otaaService!: OtaaUpdateService; // Service untuk OTAA updates
@@ -104,7 +104,7 @@ class Server {
     this.userService = new UserService(this.db); // Service user management
     this.widgetService = new WidgetService(this.db); // Service widget dashboard
     this.alarmService = new AlarmService(this.db); // Service sistem alarm
-    this.alarmNotificationService = new AlarmNotificationService(this.db); // Service notifikasi
+    this.notificationService = new NotificationService(this.db); // Service notifikasi
     this.dashboardService = new DashboardService(this.db); // Service dashboard
     this.datastreamService = new DatastreamService(this.db); // Service datastream
     this.otaaService = new OtaaUpdateService(this.db); // Service OTAA
@@ -113,7 +113,7 @@ class Server {
 
     // ===== MQTT SERVICE INITIALIZATION =====
     // Inisialisasi MQTT service dengan dependencies untuk notifikasi dan status
-    this.mqttService = new MQTTService(this.db, this.alarmNotificationService, this.deviceStatusService);
+    this.mqttService = new MQTTService(this.db, this.notificationService, this.deviceStatusService);
 
     // ===== DEVICE SERVICE INITIALIZATION =====
     // Inisialisasi device service dengan callback MQTT untuk subscribe/unsubscribe topic
@@ -133,7 +133,7 @@ class Server {
     this.payloadService = new PayloadService(
       this.db, // Database connection
       this.deviceService, // Device service untuk validasi device
-      this.alarmNotificationService, // Service notifikasi untuk alarm
+      this.notificationService, // Service notifikasi untuk alarm
       this.deviceStatusService // Service status untuk update status device
     );
 
@@ -168,16 +168,16 @@ class Server {
       .use(payloadRoutes(this.payloadService)) // Route payload data sensor
       .use(widgetRoutes(this.widgetService)) // Route widget dashboard
       .use(alarmRoutes(this.alarmService)) // Route sistem alarm
-      .use(alarmNotificationRoutes(this.alarmNotificationService)) // Route notifikasi alarm
+      .use(notificationRoutes(this.notificationService)) // Route notifikasi
       .use(dashboardRoutes(this.dashboardService)) // Route dashboard
       .use(datastreamRoutes(this.datastreamService)) // Route datastream
       .use(otaaRoutes(this.otaaService)) // Route OTAA
-      .use(adminRoutes(this.adminService, this.userService)) // Route admin panel
+      .use(adminRoutes(this.adminService, this.userService, this.otaaService)) // Route admin panel
 
       // ===== WEBSOCKET ROUTES =====
       // Registrasi route WebSocket untuk komunikasi real-time
       .use(userWsRoutes(this.db)) // WebSocket untuk user dengan database injection
-      .use(deviceWsRoutes(this.deviceService, this.db)) // WebSocket untuk device
+      .use(deviceWsRoutes(this.deviceService, this.deviceStatusService, this.db)) // WebSocket untuk device
 
       // ===== PLUGINS CONFIGURATION =====
       // ===== CORS PLUGIN =====

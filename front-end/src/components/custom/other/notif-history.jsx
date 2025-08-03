@@ -66,9 +66,26 @@ import DescriptionTooltip from "./description-tooltip";
  * formatDateTime sudah diimport dari export-utils untuk format lengkap
  */
 const formatTimeAgo = (dateString) => {
+  // Handle null, undefined, or empty values
+  if (!dateString || dateString === '' || dateString === null || dateString === undefined) {
+    return 'N/A';
+  }
+  
   const now = new Date();
   const date = new Date(dateString);
+  
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date string in formatTimeAgo:', dateString);
+    return 'N/A';
+  }
+  
   const diff = now.getTime() - date.getTime();
+
+  // Handle negative diff (future dates)
+  if (diff < 0) {
+    return 'N/A';
+  }
 
   const minutes = Math.floor(diff / (1000 * 60));
   const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -83,8 +100,9 @@ const formatTimeAgo = (dateString) => {
 /**
  * Komponen NotificationHistoryItem
  *
- * Menampilkan item individual dari riwayat notifikasi alarm IoT dengan:
- * - Detail lengkap alarm yang terpicu (device, sensor, nilai, kondisi)
+ * Menampilkan item individual dari riwayat notifikasi IoT dengan:
+ * - Tampilan berbeda untuk tipe alarm dan device status
+ * - Detail lengkap sesuai tipe notifikasi
  * - Status pengiriman notifikasi (browser/WhatsApp)
  * - Timestamp dengan format yang user-friendly
  * - Hover effects untuk interaksi yang baik
@@ -92,71 +110,143 @@ const formatTimeAgo = (dateString) => {
  * @param {Object} notification - Data notifikasi dari API backend
  */
 const NotificationHistoryItem = ({ notification }) => {
+  // Tentukan tipe notifikasi dan styling
+  const isAlarmNotification = notification.type === 'alarm';
+  const isDeviceStatusNotification = notification.type === 'device_status';
+  
+  // Konfigurasi tampilan berdasarkan tipe
+  const getNotificationConfig = () => {
+    if (isAlarmNotification) {
+      return {
+        icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
+        title: notification.title || notification.alarm_description || 'Alarm Triggered',
+        borderColor: 'border-red-200',
+        bgColor: 'hover:bg-red-50/30',
+        badgeColor: 'bg-red-100 text-red-800',
+        badgeText: 'ALARM'
+      };
+    } else if (isDeviceStatusNotification) {
+      return {
+        icon: <Smartphone className="h-4 w-4 text-orange-500" />,
+        title: notification.title || 'Device Status Change',
+        borderColor: 'border-orange-200',
+        bgColor: 'hover:bg-orange-50/30',
+        badgeColor: 'bg-orange-100 text-orange-800',
+        badgeText: 'STATUS'
+      };
+    } else {
+      return {
+        icon: <BellRing className="h-4 w-4 text-blue-500" />,
+        title: notification.title || 'Notification',
+        borderColor: 'border-blue-200',
+        bgColor: 'hover:bg-blue-50/30',
+        badgeColor: 'bg-blue-100 text-blue-800',
+        badgeText: 'INFO'
+      };
+    }
+  };
+
+  const config = getNotificationConfig();
+
   return (
-    // Container utama dengan hover effect dan border styling
-    <div className="border rounded-lg p-4 space-y-3 hover:bg-muted/30 transition-colors">
+    <div className={cn(
+      "border rounded-lg p-4 space-y-3 transition-colors",
+      config.borderColor,
+      config.bgColor
+    )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
-          {/* Header alarm dengan ikon warning */}
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <h4 className="font-medium text-foreground">
-              {notification.alarm_description}
-            </h4>
+          {/* Header dengan ikon, title, dan badge tipe */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 flex-1">
+              {config.icon}
+              <h4 className="font-medium text-foreground text-sm">
+                {config.title}
+              </h4>
+            </div>
+            <Badge className={cn("text-xs px-2 py-1", config.badgeColor)}>
+              {config.badgeText}
+            </Badge>
           </div>
 
-          {/* Detail informasi alarm dalam format yang mudah dibaca */}
-          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <div>
-              <span className="font-medium">Device:</span>{" "}
-              {notification.device_description}
-            </div>
-            <div>
-              <span className="font-medium">Sensor:</span>{" "}
-              {notification.datastream_description}
-            </div>
-            <div>
-              <span className="font-medium">Nilai:</span>{" "}
-              {notification.sensor_value}
-            </div>
-            <div>
-              <span className="font-medium">Kondisi:</span>{" "}
-              {notification.conditions_text}
-            </div>
+          {/* Message/Description */}
+          <div className="text-sm text-muted-foreground">
+            {notification.message}
+          </div>
+
+          {/* Detail informasi berdasarkan tipe notifikasi */}
+          <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {/* Device info - selalu tampil */}
+            {notification.device_description && (
+              <div>
+                <span className="font-medium">Perangkat:</span>{" "}
+                {notification.device_description}
+              </div>
+            )}
+
+            {/* Alarm-specific details */}
+            {isAlarmNotification && (
+              <>
+                {notification.datastream_description && (
+                  <div>
+                    <span className="font-medium">Sensor:</span>{" "}
+                    {notification.datastream_description}
+                  </div>
+                )}
+                {notification.sensor_value !== null && notification.sensor_value !== undefined && (
+                  <div>
+                    <span className="font-medium">Nilai:</span>{" "}
+                    {notification.sensor_value}
+                  </div>
+                )}
+                {notification.conditions_text && (
+                  <div>
+                    <span className="font-medium">Kondisi:</span>{" "}
+                    {notification.conditions_text}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Device status specific details */}
+            {isDeviceStatusNotification && notification.device_name && (
+              <div>
+                <span className="font-medium">Device:</span>{" "}
+                {notification.device_name}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Footer dengan status pengiriman notifikasi */}
+      {/* Footer dengan status pengiriman dan timestamp */}
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="flex items-center gap-2">
-          {/* Indikator status pengiriman WhatsApp */}
-          {notification.whatsapp_sent ? (
-            <div className="flex items-center gap-1 text-green-600">
-              <CheckCircle className="w-3 h-3" />
-              <span className="text-xs">
-                Terkirim pada Browser dan WhatsApp
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-foreground">
-              <CheckCircle className="w-3 h-3" />
-              <span className="text-xs">Terkirim pada Browser</span>
-            </div>
+          {/* Status pengiriman */}
+          <div className="flex items-center gap-1 text-green-600">
+            <CheckCircle className="w-3 h-3" />
+            <span className="text-xs">
+              Terkirim pada Browser
+            </span>
+          </div>
+          
+          {/* Read status */}
+          {!notification.is_read && (
+            <Badge variant="secondary" className="text-xs">
+              Belum dibaca
+            </Badge>
           )}
         </div>
-      </div>
 
-      {/* Timestamp dengan format relatif dan absolut */}
-      <div className="text-right text-xs text-muted-foreground space-y-1">
-        <div className="flex justify-between items-center gap-1">
+        {/* Timestamp */}
+        <div className="text-right text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {formatTimeAgo(notification.triggered_at)}
           </div>
-          <span className="text-xs opacity-75">
+          <div className="text-xs opacity-75 mt-1">
             {formatDateTime(notification.triggered_at)}
-          </span>
+          </div>
         </div>
       </div>
     </div>
@@ -181,6 +271,7 @@ export default function NotifHistory({ open, setOpen }) {
   // State untuk pagination dan filtering
   const [currentPage, setCurrentPage] = useState(1); // Halaman saat ini
   const [timeRange, setTimeRange] = useState("all"); // Filter waktu
+  const [typeFilter, setTypeFilter] = useState("all"); // Filter tipe notifikasi
   const [pageSize, setPageSize] = useState(10); // Jumlah item per halaman
 
   // State untuk dialog konfirmasi delete
@@ -219,7 +310,13 @@ export default function NotifHistory({ open, setOpen }) {
         page: currentPage.toString(),
         limit: pageSize.toString(),
         timeRange: timeRange,
+        type: typeFilter === 'all' ? '' : typeFilter,
       });
+
+      // Remove empty parameters
+      if (!params.get('type')) {
+        params.delete('type');
+      }
 
       const response = await fetchFromBackend(
         `/notifications/history?${params}`
@@ -262,7 +359,7 @@ export default function NotifHistory({ open, setOpen }) {
     if (open && user && isUserLoggedIn(user)) {
       fetchHistoryData();
     }
-  }, [open, user, currentPage, timeRange, pageSize]);
+  }, [open, user, currentPage, timeRange, pageSize, typeFilter]);
 
   // Delete all notifications using simple fetch
   const deleteAllNotifications = async () => {
@@ -310,30 +407,66 @@ export default function NotifHistory({ open, setOpen }) {
 
     const headers = [
       "Tanggal/Waktu",
-      "Alarm",
+      "Tipe",
+      "Judul",
+      "Pesan",
       "Device",
       "Sensor",
       "Nilai",
       "Kondisi",
+      "Status"
     ];
 
     // Sort notifications from oldest to newest for export
     const sortedNotifications = [...historyData.notifications].sort((a, b) => {
       const dateA = new Date(a.triggered_at);
       const dateB = new Date(b.triggered_at);
+      
+      // Handle invalid dates
+      if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+      if (isNaN(dateA.getTime())) return 1; // Put invalid dates last
+      if (isNaN(dateB.getTime())) return -1;
+      
       return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
     });
 
     const rows = sortedNotifications.map((notif) => [
-      formatDateTime(notif.triggered_at),
-      notif.alarm_description,
-      notif.device_description,
-      notif.datastream_description,
-      notif.sensor_value,
-      notif.conditions_text,
+      formatDateTime(notif.triggered_at), // formatDateTime now handles invalid dates
+      notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status Device' : 'Notifikasi',
+      notif.title || notif.alarm_description || 'N/A',
+      notif.message || 'N/A',
+      notif.device_description || 'N/A',
+      notif.datastream_description || 'N/A',
+      notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : 'N/A',
+      notif.conditions_text || 'N/A',
+      notif.is_read ? 'Dibaca' : 'Belum dibaca'
     ]);
 
-    const filename = "riwayat-notifikasi";
+    // Generate filename based on applied filters
+    const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+    let filename = "riwayat-notifikasi";
+    
+    // Add time range to filename
+    if (timeRange !== 'all') {
+      const timeRangeLabels = {
+        'today': 'hari-ini',
+        'week': 'minggu-ini', 
+        'month': 'bulan-ini'
+      };
+      filename += `-${timeRangeLabels[timeRange] || timeRange}`;
+    }
+    
+    // Add type filter to filename
+    if (typeFilter !== 'all') {
+      const typeLabels = {
+        'alarm': 'alarm',
+        'device_status': 'status-device'
+      };
+      filename += `-${typeLabels[typeFilter] || typeFilter}`;
+    }
+    
+    filename += `-${timestamp}`;
+    
     exportCSVUtil(headers, rows, filename);
     successToast(
       "CSV berhasil diekspor",
@@ -349,12 +482,30 @@ export default function NotifHistory({ open, setOpen }) {
     }
 
     try {
-      // Generate filename with timestamp
-      const timestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, -5);
-      const filename = `notification-history-${timestamp}`;
+      // Generate filename with timestamp and filters
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+      let filename = "riwayat-notifikasi";
+      
+      // Add time range to filename
+      if (timeRange !== 'all') {
+        const timeRangeLabels = {
+          'today': 'hari-ini',
+          'week': 'minggu-ini', 
+          'month': 'bulan-ini'
+        };
+        filename += `-${timeRangeLabels[timeRange] || timeRange}`;
+      }
+      
+      // Add type filter to filename
+      if (typeFilter !== 'all') {
+        const typeLabels = {
+          'alarm': 'alarm',
+          'device_status': 'status-device'
+        };
+        filename += `-${typeLabels[typeFilter] || typeFilter}`;
+      }
+      
+      filename += `-${timestamp}`;
 
       // Create React PDF Document component and generate PDF
       const DocumentComponent = NotificationHistoryPDFDocument({
@@ -382,7 +533,7 @@ export default function NotifHistory({ open, setOpen }) {
         <div className="flex flex-col w-full h-full py-6 px-0 items-center gap-4">
           <div className="overflow-hidden w-full h-full px-4">
             {/* Filters */}
-            <div className="grid grid-cols-3 gap-3 pb-4">
+            <div className="grid grid-cols-4 gap-3 pb-4">
               <Select
                 value={timeRange}
                 onValueChange={(value) => {
@@ -399,6 +550,24 @@ export default function NotifHistory({ open, setOpen }) {
                   <SelectItem value="today">Hari Ini</SelectItem>
                   <SelectItem value="week">Minggu Ini</SelectItem>
                   <SelectItem value="month">Bulan Ini</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={typeFilter}
+                onValueChange={(value) => {
+                  setTypeFilter(value);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <BellRing className="w-4 h-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Tipe</SelectItem>
+                  <SelectItem value="alarm">Alarm</SelectItem>
+                  <SelectItem value="device_status">Status Device</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -495,8 +664,7 @@ export default function NotifHistory({ open, setOpen }) {
                     Belum ada riwayat notifikasi
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-sm">
-                    Riwayat alarm yang terpicu akan ditampilkan di sini setelah
-                    Anda menyimpannya.
+                    Riwayat notifikasi alarm dan status device akan ditampilkan di sini.
                   </p>
                 </div>
               ) : (

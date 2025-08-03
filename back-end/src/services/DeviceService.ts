@@ -389,37 +389,38 @@ export class DeviceService {
       const topicToCheck = deviceRows[0]?.mqtt_topic;
 
       // Delete data dalam urutan yang tepat untuk menghindari foreign key constraint errors
+      // Semua tabel terkait device menggunakan ON DELETE CASCADE, jadi urutan sudah optimal
       
-      // 1. Delete payloads first (child table)
-      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
+      // 1. Delete notifications yang terkait dengan device (FK ke device_id - nullable)
+      await this.db.query("DELETE FROM notifications WHERE device_id = ?", [id]);
       
-      // 2. Delete widgets yang menggunakan device ini
+      // 2. Delete device_commands yang terkait dengan device (FK ke device_id dan datastream_id)
+      await this.db.query("DELETE FROM device_commands WHERE device_id = ?", [id]);
+      
+      // 3. Delete widgets yang menggunakan device ini (JSON extract dari inputs)
       await this.db.query(
         "DELETE FROM widgets WHERE JSON_UNQUOTE(JSON_EXTRACT(inputs, '$.device_id')) = ?",
         [id]
       );
       
-      // 3. Delete alarm_notifications yang terkait dengan device
-      await this.db.query("DELETE FROM alarm_notifications WHERE device_id = ?", [id]);
-      
-      // 4. Delete device_commands yang terkait dengan device
-      await this.db.query("DELETE FROM device_commands WHERE device_id = ?", [id]);
-      
-      // 5. Delete alarm_conditions yang terkait dengan alarms dari device ini
+      // 4. Delete alarm_conditions yang terkait dengan alarms dari device ini
       await this.db.query(`
         DELETE ac FROM alarm_conditions ac 
         INNER JOIN alarms a ON ac.alarm_id = a.id 
         WHERE a.device_id = ?
       `, [id]);
       
-      // 6. Delete alarms yang terkait dengan device
+      // 5. Delete alarms yang terkait dengan device (akan trigger CASCADE untuk alarm_conditions)
       await this.db.query("DELETE FROM alarms WHERE device_id = ?", [id]);
       
-      // 7. Delete datastreams yang terkait dengan device
-      await this.db.query("DELETE FROM datastreams WHERE device_id = ?", [id]);
+      // 6. Delete payloads (FK ke device_id dan datastream_id - CASCADE)
+      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
       
-      // 8. Delete raw_payloads yang terkait dengan device
+      // 7. Delete raw_payloads yang terkait dengan device (FK ke device_id - CASCADE)
       await this.db.query("DELETE FROM raw_payloads WHERE device_id = ?", [id]);
+      
+      // 8. Delete datastreams yang terkait dengan device (FK ke device_id - CASCADE)
+      await this.db.query("DELETE FROM datastreams WHERE device_id = ?", [id]);
       
       // 9. Finally, delete the device itself
       const [result] = await this.db.query<ResultSetHeader>(
@@ -453,19 +454,6 @@ export class DeviceService {
     } catch (error) {
       console.error("Error updating device firmware version:", error);
       throw new Error("Failed to update device firmware version");
-    }
-  }
-
-  async updateDeviceStatus(deviceId: string, status: "online" | "offline") {
-    try {
-      await this.db.query(
-        "UPDATE devices SET status = ? WHERE id = ?",
-        [status, deviceId]
-      );
-      return true;
-    } catch (error) {
-      console.error("Error updating device status:", error);
-      throw error;
     }
   }
 

@@ -158,72 +158,70 @@ export class UserService {
       await connection.beginTransaction();
 
       // Delete dalam urutan yang benar untuk menghindari foreign key constraint errors
-      // 1. Delete payloads (terhubung ke devices dan datastreams)
-      await connection.query(
-        "DELETE p FROM payloads p INNER JOIN devices d ON p.device_id = d.id WHERE d.user_id = ?",
-        [id]
-      );
+      // Karena semua tabel menggunakan ON DELETE CASCADE dari users, kita hanya perlu menghapus
+      // tabel yang tidak memiliki CASCADE atau memiliki referensi kompleks
       
+      // 1. Delete notifications (memiliki FK ke alarms, devices, datastreams, users)
       await connection.query(
-        "DELETE p FROM payloads p INNER JOIN datastreams ds ON p.datastream_id = ds.id WHERE ds.user_id = ?",
+        "DELETE FROM notifications WHERE user_id = ?",
         [id]
       );
 
-      // 2. Delete raw_payloads (terhubung ke devices)
-      await connection.query(
-        "DELETE rp FROM raw_payloads rp INNER JOIN devices d ON rp.device_id = d.id WHERE d.user_id = ?",
-        [id]
-      );
-
-      // 3. Delete device_commands
+      // 2. Delete device_commands (memiliki FK ke devices, datastreams, users)
       await connection.query(
         "DELETE FROM device_commands WHERE user_id = ?",
         [id]
       );
 
-      // 4. Delete alarm_notifications
-      await connection.query(
-        "DELETE FROM alarm_notifications WHERE user_id = ?",
-        [id]
-      );
-
-      // 5. Delete alarm_conditions (terhubung ke alarms)
+      // 3. Delete alarm_conditions (terhubung ke alarms yang akan dihapus CASCADE)
       await connection.query(
         "DELETE ac FROM alarm_conditions ac INNER JOIN alarms a ON ac.alarm_id = a.id WHERE a.user_id = ?",
         [id]
       );
 
-      // 6. Delete alarms
+      // 4. Delete alarms (akan trigger CASCADE untuk alarm_conditions jika ada yang tersisa)
       await connection.query(
         "DELETE FROM alarms WHERE user_id = ?",
         [id]
       );
 
-      // 7. Delete widgets (terhubung ke dashboards)
+      // 5. Delete widgets (terhubung ke dashboards yang akan dihapus CASCADE)
       await connection.query(
         "DELETE w FROM widgets w INNER JOIN dashboards d ON w.dashboard_id = d.id WHERE d.user_id = ?",
         [id]
       );
 
-      // 8. Delete datastreams
+      // 6. Delete payloads (terhubung ke devices dan datastreams yang akan dihapus CASCADE)
+      await connection.query(
+        "DELETE p FROM payloads p INNER JOIN devices d ON p.device_id = d.id WHERE d.user_id = ?",
+        [id]
+      );
+
+      // 7. Delete raw_payloads (terhubung ke devices yang akan dihapus CASCADE)
+      await connection.query(
+        "DELETE rp FROM raw_payloads rp INNER JOIN devices d ON rp.device_id = d.id WHERE d.user_id = ?",
+        [id]
+      );
+
+      // 8. Delete datastreams (memiliki FK ke users dan devices - CASCADE)
       await connection.query(
         "DELETE FROM datastreams WHERE user_id = ?",
         [id]
       );
 
-      // 9. Delete devices
+      // 9. Delete devices (memiliki FK ke users - CASCADE)
       await connection.query(
         "DELETE FROM devices WHERE user_id = ?",
         [id]
       );
 
-      // 10. Delete dashboards
+      // 10. Delete dashboards (memiliki FK ke users - CASCADE)
       await connection.query(
         "DELETE FROM dashboards WHERE user_id = ?",
         [id]
       );
 
-      // 11. Delete otaa_updates
+      // 11. Delete otaa_updates (memiliki FK ke users - CASCADE)
       await connection.query(
         "DELETE FROM otaa_updates WHERE user_id = ?",
         [id]

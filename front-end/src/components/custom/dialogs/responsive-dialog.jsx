@@ -25,6 +25,7 @@ import {
 // Import efek glow dan hook mobile
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { useBreakpoint } from "@/hooks/use-mobile";
+import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 
 // Komponen dialog yang responsif - menggunakan drawer di mobile, dialog di desktop
 export default function ResponsiveDialog({
@@ -33,6 +34,7 @@ export default function ResponsiveDialog({
   title, // Judul dialog/drawer
   description, // Deskripsi opsional
   content = false, // Konten jika tidak berupa form
+  contentHandle = null, // Handler untuk konten jika tidak berupa form
   form = false, // Apakah konten berupa form
   formHandle = null, // Handler untuk submit form
   checkbox = false, // Komponen checkbox opsional
@@ -40,6 +42,7 @@ export default function ResponsiveDialog({
   cancelText, // Teks button batal
   loading = false, // Status loading untuk disable buttons
   oneButton = false, // Apakah hanya ada satu button konfirmasi
+  disabled = false, // Status disabled untuk button konfirmasi
 }) {
   // Hook untuk deteksi breakpoint layar
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
@@ -66,7 +69,7 @@ export default function ResponsiveDialog({
               <div className="flex flex-col gap-4">{form}</div>
               {checkbox && <div className="mt-2">{checkbox}</div>}
               <DrawerFooter>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || disabled}>
                   {confirmText || "Submit"}
                 </Button>
                 <DrawerClose asChild>
@@ -127,7 +130,7 @@ export default function ResponsiveDialog({
             <div className="flex flex-col gap-4">{form}</div>
             {checkbox && <div className="mt-2">{checkbox}</div>}
             <DialogFooter>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading || disabled}>
                 {confirmText || "Submit"}
               </Button>
               <Button
@@ -145,7 +148,12 @@ export default function ResponsiveDialog({
             <div className="flex flex-col gap-4 px-2 py-2">{content}</div>
             {checkbox && <div className="mt-2">{checkbox}</div>}
             <DialogFooter>
-              <Button onClick={() => setOpen(false)}>
+              <Button
+                onClick={() =>
+                  contentHandle ? contentHandle() : setOpen(false)
+                }
+                disabled={loading}
+              >
                 {confirmText || "Yes"}
               </Button>
               <Button

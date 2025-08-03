@@ -8,7 +8,7 @@
 
 // ---- SETUP VARIABEL ------
 #define DEVICE_ID "1"
-#define JWT_SECRET "8358a7b6add3b33daf060be8345f0af4"
+#define JWT_SECRET "881fda519164d3e6923bf778f4e193ca"
 
 // Waktu lokal (GMT +7)
 WiFiUDP ntpUDP;
@@ -19,8 +19,8 @@ const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // Server configuration
-const char* server_url = "http://192.168.18.238:7601";
-// const char* server_url = "https://api.misred-iot.com";
+// const char* server_url = "http://192.168.18.238:7601";
+const char* server_url = "https://api.misred-iot.com";
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;

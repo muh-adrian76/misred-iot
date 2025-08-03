@@ -7,15 +7,33 @@ import { pdf } from '@react-pdf/renderer';
 
 // Utility untuk format timestamp ke format Indonesia (DD/MM/YYYY HH:mm:ss)
 export const formatDateTime = (dateString) => {
+  // Handle null, undefined, or empty values
+  if (!dateString || dateString === '' || dateString === null || dateString === undefined) {
+    return 'N/A';
+  }
+  
+  // Try to create a valid date
   const date = new Date(dateString);
-  return date.toLocaleString("id-ID", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date string:', dateString);
+    return 'N/A';
+  }
+  
+  try {
+    return date.toLocaleString("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error, 'for dateString:', dateString);
+    return 'N/A';
+  }
 };
 
 /**

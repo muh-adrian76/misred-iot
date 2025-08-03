@@ -23,7 +23,10 @@ import {
   MemoryStick,
   CheckCircle,
   AlertCircle,
-  Edit
+  Edit,
+  Globe,
+  Package,
+  History
 } from "lucide-react";
 import { convertDate } from "@/lib/helper";
 import AddOTAAForm from "@/components/custom/forms/admin/otaa/add-otaa-form";
@@ -34,6 +37,7 @@ import { motion } from "framer-motion";
 export default function AdminOTAAContent({
   // Data props - data firmware dan tipe board
   filteredFirmwares, // Array firmware yang sudah difilter
+  globalFirmwares, // Object firmware global yang dikelompokkan berdasarkan board type
   boardTypes, // Array tipe board yang tersedia
   boardOptions, // Array board options default dari device-logic
   devices, // Array devices untuk device count
@@ -41,6 +45,7 @@ export default function AdminOTAAContent({
   // Loading states - status loading untuk UI feedback
   loading, // Status loading data firmware
   uploading, // Status uploading firmware baru
+  globalLoading, // Status loading global firmwares
   
   // Search and filter - kontrol pencarian dan filter
   searchTerm, // Term pencarian saat ini
@@ -70,6 +75,7 @@ export default function AdminOTAAContent({
   
   // Actions - fungsi aksi untuk firmware
   fetchFirmwares, // Fungsi untuk refresh data firmware
+  fetchGlobalFirmwares, // Fungsi untuk refresh data global firmware
   handleDownload, // Handler untuk download firmware
   handleDeleteStart, // Handler untuk mulai hapus firmware
   handleEditStart, // Handler untuk mulai edit firmware
@@ -250,7 +256,7 @@ export default function AdminOTAAContent({
         />
         <Tabs defaultValue="manage" className="bg-card backdrop-blur-enhanced rounded-2xl shadow-lg border-0 overflow-hidden">
           <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-700/50 dark:to-gray-600/50">
-            <TabsList className="grid w-full grid-cols-2 backdrop-blur-sm">
+            <TabsList className="grid w-full grid-cols-3 backdrop-blur-sm">
               <TabsTrigger value="manage" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <HardDrive className="w-4 h-4" />
                 <span className="hidden sm:inline">Kelola Firmware</span>
@@ -260,6 +266,11 @@ export default function AdminOTAAContent({
                 <Upload className="w-4 h-4" />
                 <span className="hidden sm:inline">Upload Firmware</span>
                 <span className="sm:hidden">Upload</span>
+              </TabsTrigger>
+              <TabsTrigger value="global" className="flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Globe className="w-4 h-4" />
+                <span className="hidden sm:inline">Firmware Global</span>
+                <span className="sm:hidden">Global</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -357,7 +368,7 @@ export default function AdminOTAAContent({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-semibold text-gray-900 dark:text-white truncate text-base lg:text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                  {firmware.firmware_url.split('/').pop()}
+                                  {firmware.original_filename || firmware.firmware_url.split('/').pop()}
                                 </h4>
                                 <div className="flex items-center gap-2 mt-1">
                                   <Badge variant="outline" className="shrink-0 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800">
@@ -367,7 +378,26 @@ export default function AdminOTAAContent({
                                     <Cpu className="w-3 h-3 mr-1" />
                                     {firmware.board_type}
                                   </Badge>
+                                  {firmware.file_size && (
+                                    <Badge variant="outline" className="shrink-0 bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800">
+                                      {(firmware.file_size / 1024).toFixed(1)}KB
+                                    </Badge>
+                                  )}
+                                  {firmware.user_id === 0 ? (
+                                    <Badge variant="default" className="shrink-0 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800">
+                                      🌐 Global
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="shrink-0 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
+                                      👤 User
+                                    </Badge>
+                                  )}
                                 </div>
+                                {firmware.description && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                    {firmware.description}
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
@@ -377,8 +407,19 @@ export default function AdminOTAAContent({
                               </div>
                               <div className="flex items-center gap-1">
                                 <User className="w-3 h-3" />
-                                User ID: {firmware.user_id}
+                                {firmware.user_id === 0 ? 
+                                  'Global Repository' : 
+                                  (firmware.owner_display || `User ID: ${firmware.user_id}`)
+                                }
                               </div>
+                              {firmware.checksum && (
+                                <div className="flex items-center gap-1 text-xs">
+                                  <span className="text-gray-400">SHA256:</span>
+                                  <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">
+                                    {firmware.checksum.substring(0, 8)}...
+                                  </code>
+                                </div>
+                              )}
                             </div>
                           </div>
                           
@@ -442,6 +483,156 @@ export default function AdminOTAAContent({
                   boardTypes={boardTypes}
                   devices={devices}
                 />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Global Firmware Tab - Daftar firmware global dengan versioning */}
+          <TabsContent value="global" className="p-4 lg:p-6 m-0">
+            <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
+              <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-700/50 dark:to-gray-600/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-pink-600" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Daftar Firmware Global
+                    </h3>
+                  </div>
+                  <Button
+                    onClick={fetchGlobalFirmwares}
+                    disabled={globalLoading}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${globalLoading ? "animate-spin" : ""}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+              <div className="p-4 lg:p-6">
+                {globalLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 flex items-center gap-4 shadow-xl border border-gray-200/50 dark:border-gray-700/50">
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Memuat firmware global...
+                      </span>
+                    </div>
+                  </div>
+                ) : Object.keys(globalFirmwares).length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center mb-6">
+                      <Globe className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Belum ada firmware global
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
+                      Upload firmware global pertama menggunakan tab "Upload Firmware"
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {Object.entries(globalFirmwares).map(([boardType, firmwares]) => (
+                      <div key={boardType} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                        <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-900/20 dark:to-purple-900/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-100 to-purple-200 dark:from-blue-900 dark:to-purple-800 flex items-center justify-center">
+                                <Cpu className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                              </div>
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                  {boardType}
+                                </h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  {firmwares.length} versi tersedia
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
+                              <Package className="w-3 h-3 mr-1" />
+                              {firmwares.length} versions
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="p-4 lg:p-6">
+                          <div className="grid gap-3">
+                            {firmwares.map((firmware, index) => (
+                              <div key={firmware.id} className="flex items-center justify-between p-4 bg-gray-50/80 dark:bg-gray-700/50 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:shadow-md transition-all duration-200">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 flex items-center justify-center">
+                                    <History className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-900 dark:text-white">
+                                        {firmware.original_filename || firmware.firmware_url.split('/').pop()}
+                                      </span>
+                                      <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-xs">
+                                        v{firmware.firmware_version}
+                                      </Badge>
+                                      {index === 0 && (
+                                        <Badge variant="default" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs">
+                                          Latest
+                                        </Badge>
+                                      )}
+                                      {firmware.file_size && (
+                                        <Badge variant="outline" className="bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-400 text-xs">
+                                          {(firmware.file_size / 1024).toFixed(1)}KB
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
+                                        {convertDate(firmware.updated_at)}
+                                      </div>
+                                      {firmware.description && (
+                                        <div className="flex items-center gap-1 max-w-xs">
+                                          <span className="truncate">{firmware.description}</span>
+                                        </div>
+                                      )}
+                                      {firmware.checksum && (
+                                        <div className="flex items-center gap-1 text-xs">
+                                          <span className="text-gray-400">SHA256:</span>
+                                          <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">
+                                            {firmware.checksum.substring(0, 8)}...
+                                          </code>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDownload(boardType, firmware.firmware_url.split('/').pop())}
+                                    title="Download firmware"
+                                    className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-xl"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDeleteStart(firmware)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 rounded-xl"
+                                    title="Hapus versi firmware ini"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </TabsContent>

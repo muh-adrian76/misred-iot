@@ -149,31 +149,41 @@ CREATE TABLE IF NOT EXISTS `otaa_updates` (
   `board_type` varchar(255) NOT NULL,
   `firmware_version` varchar(50) NOT NULL,
   `firmware_url` varchar(255) NOT NULL,
+  `file_size` BIGINT NULL DEFAULT NULL,
+  `original_filename` varchar(255) NULL DEFAULT NULL,
+  `checksum` varchar(64) NULL DEFAULT NULL,
+  `description` TEXT NULL DEFAULT NULL,
+  `is_active` BOOLEAN DEFAULT TRUE,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `user_id` INT NOT NULL,
   PRIMARY KEY (`id`),
-  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `unique_user_board_version` (`user_id`, `board_type`, `firmware_version`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE IF NOT EXISTS `alarm_notifications` (
+CREATE TABLE IF NOT EXISTS `notifications` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `alarm_id` INT NOT NULL,
+  `type` ENUM('alarm', 'device_status', 'firmware_update') NOT NULL DEFAULT 'alarm',
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `priority` ENUM('low', 'medium', 'high') NOT NULL DEFAULT 'medium',
   `user_id` INT NOT NULL,
-  `device_id` INT NOT NULL,
-  `datastream_id` INT NOT NULL,
-  `sensor_value` DECIMAL(10,3) NOT NULL,
-  `conditions_text` VARCHAR(255) NOT NULL,
-  `notification_type` ENUM('browser', 'all') NOT NULL,
-  `whatsapp_message_id` VARCHAR(255) NULL,
-  `error_message` TEXT NULL,
+  `device_id` INT NULL,
+  `alarm_id` INT NULL,
+  `datastream_id` INT NULL,
+  `sensor_value` DECIMAL(10,3) NULL,
+  `conditions_text` VARCHAR(255) NULL,
   `triggered_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   `is_read` BOOLEAN DEFAULT FALSE,
   PRIMARY KEY (`id`),
   FOREIGN KEY (`alarm_id`) REFERENCES `alarms` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE
+  FOREIGN KEY (`datastream_id`) REFERENCES `datastreams` (`id`) ON DELETE CASCADE,
+  INDEX idx_notifications_user_type (user_id, type),
+  INDEX idx_notifications_user_read (user_id, is_read),
+  INDEX idx_notifications_triggered_at (triggered_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `device_commands` (
@@ -254,6 +264,9 @@ CREATE INDEX idx_device_commands_status ON device_commands(status, sent_at);
 CREATE INDEX IF NOT EXISTS idx_devices_last_seen (last_seen_at);
 CREATE INDEX IF NOT EXISTS idx_devices_status (status);
 CREATE INDEX IF NOT EXISTS idx_devices_user_status (user_id, status);
+CREATE INDEX idx_otaa_user_board ON otaa_updates(user_id, board_type);
+CREATE INDEX idx_otaa_board_updated ON otaa_updates(board_type, updated_at DESC);
+CREATE INDEX idx_otaa_global_firmware ON otaa_updates(user_id, board_type, firmware_version);
 
 -- View untuk dashboard sensor data yang sudah dinormalisasi
 CREATE OR REPLACE VIEW dashboard_sensor_data AS

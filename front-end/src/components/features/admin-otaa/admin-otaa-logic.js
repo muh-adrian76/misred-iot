@@ -14,7 +14,9 @@ export function useAdminOTAALogic() {
 
   // Main data state
   const [firmwares, setFirmwares] = useState([]); // All firmwares
+  const [globalFirmwares, setGlobalFirmwares] = useState({}); // Global firmwares grouped by board type
   const [loading, setLoading] = useState(false); // Loading state for fetch
+  const [globalLoading, setGlobalLoading] = useState(false); // Loading state for global firmwares
   const [uploading, setUploading] = useState(false); // Loading state for upload
 
   // Search and filter state
@@ -31,16 +33,17 @@ export function useAdminOTAALogic() {
     board_type: "",
     firmware_version: "",
     file: null,
-    filename: ""
+    filename: "",
+    description: ""
   });
 
   // ===== API OPERATIONS =====
 
-  // Fetch firmwares from API
+  // Fetch firmwares from ADMIN API (semua firmware dari semua user)
   const fetchFirmwares = async () => {
     setLoading(true);
     try {
-      const response = await fetchFromBackend("/otaa");
+      const response = await fetchFromBackend("/admin/otaa"); // Admin endpoint
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -58,6 +61,27 @@ export function useAdminOTAALogic() {
       errorToast("Gagal memuat data firmware");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch global firmwares grouped by board type
+  const fetchGlobalFirmwares = async () => {
+    setGlobalLoading(true);
+    try {
+      const response = await fetchFromBackend("/admin/otaa/global");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setGlobalFirmwares(data.data);
+        } else {
+          setGlobalFirmwares({});
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching global firmwares:", error);
+      errorToast("Gagal memuat data firmware global");
+    } finally {
+      setGlobalLoading(false);
     }
   };
 
@@ -89,64 +113,53 @@ export function useAdminOTAALogic() {
     }
   };
 
-  // Handle upload firmware
+  // Admin dapat mengupload firmware GLOBAL untuk semua user dengan board type yang sama
   const handleUploadFirmware = async (e) => {
     e.preventDefault();
     
-    if (!uploadForm.board_type || !uploadForm.firmware_version || !uploadForm.file) {
+    if (!uploadForm.file || !uploadForm.board_type || !uploadForm.firmware_version) {
       errorToast("Semua field harus diisi!");
       return;
     }
 
     setUploading(true);
     try {
-      // Convert file to base64
-      const fileReader = new FileReader();
-      fileReader.onload = async () => {
-        const base64 = fileReader.result.split(',')[1];
+      const formData = new FormData();
+      formData.append("firmware", uploadForm.file);
+      formData.append("board_type", uploadForm.board_type);
+      formData.append("firmware_version", uploadForm.firmware_version);
+      if (uploadForm.description) {
+        formData.append("description", uploadForm.description);
+      }
+
+      const response = await fetchFromBackend("/admin/otaa", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        successToast(`Firmware global berhasil diupload! Akan mempengaruhi ${data.data.affected_users} user dengan board ${data.data.board_type}.`);
         
-        const uploadData = {
-          board_type: uploadForm.board_type.trim(),
-          firmware_version: uploadForm.firmware_version.trim(),
-          filename: uploadForm.filename,
-          file_base64: base64
-        };
-
-        const response = await fetchFromBackend("/otaa/upload", {
-          method: "POST",
-          body: JSON.stringify(uploadData)
+        // Reset form
+        setUploadForm({
+          board_type: "",
+          firmware_version: "",
+          file: null, 
+          filename: "",
+          description: ""
         });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            successToast("Firmware berhasil diupload!");
-            
-            // Reset form
-            setUploadForm({
-              board_type: "",
-              firmware_version: "",
-              file: null,
-              filename: ""
-            });
-            
-            // Reset file input
-            const fileInput = document.querySelector('input[type="file"]');
-            if (fileInput) fileInput.value = '';
-            
-            // Refresh data
-            fetchFirmwares();
-          } else {
-            errorToast(result.message || "Gagal upload firmware!");
-          }
-        } else {
-          errorToast("Gagal upload firmware!");
-        }
-      };
-      fileReader.readAsDataURL(uploadForm.file);
+        
+        // Refresh firmware list
+        await fetchFirmwares();
+        await fetchGlobalFirmwares();
+      } else {
+        throw new Error(data.message || "Gagal mengupload firmware global");
+      }
     } catch (error) {
       console.error("Upload error:", error);
-      errorToast("Gagal upload firmware!");
+      errorToast(error.message || "Gagal mengupload firmware global!");
     } finally {
       setUploading(false);
     }
@@ -183,12 +196,12 @@ export function useAdminOTAALogic() {
     setDeleteDialogOpen(true);
   };
 
-  // Handle delete confirm - actually delete the firmware
+  // Handle delete confirm - actually delete the firmware using ADMIN API
   const handleDeleteConfirm = async () => {
     if (!firmwareToDelete) return;
     
     try {
-      const response = await fetchFromBackend(`/otaa/${firmwareToDelete.id}`, {
+      const response = await fetchFromBackend(`/admin/otaa/${firmwareToDelete.id}`, {
         method: 'DELETE'
       });
       
@@ -220,11 +233,14 @@ export function useAdminOTAALogic() {
 
   // ===== COMPUTED VALUES =====
 
-  // Filter firmwares based on search and board type
+  // Filter firmwares based on search and board type (support owner_display untuk global vs user firmware)
   const filteredFirmwares = firmwares.filter(firmware => {
     const matchesSearch = firmware.firmware_url.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           firmware.firmware_version.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          firmware.board_type.toLowerCase().includes(searchTerm.toLowerCase());
+                          firmware.board_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (firmware.owner_name && firmware.owner_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (firmware.owner_email && firmware.owner_email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (firmware.owner_display && firmware.owner_display.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesBoardType = selectedBoardType === "all" || firmware.board_type === selectedBoardType;
     return matchesSearch && matchesBoardType;
   });
@@ -233,8 +249,18 @@ export function useAdminOTAALogic() {
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
       fetchFirmwares();
+      fetchGlobalFirmwares();
     }
   }, [isAuthenticated, isAdmin]);
+
+  // Daft board options for form select
+  const boardOptions = [
+    "ESP32",
+    "ESP8266",
+    "Arduino",
+    "Raspberry Pi",
+    "Lainnya",
+  ];
 
   // Return all state and functions for components to use
   return {
@@ -245,11 +271,14 @@ export function useAdminOTAALogic() {
     // Data state
     firmwares,
     filteredFirmwares,
+    globalFirmwares,
     boardTypes,
+    boardOptions,
     
     // Loading states
     loading,
     uploading,
+    globalLoading,
     
     // Search and filter
     searchTerm,
@@ -273,6 +302,7 @@ export function useAdminOTAALogic() {
     
     // Actions
     fetchFirmwares,
+    fetchGlobalFirmwares,
     handleDownload,
   };
 }

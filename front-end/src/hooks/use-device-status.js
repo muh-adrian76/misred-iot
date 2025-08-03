@@ -2,6 +2,7 @@
 // Provides: online/offline status, last seen time, activity level monitoring
 import { useState, useEffect, useCallback } from 'react';
 import { useWebSocket } from '@/providers/websocket-provider';
+import { fetchFromBackend } from '@/lib/helper';
 
 export function useDeviceStatus(devices) {
   const [deviceStatuses, setDeviceStatuses] = useState({}); // Map device status by ID
@@ -27,7 +28,7 @@ export function useDeviceStatus(devices) {
     }
   }, [devices, wsDeviceStatuses]);
 
-  // Listen for WebSocket real-time status updates
+  // Listen for WebSocket real-time status updates - REAL-TIME ONLY
   useEffect(() => {
     if (wsDeviceStatuses && wsDeviceStatuses.size > 0) {
       setDeviceStatuses(prev => {
@@ -36,11 +37,12 @@ export function useDeviceStatus(devices) {
 
         wsDeviceStatuses.forEach((statusData, deviceId) => {
           if (prev[deviceId]) {
-            // console.log(`🔄 Updating device ${deviceId} status:`, statusData);
+            console.log(`🔄 Real-time device ${deviceId} status update:`, statusData);
             updated[deviceId] = {
               ...prev[deviceId],
               status: statusData.status,
-              lastSeenAt: statusData.timestamp
+              lastSeenAt: statusData.timestamp,
+              secondsSinceLastSeen: statusData.status === 'offline' ? 0 : prev[deviceId].secondsSinceLastSeen
             };
             hasChanges = true;
           }
@@ -55,7 +57,7 @@ export function useDeviceStatus(devices) {
     }
   }, [wsDeviceStatuses]);
 
-  // Periodic status check (fallback jika WebSocket gagal)
+  // Simple timer untuk update "seconds since last seen" display saja (tidak untuk logic offline)
   useEffect(() => {
     const interval = setInterval(() => {
       setDeviceStatuses(prev => {
@@ -64,30 +66,18 @@ export function useDeviceStatus(devices) {
 
         Object.keys(updated).forEach(deviceId => {
           const device = updated[deviceId];
-          if (device.lastSeenAt) {
+          if (device.lastSeenAt && device.status === 'offline') {
             const now = Date.now();
             const lastSeen = new Date(device.lastSeenAt).getTime();
             const secondsSince = Math.floor((now - lastSeen) / 1000);
             
-            // Update seconds since last seen
+            // Update seconds since last seen untuk display saja
             if (device.secondsSinceLastSeen !== secondsSince) {
               updated[deviceId] = {
                 ...device,
                 secondsSinceLastSeen: secondsSince
               };
               hasChanges = true;
-            }
-
-            // Auto-update status berdasarkan time threshold
-            const shouldBeOffline = secondsSince > 60; // 1 minute
-            if (device.status === 'online' && shouldBeOffline) {
-              updated[deviceId] = {
-                ...updated[deviceId],
-                status: 'offline',
-                activityLevel: 'inactive'
-              };
-              hasChanges = true;
-              console.log(`🔴 Device ${deviceId} auto-marked as offline (${secondsSince}s since last seen)`);
             }
           }
         });
@@ -98,10 +88,10 @@ export function useDeviceStatus(devices) {
 
         return hasChanges ? updated : prev;
       });
-    }, 5000); // Update every 5 seconds
+    }, 5000); // Update every 5 seconds - HANYA UNTUK DISPLAY
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Removed dependencies - hanya untuk display timer
 
   // Get status for specific device
   const getDeviceStatus = useCallback((deviceId) => {

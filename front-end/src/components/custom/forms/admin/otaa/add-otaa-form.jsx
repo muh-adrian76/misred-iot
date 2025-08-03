@@ -1,5 +1,6 @@
-// Add OTAA Form Component - komponen form untuk upload firmware baru ke sistem
+// Add OTAA Form Component - komponen form untuk upload firmware GLOBAL ke sistem
 // Fitur: input board type, input versi, upload file, validasi, styling modern
+// Admin Mode: Upload firmware global yang akan tersedia untuk semua user dengan board type yang sama
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ export default function AddOTAAForm({
             </Select>
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
-              Pilih jenis board microcontroller yang akan diupdate
+              Pilih jenis board yang akan menerima firmware global ini
             </p>
           </div>
 
@@ -93,9 +94,31 @@ export default function AddOTAAForm({
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
-              Versi firmware yang akan diupload (gunakan semantic versioning)
+              Versi firmware global yang akan tersedia untuk semua user
             </p>
           </div>
+        </div>
+
+        {/* Description Input */}
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+            Deskripsi (Opsional)
+          </label>
+          <textarea
+            placeholder="Contoh: Fix bug komunikasi sensor, Penambahan fitur deep sleep, Update driver WiFi"
+            value={uploadForm.description || ''}
+            onChange={(e) => setUploadForm(prev => ({
+              ...prev,
+              description: e.target.value
+            }))}
+            rows={3}
+            className="w-full p-3 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Deskripsi perubahan atau catatan versi firmware ini
+          </p>
         </div>
         
         {/* File Upload Section */}
@@ -116,7 +139,7 @@ export default function AddOTAAForm({
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
-            Format yang didukung: .bin, .hex (Maksimal 10MB)
+            Firmware global yang akan tersedia untuk semua user dengan board ini
           </p>
         </div>
 
@@ -129,13 +152,13 @@ export default function AddOTAAForm({
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
-                  File berhasil dipilih
+                  Firmware global siap diupload
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-300">
                   <strong>Nama file:</strong> {uploadForm.filename}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  File siap untuk diupload ke sistem
+                  Akan tersedia untuk semua user dengan board type yang dipilih
                 </p>
               </div>
             </div>
@@ -151,26 +174,26 @@ export default function AddOTAAForm({
           {uploading ? (
             <>
               <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-              Mengupload firmware...
+              Mengupload firmware global...
             </>
           ) : (
             <>
               <Upload className="w-5 h-5 mr-2" />
-              Upload Firmware
+              Upload Firmware Global
             </>
           )}
         </Button>
 
         {/* Additional Info */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200/50 dark:border-gray-700/50">
-          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
-            Informasi Penting:
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-700/50">
+          <h5 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+            ℹ️ Firmware Global Repository:
           </h5>
-          <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <li>• Pastikan file firmware kompatibel dengan board type yang dipilih</li>
-            <li>• Versi firmware harus lebih baru dari versi sebelumnya</li>
-            <li>• File akan disimpan secara aman dan dapat didownload kembali</li>
-            <li>• Proses upload mungkin memerlukan waktu beberapa menit</li>
+          <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+            <li>• Firmware yang Anda upload akan tersedia untuk <strong>SEMUA USER</strong> dengan board type yang sama</li>
+            <li>• User akan menerima notifikasi "Firmware Terbaru" saat ada global firmware</li>
+            <li>• Jika user sudah punya firmware sendiri, mereka tetap bisa pilih global firmware</li>
+            <li>• Sistem akan otomatis memilih firmware terbaru (user firmware {'>'}  global firmware)</li>
           </ul>
         </div>
       </form>
