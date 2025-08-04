@@ -71,7 +71,6 @@ export const getRecentNotificationsSchema = {
         datastream_description: t.Union([t.String(), t.Null()]),
         sensor_value: t.Union([t.Number(), t.Null()]),
         condition_text: t.Union([t.String(), t.Null()]),
-        user_email: t.String()
       })),
       total: t.Number(),
       last_seen: t.String()

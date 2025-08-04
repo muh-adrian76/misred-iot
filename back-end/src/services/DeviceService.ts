@@ -324,6 +324,7 @@ export class DeviceService {
       firmware_version,
     }: any
   ) {
+    
     try {
       // Topik MQTT
       const [rows]: any = await this.db.query(
@@ -380,6 +381,10 @@ export class DeviceService {
   }
 
   async deleteDevice(id: string, userId: string) {
+    
+      if (id === "1" || id === "2") {
+        throw new Error("Dashboard ini tidak dapat dihapus saat kuisioner berlangsung")
+      }
     try {
       // Get topic sebelum delete untuk unsubscribe jika perlu
       const [deviceRows]: any = await this.db.query(

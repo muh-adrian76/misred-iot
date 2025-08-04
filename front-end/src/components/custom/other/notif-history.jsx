@@ -49,6 +49,7 @@ import {
   ChartBar,
   Trash2,
   FileType,
+  WifiOff,
 } from "lucide-react";
 import { fetchFromBackend } from "@/lib/helper";
 import { cn } from "@/lib/utils";
@@ -118,20 +119,20 @@ const NotificationHistoryItem = ({ notification }) => {
   const getNotificationConfig = () => {
     if (isAlarmNotification) {
       return {
-        icon: <AlertTriangle className="h-4 w-4 text-red-500" />,
+        icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
         title: notification.title || notification.alarm_description || 'Alarm Triggered',
-        borderColor: 'border-red-200',
-        bgColor: 'hover:bg-red-50/30',
-        badgeColor: 'bg-red-100 text-red-800',
+        borderColor: 'border-orange-200',
+        bgColor: 'hover:bg-orange-50/30',
+        badgeColor: 'bg-orange-100 text-orange-800',
         badgeText: 'ALARM'
       };
     } else if (isDeviceStatusNotification) {
       return {
-        icon: <Smartphone className="h-4 w-4 text-orange-500" />,
+        icon: <WifiOff className="h-4 w-4 text-red-500" />,
         title: notification.title || 'Device Status Change',
-        borderColor: 'border-orange-200',
-        bgColor: 'hover:bg-orange-50/30',
-        badgeColor: 'bg-orange-100 text-orange-800',
+        borderColor: 'border-red-200',
+        bgColor: 'hover:bg-red-50/30',
+        badgeColor: 'bg-red-100 text-red-800',
         badgeText: 'STATUS'
       };
     } else {
@@ -170,9 +171,9 @@ const NotificationHistoryItem = ({ notification }) => {
           </div>
 
           {/* Message/Description */}
-          <div className="text-sm text-muted-foreground">
+          {/* <div className="text-sm text-muted-foreground">
             {notification.message}
-          </div>
+          </div> */}
 
           {/* Detail informasi berdasarkan tipe notifikasi */}
           <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -223,11 +224,9 @@ const NotificationHistoryItem = ({ notification }) => {
       <div className="flex items-center justify-between pt-2 border-t">
         <div className="flex items-center gap-2">
           {/* Status pengiriman */}
-          <div className="flex items-center gap-1 text-green-600">
-            <CheckCircle className="w-3 h-3" />
-            <span className="text-xs">
-              Terkirim pada Browser
-            </span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            {formatTimeAgo(notification.triggered_at)}
           </div>
           
           {/* Read status */}
@@ -240,10 +239,6 @@ const NotificationHistoryItem = ({ notification }) => {
 
         {/* Timestamp */}
         <div className="text-right text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {formatTimeAgo(notification.triggered_at)}
-          </div>
           <div className="text-xs opacity-75 mt-1">
             {formatDateTime(notification.triggered_at)}
           </div>
@@ -533,7 +528,7 @@ export default function NotifHistory({ open, setOpen }) {
         <div className="flex flex-col w-full h-full py-6 px-0 items-center gap-4">
           <div className="overflow-hidden w-full h-full px-4">
             {/* Filters */}
-            <div className="grid grid-cols-4 gap-3 pb-4">
+            <div className="grid grid-cols-2 gap-3 pb-4">
               <Select
                 value={timeRange}
                 onValueChange={(value) => {
@@ -598,7 +593,7 @@ export default function NotifHistory({ open, setOpen }) {
                       !historyData?.notifications?.length || error || isLoading
                     }
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="w-4 h-4 mr-2.5" />
                     Ekspor
                   </Button>
                 </PopoverTrigger>
@@ -628,7 +623,7 @@ export default function NotifHistory({ open, setOpen }) {
             </div>
 
             {/* Content */}
-            <ScrollArea className="h-[55vh]">
+            <ScrollArea className="max-[601px]:h-[40vh] h-[47.5vh]">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="flex flex-col items-center gap-3">
@@ -698,6 +693,7 @@ export default function NotifHistory({ open, setOpen }) {
                           onClick={() =>
                             setCurrentPage((prev) => Math.max(1, prev - 1))
                           }
+                          textStyle="sm:hidden"
                           className={cn(
                             currentPage === 1 &&
                               "pointer-events-none opacity-50"
@@ -734,6 +730,7 @@ export default function NotifHistory({ open, setOpen }) {
                               Math.min(historyData.pagination.pages, prev + 1)
                             )
                           }
+                          textStyle="sm:hidden"
                           className={cn(
                             currentPage === historyData.pagination.pages &&
                               "pointer-events-none opacity-50"

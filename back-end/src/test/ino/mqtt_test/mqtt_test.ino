@@ -8,7 +8,7 @@
 
 // ---- SETUP VARIABEL ------
 #define DEVICE_ID "2"
-#define JWT_SECRET "0d538e03bbcd6184bae59b4d96f3eb0c"
+#define JWT_SECRET "1e22a7bc8aa0bd2ba64d200fb62c551f"
 
 // Waktu UTC
 WiFiUDP ntpUDP;
@@ -19,8 +19,8 @@ const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // MQTT configuration
-// const char* mqtt_server = "103.82.241.46";
-const char* mqtt_server = "192.168.18.238";
+const char* mqtt_server = "103.82.241.46";
+// const char* mqtt_server = "192.168.18.238";
 const int mqtt_port = 1883;
 const char* mqtt_topic = "device/data";
 

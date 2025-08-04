@@ -381,22 +381,20 @@ export class DeviceStatusService {
         [
           deviceData.user_id,
           "device_status",
-          "Device Offline",
-          `Device "${deviceData.device_name}" telah offline dan tidak merespons`,
+          "Status Perangkat",
+          `Perangkat "${deviceData.device_name}" telah offline dan tidak merespons`,
           "high", // Priority tinggi untuk device offline
           deviceId
         ]
       );
       
-      console.log(`✅ Device offline notification created in database for device ${deviceId}`);
-
       // Send WhatsApp notification jika user mengaktifkan notifikasi WhatsApp
       if (deviceData.whatsapp_notification && deviceData.user_phone) {
         console.log(`📲 Sending WhatsApp notification for device ${deviceId} offline to ${deviceData.user_phone}`);
         
-        const whatsappMessage = `🚨 PERINGATAN DEVICE OFFLINE 🚨\n\n` +
-                               `📍 Device: ${deviceData.device_name}\n` +
-                               `🔴 Status: OFFLINE - Device tidak merespons\n` +
+        const whatsappMessage = `🚨 PERINGATAN STATUS PERANGKAT\n\n` +
+                               `📍 Perangkat: ${deviceData.device_name}\n` +
+                               `🔴 Status: OFFLINE\n` +
                                `👤 Akun: ${deviceData.user_name}\n` +
                                `🕐 Waktu: ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB\n\n` +
                                `Mohon periksa koneksi perangkat Anda!`;
@@ -429,8 +427,8 @@ export class DeviceStatusService {
           data: {
             id: `device_offline_${deviceId}_${Date.now()}`,
             type: "device_status",
-            title: "Device Offline",
-            message: `Device "${deviceData.device_name}" telah offline dan tidak merespons`,
+            title: "Status Perangkat",
+            message: `Perangkat "${deviceData.device_name}" telah offline dan tidak merespons`,
             priority: "high",
             device_id: deviceId,
             user_id: deviceData.user_id,

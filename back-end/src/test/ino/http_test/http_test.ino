@@ -20,7 +20,8 @@ const char* password = "KentungMusthofa";
 
 // Server configuration
 // const char* server_url = "http://192.168.18.238:7601";
-const char* server_url = "https://api.misred-iot.com";
+// const char* server_url = "https://api.misred-iot.com";
+const char* server_url = "http://103.82.241.46:9800";
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;
