@@ -34,11 +34,11 @@ export function useDeviceLogic() {
     setLoading(true);
     try {
       const res = await fetchFromBackend("/device");
-      if (!res.ok) throw new Error("Gagal fetch device");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal fetch device");
       setDevices(data.result || []);
-    } catch (e) {
-      errorToast("Gagal mengambil data device");
+    } catch (error) {
+      errorToast("Gagal mengambil data device", error.message);
     } finally {
       setLoading(false);
     }
@@ -78,15 +78,16 @@ export function useDeviceLogic() {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Gagal tambah device");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal tambah device");
       successToast("Device berhasil ditambahkan!");
       fetchDevices();
       setAddFormOpen(false);
       
       // Trigger onboarding task completion
       markDeviceCreated();
-    } catch {
-      errorToast("Gagal tambah device!");
+    } catch(error) {
+      errorToast("Gagal tambah device!", error.message);
     }
   };
 
@@ -96,12 +97,13 @@ export function useDeviceLogic() {
         method: "PUT",
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Gagal update device");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal update device");
       successToast("Device berhasil diupdate!");
       fetchDevices();
       setEditFormOpen(false);
-    } catch {
-      errorToast("Gagal update device!");
+    } catch(error) {
+      errorToast("Gagal update device!", error.message);
     }
   };
 
@@ -110,12 +112,13 @@ export function useDeviceLogic() {
       const res = await fetchFromBackend(`/device/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Gagal hapus device");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal hapus device");
       successToast("Device berhasil dihapus!");
       fetchDevices();
       setDeleteFormOpen(false);
-    } catch {
-      errorToast("Gagal hapus device!");
+    } catch(error) {
+      errorToast("Gagal hapus device!", error.message);
     }
   };
 

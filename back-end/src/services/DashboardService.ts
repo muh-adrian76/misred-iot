@@ -89,17 +89,14 @@ export class DashboardService {
   // Menghapus dashboard berdasarkan ID dan user ID
   async deleteDashboard(userId: string, dashboardId: string) {
     try {
-      if (dashboardId === "8") {
-        throw new Error("Dashboard ini tidak dapat dihapus saat kuisioner berlangsung")
-      }
       const [result] = await this.db.query<ResultSetHeader>(
         "DELETE FROM dashboards WHERE id = ? AND user_id = ?",
         [dashboardId, userId]
       );
       return result.affectedRows > 0;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting dashboard:", error);
-      throw new Error("Failed to delete dashboard");
+      throw new Error(error.message);
     }
   }
 }

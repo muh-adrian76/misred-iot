@@ -33,21 +33,27 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             });
           } catch (error: any) {
             console.error("Error in get dashboards:", error);
-            
+
             // Handle authentication error dari authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
-              return new Response(JSON.stringify({
-                success: false,
-                message: "Authentication failed"
-              }), { status: 401 });
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: "Authentication failed",
+                }),
+                { status: 401 }
+              );
             }
-            
+
             // Handle other errors
-            return new Response(JSON.stringify({
-              success: false,
-              message: "Internal server error"
-            }), { status: 500 });
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         getAllDashboardsSchema
@@ -66,7 +72,9 @@ export function dashboardRoutes(dashboardService: DashboardService) {
 
             if (!description || description.trim() === "") {
               return new Response(
-                JSON.stringify({ message: "Nama dashboard tidak boleh kosong" }),
+                JSON.stringify({
+                  message: "Nama dashboard tidak boleh kosong",
+                }),
                 { status: 400 }
               );
             }
@@ -91,21 +99,27 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             );
           } catch (error: any) {
             console.error("Error in create dashboard:", error);
-            
+
             // Handle authentication error dari authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
-              return new Response(JSON.stringify({
-                success: false,
-                message: "Authentication failed"
-              }), { status: 401 });
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: "Authentication failed",
+                }),
+                { status: 401 }
+              );
             }
-            
+
             // Handle other errors
-            return new Response(JSON.stringify({
-              success: false,
-              message: "Internal server error"
-            }), { status: 500 });
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         postDashboardSchema
@@ -123,7 +137,9 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             const { description, widget_count, layout } = body;
             if (!description || description.trim() === "") {
               return new Response(
-                JSON.stringify({ message: "Nama dashboard tidak boleh kosong" }),
+                JSON.stringify({
+                  message: "Nama dashboard tidak boleh kosong",
+                }),
                 { status: 400 }
               );
             }
@@ -143,21 +159,27 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             );
           } catch (error: any) {
             console.error("Error in update dashboard:", error);
-            
+
             // Handle authentication error dari authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
-              return new Response(JSON.stringify({
-                success: false,
-                message: "Authentication failed"
-              }), { status: 401 });
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: "Authentication failed",
+                }),
+                { status: 401 }
+              );
             }
-            
+
             // Handle other errors
-            return new Response(JSON.stringify({
-              success: false,
-              message: "Internal server error"
-            }), { status: 500 });
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         putDashboardSchema
@@ -169,6 +191,11 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
+            if (params.id === "8") {
+              throw new Error(
+                "Dashboard ini tidak dapat dihapus saat kuisioner berlangsung"
+              );
+            }
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await dashboardService.deleteDashboard(
               decoded.sub,
@@ -183,21 +210,27 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             );
           } catch (error: any) {
             console.error("Error in delete dashboard:", error);
-            
+
             // Handle authentication error dari authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
-              return new Response(JSON.stringify({
-                success: false,
-                message: "Authentication failed"
-              }), { status: 401 });
+              return new Response(
+                JSON.stringify({
+                  success: false,
+                  message: "Authentication failed",
+                }),
+                { status: 401 }
+              );
             }
-            
+
             // Handle other errors
-            return new Response(JSON.stringify({
-              success: false,
-              message: "Internal server error"
-            }), { status: 500 });
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: error.message || "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         deleteDashboardSchema

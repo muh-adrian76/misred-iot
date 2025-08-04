@@ -34,7 +34,10 @@ import {
   updateDeviceStatusSchema,
 } from "./elysiaSchema";
 
-export function deviceRoutes(deviceService: DeviceService, deviceStatusService?: DeviceStatusService) {
+export function deviceRoutes(
+  deviceService: DeviceService,
+  deviceStatusService?: DeviceStatusService
+) {
   return (
     new Elysia({ prefix: "/device" })
 
@@ -74,7 +77,7 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
         async ({ jwt, cookie, body, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            
+
             // Ekstrak data device dari request body
             const {
               name,
@@ -88,7 +91,7 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
               firmware_version,
               firmware_url,
             } = body;
-            
+
             // Generate secret key untuk device authentication
             const new_secret = randomBytes(16).toString("hex");
             const user_id = decoded.sub;
@@ -118,22 +121,22 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
             );
           } catch (error: any) {
             console.error("Error creating device:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error"
+              message: "Internal server error",
             };
           }
         },
@@ -148,36 +151,37 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
           try {
             const decoded = await authorizeRequest(jwt, cookie);
             const devices = await deviceService.getAllUserDevices(decoded.sub);
-            
+
             // Tambahkan status information jika DeviceStatusService tersedia
             let devicesWithStatus = devices;
             if (deviceStatusService) {
-              devicesWithStatus = await deviceStatusService.getUserDevicesWithStatus(decoded.sub);
+              devicesWithStatus =
+                await deviceStatusService.getUserDevicesWithStatus(decoded.sub);
             }
-            
+
             return new Response(JSON.stringify({ result: devicesWithStatus }), {
               status: 200,
             });
           } catch (error: any) {
             console.error("Error fetching all devices:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
                 message: "Authentication failed",
-                result: []
+                result: [],
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
             return {
               success: false,
               message: "Internal server error",
-              result: []
+              result: [],
             };
           }
         },
@@ -203,22 +207,22 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
             });
           } catch (error: any) {
             console.error("Error fetching device by ID:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error"
+              message: "Internal server error",
             };
           }
         },
@@ -314,22 +318,22 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
             );
           } catch (error: any) {
             console.error("Error uploading firmware:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error"
+              message: "Internal server error",
             };
           }
         },
@@ -482,7 +486,7 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
         }
       })
 
-            // Renew device secret
+      // Renew device secret
       .post(
         "/renew-secret/:device_id",
         //@ts-ignore
@@ -534,6 +538,11 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
+            if (params.id === "1" || params.id === "2") {
+              throw new Error(
+                "Device ini tidak dapat diubah saat kuisioner berlangsung"
+              );
+            }
             const decoded = await authorizeRequest(jwt, cookie);
             const updated = await deviceService.updateDevice(
               params.id,
@@ -558,23 +567,26 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
             );
           } catch (error: any) {
             console.error("Error updating device:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
-            return {
-              success: false,
-              message: "Internal server error"
-            };
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: error.message || "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         putDeviceSchema
@@ -586,6 +598,11 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
+            if (params.id === "1" || params.id === "2") {
+              throw new Error(
+                "Dashboard ini tidak dapat dihapus saat kuisioner berlangsung"
+              );
+            }
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await deviceService.deleteDevice(
               params.id,
@@ -606,23 +623,26 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
             );
           } catch (error: any) {
             console.error("Error deleting device:", error);
-            
+
             // Check if it's an authentication error from authorizeRequest
-            if (error.message && error.message.includes('Unauthorized')) {
+            if (error.message && error.message.includes("Unauthorized")) {
               console.error("❌ Authentication error:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             // Handle other errors
             set.status = 500;
-            return {
-              success: false,
-              message: "Internal server error"
-            };
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: error.message || "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         deleteDeviceSchema
@@ -643,19 +663,19 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
               set.status = 400;
               return {
                 success: false,
-                message: "Invalid status. Must be 'online' or 'offline'"
+                message: "Invalid status. Must be 'online' or 'offline'",
               };
             }
 
             // Verify device ownership
             const deviceResult = await deviceService.getDeviceById(deviceId);
             const devices = deviceResult as any[];
-            
+
             if (!devices || devices.length === 0) {
               set.status = 404;
               return {
                 success: false,
-                message: "Device not found"
+                message: "Device not found",
               };
             }
 
@@ -664,13 +684,16 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
               set.status = 403;
               return {
                 success: false,
-                message: "Access denied"
+                message: "Access denied",
               };
             }
 
             // Update only the device status in database (without notification)
             if (deviceStatusService) {
-              await deviceStatusService.updateDeviceStatusOnly(deviceId, status);
+              await deviceStatusService.updateDeviceStatusOnly(
+                deviceId,
+                status
+              );
             } else {
               // Fallback if deviceStatusService is not available
               throw new Error("DeviceStatusService not available");
@@ -680,24 +703,23 @@ export function deviceRoutes(deviceService: DeviceService, deviceStatusService?:
               success: true,
               message: `Device status updated to ${status}`,
               device_id: deviceId,
-              status: status
+              status: status,
             };
-
           } catch (error: any) {
             console.error("Error updating device status:", error);
-            
-            if (error.message && error.message.includes('Unauthorized')) {
+
+            if (error.message && error.message.includes("Unauthorized")) {
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed"
+                message: "Authentication failed",
               };
             }
-            
+
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error"
+              message: "Internal server error",
             };
           }
         },

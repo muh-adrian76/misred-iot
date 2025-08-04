@@ -154,21 +154,21 @@ export function LineChartWidget({
             <ChartTooltip cursor={false} hideLabel content={<ChartTooltipContent />} />
             <Line
               dataKey="datastream_1"
-              type="monotone"
+              type="natural"
               stroke={previewChartConfig.datastream_1.color}
               strokeWidth={2}
               dot={false}
             />
             <Line
               dataKey="datastream_2"
-              type="monotone"
+              type="natural"
               stroke={previewChartConfig.datastream_2.color}
               strokeWidth={2}
               dot={false}
             />
             <Line
               dataKey="datastream_3"
-              type="monotone"
+              type="natural"
               stroke={previewChartConfig.datastream_3.color}
               strokeWidth={2}
               dot={false}
@@ -349,7 +349,7 @@ export function LineChartWidget({
                 <Line
                   key={idx}
                   dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-                  type="monotone"
+                  type="natural"
                   stroke={chartColors[idx % chartColors.length]}
                   strokeWidth={2}
                   dot={false}

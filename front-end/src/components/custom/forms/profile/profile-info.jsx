@@ -8,7 +8,7 @@ import { UserPen, ShieldUser, Undo2, MessageCircle } from "lucide-react";
 import { convertDate, fetchFromBackend } from "@/lib/helper";
 // Import toaster untuk notifications
 import { successToast, errorToast } from "../../other/toaster";
-import DescriptionTooltip from '@/components/custom/other/description-tooltip';
+import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 
 // Komponen ProfileInfoSection untuk mengedit informasi dasar profil user
 export default function ProfileInfoSection({
@@ -40,9 +40,9 @@ export default function ProfileInfoSection({
         method: "PUT", // HTTP method PUT untuk update
         body: JSON.stringify(payload), // Convert payload to JSON string
       });
-
+      const data = await res.json(); // Parse response JSON
       if (!res.ok) {
-        errorToast("Gagal mengubah profil!"); // Error notification
+        throw new Error(data.message || "Gagal mengubah profil!"); // Handle error jika response tidak ok
       } else {
         // Jika berhasil, update user data di state parent
         const updatedUser = await res.json();
@@ -62,7 +62,7 @@ export default function ProfileInfoSection({
       }
     } catch (error) {
       // Handle error jika ada masalah dengan network atau server
-      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
+      errorToast("Gagal mengubah profil!", error.message); // Error notification
     } finally {
       setIsEditing(false); // Exit editing mode setelah selesai
     }
@@ -172,12 +172,12 @@ export default function ProfileInfoSection({
               checked={whatsappNotif && !!phoneNumber} // Hanya aktif jika ada nomor telepon dan setting enabled
               onCheckedChange={(checked) => {
                 if (phoneNumber) {
-                setWhatsappNotif(checked); // Update setting hanya jika ada nomor telepon
-              }
-            }}
-            // disabled={!isEditing || !phoneNumber} // Disable jika tidak editing atau belum ada nomor
-            disabled={true} // Disable jika tidak editing atau belum ada nomor
-          />
+                  setWhatsappNotif(checked); // Update setting hanya jika ada nomor telepon
+                }
+              }}
+              // disabled={!isEditing || !phoneNumber} // Disable jika tidak editing atau belum ada nomor
+              disabled={true} // Disable jika tidak editing atau belum ada nomor
+            />
           </DescriptionTooltip>
         </div>
 
@@ -209,30 +209,26 @@ export default function ProfileInfoSection({
         </Button>
 
         {/* Button sekunder - Batalkan/Hapus Akun */}
-        <DescriptionTooltip className={isEditing ? "hidden" : ""} content="Sementara dinonaktifkan saat kuisioner berlangsung.">
-          <div>
-            <Button
-              size="lg"
-              variant={isEditing ? "outline" : "default"} // Dynamic variant berdasarkan mode
-              className="rounded-lg cursor-pointer transition-all duration-500"
-              onClick={
-                isEditing
-                  ? handleResetProfile // Jika editing, batalkan perubahan
-                  : () => setOpenDeleteAccountDialog(true) // Jika tidak editing, buka modal hapus akun
-              }
-              disabled={!isEditing}
-            >
-              {isEditing ? "Batalkan" : "Hapus Akun"}{" "}
-              {/* Dynamic text berdasarkan mode */}
-              {/* Dynamic icon berdasarkan mode */}
-              {isEditing ? (
-                <Undo2 className="h-5 w-5" /> // Icon undo untuk batalkan
-              ) : (
-                <ShieldUser className="h-5 w-5" /> // Icon shield untuk hapus akun
-              )}
-            </Button>
-          </div>
-        </DescriptionTooltip>
+
+        <Button
+          size="lg"
+          variant={isEditing ? "outline" : "default"} // Dynamic variant berdasarkan mode
+          className="rounded-lg cursor-pointer transition-all duration-500"
+          onClick={
+            isEditing
+              ? handleResetProfile // Jika editing, batalkan perubahan
+              : () => setOpenDeleteAccountDialog(true) // Jika tidak editing, buka modal hapus akun
+          }
+        >
+          {isEditing ? "Batalkan" : "Hapus Akun"}{" "}
+          {/* Dynamic text berdasarkan mode */}
+          {/* Dynamic icon berdasarkan mode */}
+          {isEditing ? (
+            <Undo2 className="h-5 w-5" /> // Icon undo untuk batalkan
+          ) : (
+            <ShieldUser className="h-5 w-5" /> // Icon shield untuk hapus akun
+          )}
+        </Button>
       </div>
     </>
   );

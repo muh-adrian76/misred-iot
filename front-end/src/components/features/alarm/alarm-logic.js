@@ -78,11 +78,12 @@ export function useAlarmLogic() {
     setLoadingDatastreams(true);
     try {
       const res = await fetchFromBackend("/datastream");
-      if (!res.ok) throw new Error("Gagal fetch datastreams");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal fetch datastreams");
       setDatastreams(data.result || []);
     } catch (e) {
       console.error("Error fetching datastreams:", e);
+      errorToast("Gagal mengambil data datastreams", e.message || "Terjadi kesalahan");
       setDatastreams([]);
     } finally {
       setLoadingDatastreams(false);
@@ -104,15 +105,16 @@ export function useAlarmLogic() {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Gagal tambah alarm");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal tambah alarm");
       successToast("Alarm berhasil ditambahkan!");
       fetchAlarms();
       setAddFormOpen(false);
       
       // Trigger onboarding task completion
       markAlarmCreated();
-    } catch {
-      errorToast("Gagal tambah alarm!");
+    } catch(error) {
+      errorToast("Gagal tambah alarm!", error.message || "Terjadi kesalahan saat menambahkan alarm");
     }
   };
 
@@ -122,12 +124,13 @@ export function useAlarmLogic() {
         method: "PUT",
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Gagal update alarm");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal update alarm");
       successToast("Alarm berhasil diupdate!");
       fetchAlarms();
       setEditFormOpen(false);
-    } catch {
-      errorToast("Gagal update alarm!");
+    } catch (error) {
+      errorToast("Gagal update alarm!", error.message || "Terjadi kesalahan saat mengupdate alarm");
     }
   };
 
@@ -136,12 +139,13 @@ export function useAlarmLogic() {
       const res = await fetchFromBackend(`/alarm/${id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Gagal hapus alarm");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal hapus alarm");
       successToast("Alarm berhasil dihapus!");
       fetchAlarms();
       setDeleteFormOpen(false);
-    } catch {
-      errorToast("Gagal hapus alarm!");
+    } catch (error) {
+      errorToast("Gagal hapus alarm!", error.message || "Terjadi kesalahan saat menghapus alarm");
     }
   };
 

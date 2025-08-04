@@ -33,11 +33,11 @@ export function useDatastreamLogic() {
     setLoading(true);
     try {
       const res = await fetchFromBackend(`/datastream`);
-      if (!res.ok) throw new Error("Gagal fetch datastream");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message ||"Gagal fetch datastream");
       setDatastreams(data.result || []);
-    } catch {
-      errorToast("Gagal mengambil data datastream");
+    } catch(error) {
+      errorToast(error.message || "Gagal mengambil data datastream");
     } finally {
       setLoading(false);
     }
@@ -48,11 +48,11 @@ export function useDatastreamLogic() {
     setLoadingDevices(true);
     try {
       const res = await fetchFromBackend(`/device`);
-      if (!res.ok) throw new Error("Gagal fetch device");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal fetch device");
       setDevices(data.result || []);
-    } catch {
-      errorToast("Gagal mengambil data device");
+    } catch (error) {
+      errorToast(error.message || "Gagal mengambil data device");
     } finally {
       setLoadingDevices(false);
     }
@@ -77,15 +77,16 @@ export function useDatastreamLogic() {
           maxValue: String(payload.maxValue),
         }),
       });
-      if (!res.ok) throw new Error("Gagal tambah datastream");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal tambah datastream");
       successToast("Datastream berhasil ditambahkan!");
       await fetchDatastreams();
       setAddFormOpen(false);
       
       // Trigger onboarding task completion
       markDatastreamCreated();
-    } catch {
-      errorToast("Gagal tambah datastream!");
+    } catch(error) {
+      errorToast("Gagal tambah datastream!", error.message || "Terjadi kesalahan saat menambahkan datastream");
     }
   };
 
@@ -100,12 +101,13 @@ export function useDatastreamLogic() {
           maxValue: String(payload.maxValue),
         }),
       });
-      if (!res.ok) throw new Error("Gagal update datastream");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Gagal update datastream");
       successToast("Datastream berhasil diupdate!");
       await fetchDatastreams();
       setEditFormOpen(false);
-    } catch {
-      errorToast("Gagal update datastream!");
+    } catch (error) {
+      errorToast("Gagal update datastream!", error.message || "Terjadi kesalahan saat mengupdate datastream");
     }
   };
 
@@ -117,15 +119,16 @@ export function useDatastreamLogic() {
         const res = await fetchFromBackend(`/datastream/${singleId}`, {
           method: "DELETE",
         });
-        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Gagal menghapus datastream");
         success++;
       }
       if (success > 0) successToast(`Datastream berhasil dihapus!`);
       await fetchDatastreams();
       setDeleteFormOpen(false);
       setDeleteChecked(false);
-    } catch {
-      errorToast("Gagal menghapus datastream!");
+    } catch(error) {
+      errorToast("Gagal menghapus datastream!", error.message || "Terjadi kesalahan saat menghapus datastream");
     }
   };
 

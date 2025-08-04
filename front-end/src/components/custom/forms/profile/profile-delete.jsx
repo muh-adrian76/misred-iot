@@ -18,7 +18,7 @@ export default function ProfileDeleteDialog({
   // Handler untuk delete account dengan double confirmation
   const handleDeleteAccount = async (e) => {
     e.preventDefault(); // Prevent default form submission
-    
+
     // Double check validasi checkbox konfirmasi
     const checkbox = document.getElementById("deleteAccountCheckbox");
     if (!checkbox.checked) {
@@ -27,15 +27,15 @@ export default function ProfileDeleteDialog({
       );
       return null; // Stop execution jika user belum confirm
     }
-    
+
     try {
       // API call untuk delete user account
       const res = await fetchFromBackend("/user/", {
         method: "DELETE", // HTTP method DELETE untuk hapus account
       });
-
+      const data = await res.json(); // Parse response JSON
       if (!res.ok) {
-        errorToast("Gagal menghapus akun!"); // Error notification
+        throw new Error(data.message || "Gagal menghapus akun!"); // Handle error jika response tidak ok
       } else {
         // Jika berhasil dihapus, redirect ke auth page
         successToast("Akun berhasil dihapus!"); // Success notification
@@ -43,7 +43,7 @@ export default function ProfileDeleteDialog({
       }
     } catch (error) {
       // Handle error jika ada masalah dengan network atau server
-      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
+      errorToast("Gagal menghapus akun!", error.message); // Error notification
     }
   };
 

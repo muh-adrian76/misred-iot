@@ -382,7 +382,7 @@ export function AreaChartWidget({
                 <Area
                   key={idx}
                   dataKey={`value_${pair.device_id}_${pair.datastream_id}`}
-                  type="monotone"
+                  type="natural"
                   fill={chartColors[idx % chartColors.length]}
                   fillOpacity={0.3}
                   stroke={chartColors[idx % chartColors.length]}

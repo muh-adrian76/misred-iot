@@ -426,8 +426,9 @@ export function useDashboardLogic() {
       const res = await fetchFromBackend(`/dashboard/${dashboardToDelete.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Gagal menghapus dashboard");
-      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+
       successToast("Dashboard berhasil dihapus");
       setOpenDeleteDialog(false);
       setDashboardToDelete(null);
@@ -445,7 +446,7 @@ export function useDashboardLogic() {
       }, 100);
     } catch (error) {
       console.error('Error deleting dashboard:', error);
-      errorToast("Gagal menghapus dashboard");
+      errorToast("Gagal menghapus dashboard", error.message);
     } finally {
       setIsEditing(false);
       setDeleteChecked(false);

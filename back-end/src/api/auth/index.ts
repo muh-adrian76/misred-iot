@@ -270,9 +270,16 @@ export function authRoutes(authService: AuthService, userService: UserService) {
       .put(
         "/reset-password",
         // @ts-ignore
-        async ({ jwt, cookie, body }: any) => {
+        async ({ jwt, cookie, body, set }: any) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
+            if (
+              decoded.sub === "1"
+            ) {
+              throw new Error(
+                "Password akun ini tidak dapat diubah saat kuisioner berlangsung"
+              );
+            }
             if (!decoded) {
               return new Response(JSON.stringify({ message: "Unauthorized" }), {
                 status: 401,
@@ -282,10 +289,24 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             return new Response(JSON.stringify(result), {
               status: result.status,
             });
-          } catch (error) {
-            return new Response(JSON.stringify({ message: "Unauthorized" }), {
-              status: 401,
-            });
+          } catch (error: any) {
+            if (error.message && error.message.includes("Unauthorized")) {
+              console.error("❌ Authentication error:", error.message);
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed",
+              };
+            }
+
+            // Handle other errors
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: error.message || "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         postResetPasswordSchema
