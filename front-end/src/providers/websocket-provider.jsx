@@ -639,7 +639,7 @@ export function WebSocketProvider({ children }) {
                 <strong>Koneksi internet Anda sedang tidak stabil.</strong>
               </p>
               <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                Tolong muat ulang halaman untuk mencoba koneksi ulang.
+                Tolong muat ulang halaman untuk memuat ulang koneksi.
               </div>
             </div>
 

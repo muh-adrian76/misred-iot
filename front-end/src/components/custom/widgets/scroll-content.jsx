@@ -51,12 +51,12 @@ const widgetList = [
     width: "lg:w-50 w-full", // Responsive width: 50% di layar besar, full di layar kecil
     tooltip: "Gunakan untuk melihat tren data dari waktu ke waktu",
   },
-  {
-    key: "bar",
-    label: "Diagram Batang",
-    component: BarChartWidget,
-    tooltip: "Gunakan untuk membandingkan nilai antar kategori",
-  },
+  // {
+  //   key: "bar",
+  //   label: "Diagram Batang",
+  //   component: BarChartWidget,
+  //   tooltip: "Gunakan untuk membandingkan nilai antar kategori",
+  // },
   {
     key: "area",
     label: "Diagram Area",

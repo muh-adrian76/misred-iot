@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 // Import icons untuk UI elements
-import { ChevronDown, Check, Plus, X } from "lucide-react";
+import { ChevronDown, Check, Plus, X, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils"; // Utility untuk CSS classes
 // Import komponen Select untuk dropdown
 import {
@@ -35,6 +35,7 @@ import {
 import { useState, useEffect } from "react";
 // Import toaster untuk error notifications
 import { errorToast } from "../../other/toaster";
+import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 
 // Komponen EditAlarmForm untuk mengedit alarm monitoring IoT yang sudah ada
 export default function EditAlarmForm({
@@ -55,7 +56,7 @@ export default function EditAlarmForm({
   const [conditions, setConditions] = useState([]); // Array kondisi threshold alarm
   const [cooldownMinutes, setCooldownMinutes] = useState("1"); // Cooldown delay dalam menit
   const [isActive, setIsActive] = useState(true); // Status aktif/nonaktif alarm
-  
+
   // State untuk kontrol popover dropdowns
   const [openDevicePopover, setOpenDevicePopover] = useState(false);
   const [openDatastreamPopover, setOpenDatastreamPopover] = useState(false);
@@ -107,7 +108,11 @@ export default function EditAlarmForm({
 
   // Reset datastream when device changes (selain saat inisialisasi)
   useEffect(() => {
-    if (deviceId && editAlarm && String(deviceId) !== String(editAlarm.device_id)) {
+    if (
+      deviceId &&
+      editAlarm &&
+      String(deviceId) !== String(editAlarm.device_id)
+    ) {
       setDatastreamId(""); // Reset datastream selection when device changes
     }
   }, [deviceId, editAlarm]);
@@ -133,7 +138,15 @@ export default function EditAlarmForm({
       {/* Description */}
       <div className="grid grid-cols-1 gap-4">
         <div className="flex flex-col gap-2">
-          <Label>Deskripsi</Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Nama</Label>
+            <DescriptionTooltip
+              side="right"
+              content="Karakter alfanumerik dibatasi hanya (@ / . - _)"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -146,7 +159,12 @@ export default function EditAlarmForm({
       {/* Device and Datastream */}
       <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
-          <Label>Device</Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
+            <DescriptionTooltip side="top" content="Pilih perangkat IoT">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           {/* {isMobile ? (
             <Select
               value={deviceId}
@@ -169,61 +187,66 @@ export default function EditAlarmForm({
               </SelectContent>
             </Select>
           ) : ( */}
-            <Popover
-              open={openDevicePopover}
-              onOpenChange={setOpenDevicePopover}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openDevicePopover}
-                  className="justify-between w-full"
-                >
-                  <span className="truncate">
-                    {devices.find((d) => String(d.id) === String(deviceId))
-                      ?.description || "Pilih Device"}
-                  </span>
-                  <ChevronDown className="ml-2 h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-full" align="start">
-                <Command>
-                  <CommandInput placeholder="Cari device..." />
-                  <CommandList>
-                    <CommandEmpty>
-                      <span className="opacity-50">Tidak ada device.</span>
-                    </CommandEmpty>
-                    {devices.map((d) => (
-                      <CommandItem
-                        key={d.id}
-                        value={String(d.id)}
-                        onSelect={() => {
-                          setDeviceId(String(d.id));
-                          setDatastreamId(""); // Reset datastream
-                          setOpenDevicePopover(false);
-                        }}
-                      >
-                        <span className="truncate">{d.description}</span>
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            String(deviceId) === String(d.id)
-                              ? "opacity-100"
-                              : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          <Popover open={openDevicePopover} onOpenChange={setOpenDevicePopover}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openDevicePopover}
+                className="justify-between w-full"
+              >
+                <span className="truncate">
+                  {devices.find((d) => String(d.id) === String(deviceId))
+                    ?.description || "Pilih Device"}
+                </span>
+                <ChevronDown className="ml-2 h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full" align="start">
+              <Command>
+                <CommandInput placeholder="Cari device..." />
+                <CommandList>
+                  <CommandEmpty>
+                    <span className="opacity-50">Tidak ada device.</span>
+                  </CommandEmpty>
+                  {devices.map((d) => (
+                    <CommandItem
+                      key={d.id}
+                      value={String(d.id)}
+                      onSelect={() => {
+                        setDeviceId(String(d.id));
+                        setDatastreamId(""); // Reset datastream
+                        setOpenDevicePopover(false);
+                      }}
+                    >
+                      <span className="truncate">{d.description}</span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          String(deviceId) === String(d.id)
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           {/* )} */}
         </div>
 
         <div className="flex flex-col gap-2">
-          <Label>Datastream</Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Datastream</Label>
+            <DescriptionTooltip
+              side="top"
+              content="Pilih sensor yang akan dimonitor"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           {/* {isMobile ? (
             <Select
               value={datastreamId}
@@ -250,68 +273,76 @@ export default function EditAlarmForm({
               </SelectContent>
             </Select>
           ) : ( */}
-            <Popover
-              open={openDatastreamPopover}
-              onOpenChange={setOpenDatastreamPopover}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openDatastreamPopover}
-                  className="justify-between w-full"
-                  disabled={!deviceId}
-                >
-                  <span className="truncate">
-                    {filteredDatastreams.find(
-                      (ds) => String(ds.id) === String(datastreamId)
-                    )?.description ||
-                      (deviceId
-                        ? "Pilih Sensor"
-                        : "Pilih device terlebih dahulu")}
-                  </span>
-                  <ChevronDown className="ml-2 h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-full" align="start">
-                <Command>
-                  <CommandInput placeholder="Cari sensor..." />
-                  <CommandList>
-                    <CommandEmpty>
-                      <span className="opacity-50">Tidak ada sensor.</span>
-                    </CommandEmpty>
-                    {filteredDatastreams.map((ds) => (
-                      <CommandItem
-                        key={ds.id}
-                        value={String(ds.id)}
-                        onSelect={() => {
-                          setDatastreamId(String(ds.id));
-                          setOpenDatastreamPopover(false);
-                        }}
-                      >
-                        <span className="truncate">
-                          {ds.description} (Pin {ds.pin})
-                        </span>
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            String(datastreamId) === String(ds.id)
-                              ? "opacity-100"
-                              : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          <Popover
+            open={openDatastreamPopover}
+            onOpenChange={setOpenDatastreamPopover}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openDatastreamPopover}
+                className="justify-between w-full"
+                disabled={!deviceId}
+              >
+                <span className="truncate">
+                  {filteredDatastreams.find(
+                    (ds) => String(ds.id) === String(datastreamId)
+                  )?.description ||
+                    (deviceId
+                      ? "Pilih Sensor"
+                      : "Pilih device terlebih dahulu")}
+                </span>
+                <ChevronDown className="ml-2 h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full" align="start">
+              <Command>
+                <CommandInput placeholder="Cari sensor..." />
+                <CommandList>
+                  <CommandEmpty>
+                    <span className="opacity-50">Tidak ada sensor.</span>
+                  </CommandEmpty>
+                  {filteredDatastreams.map((ds) => (
+                    <CommandItem
+                      key={ds.id}
+                      value={String(ds.id)}
+                      onSelect={() => {
+                        setDatastreamId(String(ds.id));
+                        setOpenDatastreamPopover(false);
+                      }}
+                    >
+                      <span className="truncate">
+                        {ds.description} (Pin {ds.pin})
+                      </span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          String(datastreamId) === String(ds.id)
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           {/* )} */}
         </div>
 
         {/* Cooldown */}
         <div className="flex flex-col gap-2">
-          <Label>Tunggu (menit)</Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Waktu Tunggu (menit)</Label>
+            <DescriptionTooltip
+              side="left"
+              content="Jeda alarm setelah terpicu"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           <Input
             value={cooldownMinutes}
             onChange={(e) => setCooldownMinutes(e.target.value)}
@@ -326,7 +357,12 @@ export default function EditAlarmForm({
       {/* Input untuk kondisi baru */}
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-4 gap-2 items-center border rounded-md py-2 px-5">
-          <Label>Kondisi:</Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Kondisi: </Label>
+            <DescriptionTooltip side="top" content="Syarat untuk memicu alarm">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           {/* <Label className="text-xs">Operator</Label> */}
           <Select
             value={newConditionOperator}

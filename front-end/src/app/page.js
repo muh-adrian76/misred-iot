@@ -23,8 +23,9 @@ import {
   Globe, // Icon untuk global/scalability
   Users, // Icon untuk multi-user
   Award, // Icon untuk awards/achievement
-  CheckCircle, // Icon untuk checkmarks/success
-  ArrowRight, // Icon untuk navigation arrows
+  ArrowRight, // Icon untuk checkmarks/success
+  MousePointerClick, // Icon untuk navigation
+  Mouse,
   FileStack, // Icon untuk documentation/files
   BellRing, // Icon untuk notifications/alarms
 } from "lucide-react";
@@ -279,7 +280,7 @@ const LandingPage = () => {
 
                 {/* Enhanced Description - Value proposition */}
                 <p className="text-xl md:text-2xl mb-8 text-gray-300 max-w-3xl mx-auto">
-                  Solusi monitoring dan kontrol perangkat IoT terdepan untuk
+                  Solusi pemantauan perangkat IoT terdepan untuk
                   bisnis modern. Pantau, analisis, dan kelola semua perangkat
                   IoT Anda dalam satu platform terintegrasi.
                 </p>
@@ -294,7 +295,7 @@ const LandingPage = () => {
                 >
                   Mulai Sekarang
                   {/* Arrow icon dengan hover animation */}
-                  <ArrowRight
+                  <MousePointerClick
                     size={20}
                     className="group-hover:translate-x-1 transition-transform duration-300"
                   />
@@ -306,6 +307,7 @@ const LandingPage = () => {
                   className="flex w-full sm:w-auto items-center justify-center gap-2 border-2 border-white/30 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm"
                 >
                   Pelajari Lebih Lanjut
+                  <Mouse className="group-hover:translate-x-1 transition-transform duration-300" />
                 </button>
               </div>
             </div>

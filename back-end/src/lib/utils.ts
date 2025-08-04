@@ -369,11 +369,11 @@ async function verifyDeviceJWTAndDecrypt({
       }
       
       if (currentUtcTimestamp > newExp) {
-        console.error(`❌ [JWT VERIFY] JWT sudah kadaluarsa`);
+        console.error(`❌ [JWT VERIFY] JWT dengan expired (+7 jam) sudah kadaluarsa, timestamp: ${currentUtcTimestamp}, exp: ${newExp}`);
         throw new Error("JWT sudah kadaluarsa");
       }
     } else if (decodedPayload.exp && currentUtcTimestamp > decodedPayload.exp) {
-      console.error(`❌ [JWT VERIFY] JWT sudah kadaluarsa`);
+      console.error(`❌ [JWT VERIFY] JWT sudah kadaluarsa, timestamp: ${currentUtcTimestamp}, exp: ${decodedPayload.exp}`);
       throw new Error("JWT sudah kadaluarsa");
     }
     

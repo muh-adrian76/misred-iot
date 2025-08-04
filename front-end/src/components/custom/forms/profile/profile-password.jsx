@@ -54,7 +54,7 @@ export default function ProfilePasswordSection({
 
       if (!res.ok) {
         // Handle error dari backend
-        errorToast("Gagal mengubah password!", data.message || "");
+        throw new Error(data.message || "Gagal mengubah password!"); // Throw error jika response tidak ok
       } else {
         // Jika berhasil, bersihkan form dan tampilkan success message
         successToast("Berhasil mengubah password!");
@@ -63,7 +63,7 @@ export default function ProfilePasswordSection({
       }
     } catch (error) {
       // Handle error jika ada masalah dengan network atau server
-      errorToast("Terjadi kesalahan, coba lagi nanti!", `${error.message}`);
+      errorToast("Gagal mengubah password!", data.message || "");
     }
   };
 
@@ -137,19 +137,15 @@ export default function ProfilePasswordSection({
         </form>
 
         {/* Button untuk save password changes */}
-        <DescriptionTooltip content="Sementara dinonaktifkan saat kuisioner berlangsung.">
-          <div>
-            <Button
-              variant="outline" // Button style variant
-              onClick={handleSavePassword} // Handler untuk save password
-              className="w-full cursor-pointer transition-all duration-500" // Full width dengan transition animation
-              disabled={true}
-            >
-              Simpan Perubahan {/* Button text */}
-              <UserLock className="h-5 w-5" /> {/* Icon lock */}
-            </Button>
-          </div>
-        </DescriptionTooltip>
+
+        <Button
+          variant="outline" // Button style variant
+          onClick={handleSavePassword} // Handler untuk save password
+          className="w-full cursor-pointer transition-all duration-500"
+        >
+          Simpan Perubahan {/* Button text */}
+          <UserLock className="h-5 w-5" /> {/* Icon lock */}
+        </Button>
       </div>
     </>
   );

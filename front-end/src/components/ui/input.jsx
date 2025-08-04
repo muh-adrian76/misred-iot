@@ -9,7 +9,7 @@ function Input({
   className,
   type,
   onChange,
-  noInfo,
+  noInfo = true,
   ...props
 }) {
   // Regex untuk karakter yang dianggap aman (alfanumerik, spasi, dan beberapa simbol)
@@ -80,11 +80,16 @@ function Input({
         onKeyDown={handleKeyDown}
         onFocus={() => setShowInfo(true)}
         onBlur={() => setShowInfo(false)}
+        onAbort={() => setShowInfo(false)}
+        aria-invalid={!isValid}
+        aria-describedby="input-info"
+        aria-label="Input field"
+
         {...props}
       />
       <span
         className={cn(
-          "px-1 text-sm text-balance text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs",
+          "px-1 text-sm relative text-balance text-muted-foreground transition-all duration-100 ease-out max-sm:text-xs",
           !hideInfo && showInfo
             ? "opacity-100 flex pt-2"
             : "absolute opacity-0 pointer-events-none"

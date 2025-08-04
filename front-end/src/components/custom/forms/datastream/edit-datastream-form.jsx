@@ -23,7 +23,7 @@ import {
 
 // Import komponen UI dan utilities
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Import komponen Select untuk dropdown selections
@@ -36,7 +36,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-
+import DescriptionTooltip from "../../other/description-tooltip";
 // Import React hooks untuk state management
 import { useState, useEffect } from "react";
 
@@ -60,7 +60,7 @@ export default function EditDatastreamForm({
   const [minValue, setMinValue] = useState(0); // Nilai minimum yang diharapkan
   const [maxValue, setMaxValue] = useState(1); // Nilai maximum yang diharapkan
   const [deviceId, setDeviceId] = useState(""); // ID device yang akan menampung datastream
-  
+
   // State untuk kontrol popover selections
   const [openDevicePopover, setOpenDevicePopover] = useState(false); // State popover device dropdown
   const [openUnitPopover, setOpenUnitPopover] = useState(false); // State popover unit dropdown
@@ -114,12 +114,15 @@ export default function EditDatastreamForm({
   const formContent = (
     <div className="grid gap-4 py-2">
       <div className="flex flex-col gap-2">
-        <Label
-          htmlFor="descEdit"
-          className="text-left font-medium ml-1 max-sm:text-xs"
-        >
-          Nama
-        </Label>
+        <div className="flex gap-2 items-center">
+          <Label htmlFor="descEdit" className="text-left ml-1 font-medium max-sm:text-xs">Nama</Label>
+          <DescriptionTooltip
+            side="right"
+            content="Karakter alfanumerik dibatasi hanya (@ / . - _)"
+          >
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          </DescriptionTooltip>
+        </div>
         <Input
           id="descEdit"
           className="w-full"
@@ -131,32 +134,34 @@ export default function EditDatastreamForm({
       <div className="grid grid-cols-3 gap-4">
         {/* DEVICE COMMAND */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left font-medium ml-1 max-sm:text-xs">
-            Device
-          </Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
+            <DescriptionTooltip side="top" content="Pilih perangkat IoT">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           {devices.length === 0 ? (
             <span className="text-sm text-muted-foreground px-2 py-2 italic">
               Tidak ada device
             </span>
-          ) 
-          // : isMobile ? (
-          //   <Select
-          //     value={deviceId}
-          //     onValueChange={(value) => setDeviceId(value)}
-          //   >
-          //     <SelectTrigger className="w-full">
-          //       <SelectValue placeholder="Pilih Device" />
-          //     </SelectTrigger>
-          //     <SelectContent>
-          //       {devices.map((dev) => (
-          //         <SelectItem key={dev.id} value={String(dev.id)}>
-          //           {dev.description || dev.name}
-          //         </SelectItem>
-          //       ))}
-          //     </SelectContent>
-          //   </Select>
-          // )
-           : (
+          ) : (
+            // : isMobile ? (
+            //   <Select
+            //     value={deviceId}
+            //     onValueChange={(value) => setDeviceId(value)}
+            //   >
+            //     <SelectTrigger className="w-full">
+            //       <SelectValue placeholder="Pilih Device" />
+            //     </SelectTrigger>
+            //     <SelectContent>
+            //       {devices.map((dev) => (
+            //         <SelectItem key={dev.id} value={String(dev.id)}>
+            //           {dev.description || dev.name}
+            //         </SelectItem>
+            //       ))}
+            //     </SelectContent>
+            //   </Select>
+            // )
             <Popover
               open={openDevicePopover}
               onOpenChange={setOpenDevicePopover}
@@ -214,9 +219,14 @@ export default function EditDatastreamForm({
         </div>
         {/* PIN */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left font-medium ml-1 max-sm:text-xs">
-            Virtual Pin
-          </Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left font-medium max-sm:text-xs ml-1">
+              Virtual Pin
+            </Label>
+            <DescriptionTooltip side="top" content="Pin buatan untuk menyimpan data sensor">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           <Select value={pin} onValueChange={setPin} disabled={!deviceId}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Pilih Pin" />
@@ -241,9 +251,14 @@ export default function EditDatastreamForm({
         </div>
         {/* TIPE DATA */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left font-medium ml-1 max-sm:text-xs">
-            Tipe Data
-          </Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left font-medium max-sm:text-xs ml-1">
+              Tipe Data
+            </Label>
+            <DescriptionTooltip side="top" content="Pilih tipe data untuk nilai sensor">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           <Select
             value={type}
             onValueChange={(val) => {
@@ -274,9 +289,14 @@ export default function EditDatastreamForm({
       >
         {/* SATUAN */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left font-medium max-sm:text-xs ml-1">
-            Satuan
-          </Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left font-medium max-sm:text-xs ml-1">
+              Satuan
+            </Label>
+            <DescriptionTooltip side="top" content="Pilih satuan untuk nilai sensor">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           {/* {isMobile ? (
             <Select value={unit} onValueChange={setUnit} required>
               <SelectTrigger className="w-full">
@@ -302,60 +322,67 @@ export default function EditDatastreamForm({
               </SelectContent>
             </Select>
           ) : ( */}
-            <Popover open={openUnitPopover} onOpenChange={setOpenUnitPopover}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openUnitPopover}
-                  className="justify-between w-full"
-                >
-                  <span className="truncate">
-                    {unitOptions.find((u) => u.value === unit)?.label ||
-                      "Pilih Satuan"}
-                  </span>
-                  <ChevronDown className="ml-2 h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-full" align="start">
-                <Command>
-                  <CommandInput placeholder="Cari satuan..." />
-                  <CommandList>
-                    <CommandEmpty>
-                      <span className="opacity-50">Tidak ada satuan.</span>
-                    </CommandEmpty>
-                    {unitOptions.map((unitOption) => (
-                      <CommandItem
-                        key={unitOption.value}
-                        value={`${unitOption.label} ${unitOption.value}`}
-                        onSelect={() => {
-                          setUnit(unitOption.value);
-                          setOpenUnitPopover(false);
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <span className="truncate">
-                          {unitOption.label}, {unitOption.value}
-                        </span>
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            unit === unitOption.value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          <Popover open={openUnitPopover} onOpenChange={setOpenUnitPopover}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={openUnitPopover}
+                className="justify-between w-full"
+              >
+                <span className="truncate">
+                  {unitOptions.find((u) => u.value === unit)?.label ||
+                    "Pilih Satuan"}
+                </span>
+                <ChevronDown className="ml-2 h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0 w-full" align="start">
+              <Command>
+                <CommandInput placeholder="Cari satuan..." />
+                <CommandList>
+                  <CommandEmpty>
+                    <span className="opacity-50">Tidak ada satuan.</span>
+                  </CommandEmpty>
+                  {unitOptions.map((unitOption) => (
+                    <CommandItem
+                      key={unitOption.value}
+                      value={`${unitOption.label} ${unitOption.value}`}
+                      onSelect={() => {
+                        setUnit(unitOption.value);
+                        setOpenUnitPopover(false);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <span className="truncate">
+                        {unitOption.label}, {unitOption.value}
+                      </span>
+                      <Check
+                        className={cn(
+                          "ml-auto",
+                          unit === unitOption.value
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           {/* )} */}
         </div>
         {type === "boolean" && (
           <div className="flex flex-col gap-2">
-            <Label className="text-left font-medium max-sm:text-xs ml-1">
-              Nilai Default
-            </Label>
+            <div className="flex gap-2 items-center">
+              <Label className="text-left font-medium max-sm:text-xs ml-1">
+                Nilai Default
+              </Label>
+              <DescriptionTooltip side="top" content="Pilih nilai awal">
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </DescriptionTooltip>
+            </div>
             <Select
               value={booleanValue}
               onValueChange={setBooleanValue}
@@ -374,9 +401,14 @@ export default function EditDatastreamForm({
         {/* FORMAT DESIMAL */}
         {type === "double" && (
           <div className="flex flex-col gap-2">
-            <Label className="text-left font-medium max-sm:text-xs ml-1">
-              Format Desimal
-            </Label>
+            <div className="flex gap-2 items-center">
+              <Label className="text-left font-medium max-sm:text-xs ml-1">
+                Format Desimal
+              </Label>
+              <DescriptionTooltip side="top" content="Jumlah angka di belakang koma">
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </DescriptionTooltip>
+            </div>
             <Select value={decimalValue} onValueChange={setdecimalValue}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Format Desimal" />
@@ -396,12 +428,20 @@ export default function EditDatastreamForm({
       {type === "boolean" || type === "string" ? null : (
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="minValue"
-              className="text-left font-medium ml-1 max-sm:text-xs"
-            >
-              Minimal
-            </Label>
+            <div className="flex gap-2 items-center">
+              <Label
+                htmlFor="minValue"
+                className="text-left font-medium ml-1 max-sm:text-xs"
+              >
+                Minimal
+              </Label>
+              <DescriptionTooltip
+                side="right"
+                content="Nilai minimal, nilai yang lebih kecil akan disamakan dengan nilai ini"
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </DescriptionTooltip>
+            </div>
             <Input
               id="minValue"
               type="number"
@@ -413,12 +453,20 @@ export default function EditDatastreamForm({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="maxValue"
-              className="text-left font-medium ml-1 max-sm:text-xs"
-            >
-              Maksimal
-            </Label>
+            <div className="flex gap-2 items-center">
+              <Label
+                htmlFor="maxValue"
+                className="text-left font-medium ml-1 max-sm:text-xs"
+              >
+                Maksimal
+              </Label>
+              <DescriptionTooltip
+                side="top"
+                content="Nilai maksimal, nilai yang lebih besar akan disamakan dengan nilai ini"
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </DescriptionTooltip>
+            </div>
             <Input
               id="maxValue"
               type="number"

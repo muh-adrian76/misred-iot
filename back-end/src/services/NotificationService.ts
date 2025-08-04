@@ -1158,7 +1158,16 @@ export class NotificationService {
     type: string = ""
   ): Promise<{ notifications: any[]; total: number }> {
     try {
-      const offset = (page - 1) * limit;
+      // Validate input parameters first
+      const validUserId = parseInt(String(userId));
+      const validPage = Math.max(1, parseInt(String(page)) || 1);
+      const validLimit = Math.max(1, Math.min(100, parseInt(String(limit)) || 20));
+      
+      if (isNaN(validUserId) || validUserId <= 0) {
+        throw new Error(`Invalid userId: ${userId}`);
+      }
+      
+      const offset = (validPage - 1) * validLimit;
 
       // Build time range condition
       let timeCondition = "";
@@ -1235,14 +1244,14 @@ export class NotificationService {
       //   timeCondition: timeCondition,
       //   countQuery: countQuery,
       //   dataQuery: dataQuery,
-      //   userId: userId,
-      //   limit: limit,
-      //   offset: offset,
+      //   validUserId: validUserId,
+      //   validLimit: validLimit,
+      //   validOffset: validOffset,
       // });
 
       // Build parameter arrays
-      const countParams: any[] = [userId];
-      const dataParams: any[] = [userId];
+      const countParams: any[] = [validUserId];
+      const dataParams: any[] = [validUserId];
 
       // Add type parameter if type filter is applied
       if (typeCondition) {
@@ -1250,8 +1259,11 @@ export class NotificationService {
         dataParams.push(type);
       }
 
+      // Ensure limit and offset are valid integers
+      const validOffset = Math.max(0, parseInt(String(offset)) || 0);
+      
       // Add pagination parameters to data query
-      dataParams.push(parseInt(String(limit)), parseInt(String(offset)));
+      dataParams.push(validLimit, validOffset);
 
       // Execute count query first
       console.log("🔍 Service executing count query with params:", countParams);
@@ -1261,10 +1273,10 @@ export class NotificationService {
 
       // Execute data query with pagination - ensure all parameters are integers
       console.log("🔍 Service executing data query with params:", dataParams);
-      // console.log(
-      //   "🔍 Parameter types:",
-      //   dataParams.map((p) => ({ value: p, type: typeof p }))
-      // );
+      console.log(
+        "🔍 Parameter types:",
+        dataParams.map((p) => ({ value: p, type: typeof p }))
+      );
 
       // Additional validation to ensure parameters are valid integers for pagination
       if (isNaN(dataParams[dataParams.length - 2]) || isNaN(dataParams[dataParams.length - 1])) {

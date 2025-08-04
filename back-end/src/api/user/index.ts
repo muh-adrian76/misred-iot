@@ -218,7 +218,7 @@ export function userRoutes(userService: UserService) {
             const decoded = await authorizeRequest(jwt, cookie);
             if (decoded.sub === "1") {
               throw new Error(
-                "Akun ini tidak dapat dihapus saat kuisioner berlangsung"
+                "Akun ini tidak dapat diubah saat kuisioner berlangsung"
               );
             }
             const { name, phone, whatsapp_notif } = body;
@@ -293,11 +293,13 @@ export function userRoutes(userService: UserService) {
             }
 
             // Handle other errors
-            set.status = 500;
-            return {
-              success: false,
-              message: "Internal server error",
-            };
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message: error.message || "Internal server error",
+              }),
+              { status: 500 }
+            );
           }
         },
         deleteUserSchema

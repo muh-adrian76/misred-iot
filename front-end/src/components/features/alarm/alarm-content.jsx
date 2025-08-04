@@ -30,7 +30,7 @@ export default function AlarmContent({
   // Definisi kolom-kolom untuk tabel alarm
   const columns = [
     // Kolom deskripsi alarm
-    { key: "description", label: "Deskripsi", sortable: true },
+    { key: "description", label: "Nama", sortable: true },
     {
       // Kolom device yang terkait dengan alarm
       key: "device",
@@ -93,8 +93,8 @@ export default function AlarmContent({
           className={`px-2 py-1 rounded text-xs ${
             // Styling kondisional berdasarkan status aktif
             row.is_active
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
+              ? "bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200"
+              : "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200"
           }`}
         >
           {/* Tampilkan teks status */}

@@ -1,7 +1,7 @@
 // Import React hooks untuk state management
 import { useState } from "react";
 // Import icons untuk UI elements
-import { Check, ChevronDown, SquarePen } from "lucide-react";
+import { Check, ChevronDown, SquarePen, Star } from "lucide-react";
 // Import utility untuk CSS classes
 import { cn } from "@/lib/utils";
 // Import UI components
@@ -39,6 +39,9 @@ export default function DashboardSelect({
   editValue, // Nilai input saat editing
   onEditValueChange, // Handler untuk perubahan nilai edit
   noDataText, // Text yang ditampilkan saat tidak ada data
+  isMobile, // Status mobile view
+  isMedium, // Status medium screen
+  isTablet, // Status tablet view
 }) {
   // State untuk kontrol open/close popover
   const [open, setOpen] = useState(false);
@@ -72,65 +75,89 @@ export default function DashboardSelect({
           </div>
         </div>
       ) : (
-        // Select mode: Popover dengan searchable options
-        <Popover open={open} onOpenChange={setOpen}>
-          {/* Tooltip wrapper untuk additional context */}
-          <DescriptionTooltip content="Pilih dashboard lainnya">
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline" // Button style variant
-                role="combobox" // Accessibility role
-                aria-expanded={open} // Accessibility state
-                className="justify-between w-[300px] max-sm:w-[260px] font-semibold" // Responsive styling
-                disabled={editState} // Disable saat dalam edit state
-              >
-                <span className="truncate">{selectedLabel}</span> {/* Display selected option atau placeholder */}
-                <ChevronDown className="ml-2 h-5 w-5" /> {/* Dropdown icon */}
-              </Button>
-            </PopoverTrigger>
-          </DescriptionTooltip>
-          {/* Popover content dengan Command component untuk search functionality */}
-          <PopoverContent className={cn("p-0", className)} align={align}>
-            <Command> {/* Command component untuk search dan selection */}
-              <CommandInput placeholder={searchPlaceholder} className="h-9" /> {/* Search input */}
-              <CommandList className="truncate">
-                <CommandEmpty>{noDataText}</CommandEmpty> {/* Empty state message */}
-                <CommandGroup>
-                  {/* Render semua options sebagai selectable items */}
-                  {options.map((option) => (
-                    <CommandItem
-                      key={option.value} // Unique key untuk list rendering
-                      value={option.value} // Value untuk selection
-                      className="hover:font-semibold w-[200p]" // Hover styling
-                      onSelect={(currentValue) => {
-                        // Debug logging (commented out)
-                        // console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
-                        
-                        // Only call onChange jika value berbeda untuk prevent unnecessary re-renders
-                        if (currentValue !== value) {
-                          // console.log('DashboardSelect: Calling onChange with:', option.value);
-                          onChange(option.value); // Use option.value instead of currentValue untuk consistency
-                        }
-                        setOpen(false); // Close popover setelah selection
-                      }}
-                    >
-                      <span className="truncate">
-                        {option.label} {/* Display option label */}
-                      </span>
-                      {/* Check icon untuk menunjukkan selected option */}
-                      <Check
-                        className={cn(
-                          "ml-auto", // Position di kanan
-                          value === option.value ? "opacity-100" : "opacity-0" // Show/hide berdasarkan selection
-                        )}
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <>
+          <Popover open={open} onOpenChange={setOpen}>
+            {/* Tooltip wrapper untuk additional context */}
+            <DescriptionTooltip content="Pilih dashboard lainnya">
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline" // Button style variant
+                  role="combobox" // Accessibility role
+                  aria-expanded={open} // Accessibility state
+                  className="justify-between w-[300px] max-sm:w-[calc(60vw-16px)] font-semibold" // Responsive styling
+                  disabled={editState} // Disable saat dalam edit state
+                >
+                  <span className="truncate">{selectedLabel}</span>{" "}
+                  {/* Display selected option atau placeholder */}
+                  <ChevronDown className="ml-2 h-5 w-5" /> {/* Dropdown icon */}
+                </Button>
+              </PopoverTrigger>
+            </DescriptionTooltip>
+            {/* Popover content dengan Command component untuk search functionality */}
+            <PopoverContent className={cn("p-0", className)} align={align}>
+              <Command>
+                {" "}
+                {/* Command component untuk search dan selection */}
+                <CommandInput
+                  placeholder={searchPlaceholder}
+                  className="h-9"
+                />{" "}
+                {/* Search input */}
+                <CommandList className="truncate">
+                  <CommandEmpty>{noDataText}</CommandEmpty>{" "}
+                  {/* Empty state message */}
+                  <CommandGroup>
+                    {/* Render semua options sebagai selectable items */}
+                    {options.map((option) => (
+                      <CommandItem
+                        key={option.value} // Unique key untuk list rendering
+                        value={option.value} // Value untuk selection
+                        className="hover:font-semibold w-[200p]" // Hover styling
+                        onSelect={(currentValue) => {
+                          // Debug logging (commented out)
+                          // console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
+
+                          // Only call onChange jika value berbeda untuk prevent unnecessary re-renders
+                          if (currentValue !== value) {
+                            // console.log('DashboardSelect: Calling onChange with:', option.value);
+                            onChange(option.value); // Use option.value instead of currentValue untuk consistency
+                          }
+                          setOpen(false); // Close popover setelah selection
+                        }}
+                      >
+                        <span className="truncate">
+                          {option.label} {/* Display option label */}
+                        </span>
+                        {/* Check icon untuk menunjukkan selected option */}
+                        <Check
+                          className={cn(
+                            "ml-auto", // Position di kanan
+                            value === option.value ? "opacity-100" : "opacity-0" // Show/hide berdasarkan selection
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {/* <Button
+            size={isMobile || isMedium || isTablet ? "icon" : "sm"}
+            className="flex items-center p-3"
+            variant={"outline"}
+            onClick={() => {
+              const current = dashboards.find((d) => d.id === activeTab);
+              setDashboardToDelete(current);
+              setOpenDeleteDialog(true);
+            }}
+          >
+            <Star className="h-5 w-5" />
+            {isMobile || isMedium || isTablet ? null : (
+              <span className="ml-1">Default</span>
+            )}
+          </Button> */}
+        </>
       )}
     </>
   );

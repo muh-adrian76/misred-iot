@@ -198,7 +198,7 @@ function createJWTToken(
   };
 
   // ✅ SAMA SEPERTI ESP32: timeClient.getEpochTime() + (7*3600) untuk timezone +7
-  const currentTime = Math.floor(Date.now() / 1000) + (7 * 3600);
+  const currentTime = Math.floor(Date.now() / 1000);
   const expiryTime = currentTime + 3600; // 1 hour
 
   const payload = {

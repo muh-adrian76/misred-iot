@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/select";
 
 // Import icons dan komponen untuk interactive elements
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, HelpCircle } from "lucide-react";
+import DescriptionTooltip from "../../other/description-tooltip";
 import {
   Command,
   CommandEmpty,
@@ -55,9 +56,17 @@ export default function AddDeviceForm({
     <div className="flex flex-col gap-4 py-2">
       {/* Input Field: Nama Device */}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="name" className="text-left ml-1 font-medium max-sm:text-xs">
-          Nama
-        </Label>
+        <div className="flex gap-2 items-center">
+          <Label className="text-left ml-1 font-medium max-sm:text-xs">
+            Nama
+          </Label>
+          <DescriptionTooltip
+            side="right"
+            content="Karakter alfanumerik dibatasi hanya (@ / . - _)"
+          >
+            <HelpCircle className="h-4 w-4 text-muted-foreground" />
+          </DescriptionTooltip>
+        </div>
         {/* Input text untuk nama device dengan placeholder dan validasi */}
         <Input
           id="name"
@@ -73,77 +82,42 @@ export default function AddDeviceForm({
       <div className="grid grid-cols-2 gap-4">
         {/* Board Type Selection: Conditional rendering berdasarkan device */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1 font-medium max-sm:text-xs">Tipe Board</Label>
-          {isMobile ? (
-            // Mobile: Gunakan Select dropdown sederhana
-            <Select value={boardType} onValueChange={setBoardType}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Pilih tipe board" />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Render semua opsi board dari props */}
-                {boardOptions.map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            // Desktop: Gunakan Popover dengan search functionality
-            <Popover open={openBoardPopover} onOpenChange={setOpenBoardPopover}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openBoardPopover}
-                  className="justify-between w-full"
-                >
-                  {/* Display selected board atau placeholder dengan truncate */}
-                  <span className="truncate">
-                    {boardType || "Pilih tipe board"}
-                  </span>
-                  <ChevronDown className="ml-2 h-5 w-5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-full">
-                {/* Command component untuk searchable dropdown */}
-                <Command>
-                  <CommandInput placeholder="Cari tipe board..." />
-                  <CommandList>
-                    <CommandEmpty>Tidak ada opsi.</CommandEmpty>
-                    {/* Render semua opsi board dengan search capability */}
-                    {boardOptions.map((option) => (
-                      <CommandItem
-                        key={option}
-                        value={option}
-                        onSelect={() => {
-                          setBoardType(option); // Set board yang dipilih
-                          setOpenBoardPopover(false); // Tutup popover
-                        }}
-                      >
-                        <span className="truncate">{option}</span>
-                        {/* Check icon untuk item yang selected */}
-                        <Check
-                          className={cn(
-                            "ml-auto",
-                            boardType === option ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          )}
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">
+              Tipe Board
+            </Label>
+            <DescriptionTooltip side="top" content="Pilih tipe perangkat IoT">
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
+          <Select value={boardType} onValueChange={setBoardType}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Pilih tipe board" />
+            </SelectTrigger>
+            <SelectContent>
+              {/* Render semua opsi board dari props */}
+              {boardOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        
+
         {/* Protocol Selection: Dropdown untuk protokol komunikasi IoT */}
         <div className="flex flex-col gap-2">
-          <Label className="text-left ml-1 font-medium max-sm:text-xs">
-            Protokol Komunikasi
-          </Label>
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">
+              Protokol Komunikasi
+            </Label>
+            <DescriptionTooltip
+              side="left"
+              content="Protokol pengiriman data yang akan digunakan"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
           <Select value={protocol} onValueChange={setProtocol}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Pilih protokol" />
@@ -164,9 +138,20 @@ export default function AddDeviceForm({
         <div className="grid grid-cols-2 gap-4">
           {/* MQTT Topic Input */}
           <div className="flex flex-col gap-2">
-            <Label htmlFor="mqttTopic" className="text-left ml-1 font-medium max-sm:text-xs">
-              Topik MQTT
-            </Label>
+            <div className="flex gap-2 items-center">
+              <Label
+                htmlFor="mqttTopic"
+                className="text-left ml-1 font-medium max-sm:text-xs"
+              >
+                Topik MQTT
+              </Label>
+              <DescriptionTooltip
+                side="top"
+                content="Topik untuk komunikasi MQTT"
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </DescriptionTooltip>
+            </div>
             <Input
               id="mqttTopic"
               value={mqttTopic}
@@ -215,7 +200,7 @@ export default function AddDeviceForm({
   // Handler untuk form submission dengan validasi dan data preparation
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevent default form submission
-    
+
     // Prepare data object sesuai dengan struktur yang diharapkan backend
     handleAddDevice({
       name, // Nama device
@@ -223,9 +208,9 @@ export default function AddDeviceForm({
       protocol: protocol, // Protokol komunikasi
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined, // MQTT topic jika protokol MQTT
       // mqtt_qos: protocol === "MQTT" ? mqttQos : undefined, // QoS (commented out)
-      lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined, // LoRa profile jika LoRaWAN
+      // lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined, // LoRa profile jika LoRaWAN
     });
-    
+
     // Reset semua form fields setelah submit berhasil
     setName("");
     setBoardType("");

@@ -37,7 +37,7 @@ export default function DashboardHeader(props) {
     onTimeRangeChange, // Handler perubahan time range
     onDataCountChange, // Handler perubahan data count
     onFilterTypeChange, // Handler perubahan filter type
-    
+
     // Fungsi staging untuk mode editing
     startEditMode, // Mulai mode editing
     cancelEditMode, // Batalkan mode editing
@@ -72,12 +72,15 @@ export default function DashboardHeader(props) {
           className={isMobile || isMedium ? "w-[308px]" : "w-[430px]"}
           editState={isEditing}
           editValue={editDashboardValue}
+          isMobile={isMobile}
+          isMedium={isMedium}
+          isTablet={isTablet}
           onEditValueChange={setEditDashboardValue}
           noDataText={
-          !dashboards || dashboards.length === 0
-            ? "Anda belum menambahkan dashboard."
-            : "Tidak ada dashboard yang cocok."
-        }
+            !dashboards || dashboards.length === 0
+              ? "Anda belum menambahkan dashboard."
+              : "Tidak ada dashboard yang cocok."
+          }
         />
         <Button
           size={isMobile || isMedium ? "icon" : "sm"}
@@ -85,9 +88,7 @@ export default function DashboardHeader(props) {
           onClick={
             isEditing
               ? () => {
-                  const current = dashboards.find(
-                    (d) => d.id === activeTab
-                  );
+                  const current = dashboards.find((d) => d.id === activeTab);
                   setDashboardToDelete(current);
                   setOpenDeleteDialog(true);
                 }
@@ -99,7 +100,9 @@ export default function DashboardHeader(props) {
           ) : (
             <Plus className="h-5 w-5" />
           )}
-          {isMobile || isMedium ? null : <span className="ml-1">Dashboard</span>}
+          {isMobile || isMedium ? null : (
+            <span className="ml-1">Dashboard</span>
+          )}
         </Button>
       </div>
       {!isDesktop ? (

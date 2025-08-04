@@ -33,7 +33,7 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
   const deviceCommandService = new DeviceCommandService(db);
   
   // Mulai heartbeat checker untuk deteksi device offline otomatis
-  startHeartbeatChecker(deviceService, deviceStatusService, db);
+  startHeartbeatChecker(deviceStatusService, db);
   
   return new Elysia({ prefix: "/ws" }).ws("/connect", {
     body: t.Object({
@@ -230,7 +230,7 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
 
 // ===== HEARTBEAT CHECKER - AUTO OFFLINE DETECTION =====
 // Fungsi untuk mengecek device yang tidak mengirim heartbeat
-export function startHeartbeatChecker(deviceService: DeviceService, deviceStatusService: DeviceStatusService, db: Pool) {
+export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, db: Pool) {
   return setInterval(async () => {
     const now = Date.now();
     for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {

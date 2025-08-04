@@ -26,7 +26,7 @@ export function payloadRoutes(payloadService: PayloadService) {
         //@ts-ignore
         async ({ headers, body, set }) => {
           try {
-            const timestamp = Math.floor(Date.now() / 1000);
+            const timestamp = Math.floor(Date.now());
             console.log(`Timestamp saat payload diterima di server: ${timestamp}`);
             console.log("Header Payload diterima:", headers);
             console.log("Body Payload diterima:", body);

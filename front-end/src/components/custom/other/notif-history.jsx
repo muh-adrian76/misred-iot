@@ -122,7 +122,7 @@ const NotificationHistoryItem = ({ notification }) => {
         icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
         title: notification.title || notification.alarm_description || 'Alarm Triggered',
         borderColor: 'border-orange-200',
-        bgColor: 'hover:bg-orange-50/30',
+        bgColor: 'hover:bg-orange-50/30 dark:hover:bg-orange-50/10',
         badgeColor: 'bg-orange-100 text-orange-800',
         badgeText: 'ALARM'
       };
@@ -131,7 +131,7 @@ const NotificationHistoryItem = ({ notification }) => {
         icon: <WifiOff className="h-4 w-4 text-red-500" />,
         title: notification.title || 'Device Status Change',
         borderColor: 'border-red-200',
-        bgColor: 'hover:bg-red-50/30',
+        bgColor: 'hover:bg-red-50/30 dark:hover:bg-red-50/10',
         badgeColor: 'bg-red-100 text-red-800',
         badgeText: 'STATUS'
       };
@@ -140,7 +140,7 @@ const NotificationHistoryItem = ({ notification }) => {
         icon: <BellRing className="h-4 w-4 text-blue-500" />,
         title: notification.title || 'Notification',
         borderColor: 'border-blue-200',
-        bgColor: 'hover:bg-blue-50/30',
+        bgColor: 'hover:bg-blue-50/30 dark:hover:bg-blue-50/10',
         badgeColor: 'bg-blue-100 text-blue-800',
         badgeText: 'INFO'
       };
@@ -278,6 +278,7 @@ export default function NotifHistory({ open, setOpen }) {
   const [isLoading, setIsLoading] = useState(false); // Loading saat fetch data
   const [error, setError] = useState(null); // Error state
   const [isDeleting, setIsDeleting] = useState(false); // Loading saat delete
+  const [isExporting, setIsExporting] = useState(false); // Loading khusus untuk ekspor
 
   // Hook untuk user authentication
   const { user } = useUser();
@@ -290,7 +291,42 @@ export default function NotifHistory({ open, setOpen }) {
     return user && user.id && user.email && user.id !== "" && user.email !== "";
   };
 
-  // Fetch notification history using simple fetch
+  /**
+   * Fetch semua data notifikasi untuk ekspor (tanpa filter)
+   * Mengambil semua notifikasi milik user dari database
+   */
+  const fetchAllNotificationsForExport = async () => {
+    if (!isUserLoggedIn(user)) {
+      throw new Error("User tidak terautentikasi");
+    }
+
+    try {
+      // Fetch semua data tanpa filter dengan limit besar
+      const params = new URLSearchParams({
+        page: "1",
+        limit: "10000", // Ambil semua data dengan limit besar
+        timeRange: "all", // Semua waktu
+        type: "", // Semua tipe
+      });
+
+      const response = await fetchFromBackend(
+        `/notifications/history?${params}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal mengambil data untuk ekspor");
+      }
+
+      return data.notifications || [];
+    } catch (error) {
+      console.error("❌ Error fetching all notifications for export:", error);
+      throw error;
+    }
+  };
+
+  // Fetch notification history using simple fetch (untuk UI display)
   const fetchHistoryData = async () => {
     if (!isUserLoggedIn(user)) {
       setHistoryData(null);
@@ -393,128 +429,104 @@ export default function NotifHistory({ open, setOpen }) {
     deleteAllNotifications();
   };
 
-  // Export functions
-  const exportToCSV = () => {
-    if (!historyData?.notifications?.length) {
-      errorToast("Tidak ada data riwayat notifikasi untuk diekspor");
-      return;
-    }
-
-    const headers = [
-      "Tanggal/Waktu",
-      "Tipe",
-      "Judul",
-      "Pesan",
-      "Device",
-      "Sensor",
-      "Nilai",
-      "Kondisi",
-      "Status"
-    ];
-
-    // Sort notifications from oldest to newest for export
-    const sortedNotifications = [...historyData.notifications].sort((a, b) => {
-      const dateA = new Date(a.triggered_at);
-      const dateB = new Date(b.triggered_at);
+  // Export functions - mengekspor SEMUA data notifikasi user
+  const exportToCSV = async () => {
+    setIsExporting(true);
+    
+    try {
+      // Fetch semua data notifikasi untuk ekspor
+      const allNotifications = await fetchAllNotificationsForExport();
       
-      // Handle invalid dates
-      if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
-      if (isNaN(dateA.getTime())) return 1; // Put invalid dates last
-      if (isNaN(dateB.getTime())) return -1;
+      if (!allNotifications?.length) {
+        errorToast("Tidak ada data notifikasi untuk diekspor");
+        return;
+      }
+
+      const headers = [
+        "Tanggal/Waktu",
+        "Tipe",
+        "Judul",
+        "Pesan",
+        "Device",
+        "Sensor",
+        "Nilai",
+        "Kondisi",
+        "Status"
+      ];
+
+      // Sort notifications from oldest to newest for export
+      const sortedNotifications = [...allNotifications].sort((a, b) => {
+        const dateA = new Date(a.triggered_at);
+        const dateB = new Date(b.triggered_at);
+        
+        // Handle invalid dates
+        if (isNaN(dateA.getTime()) && isNaN(dateB.getTime())) return 0;
+        if (isNaN(dateA.getTime())) return 1; // Put invalid dates last
+        if (isNaN(dateB.getTime())) return -1;
+        
+        return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
+      });
+
+      const rows = sortedNotifications.map((notif) => [
+        formatDateTime(notif.triggered_at),
+        notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status Device' : 'Notifikasi',
+        notif.title || notif.alarm_description || 'N/A',
+        notif.message || 'N/A',
+        notif.device_description || 'N/A',
+        notif.datastream_description || 'N/A',
+        notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : 'N/A',
+        notif.conditions_text || 'N/A',
+        notif.is_read ? 'Dibaca' : 'Belum dibaca'
+      ]);
+
+      // Generate filename dengan timestamp saja
+      const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+      const filename = `riwayat-notifikasi-semua-${timestamp}`;
       
-      return dateA.getTime() - dateB.getTime(); // Ascending order (oldest first)
-    });
-
-    const rows = sortedNotifications.map((notif) => [
-      formatDateTime(notif.triggered_at), // formatDateTime now handles invalid dates
-      notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status Device' : 'Notifikasi',
-      notif.title || notif.alarm_description || 'N/A',
-      notif.message || 'N/A',
-      notif.device_description || 'N/A',
-      notif.datastream_description || 'N/A',
-      notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : 'N/A',
-      notif.conditions_text || 'N/A',
-      notif.is_read ? 'Dibaca' : 'Belum dibaca'
-    ]);
-
-    // Generate filename based on applied filters
-    const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
-    let filename = "riwayat-notifikasi";
-    
-    // Add time range to filename
-    if (timeRange !== 'all') {
-      const timeRangeLabels = {
-        'today': 'hari-ini',
-        'week': 'minggu-ini', 
-        'month': 'bulan-ini'
-      };
-      filename += `-${timeRangeLabels[timeRange] || timeRange}`;
+      exportCSVUtil(headers, rows, filename);
+      successToast(
+        "CSV berhasil diekspor",
+        `${sortedNotifications.length} notifikasi berhasil diekspor ke CSV`
+      );
+    } catch (error) {
+      console.error("Error exporting to CSV:", error);
+      errorToast("Gagal mengekspor CSV: " + error.message);
+    } finally {
+      setIsExporting(false);
     }
-    
-    // Add type filter to filename
-    if (typeFilter !== 'all') {
-      const typeLabels = {
-        'alarm': 'alarm',
-        'device_status': 'status-device'
-      };
-      filename += `-${typeLabels[typeFilter] || typeFilter}`;
-    }
-    
-    filename += `-${timestamp}`;
-    
-    exportCSVUtil(headers, rows, filename);
-    successToast(
-      "CSV berhasil diekspor",
-      `${sortedNotifications.length} notifikasi berhasil diekspor ke CSV`
-    );
   };
 
   const exportToPDF = async () => {
-    // PDF export using React PDF
-    if (!historyData?.notifications?.length) {
-      errorToast("Tidak ada data riwayat notifikasi untuk diekspor");
-      return;
-    }
-
+    setIsExporting(true);
+    
     try {
-      // Generate filename with timestamp and filters
+      // Fetch semua data notifikasi untuk ekspor
+      const allNotifications = await fetchAllNotificationsForExport();
+      
+      if (!allNotifications?.length) {
+        errorToast("Tidak ada data notifikasi untuk diekspor");
+        return;
+      }
+
+      // Generate filename dengan timestamp saja
       const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
-      let filename = "riwayat-notifikasi";
-      
-      // Add time range to filename
-      if (timeRange !== 'all') {
-        const timeRangeLabels = {
-          'today': 'hari-ini',
-          'week': 'minggu-ini', 
-          'month': 'bulan-ini'
-        };
-        filename += `-${timeRangeLabels[timeRange] || timeRange}`;
-      }
-      
-      // Add type filter to filename
-      if (typeFilter !== 'all') {
-        const typeLabels = {
-          'alarm': 'alarm',
-          'device_status': 'status-device'
-        };
-        filename += `-${typeLabels[typeFilter] || typeFilter}`;
-      }
-      
-      filename += `-${timestamp}`;
+      const filename = `riwayat-notifikasi-semua-${timestamp}`;
 
       // Create React PDF Document component and generate PDF
       const DocumentComponent = NotificationHistoryPDFDocument({
-        notifications: historyData.notifications,
-        timeRange,
+        notifications: allNotifications,
+        timeRange: "all", // Semua data
       });
       await generateReactPDF(DocumentComponent, filename);
       successToast(
         "PDF berhasil diekspor",
-        `${historyData.notifications.length} notifikasi berhasil diekspor ke PDF`
+        `${allNotifications.length} notifikasi berhasil diekspor ke PDF`
       );
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      errorToast("Gagal mengekspor PDF", error.message);
+      errorToast("Gagal mengekspor PDF: " + error.message);
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -589,12 +601,19 @@ export default function NotifHistory({ open, setOpen }) {
                   <Button
                     variant="outline"
                     className="w-full"
-                    disabled={
-                      !historyData?.notifications?.length || error || isLoading
-                    }
+                    disabled={isLoading || isExporting}
                   >
-                    <Download className="w-4 h-4 mr-2.5" />
-                    Ekspor
+                    {isExporting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                        Mengekspor...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Ekspor Riwayat
+                      </>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-min p-1" align="center">
@@ -603,7 +622,7 @@ export default function NotifHistory({ open, setOpen }) {
                     size="sm"
                     className="justify-start hover:bg-green-50 hover:text-green-600"
                     onClick={exportToCSV}
-                    disabled={!historyData?.notifications?.length || error}
+                    disabled={isLoading || isExporting}
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     <span className="text-inherit">CSV</span>
@@ -613,7 +632,7 @@ export default function NotifHistory({ open, setOpen }) {
                     size="sm"
                     className="w-full justify-start hover:bg-orange-50 hover:text-orange-600"
                     onClick={exportToPDF}
-                    disabled={!historyData?.notifications?.length || error}
+                    disabled={isLoading || isExporting}
                   >
                     <FileType className="w-4 h-4 mr-2" />
                     <span className="text-inherit">PDF</span>

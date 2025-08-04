@@ -47,6 +47,7 @@ export default function DataTable({
   searchPlaceholder = "Cari...", // Placeholder untuk search input
   showUploadFirmware = false, // Flag untuk menampilkan tombol upload firmware
   showNotificationInfo = false, // Flag untuk menampilkan info notifikasi
+  showConnectionInfo = false, // Flag untuk menampilkan info koneksi device
   glowingTable = false, // Prop untuk mengaktifkan efek glowing pada table
   glowingConfig = {     // Konfigurasi detail efek glowing
     spread: 35, // Penyebaran efek glow
@@ -272,6 +273,7 @@ export default function DataTable({
           content={content}
           showUploadFirmware={showUploadFirmware}
           showNotificationInfo={showNotificationInfo}
+          showConnectionInfo={showConnectionInfo}
           limit={limit}
           setLimit={setLimit}
         />

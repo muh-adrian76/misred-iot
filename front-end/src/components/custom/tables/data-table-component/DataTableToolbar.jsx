@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-
+import { cn } from "@/lib/utils";
 // Import icons untuk berbagai fungsi toolbar
 import {
   Plus, // Icon untuk tambah data
@@ -44,11 +44,14 @@ export default function DataTableToolbar({
   content, // Context/label untuk content yang sedang ditampilkan
   showUploadFirmware = false, // Flag untuk menampilkan tombol upload firmware
   showNotificationInfo = false, // Flag untuk menampilkan info notifikasi WhatsApp
+  showConnectionInfo = false, // Flag untuk menampilkan info koneksi device
   limit = 10, // Jumlah item per halaman
   setLimit, // Setter untuk mengubah limit pagination
 }) {
   // State untuk kontrol popover dan UI interactions
   const [openPopoverProfile, setOpenPopoverProfile] = useState(false);
+  const [openMobilePopoverProfile, setOpenMobilePopoverProfile] =
+    useState(false);
   const { isAuthenticated } = useAuth(); // Hook untuk status authentication
 
   // Hook custom untuk status WhatsApp service (untuk notifikasi IoT)
@@ -90,9 +93,9 @@ export default function DataTableToolbar({
         {/* Baris tombol aksi untuk tampilan mobile */}
         <div className="flex gap-2 w-full">
           {/* Tombol upload firmware dan panduan untuk mobile */}
-          {showUploadFirmware && onUploadFirmware && (
-            <>
-              {/* Link ke dokumentasi GitHub untuk konfigurasi hardware */}
+          <>
+            {/* Link ke dokumentasi GitHub untuk konfigurasi hardware */}
+            {showConnectionInfo && (
               <Link
                 target="_blank"
                 href="https://github.com/ArthZ01/misred-iot-arduino-examples"
@@ -112,6 +115,8 @@ export default function DataTableToolbar({
                   </Button>
                 </DescriptionTooltip>
               </Link>
+            )}
+            {showUploadFirmware && onUploadFirmware && (
               <Button
                 onClick={onUploadFirmware}
                 variant="outline"
@@ -121,13 +126,13 @@ export default function DataTableToolbar({
                 <CloudCog className="w-4 h-4" />
                 <span className="text-xs">OTA</span>
               </Button>
-            </>
-          )}
+            )}
+          </>
 
           {showNotificationInfo && (
             <Popover
-              open={openPopoverProfile}
-              onOpenChange={setOpenPopoverProfile}
+              open={openMobilePopoverProfile}
+              onOpenChange={setOpenMobilePopoverProfile}
             >
               <DescriptionTooltip
                 side="top"
@@ -144,36 +149,33 @@ export default function DataTableToolbar({
                   </Button>
                 </PopoverTrigger>
               </DescriptionTooltip>
-              <PopoverContent
-                align="center"
-                className="p-3 w-[333px] mr-5"
-              >
+              <PopoverContent align="center" className="p-3 w-[333px] ml-5">
                 <div className="flex flex-col gap-3">
                   <h4 className="font-medium text-sm text-center">
                     Status Notifikasi Alarm
                   </h4>
                   <div className="flex flex-col gap-2">
-                    <div className="flex flex-col gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700">
+                    <div className="flex flex-col gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200">
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4" />
                           <span className="text-sm font-medium">Browser</span>
                         </div>
-                        <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded-full">
                           Aktif
                         </span>
                       </div>
-                      <p className="text-xs text-balance text-emerald-600">
-                        Tekan tombol Lonceng diatas untuk melihat notifikasi yang
-                        masuk.
+                      <p className="text-xs text-balance  text-emerald-700 dark:text-emerald-200">
+                        Tekan tombol Lonceng diatas untuk melihat notifikasi
+                        yang masuk.
                       </p>
                     </div>
 
                     <div
                       className={`flex flex-col gap-2 px-3 py-2 rounded-lg border ${
                         whatsappEnabled
-                          ? "bg-green-50 border-green-200 text-green-700"
-                          : "bg-gray-50 border-gray-200 text-gray-700"
+                          ? "bg-green-50 dark:bg-green-800 border-green-200 text-green-700 dark:text-green-200"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-700 dark:text-gray-200"
                       }`}
                     >
                       <div className="flex justify-between items-center gap-2">
@@ -184,8 +186,8 @@ export default function DataTableToolbar({
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             whatsappEnabled
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-600"
+                              ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200"
+                              : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-200"
                           }`}
                         >
                           {loading
@@ -197,7 +199,9 @@ export default function DataTableToolbar({
                       </div>
                       <p
                         className={`text-xs text-balance ${
-                          whatsappEnabled ? "text-green-600" : "text-gray-600"
+                          whatsappEnabled
+                            ? "text-green-600 dark:text-green-200"
+                            : "text-gray-600 dark:text-gray-200"
                         }`}
                       >
                         {whatsappEnabled
@@ -253,13 +257,22 @@ export default function DataTableToolbar({
                   className="bg-popover border-border shadow-lg rounded-md min-w-[100px]"
                   align="center"
                 >
-                  <SelectItem value="10" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="10"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     10
                   </SelectItem>
-                  <SelectItem value="20" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="20"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     20
                   </SelectItem>
-                  <SelectItem value="50" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="50"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     50
                   </SelectItem>
                 </SelectContent>
@@ -300,7 +313,10 @@ export default function DataTableToolbar({
                   className="bg-popover border-border shadow-lg rounded-md min-w-[100px]"
                   align="center"
                 >
-                  <SelectItem value="10" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="10"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <span>10</span>
                       <span className="text-xs text-muted-foreground">
@@ -308,7 +324,10 @@ export default function DataTableToolbar({
                       </span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="20" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="20"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <span>20</span>
                       <span className="text-xs text-muted-foreground">
@@ -316,7 +335,10 @@ export default function DataTableToolbar({
                       </span>
                     </div>
                   </SelectItem>
-                  <SelectItem value="50" className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm">
+                  <SelectItem
+                    value="50"
+                    className="hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer transition-colors text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <span>50</span>
                       <span className="text-xs text-muted-foreground">
@@ -329,10 +351,15 @@ export default function DataTableToolbar({
             </DescriptionTooltip>
           </div>
         </div>
-        
+
         <div className="flex gap-2">
-          {showUploadFirmware && onUploadFirmware && (
-            <div className="flex items-center gap-2 sm:px-4 sm:mx-2 sm:border-r dark:sm:border-r-gray-700">
+          <div
+            className={cn(
+              "flex items-center gap-2 dark:sm:border-r-gray-700",
+              showUploadFirmware ? "sm:mx-2 sm:border-r sm:px-4" : "sm:px-2"
+            )}
+          >
+            {showConnectionInfo && (
               <Link
                 target="_blank"
                 href="https://github.com/ArthZ01/misred-iot-arduino-examples"
@@ -352,6 +379,8 @@ export default function DataTableToolbar({
                   </Button>
                 </DescriptionTooltip>
               </Link>
+            )}
+            {showUploadFirmware && onUploadFirmware && (
               <Button
                 onClick={onUploadFirmware}
                 variant="outline"
@@ -361,8 +390,8 @@ export default function DataTableToolbar({
                 <CloudCog className="w-4 h-4" />
                 Over-The-Air
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           {showNotificationInfo && (
             <Popover
@@ -386,36 +415,33 @@ export default function DataTableToolbar({
                   </PopoverTrigger>
                 </DescriptionTooltip>
               </div>
-              <PopoverContent
-                align="end"
-                className="p-3 w-auto"
-              >
+              <PopoverContent align="end" className="p-3 w-auto">
                 <div className="flex flex-col gap-3">
                   <h4 className="font-medium text-sm text-center">
                     Status Notifikasi Alarm
                   </h4>
                   <div className="flex flex-col gap-2">
-                    <div className="flex flex-col gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700">
+                    <div className="flex flex-col gap-2 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200">
                       <div className="flex justify-between items-center gap-2">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4" />
                           <span className="text-sm font-medium">Browser</span>
                         </div>
-                        <span className="text-xs bg-emerald-100 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-emerald-100 dark:bg-emerald-900 px-2 py-0.5 rounded-full">
                           Aktif
                         </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-balance text-emerald-600">
-                        Tekan tombol Lonceng diatas untuk melihat notifikasi yang
-                        masuk.
+                      <p className="text-xs text-balance  text-emerald-700 dark:text-emerald-200">
+                        Tekan tombol Lonceng diatas untuk melihat notifikasi
+                        yang masuk.
                       </p>
                     </div>
 
                     <div
                       className={`flex flex-col gap-2 px-3 py-2 rounded-lg border ${
                         whatsappEnabled
-                          ? "bg-green-50 border-green-200 text-green-700"
-                          : "bg-gray-50 border-gray-200 text-gray-700"
+                          ? "bg-green-50 dark:bg-green-800 border-green-200 text-green-700 dark:text-green-200"
+                          : "bg-gray-50 dark:bg-gray-800 border-gray-200 text-gray-700 dark:text-gray-200"
                       }`}
                     >
                       <div className="flex justify-between items-center gap-2">
@@ -426,8 +452,8 @@ export default function DataTableToolbar({
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
                             whatsappEnabled
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-600"
+                              ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200"
+                              : "bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-200"
                           }`}
                         >
                           {loading
@@ -438,8 +464,10 @@ export default function DataTableToolbar({
                         </span>
                       </div>
                       <p
-                        className={`text-xs sm:text-sm text-balance ${
-                          whatsappEnabled ? "text-green-600" : "text-gray-600"
+                        className={`text-xs text-balance ${
+                          whatsappEnabled
+                            ? "text-green-600 dark:text-green-200"
+                            : "text-gray-600 dark:text-gray-200"
                         }`}
                       >
                         {whatsappEnabled
@@ -454,11 +482,7 @@ export default function DataTableToolbar({
           )}
 
           {onAdd && (
-            <Button
-              onClick={onAdd}
-              className="gap-2 transition-all"
-              size="sm"
-            >
+            <Button onClick={onAdd} className="gap-2 transition-all" size="sm">
               <Plus className="w-4 h-4" />
               {content}
             </Button>

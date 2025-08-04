@@ -174,7 +174,7 @@ export default function DeviceContent({
         return <span className="text-xs">{convertDate(row.updated_at)}</span>;
       },
     },
-    { key: "firmware_version", label: "Versi Firmware", sortable: false },
+    // { key: "firmware_version", label: "Versi Firmware", sortable: false },
     // {
     //   key: "board_type",
     //   label: "File Firmware (Board)",
@@ -279,7 +279,8 @@ export default function DeviceContent({
               setSelectedRows={setSelectedRows}
               onAdd={() => setAddFormOpen(true)}
               onUploadFirmware={() => setUploadFirmwareSheetOpen(true)}
-              showUploadFirmware={true}
+              showUploadFirmware={false}
+              showConnectionInfo={true}
               rowActions={rowActions}
               onDelete={(selected) => {
                 if (Array.isArray(selected)) {

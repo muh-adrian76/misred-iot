@@ -260,8 +260,8 @@ export class MQTTService {
     this.mqttClient.on("message", async (topic, message) => {
       const timestamp = Math.floor(Date.now());
       try {
-        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic}`);
-        
+        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic} - Timestamp server: ${timestamp}`);
+
         const messageStr = message.toString().trim();
         let data: any;
 
