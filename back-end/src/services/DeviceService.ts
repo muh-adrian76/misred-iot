@@ -324,7 +324,9 @@ export class DeviceService {
       firmware_version,
     }: any
   ) {
-    
+    if (id === "1" || id === "2") {
+      throw new Error("Device ini tidak dapat diubah saat kuisioner berlangsung");
+    }
     try {
       // Topik MQTT
       const [rows]: any = await this.db.query(
