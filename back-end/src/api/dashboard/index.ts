@@ -50,7 +50,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Internal server error",
+                message: error.message || "Internal server error",
               }),
               { status: 500 }
             );
@@ -116,7 +116,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Internal server error",
+                message: error.message || "Internal server error",
               }),
               { status: 500 }
             );
@@ -181,7 +181,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Internal server error",
+                message: error.message || "Internal server error",
               }),
               { status: 500 }
             );

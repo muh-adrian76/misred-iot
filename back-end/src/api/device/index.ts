@@ -579,7 +579,6 @@ export function deviceRoutes(
             }
 
             // Handle other errors
-            set.status = 500;
             return new Response(
               JSON.stringify({
                 success: false,
@@ -600,7 +599,7 @@ export function deviceRoutes(
           try {
             if (params.id === "1" || params.id === "2") {
               throw new Error(
-                "Dashboard ini tidak dapat dihapus saat kuisioner berlangsung"
+                "Device ini tidak dapat dihapus saat kuisioner berlangsung"
               );
             }
             const decoded = await authorizeRequest(jwt, cookie);
@@ -635,7 +634,6 @@ export function deviceRoutes(
             }
 
             // Handle other errors
-            set.status = 500;
             return new Response(
               JSON.stringify({
                 success: false,
