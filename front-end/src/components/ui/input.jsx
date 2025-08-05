@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const textInput = "Karakter alfanumerik dibatasi hanya (@ / . - _)";
+const textInput = "Karakter alfanumerik dibatasi hanya (@ / . , - _)";
 const numberInput = "Hanya berisi angka";
 
 function Input({
@@ -13,7 +13,7 @@ function Input({
   ...props
 }) {
   // Regex untuk karakter yang dianggap aman (alfanumerik, spasi, dan beberapa simbol)
-  const safePattern = /^[a-zA-Z0-9 @/._-]*$/;
+  const safePattern = /^[a-zA-Z0-9 @/,._-]*$/;
   const [isValid, setIsValid] = React.useState(true);
   const [showInfo, setShowInfo] = React.useState(false);
   const [hideInfo, setHideInfo] = React.useState(false);
