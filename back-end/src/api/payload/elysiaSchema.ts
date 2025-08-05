@@ -5,7 +5,8 @@ const postPayloadHttpSchema = {
   // Tidak ada body validation karena data ada di JWT token
   headers: t.Object({
     "x-device-id": t.Optional(t.String({ description: "Device ID in header" })),
-    "authorization": t.String({ description: "Bearer JWT token with sensor data" })
+    "authorization": t.String({ description: "Bearer JWT token with sensor data" }),
+    "x-data-type": t.Optional(t.String({ description: "Optional data type header" })),
   }),
   response: {
     201: t.Object({

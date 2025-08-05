@@ -615,7 +615,8 @@ async function broadcastSensorUpdates(
   broadcastFunction: any,
   deviceId: number, 
   rawData: any,
-  protocol?: string
+  protocol?: string,
+  dataType?: string // tipe data untuk header x-data-type
 ) {
   try {
     // Extract device timestamp
@@ -664,7 +665,8 @@ async function broadcastSensorUpdates(
             unit: datastream.unit,
             user_id: device.user_id,
             pin: pin,
-            protocol: protocol || "unknown"
+            protocol: protocol || "none",
+            data_type: dataType || "none",
           };
 
           // Gunakan broadcastToDeviceOwner yang sudah dioptimasi

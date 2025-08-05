@@ -251,6 +251,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             device_name: data.device_name,
             device_id: data.device_id,
             datastream_id: data.datastream_id,
+            data_type: data.data_type,
           });
 
           // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
@@ -667,11 +668,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         value: parseFloat(latestValue.value),
         timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
         timeAgo: latestValue.timestamp || latestValue.device_time
-          ? getTimeAgo(latestValue.timestamp || latestValue.device_time)
-          : "Unknown",
+          ? getTimeAgo(latestValue.timestamp || latestValue.device_time, latestValue.data_type)
+          : "none",
         unit: latestValue.unit || "",
-        sensor_name: latestValue.sensor_name || "Unknown Sensor",
-        device_name: latestValue.device_name || "Unknown Device",
+        sensor_name: latestValue.sensor_name || "none",
+        device_name: latestValue.device_name || "none",
         device_id: latestValue.device_id,
         datastream_id: latestValue.datastream_id,
       }
@@ -716,9 +717,9 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 }
 
 // Helper function untuk menghitung waktu relatif dengan konversi UTC ke local
-function getTimeAgo(timestamp) {
+function getTimeAgo(timestamp, dataType) {
   if (!timestamp) return "Unknown";
-
+  if(dataType === "offline") return "Baru saja";
   try {
     // Gunakan utility function dari helper.js
     const localTime = convertUTCToLocalTime(timestamp);

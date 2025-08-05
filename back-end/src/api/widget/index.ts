@@ -76,7 +76,7 @@ export function widgetRoutes(widgetService: WidgetService) {
             // Handle other errors
             return new Response(JSON.stringify({
               success: false,
-              message: "Internal server error"
+              message: error.message || "Internal server error"
             }), { status: 500 });
           }
         },

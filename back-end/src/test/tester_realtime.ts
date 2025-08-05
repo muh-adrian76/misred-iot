@@ -407,7 +407,7 @@ async function runRealtimeTest(): Promise<void> {
       console.log(""); // New line
       printStats();
     }
-  }, 5000); // Every 5 seconds
+  }, 30000); // Every 5 seconds
 
   // Setup graceful shutdown
   process.on("SIGINT", () => {

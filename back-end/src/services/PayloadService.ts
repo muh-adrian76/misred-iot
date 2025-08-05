@@ -66,9 +66,11 @@ export class PayloadService {
   async saveHttpPayload({
     deviceId,
     decrypted,
+    dataType,
   }: {
     deviceId: string | number;
     decrypted: any;
+    dataType: string | undefined;
   }): Promise<number> {
     try {
       console.log(`[HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
@@ -97,7 +99,7 @@ export class PayloadService {
 
       // STEP 3: Broadcast real-time data ke user pemilik device
       console.log(`[BROADCAST] Mengirim data real-time ke user via WebSocket...`);
-      await broadcastSensorUpdates(this.db, broadcastToDeviceOwner, Number(deviceId), decrypted, "http");
+      await broadcastSensorUpdates(this.db, broadcastToDeviceOwner, Number(deviceId), decrypted, "http", dataType);
       console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
       // STEP 4: Update device status to online (real-time)

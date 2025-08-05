@@ -31,6 +31,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             console.log("Header Payload diterima:", headers);
             console.log("Body Payload diterima:", body);
             let deviceId = headers["x-device-id"];
+            let dataType = headers["x-data-type"];
             const authHeader = headers["authorization"];
 
             if (!authHeader) {
@@ -73,6 +74,7 @@ export function payloadRoutes(payloadService: PayloadService) {
             const insertId = await payloadService.saveHttpPayload({
               deviceId,
               decrypted,
+              dataType,
             });
 
             return {
