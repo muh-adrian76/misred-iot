@@ -37,7 +37,7 @@ function Input({
     
     // Cek apakah karakter yang akan diketik valid
     const char = e.key;
-    const charPattern = /^[a-zA-Z0-9 @/._-]$/;
+    const charPattern = /^[a-zA-Z0-9 @/.,_-]$/;
     
     if (!charPattern.test(char)) {
       e.preventDefault(); // BLOKIR karakter sebelum masuk ke input

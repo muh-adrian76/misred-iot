@@ -45,10 +45,9 @@ export default function ProfileInfoSection({
         throw new Error(data.message || "Gagal mengubah profil!"); // Handle error jika response tidak ok
       } else {
         // Jika berhasil, update user data di state parent
-        const updatedUser = await res.json();
         setUser((prevUser) => ({
           ...prevUser, // Spread existing user data
-          ...updatedUser, // Override dengan data yang baru
+          ...data, // Override dengan data yang baru
         }));
 
         // Dispatch custom event untuk notify komponen lain tentang perubahan WhatsApp status
@@ -60,7 +59,7 @@ export default function ProfileInfoSection({
 
         successToast("Berhasil mengubah profil!"); // Success notification
       }
-    } catch (error) {
+    } catch(error) {
       // Handle error jika ada masalah dengan network atau server
       errorToast("Gagal mengubah profil!", error.message); // Error notification
     } finally {
