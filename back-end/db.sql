@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS `devices` (
   `firmware_version` varchar(50) DEFAULT NULL,
   `status` enum('offline','online') DEFAULT 'offline',
   `last_seen_at` TIMESTAMP NULL DEFAULT NULL,
+  `offline_timeout_minutes` INT DEFAULT 1,
   `user_id` INT NOT NULL,
   `latitude` DECIMAL(10, 8) DEFAULT NULL,
   `longitude` DECIMAL(11, 8) DEFAULT NULL,
@@ -213,9 +214,9 @@ CREATE TABLE IF NOT EXISTS `raw_payloads` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- TESTING
-INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, new_secret, user_id, status, latitude, longitude, address) VALUES
-(1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', NULL, '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online', -6.2146, 106.8451, 'Jakarta Pusat, DKI Jakarta'),
-(2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', 'device/data', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online', -7.2575, 112.7521, 'Surabaya, Jawa Timur');
+INSERT IGNORE INTO devices (id, description, board_type, protocol, mqtt_topic, new_secret, user_id, status, offline_timeout_minutes, latitude, longitude, address) VALUES
+(1, 'Test ESP32 Device 1', 'ESP32', 'HTTP', NULL, '0df2b4a05b798a451dd2c0a9ee791c3ed6add2bd2e8f42f5a798ed518a870605', 1, 'online', 1, -6.2146, 106.8451, 'Jakarta Pusat, DKI Jakarta'),
+(2, 'Test ESP32 Device 2', 'ESP32', 'MQTT', 'device/data', '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef', 1, 'online', 2, -7.2575, 112.7521, 'Surabaya, Jawa Timur');
 
 INSERT IGNORE INTO datastreams (id, description, pin, type, unit, min_value, max_value, decimal_value, device_id, user_id) VALUES
 -- Device 1 (HTTP) - Sensors

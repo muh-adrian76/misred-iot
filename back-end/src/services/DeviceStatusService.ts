@@ -99,23 +99,26 @@ export class DeviceStatusService {
         return { updated: 0, offline: 0, online: 0 };
       }
 
-      // Set offline devices yang tidak mengirim data > 1 menit
+      // Set offline devices yang tidak mengirim data berdasarkan timeout masing-masing device
       const offlineQuery = `
         UPDATE devices 
         SET status = 'offline' 
         WHERE status = 'online' 
-        AND (last_seen_at IS NULL OR last_seen_at < DATE_SUB(NOW(), INTERVAL 1 MINUTE))
+        AND (
+          last_seen_at IS NULL 
+          OR last_seen_at < DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE)
+        )
       `;
       
       const [offlineResult] = await this.db.query(offlineQuery);
       
-      // Set online devices yang baru mengirim data
+      // Set online devices yang baru mengirim data berdasarkan timeout masing-masing device
       const onlineQuery = `
         UPDATE devices 
         SET status = 'online' 
         WHERE status = 'offline' 
         AND last_seen_at IS NOT NULL 
-        AND last_seen_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE)
+        AND last_seen_at >= DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE)
       `;
       
       const [onlineResult] = await this.db.query(onlineQuery);
@@ -134,27 +137,35 @@ export class DeviceStatusService {
         if (result.offline > 0 || result.online > 0) {
           // Get affected devices to broadcast specific changes
           const getAffectedDevicesQuery = `
-            SELECT id, status FROM devices 
-            WHERE (status = 'offline' AND last_seen_at < DATE_SUB(NOW(), INTERVAL 1 MINUTE))
-            OR (status = 'online' AND last_seen_at >= DATE_SUB(NOW(), INTERVAL 1 MINUTE))
+            SELECT id, status, offline_timeout_minutes FROM devices 
+            WHERE (status = 'offline' AND last_seen_at < DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE))
+            OR (status = 'online' AND last_seen_at >= DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE))
           `;
           
           const [affectedDevices] = await this.db.query(getAffectedDevicesQuery);
           
-          // Process affected devices - broadcast untuk yang online saja
+          // Process affected devices - broadcast untuk semua perubahan status
           for (const device of (affectedDevices as any[])) {
-            // Only broadcast status_update for online devices
-            // Frontend handles offline detection automatically
-            if (device.status === 'online') {
-              await broadcastToDeviceOwner(this.db, device.id, {
-                type: "status_update",
-                device_id: device.id,
-                status: device.status,
-                timestamp: new Date().toISOString()
-              });
+            console.log(`🔄 Broadcasting status update for device ${device.id}: ${device.status}`);
+            
+            // Broadcast status_update untuk semua device yang berubah status
+            const broadcastSuccess = await broadcastToDeviceOwner(this.db, device.id, {
+              type: "status_update",
+              device_id: device.id,
+              status: device.status,
+              timestamp: new Date().toISOString()
+            });
+            
+            if (broadcastSuccess) {
+              console.log(`✅ Status broadcast sent for device ${device.id}: ${device.status}`);
+            } else {
+              console.log(`⚠️ Status broadcast failed for device ${device.id}: ${device.status} (user not connected)`);
             }
 
-            // Note: Frontend akan menangani notifikasi offline melalui API calls
+            // Send notification untuk device yang offline saja
+            if (device.status === 'offline') {
+              await this.sendDeviceOfflineNotification(device.id);
+            }
           }
         }
       }

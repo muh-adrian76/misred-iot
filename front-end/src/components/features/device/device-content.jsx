@@ -14,6 +14,7 @@ import {
   Clock,
   Wifi,
   WifiOff,
+  DatabaseBackup,
 } from "lucide-react";
 // Import komponen toast untuk notifikasi
 import { successToast } from "@/components/custom/other/toaster";
@@ -42,6 +43,8 @@ export default function DeviceContent({
   setEditFormOpen, // Setter untuk dialog edit device
   setDeviceToDelete, // Setter untuk device yang akan dihapus
   setDeleteFormOpen, // Setter untuk dialog hapus device
+  setDeviceToReset, // Setter untuk device yang akan direset
+  setResetFormOpen, // Setter untuk dialog reset device
   isMobile, // Status apakah dalam mode mobile
   selectedRows, // Baris yang dipilih
   setSelectedRows, // Setter untuk baris yang dipilih
@@ -69,20 +72,24 @@ export default function DeviceContent({
   // Simple status badge component
   const StatusBadge = ({ device }) => {
     const deviceStatus = getDeviceStatus(device.id);
-    const isOnline = deviceStatus.status === 'online';
-    
+    const isOnline = deviceStatus.status === "online";
+    const offlineTimeout = device.offline_timeout_minutes;
+
     return (
-      <Badge 
-        variant={isOnline ? "online" : "offline"}
+      <DescriptionTooltip
+        content={`Timeout offline: ${offlineTimeout} menit`}
+        side="right"
       >
-        {isOnline ? (
-          <Power className="w-4 h-4 mr-1" />
-        ) : (
-          <PowerOff className="w-4 h-4 mr-1" />
-        )}
-        <span className="capitalize">{deviceStatus.status}</span>
-        {!isConnected && <span className="ml-1 text-xs opacity-75">●</span>}
-      </Badge>
+        <Badge variant={isOnline ? "online" : "offline"}>
+          {isOnline ? (
+            <Power className="w-4 h-4 mr-1" />
+          ) : (
+            <PowerOff className="w-4 h-4 mr-1" />
+          )}
+          <span className="capitalize">{deviceStatus.status}</span>
+          {!isConnected && <span className="ml-1 text-xs opacity-75">●</span>}
+        </Badge>
+      </DescriptionTooltip>
     );
   };
 
@@ -209,6 +216,17 @@ export default function DeviceContent({
     //   disabled: true,
     //   // onClick: (row) => { ... },
     // },
+    {
+      key: "reset",
+      label: "Reset Data",
+      icon: DatabaseBackup,
+      className: "hover:text-orange-500",
+      disabled: false,
+      onClick: (row) => {
+        setDeviceToReset(row);
+        setResetFormOpen(true);
+      },
+    },
     {
       key: "delete",
       label: "Hapus",

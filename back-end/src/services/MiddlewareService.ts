@@ -228,11 +228,21 @@ export class MQTTService {
       );
       console.log(`✅ [MQTT PAYLOAD] Data real-time berhasil dikirim`);
 
-      // STEP 4: Update device status to online
+      // STEP 4: Update device status to online dan last_seen_at (real-time)
       if (this.deviceStatusService) {
-        console.log(`⏰ [MQTT PAYLOAD] Memperbarui status device terakhir dilihat...`);
+        console.log(`⏰ [MQTT PAYLOAD] Memperbarui status device ke online dan timestamp...`);
+        // Update status ke online DAN last_seen_at sekaligus
+        await this.deviceStatusService.updateDeviceStatusOnly(device_id, "online");
         await this.deviceStatusService.updateDeviceLastSeen(Number(device_id));
-        console.log(`✅ [MQTT PAYLOAD] Status device berhasil diperbarui`);
+        console.log(`✅ [MQTT PAYLOAD] Device ${device_id} status updated to online`);
+        
+        // Broadcast status online ke user pemilik device untuk real-time update
+        await broadcastToDeviceOwner(this.db, Number(device_id), {
+          type: "status_update",
+          device_id: Number(device_id),
+          status: "online",
+          last_seen: new Date().toISOString(),
+        });
       }
 
       // STEP 5: Check alarms setelah payload disimpan

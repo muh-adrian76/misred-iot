@@ -4,6 +4,8 @@ import AddDeviceForm from "@/components/custom/forms/device/add-device-form";
 import EditDeviceForm from "@/components/custom/forms/device/edit-device-form";
 // Import form untuk menghapus device
 import DeleteDeviceForm from "@/components/custom/forms/device/delete-device-form";
+// Import form untuk reset data device
+import ResetDeviceForm from "@/components/custom/forms/device/reset-device-form";
 
 // Komponen yang mengelola semua dialog/modal untuk device management
 export default function DeviceDialogs({
@@ -18,12 +20,18 @@ export default function DeviceDialogs({
   handleEditDevice, // Handler untuk mengedit device
   deleteFormOpen, // State apakah dialog hapus device terbuka
   setDeleteFormOpen, // Setter untuk dialog hapus device
+  resetFormOpen, // State apakah dialog reset device terbuka
+  setResetFormOpen, // Setter untuk dialog reset device
   openBoardPopover, // State popover untuk pilihan board
   setOpenBoardPopover, // Setter untuk popover board
   deviceToDelete, // Device yang akan dihapus
+  deviceToReset, // Device yang akan direset datanya
   handleDeleteDevice, // Handler untuk menghapus device
+  handleResetDeviceData, // Handler untuk reset data device
   deleteChecked, // State konfirmasi hapus
   setDeleteChecked, // Setter untuk konfirmasi hapus
+  resetChecked, // State konfirmasi reset
+  setResetChecked, // Setter untuk konfirmasi reset
   setSelectedRows, // Setter untuk reset selected rows setelah operasi
   boardOptions, // Opsi board yang tersedia
   isMobile, // Status apakah dalam mode mobile
@@ -60,6 +68,15 @@ export default function DeviceDialogs({
         deleteChecked={deleteChecked}
         setDeleteChecked={setDeleteChecked}
         setSelectedRows={setSelectedRows}
+      />
+      {/* Dialog untuk reset data device */}
+      <ResetDeviceForm
+        open={resetFormOpen}
+        setOpen={setResetFormOpen}
+        deviceToReset={deviceToReset}
+        handleResetDeviceData={handleResetDeviceData}
+        resetChecked={resetChecked}
+        setResetChecked={setResetChecked}
       />
     </>
   );

@@ -248,6 +248,11 @@ export class DeviceCommandService {
     limit: number = 50,
     offset: number = 0
   ): Promise<DeviceCommand[]> {
+    // Ensure parameters are valid integers
+    const validDeviceId = parseInt(String(deviceId));
+    const validLimit = Math.max(1, Math.min(100, parseInt(String(limit)) || 50));
+    const validOffset = Math.max(0, parseInt(String(offset)) || 0);
+    
     const [rows] = await this.db.execute(
       `SELECT dc.*, ds.pin, ds.type as datastream_type, ds.description as datastream_name,
               u.name as user_name
@@ -256,8 +261,8 @@ export class DeviceCommandService {
        JOIN users u ON dc.user_id = u.id
        WHERE dc.device_id = ?
        ORDER BY dc.sent_at DESC
-       LIMIT ? OFFSET ?`,
-      [deviceId, limit, offset]
+       LIMIT ${validLimit} OFFSET ${validOffset}`,
+      [validDeviceId]
     );
     
     return rows as DeviceCommand[];

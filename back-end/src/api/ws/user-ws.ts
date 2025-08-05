@@ -161,6 +161,8 @@ export function userWsRoutes(db: any) {
 // Broadcast data sensor ke pemilik device yang online (menggunakan refresh_token)
 export async function broadcastToDeviceOwner(db: any, deviceId: number, data: any) {
   try {
+    console.log(`📡 broadcastToDeviceOwner called for device ${deviceId}, data:`, data);
+    
     // Single query untuk mendapatkan user_id dan cek online status sekaligus
     const [rows]: any = await db.query(
       `SELECT u.id as user_id 
@@ -171,11 +173,15 @@ export async function broadcastToDeviceOwner(db: any, deviceId: number, data: an
     );
     
     if (!rows.length) {
+      console.log(`⚠️ Device ${deviceId} not found or user not online`);
       return false; // Device tidak ditemukan atau user tidak online
     }
     
     const userId = rows[0].user_id.toString();
-    return broadcastToSpecificUser(userId, data);
+    console.log(`📡 Broadcasting to user ${userId} for device ${deviceId}`);
+    const result = broadcastToSpecificUser(userId, data);
+    console.log(`${result ? '✅' : '❌'} Broadcast result for device ${deviceId}: ${result}`);
+    return result;
     
   } catch (error) {
     console.error("❌ Error in broadcastToDeviceOwner:", error);

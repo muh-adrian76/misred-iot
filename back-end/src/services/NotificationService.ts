@@ -810,21 +810,6 @@ export class NotificationService {
               console.log(`📲 [ALARM TRIGGERED] Mengirim notifikasi WhatsApp ke ${alarm.whatsapp_number}`);
               const whatsappMessage = this.formatAlarmMessage(alarm, numericValue);
               const whatsappResult = await this.sendWhatsAppNotification(alarm.whatsapp_number, whatsappMessage);
-              
-              // Update log dengan hasil WhatsApp
-              if (whatsappResult.success) {
-                await this.db.execute(
-                  'UPDATE alarm_notifications SET whatsapp_message_id = ? WHERE id = ?',
-                  [whatsappResult.whatsapp_message_id, logId]
-                );
-                console.log(`✅ [ALARM TRIGGERED] WhatsApp berhasil dikirim`);
-              } else {
-                await this.db.execute(
-                  'UPDATE alarm_notifications SET error_message = ? WHERE id = ?',
-                  [whatsappResult.error_message, logId]
-                );
-                console.log(`❌ [ALARM TRIGGERED] WhatsApp gagal dikirim: ${whatsappResult.error_message}`);
-              }
             } else {
               console.log(`ℹ️ [ALARM TRIGGERED] Nomor WhatsApp tidak tersedia untuk alarm ${alarm.id}`);
             }
@@ -909,7 +894,7 @@ export class NotificationService {
 
       const [todayTriggers] = await this.db.execute(`
         SELECT COUNT(*) as today_triggers 
-        FROM alarm_notifications 
+        FROM notifications 
         WHERE DATE(triggered_at) = CURDATE()
       `);
 
@@ -918,7 +903,7 @@ export class NotificationService {
           an.id, an.alarm_id, an.triggered_at, an.notification_type as notification_status,
           an.sensor_value, an.conditions_text,
           a.description, a.field_name as condition_field, a.condition_operator, a.condition_value
-        FROM alarm_notifications an
+        FROM notifications an
         JOIN alarms a ON an.alarm_id = a.id
         ORDER BY an.triggered_at DESC
         LIMIT 10
@@ -1158,7 +1143,7 @@ export class NotificationService {
     type: string = ""
   ): Promise<{ notifications: any[]; total: number }> {
     try {
-      // Validate input parameters first
+      // Validate input parameters first - STRICT type conversion
       const validUserId = parseInt(String(userId));
       const validPage = Math.max(1, parseInt(String(page)) || 1);
       const validLimit = Math.max(1, Math.min(100, parseInt(String(limit)) || 20));
@@ -1167,11 +1152,10 @@ export class NotificationService {
         throw new Error(`Invalid userId: ${userId}`);
       }
       
-      const offset = (validPage - 1) * validLimit;
+      const validOffset = Math.max(0, (validPage - 1) * validLimit);
 
       // Build time range condition
       let timeCondition = "";
-
       switch (timeRange) {
         case "today":
           timeCondition = "AND n.triggered_at >= CURDATE()";
@@ -1189,15 +1173,19 @@ export class NotificationService {
 
       // Build type filter condition
       let typeCondition = "";
+      let typeParam = null;
       if (type && type !== "" && (type === "alarm" || type === "device_status")) {
         typeCondition = "AND n.type = ?";
+        typeParam = type;
       }
 
-      // Build queries untuk schema baru
+      // Build base queries
       const baseCountQuery = `
         SELECT COUNT(*) as total
         FROM notifications n
         WHERE n.user_id = ?
+        ${timeCondition}
+        ${typeCondition}
       `;
 
       const baseDataQuery = `
@@ -1223,68 +1211,34 @@ export class NotificationService {
         LEFT JOIN datastreams ds ON n.datastream_id = ds.id
         LEFT JOIN devices dev ON n.device_id = dev.id
         WHERE n.user_id = ?
-      `;
-
-      const countQuery =
-        baseCountQuery + 
-        (timeCondition ? ` ${timeCondition}` : "") +
-        (typeCondition ? ` ${typeCondition}` : "");
-        
-      const dataQuery =
-        baseDataQuery +
-        (timeCondition ? ` ${timeCondition}` : "") +
-        (typeCondition ? ` ${typeCondition}` : "") +
-        `
+        ${timeCondition}
+        ${typeCondition}
         ORDER BY n.triggered_at DESC 
-        LIMIT ? OFFSET ?
+        LIMIT ${validLimit} OFFSET ${validOffset}
       `;
 
-      // console.log("🔍 Service Debug SQL Query:", {
-      //   timeRange: timeRange,
-      //   timeCondition: timeCondition,
-      //   countQuery: countQuery,
-      //   dataQuery: dataQuery,
-      //   validUserId: validUserId,
-      //   validLimit: validLimit,
-      //   validOffset: validOffset,
-      // });
-
-      // Build parameter arrays
+      // Build parameter arrays (NO LIMIT/OFFSET in params - use string interpolation for compatibility)
       const countParams: any[] = [validUserId];
       const dataParams: any[] = [validUserId];
 
       // Add type parameter if type filter is applied
-      if (typeCondition) {
-        countParams.push(type);
-        dataParams.push(type);
+      if (typeParam) {
+        countParams.push(typeParam);
+        dataParams.push(typeParam);
       }
-
-      // Ensure limit and offset are valid integers
-      const validOffset = Math.max(0, parseInt(String(offset)) || 0);
-      
-      // Add pagination parameters to data query
-      dataParams.push(validLimit, validOffset);
 
       // Execute count query first
-      console.log("🔍 Service executing count query with params:", countParams);
-      const [countResult] = await this.db.execute(countQuery, countParams);
+      // console.log("🔍 Service executing count query with params:", countParams);
+      const [countResult] = await this.db.execute(baseCountQuery, countParams);
       const total = (countResult as any[])[0]?.total || 0;
-      console.log(`📊 Total notifications found: ${total}`);
+      // console.log(`📊 Total notifications found: ${total}`);
 
-      // Execute data query with pagination - ensure all parameters are integers
-      console.log("🔍 Service executing data query with params:", dataParams);
-      console.log(
-        "🔍 Parameter types:",
-        dataParams.map((p) => ({ value: p, type: typeof p }))
-      );
-
-      // Additional validation to ensure parameters are valid integers for pagination
-      if (isNaN(dataParams[dataParams.length - 2]) || isNaN(dataParams[dataParams.length - 1])) {
-        throw new Error("Invalid integer parameters for SQL query pagination");
-      }
-
-      const [rows] = await this.db.execute(dataQuery, dataParams);
-      console.log(`📊 Data query returned ${(rows as any[]).length} rows`);
+      // Execute data query with pagination - using string interpolation for LIMIT/OFFSET
+      // console.log("🔍 Service executing data query with params:", dataParams);
+      // console.log("🔍 SQL query:", baseDataQuery);
+      
+      const [rows] = await this.db.execute(baseDataQuery, dataParams);
+      // console.log(`📊 Data query returned ${(rows as any[]).length} rows`);
 
       return {
         notifications: rows as any[],

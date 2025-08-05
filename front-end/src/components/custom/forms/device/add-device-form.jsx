@@ -50,6 +50,7 @@ export default function AddDeviceForm({
   const [mqttTopic, setMqttTopic] = useState(""); // MQTT topic untuk messaging
   const [mqttQos, setMqttQos] = useState("0"); // Quality of Service level untuk MQTT
   const [loraProfile, setLoraProfile] = useState(""); // Profile LoRa untuk konfigurasi radio
+  const [offlineTimeoutMinutes, setOfflineTimeoutMinutes] = useState("1"); // Timeout offline dalam menit
 
   // Layout form content dengan input fields untuk konfigurasi IoT device
   const formContent = (
@@ -133,10 +134,33 @@ export default function AddDeviceForm({
         </div>
       </div>
 
-      {/* Conditional Field: MQTT Configuration - hanya muncul jika protokol MQTT */}
-      {protocol === "MQTT" && (
-        <div className="grid grid-cols-2 gap-4">
-          {/* MQTT Topic Input */}
+      {/* Offline Timeout Configuration */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">
+              Timeout Offline (Menit)
+            </Label>
+            <DescriptionTooltip
+              side="right"
+              content="Durasi sebelum perangkat dianggap offline jika tidak mengirim data"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
+          <Input
+            id="offlineTimeoutMinutes"
+            type="number"
+            value={offlineTimeoutMinutes}
+            onChange={(e) => setOfflineTimeoutMinutes(e.target.value)}
+            placeholder="1"
+            min="1"
+            max="60"
+            required
+            className="w-full"
+          />
+        </div>
+        {protocol === "MQTT" && (
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 items-center">
               <Label
@@ -161,39 +185,28 @@ export default function AddDeviceForm({
               className="w-full"
             />
           </div>
-          {/* QoS MQTT - Currently commented out dalam implementasi */}
-          {/* <div className="flex flex-col gap-2">
-            <Label className="text-left ml-1 font-medium max-sm:text-xs">QoS MQTT</Label>
-            <Select value={mqttQos} onValueChange={setMqttQos}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select QoS" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0</SelectItem>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
-        </div>
-      )}
+        )}
 
-      {/* Conditional Field: LoRaWAN Configuration - untuk protokol LoRa */}
-      {protocol === "LoRaWAN" && (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="loraProfile" className="text-left ml-1  font-medium">
-            Profil Lora
-          </Label>
-          <Input
-            id="loraProfile"
-            value={loraProfile}
-            placeholder="Contoh: Gateway 1" // Contoh konfigurasi LoRa gateway
-            onChange={(e) => setLoraProfile(e.target.value)}
-            required // Field wajib untuk protokol LoRaWAN
-            className="w-full"
-          />
-        </div>
-      )}
+        {/* Conditional Field: LoRaWAN Configuration - untuk protokol LoRa */}
+        {protocol === "LoRaWAN" && (
+          <div className="flex flex-col gap-2">
+            <Label
+              htmlFor="loraProfile"
+              className="text-left ml-1  font-medium"
+            >
+              Profil Lora
+            </Label>
+            <Input
+              id="loraProfile"
+              value={loraProfile}
+              placeholder="Contoh: Gateway 1" // Contoh konfigurasi LoRa gateway
+              onChange={(e) => setLoraProfile(e.target.value)}
+              required // Field wajib untuk protokol LoRaWAN
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -207,6 +220,7 @@ export default function AddDeviceForm({
       board: boardType, // Tipe board yang dipilih
       protocol: protocol, // Protokol komunikasi
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined, // MQTT topic jika protokol MQTT
+      offline_timeout_minutes: parseInt(offlineTimeoutMinutes), // Timeout offline dalam menit
       // mqtt_qos: protocol === "MQTT" ? mqttQos : undefined, // QoS (commented out)
       // lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined, // LoRa profile jika LoRaWAN
     });
@@ -218,6 +232,7 @@ export default function AddDeviceForm({
     setMqttTopic("");
     setMqttQos("0");
     setLoraProfile("");
+    setOfflineTimeoutMinutes("1");
     setOpen(false); // Tutup modal setelah submit
   };
 

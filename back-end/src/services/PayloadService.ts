@@ -102,11 +102,21 @@ export class PayloadService {
       await broadcastSensorUpdates(this.db, broadcastToDeviceOwner, Number(deviceId), decrypted, "http", dataType);
       console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
-      // STEP 4: Update device status to online (real-time)
+      // STEP 4: Update device status to online dan last_seen_at (real-time)
       if (this.deviceStatusService) {
-        console.log(`[DEVICE STATUS] Memperbarui status device terakhir dilihat...`);
+        console.log(`[DEVICE STATUS] Memperbarui status device ke online dan timestamp...`);
+        // Update status ke online DAN last_seen_at sekaligus
+        await this.deviceStatusService.updateDeviceStatusOnly(deviceId.toString(), "online");
         await this.deviceStatusService.updateDeviceLastSeen(Number(deviceId));
-        console.log(`✅ [DEVICE STATUS] Status device berhasil diperbarui`);
+        console.log(`✅ [DEVICE STATUS] Device ${deviceId} status updated to online`);
+        
+        // Broadcast status online ke user pemilik device untuk real-time update
+        await broadcastToDeviceOwner(this.db, Number(deviceId), {
+          type: "status_update",
+          device_id: Number(deviceId),
+          status: "online",
+          last_seen: new Date().toISOString(),
+        });
       }
 
       // STEP 5: Check alarms setelah payload disimpan
@@ -254,21 +264,21 @@ export class PayloadService {
       const [rows]: any = await this.db.query(query, queryParams);
       
       // Debug: Log sample of returned data
-      if (rows && rows.length > 0) {
-        console.log(`📊 [PAYLOAD SERVICE] Time series data sample for device ${device_id}, datastream ${datastream_id}:`, {
-          totalRows: rows.length,
-          firstRow: rows[0],
-          lastRow: rows[rows.length - 1],
-          sampleTimestamps: rows.slice(0, 3).map((r: any) => ({
-            timestamp: r.timestamp,
-            device_time: r.device_time,
-            server_time: r.server_time,
-            value: r.value
-          }))
-        });
-      } else {
-        console.log(`⚠️ [PAYLOAD SERVICE] No data found for device ${device_id}, datastream ${datastream_id}`);
-      }
+      // if (rows && rows.length > 0) {
+      //   console.log(`📊 [PAYLOAD SERVICE] Time series data sample for device ${device_id}, datastream ${datastream_id}:`, {
+      //     totalRows: rows.length,
+      //     firstRow: rows[0],
+      //     lastRow: rows[rows.length - 1],
+      //     sampleTimestamps: rows.slice(0, 3).map((r: any) => ({
+      //       timestamp: r.timestamp,
+      //       device_time: r.device_time,
+      //       server_time: r.server_time,
+      //       value: r.value
+      //     }))
+      //   });
+      // } else {
+      //   console.log(`⚠️ [PAYLOAD SERVICE] No data found for device ${device_id}, datastream ${datastream_id}`);
+      // }
       
       // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
       if (count && count !== 'all') {

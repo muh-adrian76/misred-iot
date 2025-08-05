@@ -15,7 +15,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
   const [realTimeData, setRealTimeData] = useState(null); // Latest single values
   const [latestValue, setLatestValue] = useState(null); // For value widgets
   const [realtimeTimeSeriesData, setRealtimeTimeSeriesData] = useState({}); // Real-time chart data
+  const [dynamicTimeAgo, setDynamicTimeAgo] = useState(null); // Dynamic timeAgo yang update setiap menit
   const lastUpdateTime = useRef(null);
+  const timeAgoIntervalRef = useRef(null);
+  const latestTimestampRef = useRef(null); // Ref untuk menyimpan timestamp terbaru
+  const latestDataTypeRef = useRef(null); // Ref untuk menyimpan data_type terbaru
 
   // Extract device-datastream pairs dari berbagai format widget input
   // Supports multiple input formats untuk backward compatibility
@@ -168,6 +172,60 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     }
   }, [latestDataRaw]);
 
+  // Effect untuk memperbarui timeAgo secara berkala (setiap 1 menit)
+  useEffect(() => {
+    // Function untuk update timeAgo menggunakan ref
+    const updateTimeAgo = () => {
+      if (latestTimestampRef.current) {
+        const newTimeAgo = getTimeAgo(latestTimestampRef.current, latestDataTypeRef.current);
+        // console.log('🕐 TimeAgo updated:', {
+        //   timestamp: latestTimestampRef.current,
+        //   oldTimeAgo: dynamicTimeAgo,
+        //   newTimeAgo: newTimeAgo,
+        //   time: new Date().toLocaleTimeString()
+        // });
+        setDynamicTimeAgo(newTimeAgo);
+      }
+    };
+
+    // Set initial timeAgo ketika latestValue berubah
+    if (latestValue) {
+      const timestamp = latestValue.timestamp || latestValue.device_time;
+      latestTimestampRef.current = timestamp;
+      latestDataTypeRef.current = latestValue.data_type;
+      
+      // console.log('📍 Setting up timeAgo interval for:', {
+      //   timestamp: timestamp,
+      //   dataType: latestValue.data_type
+      // });
+      
+      updateTimeAgo();
+      
+      // Clear interval sebelumnya jika ada
+      if (timeAgoIntervalRef.current) {
+        clearInterval(timeAgoIntervalRef.current);
+        // console.log('🧹 Cleared previous interval');
+      }
+      
+      // Set interval untuk update setiap 10 detik untuk testing (nanti ubah ke 60000ms)
+      timeAgoIntervalRef.current = setInterval(() => {
+        // console.log('⏰ Interval triggered at:', new Date().toLocaleTimeString());
+        updateTimeAgo();
+      }, 30000); // 10 detik untuk testing
+      
+      // console.log('✅ New interval set with ID:', timeAgoIntervalRef.current);
+    }
+
+    // Cleanup interval saat component unmount atau latestValue berubah
+    return () => {
+      if (timeAgoIntervalRef.current) {
+        // console.log('🗑️ Cleaning up interval:', timeAgoIntervalRef.current);
+        clearInterval(timeAgoIntervalRef.current);
+        timeAgoIntervalRef.current = null;
+      }
+    };
+  }, [latestValue]); // Re-run ketika latestValue berubah
+
   // Initialize real-time data dengan data dari server saat berhasil di-fetch
   useEffect(() => {
     if (timeSeriesDataRaw) {
@@ -253,6 +311,40 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             datastream_id: data.datastream_id,
             data_type: data.data_type,
           });
+
+          // Update dynamic timeAgo untuk data real-time baru
+          const newTimeAgo = getTimeAgo(timestamp, data.data_type);
+          setDynamicTimeAgo(newTimeAgo);
+
+          // Update ref dengan timestamp dan data_type terbaru
+          latestTimestampRef.current = timestamp;
+          latestDataTypeRef.current = data.data_type;
+
+          console.log('📡 WebSocket data received, setting up new interval:', {
+            timestamp: timestamp,
+            dataType: data.data_type,
+            timeAgo: newTimeAgo
+          });
+
+          // Reset interval untuk timeAgo ketika ada data real-time baru
+          if (timeAgoIntervalRef.current) {
+            clearInterval(timeAgoIntervalRef.current);
+            console.log('🧹 Cleared WebSocket interval');
+          }
+          // Set interval baru untuk update timeAgo setiap 10 detik untuk testing
+          timeAgoIntervalRef.current = setInterval(() => {
+            console.log('⏰ WebSocket interval triggered at:', new Date().toLocaleTimeString());
+            if (latestTimestampRef.current) {
+              const updatedTimeAgo = getTimeAgo(latestTimestampRef.current, latestDataTypeRef.current);
+              console.log('🕐 WebSocket TimeAgo updated:', {
+                timestamp: latestTimestampRef.current,
+                newTimeAgo: updatedTimeAgo
+              });
+              setDynamicTimeAgo(updatedTimeAgo);
+            }
+          }, 10000); // 10 detik untuk testing
+          
+          console.log('✅ New WebSocket interval set with ID:', timeAgoIntervalRef.current);
 
           // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
           const newDataPoint = {
@@ -667,9 +759,10 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     ? {
         value: parseFloat(latestValue.value),
         timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
-        timeAgo: latestValue.timestamp || latestValue.device_time
-          ? getTimeAgo(latestValue.timestamp || latestValue.device_time, latestValue.data_type)
-          : "none",
+        timeAgo: dynamicTimeAgo || // Gunakan dynamic timeAgo yang ter-update otomatis
+          (latestValue.timestamp || latestValue.device_time
+            ? getTimeAgo(latestValue.timestamp || latestValue.device_time, latestValue.data_type)
+            : "none"),
         unit: latestValue.unit || "",
         sensor_name: latestValue.sensor_name || "none",
         device_name: latestValue.device_name || "none",

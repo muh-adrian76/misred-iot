@@ -20,30 +20,38 @@ const postDeviceSchema = {
         example: "device/data",
       })
     ),
+    offline_timeout_minutes: t.Optional(
+      t.Number({
+        description: "Timeout dalam menit sebelum device dianggap offline",
+        example: 1,
+        minimum: 1,
+        maximum: 60,
+      })
+    ),
     // mqtt_qos: t.Optional(
     //   t.String({
     //     description: "Quality of Service untuk MQTT",
     //     example: "0",
     //   })
     // ),
-    dev_eui: t.Optional(
-      t.String({
-        description: "ID unik untuk perangkat LoRa",
-        example: "LoRaProfile1",
-      })
-    ),
-    app_eui: t.Optional(
-      t.String({
-        description: "ID untuk Profil aplikasi chirpstack",
-        example: "LoRaProfile1",
-      })
-    ),
-    app_key: t.Optional(
-      t.String({
-        description: "Key untuk Profil aplikasi chirpstack",
-        example: "LoRaProfile1",
-      })
-    ),
+    // dev_eui: t.Optional(
+    //   t.String({
+    //     description: "ID unik untuk perangkat LoRa",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
+    // app_eui: t.Optional(
+    //   t.String({
+    //     description: "ID untuk Profil aplikasi chirpstack",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
+    // app_key: t.Optional(
+    //   t.String({
+    //     description: "Key untuk Profil aplikasi chirpstack",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
     firmware_version: t.Optional(
       t.String({
         description: "Versi firmware perangkat",
@@ -206,24 +214,24 @@ const getDeviceByIdSchema = {
             //   description: "Quality of Service untuk MQTT",
             //   example: "0",
             // }),
-            dev_eui: t.Optional(
-              t.String({
-                description: "ID unik untuk perangkat LoRa",
-                example: "LoRaProfile1",
-              })
-            ),
-            app_eui: t.Optional(
-              t.String({
-                description: "ID untuk Profil aplikasi chirpstack",
-                example: "LoRaProfile1",
-              })
-            ),
-            app_key: t.Optional(
-              t.String({
-                description: "Key untuk Profil aplikasi chirpstack",
-                example: "LoRaProfile1",
-              })
-            ),
+            // dev_eui: t.Optional(
+            //   t.String({
+            //     description: "ID unik untuk perangkat LoRa",
+            //     example: "LoRaProfile1",
+            //   })
+            // ),
+            // app_eui: t.Optional(
+            //   t.String({
+            //     description: "ID untuk Profil aplikasi chirpstack",
+            //     example: "LoRaProfile1",
+            //   })
+            // ),
+            // app_key: t.Optional(
+            //   t.String({
+            //     description: "Key untuk Profil aplikasi chirpstack",
+            //     example: "LoRaProfile1",
+            //   })
+            // ),
             old_secret: t.Optional(
               t.String({
                 description: "Secret/Key lama perangkat",
@@ -280,7 +288,7 @@ const getSecretByDeviceSchema = {
     200: t.Object({
       result: t.Any({
         description: "Secret/Key perangkat",
-        example: "u8jwdw2114"
+        example: "u8jwdw2114",
       }),
     }),
     404: t.Object({
@@ -531,24 +539,24 @@ const putDeviceSchema = {
     //     example: "0",
     //   })
     // ),
-    dev_eui: t.Optional(
-      t.String({
-        description: "ID unik untuk perangkat LoRa",
-        example: "LoRaProfile1",
-      })
-    ),
-    app_eui: t.Optional(
-      t.String({
-        description: "ID untuk Profil aplikasi chirpstack",
-        example: "LoRaProfile1",
-      })
-    ),
-    app_key: t.Optional(
-      t.String({
-        description: "Key untuk Profil aplikasi chirpstack",
-        example: "LoRaProfile1",
-      })
-    ),
+    // dev_eui: t.Optional(
+    //   t.String({
+    //     description: "ID unik untuk perangkat LoRa",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
+    // app_eui: t.Optional(
+    //   t.String({
+    //     description: "ID untuk Profil aplikasi chirpstack",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
+    // app_key: t.Optional(
+    //   t.String({
+    //     description: "Key untuk Profil aplikasi chirpstack",
+    //     example: "LoRaProfile1",
+    //   })
+    // ),
     firmware_version: t.Optional(
       t.String({
         description: "Versi firmware perangkat",
@@ -634,78 +642,153 @@ const deleteDeviceSchema = {
 const updateDeviceStatusSchema = {
   type: "json",
   body: t.Object({
-    status: t.Union([
-      t.Literal("online"),
-      t.Literal("offline")
-    ], {
+    status: t.Union([t.Literal("online"), t.Literal("offline")], {
       description: "Status device (online atau offline)",
-      example: "offline"
-    })
+      example: "offline",
+    }),
   }),
   response: {
     200: t.Object(
       {
         success: t.Boolean({
           description: "Status berhasil",
-          example: true
+          example: true,
         }),
         message: t.String({
           description: "Pesan berhasil update status",
-          example: "Device status updated to offline"
+          example: "Device status updated to offline",
         }),
         device_id: t.String({
           description: "ID device yang diupdate",
-          example: "1"
+          example: "1",
         }),
         status: t.String({
           description: "Status baru device",
-          example: "offline"
-        })
+          example: "offline",
+        }),
       },
       { description: "Status device berhasil diupdate" }
     ),
     400: t.Object(
       {
         success: t.Boolean({
-          example: false
+          example: false,
         }),
         message: t.String({
           description: "Pesan error jika input tidak valid",
-          example: "Invalid status. Must be 'online' or 'offline'"
-        })
+          example: "Invalid status. Must be 'online' or 'offline'",
+        }),
       },
       { description: "Input tidak valid" }
     ),
     404: t.Object(
       {
         success: t.Boolean({
-          example: false
+          example: false,
         }),
         message: t.String({
           description: "Pesan error jika device tidak ditemukan",
-          example: "Device not found or access denied"
-        })
+          example: "Device not found or access denied",
+        }),
       },
       { description: "Device tidak ditemukan" }
     ),
     401: t.Object(
       {
         success: t.Boolean({
-          example: false
+          example: false,
         }),
         message: t.String({
           description: "Pesan error jika tidak authorized",
-          example: "Authentication failed"
-        })
+          example: "Authentication failed",
+        }),
       },
       { description: "Tidak authorized" }
-    )
+    ),
   },
   detail: {
     tags: ["Device"],
     description: "Update status device (online/offline)",
-    summary: "Update device status"
-  }
+    summary: "Update device status",
+  },
+};
+
+const resetDeviceDataSchema = {
+  type: "json",
+  params: t.Object({
+    id: t.String({
+      description: "Device ID",
+      example: "1",
+    }),
+  }),
+  response: {
+    200: t.Object(
+      {
+        success: t.Boolean({
+          description: "Status berhasil",
+          example: true,
+        }),
+        message: t.String({
+          description: "Pesan berhasil reset data device",
+          example: "Successfully reset all data for device Test Device",
+        }),
+        device_id: t.String({
+          description: "ID device yang direset",
+          example: "1",
+        }),
+        deleted_payload_count: t.Number({
+          description: "Jumlah payload yang dihapus",
+          example: 150,
+        }),
+        deleted_raw_payload_count: t.Number({
+          description: "Jumlah raw payload yang dihapus",
+          example: 150,
+        }),
+      },
+      { description: "Data device berhasil direset" }
+    ),
+    403: t.Object(
+      {
+        success: t.Boolean({
+          example: false,
+        }),
+        message: t.String({
+          description: "Pesan error jika tidak memiliki akses",
+          example: "Access denied",
+        }),
+      },
+      { description: "Akses ditolak" }
+    ),
+    404: t.Object(
+      {
+        success: t.Boolean({
+          example: false,
+        }),
+        message: t.String({
+          description: "Pesan error jika device tidak ditemukan",
+          example: "Device not found",
+        }),
+      },
+      { description: "Device tidak ditemukan" }
+    ),
+    401: t.Object(
+      {
+        success: t.Boolean({
+          example: false,
+        }),
+        message: t.String({
+          description: "Pesan error jika tidak authorized",
+          example: "Authentication failed",
+        }),
+      },
+      { description: "Tidak authorized" }
+    ),
+  },
+  detail: {
+    tags: ["Device"],
+    description: "Reset semua data payload untuk device tertentu",
+    summary: "Reset device data",
+  },
 };
 
 export {
@@ -713,7 +796,7 @@ export {
   getAllDevicesSchema,
   getDeviceByIdSchema,
   getSecretByDeviceSchema,
-  putDeviceSchema,
+  postDeviceSchema as putDeviceSchema, // Alias: PUT menggunakan schema yang sama dengan POST
   deleteDeviceSchema,
   uploadFirmwareSchema,
   getFirmwareVersionSchema,
@@ -722,4 +805,5 @@ export {
   downloadFirmwareFileSchema,
   renewSecretSchema,
   updateDeviceStatusSchema,
+  resetDeviceDataSchema,
 };

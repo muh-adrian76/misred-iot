@@ -51,6 +51,7 @@ export default function EditDeviceForm({
   const [mqttTopic, setMqttTopic] = useState(""); // MQTT topic untuk messaging
   const [mqttQos, setMqttQos] = useState("0"); // Quality of Service level untuk MQTT
   const [loraProfile, setLoraProfile] = useState(""); // Profile LoRa untuk konfigurasi radio
+  const [offlineTimeoutMinutes, setOfflineTimeoutMinutes] = useState("1"); // Timeout offline dalam menit
 
   // Effect untuk populate form fields dengan data device yang akan diedit
   useEffect(() => {
@@ -66,6 +67,10 @@ export default function EditDeviceForm({
       setMqttQos(editDevice.mqtt_qos || "0");
       // Populate LoRa configuration jika tersedia
       setLoraProfile(editDevice.lora_profile || "");
+      // Populate offline timeout dengan default 1 menit
+      setOfflineTimeoutMinutes(
+        editDevice.offline_timeout_minutes?.toString() || "1"
+      );
     }
   }, [editDevice, open]); // Dependencies: re-run ketika editDevice atau modal state berubah
 
@@ -157,10 +162,34 @@ export default function EditDeviceForm({
         </div>
       </div>
 
-      {/* Conditional Fields: MQTT Configuration - muncul jika protokol MQTT */}
-      {protocol === "MQTT" && (
-        <div className="grid grid-cols-2 gap-4">
-          {/* MQTT Topic Input dengan smart parsing untuk device ID */}
+      {/* Offline Timeout Configuration */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2 items-center">
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">
+              Timeout Offline (Menit)
+            </Label>
+            <DescriptionTooltip
+              side="right"
+              content="Durasi sebelum device dianggap offline jika tidak mengirim data"
+            >
+              <HelpCircle className="h-4 w-4 text-muted-foreground" />
+            </DescriptionTooltip>
+          </div>
+          <Input
+            id="offlineTimeoutMinutesEdit"
+            type="number"
+            value={offlineTimeoutMinutes}
+            onChange={(e) => setOfflineTimeoutMinutes(e.target.value)}
+            placeholder="1"
+            min="1"
+            max="60"
+            required
+            className="w-full"
+          />
+        </div>
+        {/* Conditional Fields: MQTT Configuration - muncul jika protokol MQTT */}
+        {protocol === "MQTT" && (
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 items-center">
               <Label
@@ -192,41 +221,27 @@ export default function EditDeviceForm({
               required // Field wajib untuk protokol MQTT
             />
           </div>
-          {/* <div className="flex flex-col gap-2">
-            <Label className="text-left ml-1 font-medium max-sm:text-xs">
-              MQTT QoS
+        )}
+
+        {protocol === "LoRaWAN" && (
+          <div className="flex flex-col gap-2">
+            <Label
+              htmlFor="loraProfileEdit"
+              className="text-left ml-1 font-medium max-sm:text-xs"
+            >
+              Lora Profile
             </Label>
-            <Select value={mqttQos} onValueChange={setMqttQos}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select QoS" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0</SelectItem>
-                <SelectItem value="1">1</SelectItem>
-                <SelectItem value="2">2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
-        </div>
-      )}
-      {protocol === "LoRaWAN" && (
-        <div className="flex flex-col gap-2">
-          <Label
-            htmlFor="loraProfileEdit"
-            className="text-left ml-1 font-medium max-sm:text-xs"
-          >
-            Lora Profile
-          </Label>
-          <Input
-            id="loraProfileEdit"
-            className="w-full"
-            placeholder="Contoh: Gateway 1"
-            value={loraProfile}
-            onChange={(e) => setLoraProfile(e.target.value)}
-            required
-          />
-        </div>
-      )}
+            <Input
+              id="loraProfileEdit"
+              className="w-full"
+              placeholder="Contoh: Gateway 1"
+              value={loraProfile}
+              onChange={(e) => setLoraProfile(e.target.value)}
+              required
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -238,6 +253,7 @@ export default function EditDeviceForm({
       board: boardType, // Board type yang dipilih/diedit
       protocol, // Protokol komunikasi
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined, // MQTT topic jika protokol MQTT
+      offline_timeout_minutes: parseInt(offlineTimeoutMinutes), // Timeout offline dalam menit
       // mqtt_qos: protocol === "MQTT" ? mqttQos : undefined, // QoS (commented out)
       lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined, // LoRa profile jika LoRaWAN
     });

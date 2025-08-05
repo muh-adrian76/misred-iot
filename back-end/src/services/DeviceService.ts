@@ -43,27 +43,29 @@ export class DeviceService {
     board,
     protocol,
     topic,
+    offline_timeout_minutes,
     // qos,
-    dev_eui,
-    app_eui,
-    app_key,
+    // dev_eui,
+    // app_eui,
+    // app_key,
     new_secret,
     user_id,
   }: any) {
     try {
       const [result] = await this.db.query<ResultSetHeader>(
         `INSERT INTO devices 
-      (description, board_type, protocol, mqtt_topic, dev_eui, app_eui, app_key, new_secret, user_id) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (description, board_type, protocol, mqtt_topic, offline_timeout_minutes, new_secret, user_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           name,
           board,
           protocol,
           topic ?? null,
+          offline_timeout_minutes ?? 1, // Default 1 menit
           // qos ?? null,
-          dev_eui ?? null,
-          app_eui ?? null,
-          app_key ?? null,
+          // dev_eui ?? null,
+          // app_eui ?? null,
+          // app_key ?? null,
           new_secret,
           user_id,
         ]
@@ -338,10 +340,11 @@ export class DeviceService {
       board,
       protocol,
       mqtt_topic,
+      offline_timeout_minutes,
       // mqtt_qos,
-      dev_eui,
-      app_eui,
-      app_key,
+      // dev_eui,
+      // app_eui,
+      // app_key,
       firmware_version,
     }: any
   ) {
@@ -366,17 +369,18 @@ export class DeviceService {
       }
 
       const [result] = await this.db.query<ResultSetHeader>(
-        `UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, dev_eui = ?, app_eui = ?, app_key = ?, firmware_version = ?
+        `UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, offline_timeout_minutes = ?, firmware_version = ?
       WHERE id = ? AND user_id = ?`,
         [
           name,
           board,
           protocol,
           uniqueTopic ?? null,
+          offline_timeout_minutes ?? 1, // Default 1 menit
           // mqtt_qos ?? null,
-          dev_eui ?? null,
-          app_eui ?? null,
-          app_key ?? null,
+          // dev_eui ?? null,
+          // app_eui ?? null,
+          // app_key ?? null,
           firmware_version ?? null,
           id,
           userId,
@@ -472,6 +476,54 @@ export class DeviceService {
     } catch (error) {
       console.error("Error deleting device:", error);
       throw new Error("Failed to delete device");
+    }
+  }
+
+  /**
+   * ===== RESET DEVICE DATA =====
+   * Menghapus semua payload data untuk device tertentu
+   * Hanya menghapus data payloads dan raw_payloads, tidak menghapus device atau konfigurasinya
+   */
+  async resetDeviceData(deviceId: string): Promise<{
+    payloads: number;
+    rawPayloads: number;
+  }> {
+    try {
+      // Count payloads sebelum dihapus untuk return value
+      const [payloadCountResult]: any = await this.db.query(
+        "SELECT COUNT(*) as count FROM payloads WHERE device_id = ?",
+        [deviceId]
+      );
+      const payloadCount = payloadCountResult[0]?.count || 0;
+
+      // Count raw_payloads sebelum dihapus untuk return value
+      const [rawPayloadCountResult]: any = await this.db.query(
+        "SELECT COUNT(*) as count FROM raw_payloads WHERE device_id = ?",
+        [deviceId]
+      );
+      const rawPayloadCount = rawPayloadCountResult[0]?.count || 0;
+
+      // Hapus payloads yang terkait dengan device
+      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [
+        deviceId,
+      ]);
+
+      // Hapus raw_payloads yang terkait dengan device
+      await this.db.query("DELETE FROM raw_payloads WHERE device_id = ?", [
+        deviceId,
+      ]);
+
+      console.log(
+        `Reset device data completed for device ${deviceId}: ${payloadCount} payloads, ${rawPayloadCount} raw_payloads deleted`
+      );
+
+      return {
+        payloads: payloadCount,
+        rawPayloads: rawPayloadCount,
+      };
+    } catch (error) {
+      console.error("Error resetting device data:", error);
+      throw new Error("Failed to reset device data");
     }
   }
 

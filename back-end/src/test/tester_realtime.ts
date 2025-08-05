@@ -54,7 +54,7 @@ let MQTT_DEVICE = {
 // Realistic sensor ranges with slow variations
 const SENSOR_RANGES = {
   V0: { min: 0, max: 14, current: 7.1 }, // pH (slowly varying)
-  V1: { min: 0, max: 100.0, current: 30.0 }, // Flow L/min
+  V1: { min: 0, max: 16.0, current: 10.0 }, // Flow L/min
   V2: { min: 0, max: 200.0, current: 50.0 }, // COD mg/L
   V3: { min: -10.0, max: 60.0, current: 26.0 }, // Temperature °C
   V4: { min: 0, max: 20, current: 2.5 }, // NH3N mg/L
@@ -81,7 +81,7 @@ function generateRealtimeSensorData(): any {
 
   // Generate gradual variations (±5% change from current value)
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
-    const variation = (Math.random() - 0.5) * 0.1; // ±5% variation
+    const variation = (Math.random() - 1) * 0.1; // ±5% variation
     let newValue = range.current * (1 + variation);
 
     // Keep within realistic bounds

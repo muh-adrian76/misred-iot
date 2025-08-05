@@ -47,11 +47,11 @@ export function notificationRoutes(
           }
 
           // Get all notifications for the user (not just unread)
-          console.log(`🔍 Fetching recent notifications for user ${userId}`);
+          // console.log(`🔍 Fetching recent notifications for user ${userId}`);
           const historyResult = await notificationService.getNotificationHistory(
             userId, 1, 50, "all" // page 1, limit 50, all time range
           );
-          console.log(`📊 Found ${historyResult.total} total notifications, showing ${historyResult.notifications.length} recent`);
+          // console.log(`📊 Found ${historyResult.total} total notifications, showing ${historyResult.notifications.length} recent`);
 
           // Format notifications untuk frontend dengan schema baru
           const formattedNotifications = historyResult.notifications.map((row: any) => ({

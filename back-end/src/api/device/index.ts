@@ -32,6 +32,7 @@ import {
   downloadFirmwareFileSchema,
   renewSecretSchema,
   updateDeviceStatusSchema,
+  resetDeviceDataSchema,
 } from "./elysiaSchema";
 
 export function deviceRoutes(
@@ -84,10 +85,11 @@ export function deviceRoutes(
               board,
               protocol,
               mqtt_topic,
+              offline_timeout_minutes,
               // mqtt_qos,
-              dev_eui,
-              app_eui,
-              app_key,
+              // dev_eui,
+              // app_eui,
+              // app_key,
               firmware_version,
               firmware_url,
             } = body;
@@ -102,10 +104,11 @@ export function deviceRoutes(
               board,
               protocol,
               topic: mqtt_topic,
+              offline_timeout_minutes: offline_timeout_minutes || 1, // Default 1 menit
               // qos: mqtt_qos,
-              dev_eui,
-              app_eui,
-              app_key,
+              // dev_eui,
+              // app_eui,
+              // app_key,
               new_secret,
               firmware_version: firmware_version ?? null,
               firmware_url: firmware_url ?? null,
@@ -722,6 +725,68 @@ export function deviceRoutes(
           }
         },
         updateDeviceStatusSchema
+      )
+
+      // ===== RESET DEVICE DATA ENDPOINT =====
+      // DELETE /device/:id/data - Reset all payload data for specific device
+      .delete(
+        "/:id/data",
+        //@ts-ignore
+        async ({ jwt, cookie, params, set }) => {
+          try {
+            const decoded = await authorizeRequest(jwt, cookie);
+            const deviceId = params.id;
+
+            // Verify device ownership
+            const deviceResult = await deviceService.getDeviceById(deviceId);
+            const devices = deviceResult as any[];
+
+            if (!devices || devices.length === 0) {
+              set.status = 404;
+              return {
+                success: false,
+                message: "Device not found",
+              };
+            }
+
+            // Check if device belongs to the user
+            if (devices[0].user_id !== parseInt(decoded.sub)) {
+              set.status = 403;
+              return {
+                success: false,
+                message: "Access denied",
+              };
+            }
+
+            // Reset device payload data
+            const deletedCount = await deviceService.resetDeviceData(deviceId);
+
+            return {
+              success: true,
+              message: `Successfully reset all data for device ${devices[0].description}`,
+              device_id: deviceId,
+              deleted_payload_count: deletedCount.payloads,
+              deleted_raw_payload_count: deletedCount.rawPayloads,
+            };
+          } catch (error: any) {
+            console.error("Error resetting device data:", error);
+
+            if (error.message && error.message.includes("Unauthorized")) {
+              set.status = 401;
+              return {
+                success: false,
+                message: "Authentication failed",
+              };
+            }
+
+            set.status = 500;
+            return {
+              success: false,
+              message: "Internal server error",
+            };
+          }
+        },
+        resetDeviceDataSchema
       )
   );
 }

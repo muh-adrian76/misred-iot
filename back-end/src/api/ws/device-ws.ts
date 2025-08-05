@@ -229,35 +229,75 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
 
 
 // ===== HEARTBEAT CHECKER - AUTO OFFLINE DETECTION =====
-// Fungsi untuk mengecek device yang tidak mengirim heartbeat
+// Fungsi untuk mengecek SEMUA device yang tidak mengirim data selama 60 detik
 export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, db: Pool) {
   return setInterval(async () => {
-    const now = Date.now();
-    for (const [device_id, { ws, lastSeen }] of deviceClients.entries()) {
-      // Jika tidak ada heartbeat selama 30 detik, set status offline
-      if (now - lastSeen > 30000) {
-        deviceClients.delete(device_id);
-        
-        try {
-          // Update status database ke offline menggunakan DeviceStatusService
-          await deviceStatusService.updateDeviceStatusOnly(device_id, "offline");
-          
-          // BROADCAST STATUS UPDATE ke frontend untuk real-time update
-          await broadcastToDeviceOwner(db, parseInt(device_id), {
-            type: "status_update",
-            device_id: parseInt(device_id),
-            status: "offline",
-            last_seen: new Date().toISOString(),
-          });
-          
-          // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
-          await deviceStatusService.sendDeviceOfflineNotification(parseInt(device_id));
-          
-          console.log(`🔴 Device ${device_id} marked as offline due to heartbeat timeout`);
-        } catch (error) {
-          console.error("Error updating offline status:", error);
+    try {
+      // Cek semua device aktif dari database, bukan hanya WebSocket clients
+      const [activeDevices]: any = await db.query(
+        `SELECT id, description, status, last_seen_at, offline_timeout_minutes 
+         FROM devices 
+         WHERE status = 'online'`
+      );
+
+      const now = Date.now();
+      
+      for (const device of activeDevices) {
+        const deviceId = device.id.toString();
+        const timeoutMinutes = device.offline_timeout_minutes || 1; // Default 1 menit
+        const timeoutMs = timeoutMinutes * 60 * 1000; // Convert ke milliseconds
+        let shouldMarkOffline = false;
+        let lastSeenTime = 0;
+
+        // Cek WebSocket devices (real-time connection)
+        const wsClient = deviceClients.get(deviceId);
+        if (wsClient) {
+          // Device terhubung via WebSocket - cek heartbeat dengan timeout custom
+          if (now - wsClient.lastSeen > timeoutMs) {
+            shouldMarkOffline = true;
+            deviceClients.delete(deviceId);
+            console.log(`🔴 WebSocket device ${deviceId} offline - no heartbeat for ${timeoutMinutes}m`);
+          }
+        } else {
+          // Device HTTP/MQTT - cek last_seen_at dari database dengan timeout custom
+          if (device.last_seen_at) {
+            lastSeenTime = new Date(device.last_seen_at).getTime();
+            if (now - lastSeenTime > timeoutMs) {
+              shouldMarkOffline = true;
+              console.log(`🔴 HTTP/MQTT device ${deviceId} offline - no data for ${timeoutMinutes}m`);
+            }
+          } else if (device.status === 'online') {
+            // Device online tapi tidak ada last_seen_at - anggap offline
+            shouldMarkOffline = true;
+            console.log(`🔴 Device ${deviceId} offline - no last_seen_at record`);
+          }
+        }
+
+        // Mark device as offline dan kirim notifikasi
+        if (shouldMarkOffline) {
+          try {
+            // Update status database ke offline
+            await deviceStatusService.updateDeviceStatusOnly(deviceId, "offline");
+            
+            // BROADCAST STATUS UPDATE ke frontend untuk real-time update
+            await broadcastToDeviceOwner(db, parseInt(deviceId), {
+              type: "status_update",
+              device_id: parseInt(deviceId),
+              status: "offline",
+              last_seen: device.last_seen_at || new Date().toISOString(),
+            });
+            
+            // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
+            await deviceStatusService.sendDeviceOfflineNotification(parseInt(deviceId));
+            
+            console.log(`✅ Device ${deviceId} (${device.description}) marked as offline and notification sent`);
+          } catch (error) {
+            console.error(`❌ Error marking device ${deviceId} offline:`, error);
+          }
         }
       }
+    } catch (error) {
+      console.error("❌ Error in heartbeat checker:", error);
     }
   }, 10000); // Cek setiap 10 detik
 }

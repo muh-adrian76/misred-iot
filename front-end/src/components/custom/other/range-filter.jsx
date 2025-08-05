@@ -242,7 +242,7 @@ export default function DashboardTimeFilter({
                   // Styling untuk tab yang aktif vs tidak aktif
                   activeIndex === index
                     ? "bg-red-500 text-white"
-                    : "bg-gray-100 text-gray-600 dark:bg-grey-700 dark:text-grey-400 hover:bg-grey-150 dark:hover:bg-grey-650"
+                    : "bg-accent text-foreground hover:bg-gray-200 dark:hover:bg-gray-700"
                 )}
               >
                 {tab.title}

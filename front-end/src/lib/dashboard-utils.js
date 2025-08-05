@@ -12,7 +12,7 @@ export const bootstrapWidths = {
 export const cols = { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 };
 
 // Resize handles yang tersedia - semua 4 corner untuk UX yang baik
-export const availableHandles = ["sw", "nw", "se", "ne"];
+export const availableHandles = ["s", "w", "e", "n", "sw", "nw", "se", "ne"];
 
 // Generate initial responsive layouts untuk multiple widgets
 // Mengatur posisi otomatis berdasarkan jumlah widget dan breakpoint
