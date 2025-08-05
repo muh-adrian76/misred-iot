@@ -132,6 +132,11 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
+            if (params.id === "8") {
+              throw new Error(
+                "Dashboard ini tidak dapat diubah saat kuisioner berlangsung, silahkan buat dashboard baru"
+              );
+            }
             const decoded = await authorizeRequest(jwt, cookie);
             //@ts-ignore
             const { description, widget_count, layout } = body;

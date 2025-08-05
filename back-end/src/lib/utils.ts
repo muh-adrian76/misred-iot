@@ -616,7 +616,7 @@ async function broadcastSensorUpdates(
   deviceId: number, 
   rawData: any,
   protocol?: string,
-  dataType?: string // tipe data untuk header x-data-type
+  dataType?: string // tipe data untuk broadcast data (realtime / pending)
 ) {
   try {
     // Extract device timestamp

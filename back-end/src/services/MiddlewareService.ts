@@ -223,7 +223,8 @@ export class MQTTService {
         broadcastToDeviceOwner,
         Number(device_id),
         verificationResult.decryptedData,
-        "mqtt"
+        "mqtt",
+        verificationResult.jwtPayload.type || "none" // Tambahkan variabel type pada saat membuat JWT untuk menentukan sifat data (realtime / pending)
       );
       console.log(`✅ [MQTT PAYLOAD] Data real-time berhasil dikirim`);
 

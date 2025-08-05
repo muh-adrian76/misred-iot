@@ -719,7 +719,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 // Helper function untuk menghitung waktu relatif dengan konversi UTC ke local
 function getTimeAgo(timestamp, dataType) {
   if (!timestamp) return "Unknown";
-  if(dataType === "offline") return "Baru saja";
+  if(dataType === "offline" || dataType === "pending") return "Baru saja";
   try {
     // Gunakan utility function dari helper.js
     const localTime = convertUTCToLocalTime(timestamp);

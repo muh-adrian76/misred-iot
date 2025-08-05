@@ -1011,9 +1011,9 @@ export function useDashboardLogic() {
             body: JSON.stringify(updatePayload),
           });
           
+          const data = await res.json();
           if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`Failed to update widget ${editedWidget.id}: ${res.status} - ${errorText}`);
+            throw new Error(data.message || `Failed to update widget ${editedWidget.id}: ${res.status}`);
           }
           
           widgetEditedCount++;
@@ -1042,12 +1042,11 @@ export function useDashboardLogic() {
             body: JSON.stringify(widgetPayload),
           });
           
+          const newWidget = await res.json();
           if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`Failed to add widget: ${res.status} - ${errorText}`);
+            throw new Error(newWidget.message || `Failed to create widget: ${res.status}`);
           }
           
-          const newWidget = await res.json();
           // console.log('Response for widget creation:', newWidget);
           
           // Safety check untuk response structure
@@ -1147,11 +1146,10 @@ export function useDashboardLogic() {
           layout: JSON.stringify(finalLayoutData),
         }),
       });
-      
+      const responseData = await response.json();
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error('Backend response error:', errorData);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('Backend response error:', responseData.message);
+        throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
       }
       
       // Clean up local state: remove widgets marked for removal and clean edit flags
@@ -1197,7 +1195,7 @@ export function useDashboardLogic() {
       setHasUnsavedChanges(false);
     } catch (error) {
       console.error('=== ERROR IN SAVE OPERATION ===', error);
-      errorToast("Gagal menyimpan dashboard");
+      errorToast("Gagal menyimpan dashboard", error.message);
     }
   }, [activeTab, dashboards, editDashboardValue, tabItems, tabLayouts, updateTabLayouts, fetchDashboards]);
 
