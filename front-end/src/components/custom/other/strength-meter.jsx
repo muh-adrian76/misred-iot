@@ -65,7 +65,7 @@ const strengthBarSegmentVariants = cva(
  */
 const defaultRequirements = [
   {
-    label: "8 Karakter atau lebih",
+    label: "8 Karakter atau lebih (Wajib)",
     validator: (password) => password.length >= 8,
   },
   {

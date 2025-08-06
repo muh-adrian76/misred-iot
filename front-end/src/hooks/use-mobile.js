@@ -5,6 +5,8 @@ import * as React from "react"
 
 // Hook utama untuk detect multiple breakpoints sekaligus
 export function useBreakpoint() {
+  const [isClient, setIsClient] = React.useState(false);
+  
   const getStatus = () => {
     // SSR safety - default ke desktop width jika window belum ada
     const width = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -19,12 +21,27 @@ export function useBreakpoint() {
   const [status, setStatus] = React.useState(getStatus);
 
   React.useEffect(() => {
+    // Mark that we're now on the client
+    setIsClient(true);
+    
     const onResize = () => setStatus(getStatus());
     if (typeof window !== "undefined") {
+      // Update status on client mount
+      setStatus(getStatus());
       window.addEventListener("resize", onResize);
       return () => window.removeEventListener("resize", onResize);
     }
   }, []);
+
+  // During SSR, return default desktop layout to avoid hydration mismatches
+  if (!isClient) {
+    return {
+      isMobile: false,
+      isMedium: false,
+      isTablet: false,
+      isDesktop: true,
+    };
+  }
 
   return status;
 }
@@ -33,8 +50,12 @@ export function useBreakpoint() {
 // Berguna untuk sidebar toggling dan mobile-specific UI
 export function useMobile() {
   const [isMobile, setIsMobile] = React.useState(false);
+  const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
+    // Mark that we're now on the client
+    setIsClient(true);
+    
     const checkMobile = () => {
       if (typeof window !== "undefined") {
         setIsMobile(window.innerWidth < 768); // 768px breakpoint untuk mobile
@@ -51,5 +72,6 @@ export function useMobile() {
     }
   }, []);
 
-  return isMobile;
+  // Return false during SSR to avoid hydration mismatches
+  return isClient ? isMobile : false;
 }

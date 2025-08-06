@@ -23,7 +23,7 @@ export class DashboardService {
   // Mengambil semua dashboard milik user tertentu
   async getDashboardsByUserId(userId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM dashboards WHERE user_id = ?",
         [userId]
       );
@@ -52,7 +52,7 @@ export class DashboardService {
   // Membuat dashboard baru dengan deskripsi, widget count, dan layout
   async createDashboard(userId: string, description: string, widgetCount: number, layout?: any) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "INSERT INTO dashboards (user_id, description, widget_count, layout) VALUES (?, ?, ?, ?)",
         [userId, description, widgetCount, layout ? JSON.stringify(layout) : null]
       );
@@ -73,7 +73,7 @@ export class DashboardService {
         // console.log('Layout JSON string length:', JSON.stringify(layout).length);
       }
       
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "UPDATE dashboards SET description = ?, layout = ?, widget_count = ? WHERE id = ? AND user_id = ?",
         [description, layout ? JSON.stringify(layout) : null, widgetCount, dashboardId, userId]
       );
@@ -89,7 +89,7 @@ export class DashboardService {
   // Menghapus dashboard berdasarkan ID dan user ID
   async deleteDashboard(userId: string, dashboardId: string) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM dashboards WHERE id = ? AND user_id = ?",
         [dashboardId, userId]
       );

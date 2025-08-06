@@ -11,7 +11,7 @@
  * - Backward compatibility untuk format lama
  * - JSON input handling untuk flexible widget configurations
  */
-import { Pool, ResultSetHeader } from "mysql2/promise";
+import { Pool, ResultSetHeader, FieldPacket } from "mysql2/promise";
 
 export class WidgetService {
   private db: Pool;
@@ -56,7 +56,7 @@ export class WidgetService {
         type,
       ];
       
-      const [result] = await this.db.query<ResultSetHeader>(query, params);
+      const [result] = await (this.db as any).safeQuery(query, params);
       return result.insertId;
     } catch (error) {
       console.error("Error creating widget:", error);
@@ -68,7 +68,7 @@ export class WidgetService {
   // Mengambil semua widget dalam dashboard tertentu
   async getWidgetsByDashboardId(dashboardId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM widgets WHERE dashboard_id = ?",
         [dashboardId]
       );
@@ -84,7 +84,7 @@ export class WidgetService {
   async getWidgetsByDeviceId(device_id: string) {
     try {
       // Search widget yang mengandung device_id dalam inputs JSON
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM widgets WHERE JSON_SEARCH(inputs, 'one', ?, NULL, '$[*].device_id') IS NOT NULL",
         [device_id]
       );
@@ -135,7 +135,7 @@ export class WidgetService {
         id,
       ];
       
-      const [result] = await this.db.query<ResultSetHeader>(query, params);
+      const [result] = await (this.db as any).safeQuery(query, params);
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error updating widget:", error);
@@ -147,10 +147,10 @@ export class WidgetService {
   // Menghapus widget berdasarkan ID
   async deleteWidget(id: string) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM widgets WHERE id = ?",
         [id]
-      );
+      ) as [ResultSetHeader, FieldPacket[]];
       return result.affectedRows > 0;
     } catch (error) {
       console.error("Error deleting widget:", error);

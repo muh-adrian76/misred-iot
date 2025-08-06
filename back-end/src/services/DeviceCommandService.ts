@@ -54,7 +54,7 @@ export class DeviceCommandService {
   ): Promise<number> {
     try {
       // Validasi datastream harus actuator (string atau boolean type)
-      const [datastreamRows]: any = await this.db.execute(
+      const [datastreamRows]: any = await (this.db as any).safeQuery(
         `SELECT ds.*, d.protocol, d.description as device_name 
          FROM datastreams ds 
          JOIN devices d ON ds.device_id = d.id 
@@ -84,7 +84,7 @@ export class DeviceCommandService {
       }
 
       // Buat record command di database
-      const [result] = await this.db.execute(
+      const [result] = await (this.db as any).safeQuery(
         `INSERT INTO device_commands 
          (device_id, datastream_id, command_type, value, user_id, status)
          VALUES (?, ?, ?, ?, ?, 'pending')`,
@@ -214,7 +214,7 @@ export class DeviceCommandService {
     status: CommandStatus,
     acknowledgedAt?: Date
   ): Promise<boolean> {
-    const [result] = await this.db.execute(
+    const [result] = await (this.db as any).safeQuery(
       `UPDATE device_commands 
        SET status = ?, acknowledged_at = ?
        WHERE id = ?`,
@@ -228,7 +228,7 @@ export class DeviceCommandService {
    * Get pending commands for a device
    */
   async getPendingCommands(deviceId: number): Promise<DeviceCommand[]> {
-    const [rows] = await this.db.execute(
+    const [rows] = await (this.db as any).safeQuery(
       `SELECT dc.*, ds.pin, ds.type as datastream_type, ds.description as datastream_name
        FROM device_commands dc
        JOIN datastreams ds ON dc.datastream_id = ds.id
@@ -253,7 +253,7 @@ export class DeviceCommandService {
     const validLimit = Math.max(1, Math.min(100, parseInt(String(limit)) || 50));
     const validOffset = Math.max(0, parseInt(String(offset)) || 0);
     
-    const [rows] = await this.db.execute(
+    const [rows] = await (this.db as any).safeQuery(
       `SELECT dc.*, ds.pin, ds.type as datastream_type, ds.description as datastream_name,
               u.name as user_name
        FROM device_commands dc
@@ -272,7 +272,7 @@ export class DeviceCommandService {
    * Get commands by status
    */
   async getCommandsByStatus(status: CommandStatus): Promise<DeviceCommand[]> {
-    const [rows] = await this.db.execute(
+    const [rows] = await (this.db as any).safeQuery(
       `SELECT dc.*, ds.pin, ds.type as datastream_type, ds.description as datastream_name,
               d.description as device_name
        FROM device_commands dc
@@ -292,7 +292,7 @@ export class DeviceCommandService {
   async markOldCommandsAsFailed(olderThanMinutes: number = 0.17): Promise<number> { // 0.17 minutes = ~10 seconds
     const cutoffTime = new Date(Date.now() - olderThanMinutes * 60 * 1000);
     
-    const [result] = await this.db.execute(
+    const [result] = await (this.db as any).safeQuery(
       `UPDATE device_commands 
        SET status = 'failed'
        WHERE status = 'pending' 
@@ -309,7 +309,7 @@ export class DeviceCommandService {
   async getCommandStats(deviceId: number, days: number = 7): Promise<any> {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     
-    const [rows] = await this.db.execute(
+    const [rows] = await (this.db as any).safeQuery(
       `SELECT 
          status,
          COUNT(*) as count

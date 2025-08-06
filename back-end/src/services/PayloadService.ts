@@ -77,7 +77,7 @@ export class PayloadService {
       // console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
       
       // STEP 1: Simpan raw data untuk backup dan debugging
-      const [rawResult] = await this.db.query<ResultSetHeader>(
+      const [rawResult] = await (this.db as any).safeQuery(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
         VALUES (?, ?, NOW())`,
         [deviceId, JSON.stringify(decrypted)]
@@ -137,7 +137,7 @@ export class PayloadService {
     async getByDeviceId(device_id: string) {
     try {
       // Query data ternormalisasi dengan informasi sensor dan device
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         `SELECT 
           p.id, p.device_id, p.datastream_id, p.value, p.server_time,
           ds.description as sensor_name, ds.pin, ds.unit, ds.type,
@@ -159,7 +159,7 @@ export class PayloadService {
   async getByDeviceAndDatastream(device_id: string, datastream_id: string) {
     try {
       // Query untuk widget dashboard - data sensor spesifik
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         `SELECT 
           p.id, p.device_id, p.datastream_id, p.value, 
           COALESCE(p.device_time, p.server_time) as timestamp,
@@ -186,7 +186,7 @@ export class PayloadService {
   // Fungsi untuk mendapatkan data widget menggunakan view
   async getWidgetData(widget_id: string) {
     try {
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         `SELECT * FROM widget_data WHERE widget_id = ?`,
         [widget_id]
       );
@@ -261,7 +261,7 @@ export class PayloadService {
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
       }
 
-      const [rows]: any = await this.db.query(query, queryParams);
+      const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
       
       // Debug: Log sample of returned data
       // if (rows && rows.length > 0) {
@@ -295,7 +295,7 @@ export class PayloadService {
   async saveLoraPayload(dev_eui: string, datastream_id: number, value: any) {
     try {
       // Cari device_id dari dev_eui
-      const [devices]: any = await this.db.query(
+      const [devices]: any = await (this.db as any).safeQuery(
         "SELECT id FROM devices WHERE dev_eui = ?",
         [dev_eui]
       );
@@ -304,7 +304,7 @@ export class PayloadService {
       const device_id = devices[0].id;
       
       // Ambil informasi datastream untuk validasi
-      const [datastreams]: any = await this.db.query(
+      const [datastreams]: any = await (this.db as any).safeQuery(
         `SELECT id, pin, type, unit, min_value, max_value, decimal_value, description 
          FROM datastreams WHERE id = ? AND device_id = ?`,
         [datastream_id, device_id]
@@ -324,7 +324,7 @@ export class PayloadService {
       }
       
       // Simpan raw payload untuk LoRa juga
-      const [rawResult] = await this.db.query<ResultSetHeader>(
+      const [rawResult] = await (this.db as any).safeQuery(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
         VALUES (?, ?, NOW())`,
         [device_id, JSON.stringify({ 
@@ -338,7 +338,7 @@ export class PayloadService {
       );
       
       // Simpan ke payloads (normalized) dengan nilai yang sudah divalidasi
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         `INSERT INTO payloads (device_id, datastream_id, raw_payload_id, value, device_time, server_time)
         VALUES (?, ?, ?, ?, NULL, NOW())`,
         [

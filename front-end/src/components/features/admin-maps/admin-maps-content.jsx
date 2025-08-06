@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import MapView from "@/components/custom/maps/map-view";
+import dynamic from "next/dynamic";
 import { successToast } from "@/components/custom/other/toaster";
 import {
   DeviceStatusIcon,
@@ -25,6 +25,19 @@ import { useState } from "react";
 import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { motion } from "framer-motion";
 import { useMobile } from "@/hooks/use-mobile";
+
+// Dynamically import MapView to prevent SSR issues with Leaflet
+const MapView = dynamic(() => import("@/components/custom/maps/map-view"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-xl">
+      <div className="flex flex-col items-center gap-3">
+        <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="text-sm text-gray-600 dark:text-gray-400">Memuat peta...</span>
+      </div>
+    </div>
+  ),
+});
 
 export default function AdminMapsContent({
   devices,

@@ -13,7 +13,7 @@
  * - Device status monitoring integration
  */
 import { MQTTClient } from "../lib/middleware";
-import { Pool, ResultSetHeader } from "mysql2/promise";
+import { Pool, ResultSetHeader, FieldPacket } from "mysql2/promise";
 import {
   verifyDeviceJWTAndDecrypt,
   parseAndNormalizePayload,
@@ -114,7 +114,7 @@ export class MQTTService {
       });
     } else {
       // Fallback ke method lama jika topic manager tidak tersedia
-      const [devices] = await this.db.query(
+      const [devices] = await (this.db as any).safeQuery(
         "SELECT DISTINCT mqtt_topic FROM devices WHERE mqtt_topic IS NOT NULL AND protocol = 'MQTT'"
       );
       // @ts-ignore
@@ -189,7 +189,7 @@ export class MQTTService {
 
       // STEP 1: Simpan raw data untuk backup dan debugging
       console.log(`💾 [MQTT PAYLOAD] Menyimpan raw data ke database...`);
-      const [rawResult] = await this.db.query<ResultSetHeader>(
+      const [rawResult] = await (this.db as any).safeQuery(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
         VALUES (?, ?, NOW())`,
         [
@@ -200,7 +200,7 @@ export class MQTTService {
             topic: data.topic || "unknown",
           }),
         ]
-      );
+      ) as [ResultSetHeader, FieldPacket[]];
 
       console.log(`✅ [MQTT PAYLOAD] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
 

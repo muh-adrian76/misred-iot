@@ -38,6 +38,7 @@ import { dashboardRoutes } from "./api/dashboard"; // Route dashboard
 import { datastreamRoutes } from "./api/datastream"; // Route datastream sensor
 import { otaaRoutes } from "./api/otaa"; // Route Over-The-Air-Activation
 import { adminRoutes } from "./api/admin"; // Route admin panel
+import { healthCheckRoutes } from "./api/health"; // Route health monitoring
 
 // ===== IMPORTS WEBSOCKET ROUTES =====
 // Import route WebSocket untuk komunikasi real-time
@@ -161,6 +162,7 @@ class Server {
 
       // ===== API ROUTES REGISTRATION =====
       // Registrasi semua route API dengan service yang sesuai
+      .use(healthCheckRoutes(this.mqttClient)) // Route health monitoring
       .use(authRoutes(this.authService, this.userService)) // Route autentikasi
       .use(userRoutes(this.userService)) // Route manajemen user
       .use(deviceRoutes(this.deviceService, this.deviceStatusService)) // Route device IoT
@@ -299,16 +301,19 @@ class Server {
 
     // ===== BACKGROUND TASKS & INTERVALS =====
     
+    // ===== CLEANUP INTERVALS STORAGE =====
+    const intervals: ReturnType<typeof setInterval>[] = []; // Compatible with both Bun and Node
+    
     // ===== DEVICE COMMAND CLEANUP TASK =====
     // Cleanup command lama yang pending setiap 30 detik untuk mencegah command menumpuk
-    setInterval(async () => {
+    const commandCleanupInterval = setInterval(async () => {
       try {
         // ===== DATABASE HEALTH CHECK =====
         // Test koneksi database sebelum melakukan operasi
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("🔄 Database unhealthy, attempting reconnection...");
-          this.db = MySQLDatabase.forceReconnect(); // Force reconnect jika tidak sehat
+          console.log("⚠️ Database unhealthy during command cleanup, skipping...");
+          return;
         }
         
         // ===== COMMAND CLEANUP EXECUTION =====
@@ -327,39 +332,25 @@ class Server {
             error.code === "ER_CONNECTION_LOST" || 
             error.code === "ECONNRESET" ||
             error.code === "ENOTFOUND" ||
-            error.code === "ETIMEDOUT") {
-          console.log("🔄 Database connection error detected, forcing reconnection...");
-          try {
-            // ===== FORCE RECONNECTION =====
-            // Paksa reconnect database jika ada masalah koneksi
-            this.db = MySQLDatabase.forceReconnect();
-            console.log("✅ Database connection restored for command cleanup");
-          } catch (reconnectError) {
-            console.error("❌ Failed to reconnect to database:", reconnectError);
-          }
+            error.code === "ETIMEDOUT" ||
+            error.message?.includes('Pool is closed')) {
+          console.log("🔄 Database connection error detected during command cleanup");
+          // Let the health check mechanism handle reconnection
         }
       }
     }, 30000); // Interval 30 detik
+    intervals.push(commandCleanupInterval);
 
     // ===== DEVICE SECRET REFRESH TASK =====
     // Refresh variable secret semua device secara berkala untuk keamanan
-    setInterval(async () => {
+    const secretRefreshInterval = setInterval(async () => {
       try {
         // ===== DATABASE HEALTH CHECK =====
         // Test koneksi database sebelum refresh secret
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("🔄 Database unhealthy, attempting reconnection...");
-          this.db = MySQLDatabase.forceReconnect(); // Force reconnect jika tidak sehat
-          
-          // ===== REINITIALIZE DEVICE SERVICE =====
-          // Reinisialisasi device service dengan koneksi database baru
-          this.deviceService = new DeviceService(
-            this.db,
-            this.otaaService,
-            this.mqttService.subscribeTopic.bind(this.mqttService),
-            this.mqttService.unSubscribeTopic.bind(this.mqttService)
-          );
+          console.log("⚠️ Database unhealthy during secret refresh, skipping...");
+          return;
         }
         
         // ===== SECRET REFRESH EXECUTION =====
@@ -382,28 +373,115 @@ class Server {
             error.code === "ER_CONNECTION_LOST" || 
             error.code === "ECONNRESET" ||
             error.code === "ENOTFOUND" ||
-            error.code === "ETIMEDOUT") {
-          console.log("🔄 Database connection error during secret refresh, forcing reconnection...");
-          try {
-            // ===== FORCE RECONNECTION =====
-            // Paksa reconnect database jika ada masalah koneksi
-            this.db = MySQLDatabase.forceReconnect();
-            
-            // ===== REINITIALIZE DEVICE SERVICE =====
-            // Reinisialisasi device service dengan koneksi database baru
-            this.deviceService = new DeviceService(
-              this.db,
-              this.otaaService,
-              this.mqttService.subscribeTopic.bind(this.mqttService),
-              this.mqttService.unSubscribeTopic.bind(this.mqttService)
-            );
-          } catch (reconnectError) {
-            console.error("❌ Failed to reconnect to database:", reconnectError);
-          }
+            error.code === "ETIMEDOUT" ||
+            error.message?.includes('Pool is closed')) {
+          console.log("🔄 Database connection error during secret refresh");
+          // Let the health check mechanism handle reconnection
         }
         return; // Exit dari fungsi jika terjadi error
       }
     }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000); // Interval dari environment variable
+    intervals.push(secretRefreshInterval);
+
+    // ===== DATABASE HEALTH MONITOR =====
+    // Monitor database health dan auto-reconnect jika diperlukan
+    const healthCheckInterval = setInterval(async () => {
+      try {
+        const isHealthy = await MySQLDatabase.healthCheck();
+        if (!isHealthy) {
+          console.log("🔄 Database health check failed, attempting reconnection...");
+          this.db = await MySQLDatabase.forceReconnectWithRetry();
+          
+          // Reinitialize services dengan database connection baru
+          await this.reinitializeServices();
+        }
+      } catch (error) {
+        console.error("❌ Health check monitor error:", error);
+      }
+    }, 60000); // Check setiap 1 menit
+    intervals.push(healthCheckInterval);
+
+    // ===== GRACEFUL SHUTDOWN HANDLER =====
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+      
+      // Clear all intervals (Bun compatible)
+      intervals.forEach(interval => clearInterval(interval));
+      
+      // Close database connections
+      try {
+        await MySQLDatabase.shutdown();
+        console.log("✅ Database connections closed");
+      } catch (error) {
+        console.error("❌ Error closing database:", error);
+      }
+      
+      // Close MQTT connection
+      try {
+        this.mqttClient.end();
+        console.log("✅ MQTT connection closed");
+      } catch (error) {
+        console.error("❌ Error closing MQTT:", error);
+      }
+      
+      console.log("👋 Graceful shutdown completed");
+      process.exit(0);
+    };
+
+    // Register shutdown handlers (Bun runtime compatible)
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    // Note: SIGUSR2 is primarily for nodemon, but keeping for compatibility
+    if (process.platform !== 'win32') {
+      process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2'));
+    }
+  }
+
+  // ===== REINITIALIZE SERVICES =====
+  // Method untuk reinisialisasi services dengan database connection baru
+  private async reinitializeServices(): Promise<void> {
+    try {
+      console.log("🔄 Reinitializing services with new database connection...");
+      
+      // Reinitialize core services
+      this.authService = new AuthService(this.db);
+      this.userService = new UserService(this.db);
+      this.widgetService = new WidgetService(this.db);
+      this.alarmService = new AlarmService(this.db);
+      this.notificationService = new NotificationService(this.db);
+      this.dashboardService = new DashboardService(this.db);
+      this.datastreamService = new DatastreamService(this.db);
+      this.otaaService = new OtaaUpdateService(this.db);
+      this.adminService = new AdminService(this.db);
+      this.deviceStatusService = new DeviceStatusService(this.db);
+
+      // Reinitialize MQTT service
+      this.mqttService = new MQTTService(this.db, this.notificationService, this.deviceStatusService);
+
+      // Reinitialize device service
+      this.deviceService = new DeviceService(
+        this.db,
+        this.otaaService,
+        this.mqttService.subscribeTopic.bind(this.mqttService),
+        this.mqttService.unSubscribeTopic.bind(this.mqttService)
+      );
+
+      // Set device service ke MQTT service
+      this.mqttService.setDeviceService(this.deviceService);
+
+      // Reinitialize payload service
+      this.payloadService = new PayloadService(
+        this.db,
+        this.deviceService,
+        this.notificationService,
+        this.deviceStatusService
+      );
+
+      console.log("✅ Services reinitialized successfully");
+    } catch (error) {
+      console.error("❌ Failed to reinitialize services:", error);
+      throw error;
+    }
   }
 }
 

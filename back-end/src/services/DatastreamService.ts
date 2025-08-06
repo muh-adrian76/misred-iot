@@ -30,7 +30,7 @@ export class DatastreamService {
   // Mengambil semua datastream milik user dengan info device
   async getDatastreamsByUserId(userId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         `SELECT 
           ds.*,
           d.description as device_description
@@ -50,7 +50,7 @@ export class DatastreamService {
   // Mengambil semua datastream untuk device tertentu milik user
   async getDatastreamsByDeviceId(deviceId: string, userId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         `SELECT 
           ds.*,
           d.description as device_description
@@ -70,7 +70,7 @@ export class DatastreamService {
   // Mengambil datastream spesifik berdasarkan ID dan user ID
   async getDatastreamById(datastreamId: string, userId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM datastreams WHERE id = ? AND user_id = ?",
         [datastreamId, userId]
       );
@@ -108,7 +108,7 @@ export class DatastreamService {
     try {
       // Cek apakah pin sudah terpakai
       const virtualPin = `V${pin}`;
-      const [usedPin] = await this.db.query(
+      const [usedPin] = await (this.db as any).safeQuery(
         "SELECT id FROM datastreams WHERE user_id = ? AND device_id = ? AND pin = ?",
         [userId, deviceId, virtualPin]
       );
@@ -134,7 +134,7 @@ export class DatastreamService {
         maxVal = 1;
       }
 
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "INSERT INTO datastreams (description, pin, type, unit, min_value, max_value, decimal_value, device_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           description,
@@ -196,7 +196,7 @@ export class DatastreamService {
         maxVal = 1;
       }
 
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "UPDATE datastreams SET device_id = ?, pin = ?, type = ?, unit = ?, description = ?, min_value = ?, max_value = ?, decimal_value = ? WHERE id = ?",
         [
           Number(deviceId),
@@ -222,32 +222,32 @@ export class DatastreamService {
       // Delete data terkait dalam urutan yang tepat untuk menghindari foreign key constraint errors
       
       // 1. Delete notifications yang terkait dengan datastream (FK nullable ke datastream_id)
-      await this.db.query("DELETE FROM notifications WHERE datastream_id = ?", [datastreamId]);
+      await (this.db as any).safeQuery("DELETE FROM notifications WHERE datastream_id = ?", [datastreamId]);
       
       // 2. Delete device_commands yang terkait dengan datastream (FK ke datastream_id)
-      await this.db.query("DELETE FROM device_commands WHERE datastream_id = ?", [datastreamId]);
+      await (this.db as any).safeQuery("DELETE FROM device_commands WHERE datastream_id = ?", [datastreamId]);
       
       // 3. Delete widgets yang menggunakan datastream ini (JSON extract dari inputs)
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM widgets WHERE JSON_UNQUOTE(JSON_EXTRACT(inputs, '$.datastream_id')) = ?",
         [datastreamId]
       );
       
       // 4. Delete alarm_conditions yang terkait dengan alarms dari datastream ini
-      await this.db.query(`
+      await (this.db as any).safeQuery(`
         DELETE ac FROM alarm_conditions ac 
         INNER JOIN alarms a ON ac.alarm_id = a.id 
         WHERE a.datastream_id = ?
       `, [datastreamId]);
       
       // 5. Delete alarms yang terkait dengan datastream (akan trigger CASCADE untuk alarm_conditions)
-      await this.db.query("DELETE FROM alarms WHERE datastream_id = ?", [datastreamId]);
+      await (this.db as any).safeQuery("DELETE FROM alarms WHERE datastream_id = ?", [datastreamId]);
       
       // 6. Delete payloads yang terkait dengan datastream (FK ke datastream_id - CASCADE)
-      await this.db.query("DELETE FROM payloads WHERE datastream_id = ?", [datastreamId]);
+      await (this.db as any).safeQuery("DELETE FROM payloads WHERE datastream_id = ?", [datastreamId]);
       
       // 7. Finally, delete the datastream itself
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM datastreams WHERE id = ?",
         [datastreamId]
       );

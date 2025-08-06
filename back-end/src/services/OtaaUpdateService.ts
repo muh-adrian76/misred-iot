@@ -11,7 +11,7 @@
  * - File management dengan path handling
  * - Board type compatibility checking
  */
-import { Pool, ResultSetHeader } from "mysql2/promise";
+import { Pool, ResultSetHeader, FieldPacket } from "mysql2/promise";
 import { existsSync, unlinkSync } from "fs";
 
 export class OtaaUpdateService {
@@ -51,7 +51,7 @@ export class OtaaUpdateService {
   }) {
     try {
       // Cek apakah firmware sudah ada untuk board type dan user ini
-      const [existing]: any = await this.db.query(
+      const [existing]: any = await (this.db as any).safeQuery(
         "SELECT id, firmware_url FROM otaa_updates WHERE board_type = ? AND user_id = ?",
         [board_type, user_id]
       );
@@ -70,7 +70,7 @@ export class OtaaUpdateService {
         }
 
         // Update firmware yang sudah ada
-        await this.db.query(
+        await (this.db as any).safeQuery(
           `UPDATE otaa_updates SET 
            firmware_version = ?, 
            firmware_url = ?, 
@@ -85,11 +85,11 @@ export class OtaaUpdateService {
         return existing[0].id;
       } else {
         // Buat entry firmware baru
-        const [result] = await this.db.query<ResultSetHeader>(
+        const [result] = await (this.db as any).safeQuery(
           `INSERT INTO otaa_updates (board_type, firmware_version, firmware_url, user_id, file_size, original_filename, checksum, description) 
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [board_type, firmware_version, firmware_url, user_id, file_size, original_filename, checksum, description]
-        );
+        ) as [ResultSetHeader, FieldPacket[]];
         return result.insertId;
       }
     } catch (error) {
@@ -110,7 +110,7 @@ export class OtaaUpdateService {
         params = [board_type, user_id];
       }
 
-      const [rows]: any = await this.db.query(query, params);
+      const [rows]: any = await (this.db as any).safeQuery(query, params);
       return rows[0] || null;
     } catch (error) {
       console.error("Error fetching firmware by board type:", error);
@@ -125,7 +125,7 @@ export class OtaaUpdateService {
       const query = "SELECT * FROM otaa_updates WHERE user_id = ? ORDER BY updated_at DESC";
       const params = [user_id];
 
-      const [rows] = await this.db.query(query, params);
+      const [rows] = await (this.db as any).safeQuery(query, params);
       return rows;
     } catch (error) {
       console.error("Error fetching all firmwares:", error);
@@ -151,7 +151,7 @@ export class OtaaUpdateService {
         ORDER BY o.user_id ASC, o.updated_at DESC
       `;
 
-      const [rows] = await this.db.query(query);
+      const [rows] = await (this.db as any).safeQuery(query);
       return rows;
     } catch (error) {
       console.error("Error fetching all firmwares for admin:", error);
@@ -178,7 +178,7 @@ export class OtaaUpdateService {
         ORDER BY board_type ASC, updated_at DESC
       `;
 
-      const [rows]: any = await this.db.query(query);
+      const [rows]: any = await (this.db as any).safeQuery(query);
       
       // Group by board type
       const groupedFirmwares = rows.reduce((groups: any, firmware: any) => {
@@ -218,7 +218,7 @@ export class OtaaUpdateService {
   }) {
     try {
       // Cek apakah sudah ada firmware dengan versi yang sama
-      const [existing]: any = await this.db.query(
+      const [existing]: any = await (this.db as any).safeQuery(
         "SELECT id FROM otaa_updates WHERE board_type = ? AND firmware_version = ? AND user_id = 0",
         [board_type, firmware_version]
       );
@@ -228,11 +228,11 @@ export class OtaaUpdateService {
       }
 
       // Buat entry global firmware baru (user_id = 0 untuk global)
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         `INSERT INTO otaa_updates (board_type, firmware_version, firmware_url, user_id, file_size, original_filename, checksum, description) 
          VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
         [board_type, firmware_version, firmware_url, file_size, original_filename, checksum, description]
-      );
+      ) as [ResultSetHeader, FieldPacket[]];
       return result.insertId;
     } catch (error) {
       console.error("Error creating global firmware with versioning:", error);
@@ -253,7 +253,7 @@ export class OtaaUpdateService {
   }) {
     try {
       // Cek apakah sudah ada global firmware untuk board type ini
-      const [existing]: any = await this.db.query(
+      const [existing]: any = await (this.db as any).safeQuery(
         "SELECT id, firmware_url FROM otaa_updates WHERE board_type = ? AND user_id = 0",
         [board_type]
       );
@@ -272,17 +272,17 @@ export class OtaaUpdateService {
         }
 
         // Update global firmware yang sudah ada
-        await this.db.query(
+        await (this.db as any).safeQuery(
           "UPDATE otaa_updates SET firmware_version = ?, firmware_url = ?, updated_at = CURRENT_TIMESTAMP WHERE board_type = ? AND user_id = 0",
           [firmware_version, firmware_url, board_type]
         );
         return existing[0].id;
       } else {
         // Buat entry global firmware baru (user_id = 0 untuk global)
-        const [result] = await this.db.query<ResultSetHeader>(
+        const [result] = await (this.db as any).safeQuery(
           "INSERT INTO otaa_updates (board_type, firmware_version, firmware_url, user_id) VALUES (?, ?, ?, 0)",
           [board_type, firmware_version, firmware_url]
-        );
+        ) as [ResultSetHeader, FieldPacket[]];
         return result.insertId;
       }
     } catch (error) {
@@ -318,7 +318,7 @@ export class OtaaUpdateService {
   // Mengambil informasi firmware berdasarkan ID
   async getFirmwareById(firmware_id: number) {
     try {
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT * FROM otaa_updates WHERE id = ?",
         [firmware_id]
       );
@@ -340,7 +340,7 @@ export class OtaaUpdateService {
         WHERE d.board_type = ? AND u.refresh_token IS NOT NULL
       `;
 
-      const [rows] = await this.db.query(query, [board_type]);
+      const [rows] = await (this.db as any).safeQuery(query, [board_type]);
       return rows;
     } catch (error) {
       console.error("Error getting users with board type:", error);
@@ -355,7 +355,7 @@ export class OtaaUpdateService {
       console.log(`🗑️ [DELETE FIRMWARE] Starting deletion for ID: ${id}, User: ${user_id}`);
       
       // Get firmware info sebelum menghapus
-      const [firmware]: any = await this.db.query(
+      const [firmware]: any = await (this.db as any).safeQuery(
         "SELECT firmware_url FROM otaa_updates WHERE id = ? AND user_id = ?",
         [id, user_id]
       );
@@ -381,10 +381,10 @@ export class OtaaUpdateService {
       }
 
       // Hapus dari database
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM otaa_updates WHERE id = ? AND user_id = ?",
         [id, user_id]
-      );
+      ) as [ResultSetHeader, FieldPacket[]];
       
       const success = result.affectedRows > 0;
       console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Database deletion result: ${result.affectedRows} rows affected`);
@@ -399,7 +399,7 @@ export class OtaaUpdateService {
   async checkFirmwareUpdate(device_id: string) {
     try {
       // Get device board type, current firmware version, and user_id
-      const [device]: any = await this.db.query(
+      const [device]: any = await (this.db as any).safeQuery(
         "SELECT board_type, firmware_version, user_id FROM devices WHERE id = ?",
         [device_id]
       );

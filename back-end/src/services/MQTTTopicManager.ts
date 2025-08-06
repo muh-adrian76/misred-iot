@@ -26,14 +26,14 @@ export class MQTTTopicManager {
   // Mengecek berapa banyak device yang menggunakan topic tertentu
   private async getTopicUsageCount(topic: string): Promise<number> {
     try {
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await this.safeDbQuery(
         "SELECT COUNT(*) as count FROM devices WHERE mqtt_topic = ? AND protocol = 'MQTT'",
         [topic]
       );
       return rows[0]?.count || 0;
     } catch (error) {
       console.error("Error getting topic usage count:", error);
-      return 0;
+      return 0; // Return 0 untuk graceful fallback
     }
   }
 
@@ -41,13 +41,37 @@ export class MQTTTopicManager {
   // Mendapatkan semua unique topics yang digunakan oleh devices
   async getAllActiveTopics(): Promise<string[]> {
     try {
-      const [rows]: any = await this.db.query(
+      // Use safe query method with auto-retry
+      const [rows]: any = await this.safeDbQuery(
         "SELECT DISTINCT mqtt_topic FROM devices WHERE mqtt_topic IS NOT NULL AND protocol = 'MQTT'"
       );
       return rows.map((row: any) => row.mqtt_topic).filter(Boolean);
     } catch (error) {
       console.error("Error getting all active topics:", error);
-      return [];
+      return []; // Return empty array untuk graceful fallback
+    }
+  }
+
+  // ===== SAFE DATABASE QUERY =====
+  // Method untuk execute database query dengan error handling
+  private async safeDbQuery(sql: string, params: any[] = []): Promise<any> {
+    try {
+      return await (this.db as any).safeQuery(sql, params);
+    } catch (error: any) {
+      // Check jika error disebabkan pool closed
+      if (error.message?.includes('Pool is closed') || 
+          error.code === 'PROTOCOL_CONNECTION_LOST' ||
+          error.code === 'ER_CONNECTION_LOST') {
+        console.warn('🔄 Database connection issue in MQTT Topic Manager, attempting recovery...');
+        
+        // Import MySQLDatabase untuk force reconnect
+        const { MySQLDatabase } = await import('../lib/middleware');
+        this.db = MySQLDatabase.forceReconnect();
+        
+        // Retry query dengan connection baru
+        return await (this.db as any).safeQuery(sql, params);
+      }
+      throw error; // Re-throw jika bukan connection error
     }
   }
 

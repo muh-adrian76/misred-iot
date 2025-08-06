@@ -51,7 +51,7 @@ export class DeviceStatusService {
         WHERE id = ?
       `;
       
-      await this.db.query(query, [deviceId]);
+      await (this.db as any).safeQuery(query, [deviceId]);
 
       // Debug log untuk status update
       // console.log(`🟢 Status Device ${deviceId} diupdate menjadi online`);
@@ -78,7 +78,7 @@ export class DeviceStatusService {
   // Mengecek apakah koneksi database masih sehat
   private async checkDbConnection(): Promise<boolean> {
     try {
-      await this.db.query('SELECT 1');
+      await (this.db as any).safeQuery('SELECT 1');
       return true;
     } catch (error) {
       console.error('Database connection check failed:', error);
@@ -110,7 +110,7 @@ export class DeviceStatusService {
         )
       `;
       
-      const [offlineResult] = await this.db.query(offlineQuery);
+      const [offlineResult] = await (this.db as any).safeQuery(offlineQuery);
       
       // Set online devices yang baru mengirim data berdasarkan timeout masing-masing device
       const onlineQuery = `
@@ -121,7 +121,7 @@ export class DeviceStatusService {
         AND last_seen_at >= DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE)
       `;
       
-      const [onlineResult] = await this.db.query(onlineQuery);
+      const [onlineResult] = await (this.db as any).safeQuery(onlineQuery);
       
       const result = {
         updated: ((offlineResult as any).affectedRows || 0) + ((onlineResult as any).affectedRows || 0),
@@ -142,7 +142,7 @@ export class DeviceStatusService {
             OR (status = 'online' AND last_seen_at >= DATE_SUB(NOW(), INTERVAL COALESCE(offline_timeout_minutes, 1) MINUTE))
           `;
           
-          const [affectedDevices] = await this.db.query(getAffectedDevicesQuery);
+          const [affectedDevices] = await (this.db as any).safeQuery(getAffectedDevicesQuery);
           
           // Process affected devices - broadcast untuk semua perubahan status
           for (const device of (affectedDevices as any[])) {
@@ -212,7 +212,7 @@ export class DeviceStatusService {
         WHERE d.id = ?
       `;
       
-      const [rows] = await this.db.query(query, [deviceId]);
+      const [rows] = await (this.db as any).safeQuery(query, [deviceId]);
       return (rows as any[])[0] || null;
     } catch (error) {
       console.error(`Error getting device ${deviceId} status:`, error);
@@ -249,7 +249,7 @@ export class DeviceStatusService {
         ORDER BY d.last_seen_at DESC
       `;
       
-      const [rows] = await this.db.query(query, [userId]);
+      const [rows] = await (this.db as any).safeQuery(query, [userId]);
       return rows as any[];
     } catch (error) {
       console.error(`Error getting devices for user ${userId}:`, error);
@@ -321,7 +321,7 @@ export class DeviceStatusService {
         FROM devices
       `;
       
-      const [rows] = await this.db.query(query);
+      const [rows] = await (this.db as any).safeQuery(query);
       return (rows as any[])[0] || null;
     } catch (error) {
       console.error('Error getting status statistics:', error);
@@ -344,7 +344,7 @@ export class DeviceStatusService {
         LIMIT 1
       `;
       
-      const [recentNotifications] = await this.db.query(recentNotificationQuery, [deviceId.toString()]);
+      const [recentNotifications] = await (this.db as any).safeQuery(recentNotificationQuery, [deviceId.toString()]);
       
       if ((recentNotifications as any[]).length > 0) {
         console.log(`⚠️ Device offline notification already sent for device ${deviceId} in last 5 minutes, skipping duplicate`);
@@ -365,7 +365,7 @@ export class DeviceStatusService {
       `;
         
       console.log(`🔍 Querying device and user info for device ${deviceId}`);
-      const [result] = await this.db.query(query, [deviceId.toString()]);
+      const [result] = await (this.db as any).safeQuery(query, [deviceId.toString()]);
       const deviceData = (result as any[])[0];
         
       if (!deviceData) {
@@ -387,7 +387,7 @@ export class DeviceStatusService {
       // Create notification di database
       console.log(`🔄 Creating device offline notification for device ${deviceId}, user ${deviceData.user_id}`);
       
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "INSERT INTO notifications (user_id, type, title, message, priority, device_id, triggered_at, is_read) VALUES (?, ?, ?, ?, ?, ?, NOW(), FALSE)",
         [
           deviceData.user_id,
@@ -473,7 +473,7 @@ export class DeviceStatusService {
       }
 
       // Update only device status without notification
-      const [result] = await this.db.query(
+      const [result] = await (this.db as any).safeQuery(
         "UPDATE devices SET status = ? WHERE id = ?",
         [status, deviceId]
       );

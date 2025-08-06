@@ -52,7 +52,7 @@ export class DeviceService {
     user_id,
   }: any) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         `INSERT INTO devices 
       (description, board_type, protocol, mqtt_topic, offline_timeout_minutes, new_secret, user_id) 
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -75,7 +75,7 @@ export class DeviceService {
       // Integrasi broker MQTT dengan topic manager
       if (topic && this.mqttTopicManager && this.onSubscribeTopic) {
         const uniqueTopic = topic;
-        await this.db.query("UPDATE devices SET mqtt_topic = ? WHERE id = ?", [
+        await (this.db as any).safeQuery("UPDATE devices SET mqtt_topic = ? WHERE id = ?", [
           uniqueTopic,
           id,
         ]);
@@ -96,7 +96,7 @@ export class DeviceService {
 
   async getAllUserDevices(user_id: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM devices WHERE user_id = ?",
         [user_id]
       );
@@ -109,7 +109,7 @@ export class DeviceService {
 
   async getDeviceById(id: string) {
     try {
-      const [rows] = await this.db.query("SELECT * FROM devices WHERE id = ?", [
+      const [rows] = await (this.db as any).safeQuery("SELECT * FROM devices WHERE id = ?", [
         id,
       ]);
       return rows;
@@ -121,7 +121,7 @@ export class DeviceService {
 
   async getSecretByDevice(id: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT new_secret FROM devices WHERE id = ?",
         [id]
       );
@@ -134,7 +134,7 @@ export class DeviceService {
 
   async getNewSecret(id: string, old_secret: string) {
     try {
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT new_secret FROM devices WHERE id = ? AND old_secret = ?",
         [id, old_secret]
       );
@@ -151,7 +151,7 @@ export class DeviceService {
   async getFirmwareVersion(id: string) {
     try {
       // Get device info dengan user_id
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT board_type, firmware_version, user_id FROM devices WHERE id = ?",
         [id]
       );
@@ -188,11 +188,11 @@ export class DeviceService {
   ) {
     try {
       // Update device's current firmware version when it gets updated
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "UPDATE devices SET firmware_version = ? WHERE id = ?",
         [firmware_version, id]
       );
-      const [updatedTime]: any = await this.db.query(
+      const [updatedTime]: any = await (this.db as any).safeQuery(
         "SELECT updated_at FROM devices WHERE id = ?",
         [id]
       );
@@ -206,7 +206,7 @@ export class DeviceService {
   async getFirmwareList(id: string) {
     try {
       // Get device board type dan user_id
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT board_type, user_id FROM devices WHERE id = ?",
         [id]
       );
@@ -246,7 +246,7 @@ export class DeviceService {
   async getFirmwareFile(id: string, filename: string) {
     try {
       // Get device board type dan user_id
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT board_type, user_id FROM devices WHERE id = ?",
         [id]
       );
@@ -283,7 +283,7 @@ export class DeviceService {
   async getFirmwareUrl(id: string) {
     try {
       // Get device info dengan user_id
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT board_type, user_id FROM devices WHERE id = ?",
         [id]
       );
@@ -314,13 +314,13 @@ export class DeviceService {
   async refreshAllDeviceSecrets() {
     try {
       // 1. Ambil semua device
-      const [devices]: any = await this.db.query(
+      const [devices]: any = await (this.db as any).safeQuery(
         "SELECT id, new_secret FROM devices"
       );
       for (const device of devices) {
         const newSecret = randomBytes(16).toString("hex");
         // 2. Simpan secret lama ke old_secret, update new_secret
-        await this.db.query(
+        await (this.db as any).safeQuery(
           "UPDATE devices SET old_secret = ?, new_secret = ? WHERE id = ?",
           [device.new_secret, newSecret, device.id]
         );
@@ -350,7 +350,7 @@ export class DeviceService {
   ) {
     try {
       // Topik MQTT
-      const [rows]: any = await this.db.query(
+      const [rows]: any = await (this.db as any).safeQuery(
         "SELECT mqtt_topic FROM devices WHERE id = ?",
         [id]
       );
@@ -368,7 +368,7 @@ export class DeviceService {
         uniqueTopic = topic;
       }
 
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         `UPDATE devices SET description = ?, board_type = ?, protocol = ?, mqtt_topic = ?, offline_timeout_minutes = ?, firmware_version = ?
       WHERE id = ? AND user_id = ?`,
         [
@@ -411,7 +411,7 @@ export class DeviceService {
   async deleteDevice(id: string, userId: string) {
     try {
       // Get topic sebelum delete untuk unsubscribe jika perlu
-      const [deviceRows]: any = await this.db.query(
+      const [deviceRows]: any = await (this.db as any).safeQuery(
         "SELECT mqtt_topic FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]
       );
@@ -421,23 +421,23 @@ export class DeviceService {
       // Semua tabel terkait device menggunakan ON DELETE CASCADE, jadi urutan sudah optimal
 
       // 1. Delete notifications yang terkait dengan device (FK ke device_id - nullable)
-      await this.db.query("DELETE FROM notifications WHERE device_id = ?", [
+      await (this.db as any).safeQuery("DELETE FROM notifications WHERE device_id = ?", [
         id,
       ]);
 
       // 2. Delete device_commands yang terkait dengan device (FK ke device_id dan datastream_id)
-      await this.db.query("DELETE FROM device_commands WHERE device_id = ?", [
+      await (this.db as any).safeQuery("DELETE FROM device_commands WHERE device_id = ?", [
         id,
       ]);
 
       // 3. Delete widgets yang menggunakan device ini (JSON extract dari inputs)
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM widgets WHERE JSON_UNQUOTE(JSON_EXTRACT(inputs, '$.device_id')) = ?",
         [id]
       );
 
       // 4. Delete alarm_conditions yang terkait dengan alarms dari device ini
-      await this.db.query(
+      await (this.db as any).safeQuery(
         `
         DELETE ac FROM alarm_conditions ac 
         INNER JOIN alarms a ON ac.alarm_id = a.id 
@@ -447,19 +447,19 @@ export class DeviceService {
       );
 
       // 5. Delete alarms yang terkait dengan device (akan trigger CASCADE untuk alarm_conditions)
-      await this.db.query("DELETE FROM alarms WHERE device_id = ?", [id]);
+      await (this.db as any).safeQuery("DELETE FROM alarms WHERE device_id = ?", [id]);
 
       // 6. Delete payloads (FK ke device_id dan datastream_id - CASCADE)
-      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [id]);
+      await (this.db as any).safeQuery("DELETE FROM payloads WHERE device_id = ?", [id]);
 
       // 7. Delete raw_payloads yang terkait dengan device (FK ke device_id - CASCADE)
-      await this.db.query("DELETE FROM raw_payloads WHERE device_id = ?", [id]);
+      await (this.db as any).safeQuery("DELETE FROM raw_payloads WHERE device_id = ?", [id]);
 
       // 8. Delete datastreams yang terkait dengan device (FK ke device_id - CASCADE)
-      await this.db.query("DELETE FROM datastreams WHERE device_id = ?", [id]);
+      await (this.db as any).safeQuery("DELETE FROM datastreams WHERE device_id = ?", [id]);
 
       // 9. Finally, delete the device itself
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]
       );
@@ -490,26 +490,26 @@ export class DeviceService {
   }> {
     try {
       // Count payloads sebelum dihapus untuk return value
-      const [payloadCountResult]: any = await this.db.query(
+      const [payloadCountResult]: any = await (this.db as any).safeQuery(
         "SELECT COUNT(*) as count FROM payloads WHERE device_id = ?",
         [deviceId]
       );
       const payloadCount = payloadCountResult[0]?.count || 0;
 
       // Count raw_payloads sebelum dihapus untuk return value
-      const [rawPayloadCountResult]: any = await this.db.query(
+      const [rawPayloadCountResult]: any = await (this.db as any).safeQuery(
         "SELECT COUNT(*) as count FROM raw_payloads WHERE device_id = ?",
         [deviceId]
       );
       const rawPayloadCount = rawPayloadCountResult[0]?.count || 0;
 
       // Hapus payloads yang terkait dengan device
-      await this.db.query("DELETE FROM payloads WHERE device_id = ?", [
+      await (this.db as any).safeQuery("DELETE FROM payloads WHERE device_id = ?", [
         deviceId,
       ]);
 
       // Hapus raw_payloads yang terkait dengan device
-      await this.db.query("DELETE FROM raw_payloads WHERE device_id = ?", [
+      await (this.db as any).safeQuery("DELETE FROM raw_payloads WHERE device_id = ?", [
         deviceId,
       ]);
 
@@ -535,7 +535,7 @@ export class DeviceService {
     firmwareVersion: string
   ): Promise<boolean> {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "UPDATE devices SET firmware_version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         [firmwareVersion, deviceId]
       );

@@ -52,19 +52,19 @@ export class AdminService {
   async getOverviewStats(): Promise<AdminStats> {
     try {
       // Ambil total users dari database
-      const [totalUsersResult] = await this.db.query("SELECT COUNT(*) as count FROM users");
+      const [totalUsersResult] = await this.db.safeQuery("SELECT COUNT(*) as count FROM users");
       const totalUsers = totalUsersResult[0]?.count || 0;
 
       // Ambil total devices yang terdaftar
-      const [totalDevicesResult] = await this.db.query("SELECT COUNT(*) as count FROM devices");
+      const [totalDevicesResult] = await this.db.safeQuery("SELECT COUNT(*) as count FROM devices");
       const totalDevices = totalDevicesResult[0]?.count || 0;
 
       // Ambil total dashboards yang dibuat
-      const [totalDashboardsResult] = await this.db.query("SELECT COUNT(*) as count FROM dashboards");
+      const [totalDashboardsResult] = await this.db.safeQuery("SELECT COUNT(*) as count FROM dashboards");
       const totalDashboards = totalDashboardsResult[0]?.count || 0;
 
       // Ambil active users (login dalam 24 jam terakhir)
-      const [activeUsersResult] = await this.db.query(`
+      const [activeUsersResult] = await this.db.safeQuery(`
         SELECT COUNT(*) as count FROM users 
         WHERE refresh_token IS NOT NULL 
         AND refresh_token != '' 
@@ -73,17 +73,17 @@ export class AdminService {
       const activeUsers = activeUsersResult[0]?.count || 0;
 
       // Ambil devices yang sedang online
-      const [onlineDevicesResult] = await this.db.query(`
+      const [onlineDevicesResult] = await this.db.safeQuery(`
         SELECT COUNT(*) as count FROM devices WHERE status = 'online'
       `);
       const onlineDevices = onlineDevicesResult[0]?.count || 0;
 
       // Ambil total alarms yang dibuat
-      const [totalAlarmsResult] = await this.db.query("SELECT COUNT(*) as count FROM alarms");
+      const [totalAlarmsResult] = await this.db.safeQuery("SELECT COUNT(*) as count FROM alarms");
       const totalAlarms = totalAlarmsResult[0]?.count || 0;
 
       // Ambil total payloads data sensor
-      const [totalPayloadsResult] = await this.db.query("SELECT COUNT(*) as count FROM payloads");
+      const [totalPayloadsResult] = await this.db.safeQuery("SELECT COUNT(*) as count FROM payloads");
       const totalPayloads = totalPayloadsResult[0]?.count || 0;
 
       return {
@@ -112,7 +112,7 @@ export class AdminService {
         LIMIT ?
       `;
       
-      const [users] = await this.db.query(query, [limit]);
+      const [users] = await this.db.safeQuery(query, [limit]);
       return users;
     } catch (error) {
       console.error("Error getting recent users:", error);
@@ -134,7 +134,7 @@ export class AdminService {
         LIMIT ?
       `;
       
-      const [users] = await this.db.query(query, [limit]);
+      const [users] = await this.db.safeQuery(query, [limit]);
       return users;
     } catch (error) {
       console.error("Error getting active users:", error);
@@ -172,7 +172,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const [devices] = await this.db.query(query);
+      const [devices] = await this.db.safeQuery(query);
       return devices;
     } catch (error) {
       console.error("Error getting device locations:", error);
@@ -192,7 +192,7 @@ export class AdminService {
         WHERE id = ?
       `;
       
-      const [result] = await this.db.query(query, [latitude, longitude, address || null, deviceId]);
+      const [result] = await this.db.safeQuery(query, [latitude, longitude, address || null, deviceId]);
       console.log("Update result:", result);
       
       return result.affectedRows > 0;
@@ -210,7 +210,7 @@ export class AdminService {
       // Test koneksi database dengan query sederhana
       let database = true;
       try {
-        await this.db.query("SELECT 1");
+        await this.db.safeQuery("SELECT 1");
       } catch {
         database = false;
       }
@@ -256,7 +256,7 @@ export class AdminService {
     try {
       // Coba query sederhana dulu untuk memastikan tabel users ada
       const simpleQuery = `SELECT * FROM users ORDER BY created_at DESC`;
-      const [simpleUsers] = await this.db.query(simpleQuery);
+      const [simpleUsers] = await this.db.safeQuery(simpleQuery);
       
       if (simpleUsers && simpleUsers.length > 0) {
         // Jika berhasil, jalankan query kompleks dengan JOIN
@@ -282,7 +282,7 @@ export class AdminService {
           ORDER BY u.created_at DESC
         `;
         
-        const [users] = await this.db.query(query);
+        const [users] = await this.db.safeQuery(query);
         return users;
       } else {
         return [];  // Tidak ada user
@@ -291,7 +291,7 @@ export class AdminService {
       console.error("💥 Error getting users with stats:", error);
       // Jika query kompleks gagal, gunakan data user biasa
       try {
-        const [fallbackUsers] = await this.db.query(`SELECT * FROM users ORDER BY created_at DESC`);
+        const [fallbackUsers] = await this.db.safeQuery(`SELECT * FROM users ORDER BY created_at DESC`);
         return fallbackUsers.map((user: any) => ({
           ...user,
           device_count: 0,
@@ -333,7 +333,7 @@ export class AdminService {
         ORDER BY d.created_at DESC
       `;
       
-      const [devices] = await this.db.query(query);
+      const [devices] = await this.db.safeQuery(query);
       return devices;
     } catch (error) {
       console.error("Error getting devices with stats:", error);

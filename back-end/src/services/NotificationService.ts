@@ -664,7 +664,7 @@ export class NotificationService {
       console.log(`📊 [ALARM CHECK] Data yang diterima untuk pengecekan:`, receivedData);
 
       // Query untuk mendapatkan alarm yang aktif untuk device ini
-      const [alarmRows] = await this.db.execute(
+      const [alarmRows] = await (this.db as any).safeQuery(
         `
         SELECT 
           a.id, a.description, a.user_id, a.device_id, a.datastream_id,
@@ -771,7 +771,7 @@ export class NotificationService {
             
             // Update last_triggered timestamp
             console.log(`⏰ [ALARM TRIGGERED] Memperbarui last_triggered untuk alarm ${alarm.id}`);
-            await this.db.execute(
+            await (this.db as any).safeQuery(
               'UPDATE alarms SET last_triggered = NOW() WHERE id = ?',
               [alarm.id]
             );
@@ -782,7 +782,7 @@ export class NotificationService {
             const alarmTitle = `${alarm.description}`;
             const alarmMessage = `Perangkat: ${alarm.device_description}\nDatastream: ${alarm.datastream_description} (${alarm.field_name})\nNilai pemicu: ${numericValue}\nKondisi: ${conditionsText}\nWaktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
             
-            const [logResult] = await this.db.execute(
+            const [logResult] = await (this.db as any).safeQuery(
               `INSERT INTO notifications (type, title, message, priority, user_id, device_id, alarm_id, datastream_id, sensor_value, conditions_text, triggered_at, is_read) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), FALSE)`,
               [
@@ -888,17 +888,17 @@ export class NotificationService {
    */
   async getAlarmStats(): Promise<any> {
     try {
-      const [totalAlarms] = await this.db.execute(
+      const [totalAlarms] = await (this.db as any).safeQuery(
         `SELECT COUNT(*) as total FROM alarms WHERE is_active = 1`
       );
 
-      const [todayTriggers] = await this.db.execute(`
+      const [todayTriggers] = await (this.db as any).safeQuery(`
         SELECT COUNT(*) as today_triggers 
         FROM notifications 
         WHERE DATE(triggered_at) = CURDATE()
       `);
 
-      const [recentLogs] = await this.db.execute(`
+      const [recentLogs] = await (this.db as any).safeQuery(`
         SELECT 
           an.id, an.alarm_id, an.triggered_at, an.notification_type as notification_status,
           an.sensor_value, an.conditions_text,
@@ -1093,7 +1093,7 @@ export class NotificationService {
    */
   async getRecentNotifications(userId: number): Promise<any[]> {
     try {
-      const [rows] = await this.db.execute(
+      const [rows] = await (this.db as any).safeQuery(
         `
         SELECT 
           n.id,
@@ -1229,7 +1229,7 @@ export class NotificationService {
 
       // Execute count query first
       // console.log("🔍 Service executing count query with params:", countParams);
-      const [countResult] = await this.db.execute(baseCountQuery, countParams);
+      const [countResult] = await (this.db as any).safeQuery(baseCountQuery, countParams);
       const total = (countResult as any[])[0]?.total || 0;
       // console.log(`📊 Total notifications found: ${total}`);
 
@@ -1237,7 +1237,7 @@ export class NotificationService {
       // console.log("🔍 Service executing data query with params:", dataParams);
       // console.log("🔍 SQL query:", baseDataQuery);
       
-      const [rows] = await this.db.execute(baseDataQuery, dataParams);
+      const [rows] = await (this.db as any).safeQuery(baseDataQuery, dataParams);
       // console.log(`📊 Data query returned ${(rows as any[]).length} rows`);
 
       return {
@@ -1258,7 +1258,7 @@ export class NotificationService {
       console.log("🔄 AlarmNotificationService.markAllAsRead called with userId:", userId);
       
       // First, check how many unread notifications exist for this user
-      const [checkResult] = await this.db.execute(
+      const [checkResult] = await (this.db as any).safeQuery(
         `
         SELECT COUNT(*) as unread_count 
         FROM notifications 
@@ -1273,7 +1273,7 @@ export class NotificationService {
       }
       
       // Now mark them as read
-      const [result] = await this.db.execute(
+      const [result] = await (this.db as any).safeQuery(
         `
         UPDATE notifications 
         SET is_read = TRUE
@@ -1295,7 +1295,7 @@ export class NotificationService {
    */
   async deleteAllNotifications(userId: number): Promise<number> {
     try {
-      const [result] = await this.db.execute(
+      const [result] = await (this.db as any).safeQuery(
         `
         DELETE FROM notifications 
         WHERE user_id = ?

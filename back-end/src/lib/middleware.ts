@@ -9,6 +9,9 @@ import mysql, { Pool } from "mysql2/promise";
 export class MySQLDatabase {
   // Instance tunggal untuk pattern singleton
   private static instance: Pool | null = null;
+  private static isReconnecting: boolean = false;
+  private static reconnectAttempts: number = 0;
+  private static maxReconnectAttempts: number = 5;
 
   // ===== GET INSTANCE METHOD =====
   // Method untuk mendapatkan instance database dengan lazy initialization
@@ -25,17 +28,28 @@ export class MySQLDatabase {
           database: process.env.MYSQL_NAME, // Nama database
           port: Number(process.env.MYSQL_PORT), // Port database
           waitForConnections: true, // Tunggu koneksi jika pool penuh
-          connectionLimit: 10, // Maksimal 10 koneksi bersamaan
+          connectionLimit: 15, // Increased connection limit
           queueLimit: 0, // Tidak ada limit antrian query
           idleTimeout: 300000, // Timeout idle 5 menit
-          maxIdle: 5 // Maksimal 5 koneksi idle
+          maxIdle: 8, // Increased idle connections
+          keepAliveInitialDelay: 0, // Keep alive settings
+          enableKeepAlive: true
         });
+        
+        // ===== ADD SAFE QUERY METHOD TO POOL =====
+        // Add safeQuery method to the pool instance
+        (MySQLDatabase.instance as any).safeQuery = MySQLDatabase.safeQuery;
+        
+        // ===== SETUP CONNECTION EVENT HANDLERS =====
+        // Note: MySQL2 Pool doesn't expose direct event handlers
+        // We'll handle connection errors through try-catch in operations
         
         // ===== TEST INITIAL CONNECTION =====
         // Test koneksi awal untuk memastikan database dapat diakses
         MySQLDatabase.instance.execute("SELECT 1")
           .then(() => {
             console.log("✅ Terkoneksi ke Database MySQL.");
+            MySQLDatabase.reconnectAttempts = 0;
           })
           .catch((err) => {
             console.error("❌ Initial MySQL connection test failed:", err);
@@ -52,6 +66,51 @@ export class MySQLDatabase {
     return MySQLDatabase.instance; // Return instance yang sudah ada
   }
 
+  // ===== HANDLE CONNECTION LOST =====
+  // Method untuk handle connection lost events
+  private static async handleConnectionLost(): Promise<void> {
+    if (MySQLDatabase.isReconnecting) return;
+    
+    MySQLDatabase.isReconnecting = true;
+    console.log('🔄 Handling MySQL connection lost...');
+    
+    try {
+      await MySQLDatabase.forceReconnectWithRetry();
+    } finally {
+      MySQLDatabase.isReconnecting = false;
+    }
+  }
+
+  // ===== FORCE RECONNECTION WITH RETRY =====
+  // Method untuk memaksa reconnect database dengan retry mechanism
+  static async forceReconnectWithRetry(): Promise<Pool> {
+    if (MySQLDatabase.isReconnecting && MySQLDatabase.reconnectAttempts >= MySQLDatabase.maxReconnectAttempts) {
+      throw new Error('Max reconnection attempts reached');
+    }
+
+    MySQLDatabase.reconnectAttempts++;
+    console.log(`🔄 Forcing MySQL reconnection... (Attempt ${MySQLDatabase.reconnectAttempts}/${MySQLDatabase.maxReconnectAttempts})`);
+    
+    if (MySQLDatabase.instance) {
+      try {
+        // Tutup pool connection yang ada dengan graceful shutdown
+        await MySQLDatabase.instance.end();
+      } catch (err) {
+        console.warn("⚠️ Error closing existing pool:", err);
+      }
+      MySQLDatabase.instance = null; // Reset instance
+    }
+
+    // Wait before retry (exponential backoff)
+    const delay = Math.min(1000 * Math.pow(2, MySQLDatabase.reconnectAttempts - 1), 10000);
+    await new Promise(resolve => setTimeout(resolve, delay));
+
+    const newInstance = MySQLDatabase.getInstance(); // Buat instance baru
+    // Add safeQuery method to the new instance
+    (newInstance as any).safeQuery = MySQLDatabase.safeQuery;
+    return newInstance;
+  }
+
   // ===== FORCE RECONNECTION METHOD =====
   // Method untuk memaksa reconnect database (berguna saat koneksi terputus)
   static forceReconnect(): Pool {
@@ -65,22 +124,208 @@ export class MySQLDatabase {
       }
       MySQLDatabase.instance = null; // Reset instance
     }
-    return MySQLDatabase.getInstance(); // Buat instance baru
+    const newInstance = MySQLDatabase.getInstance(); // Buat instance baru
+    // Add safeQuery method to the new instance
+    (newInstance as any).safeQuery = MySQLDatabase.safeQuery;
+    return newInstance;
   }
 
-  // ===== HEALTH CHECK METHOD =====
-  // Method untuk mengecek kesehatan koneksi database
+  // ===== ENHANCED HEALTH CHECK METHOD =====
+  // Method untuk mengecek kesehatan koneksi database dengan comprehensive check
   static async healthCheck(): Promise<boolean> {
     try {
       const pool = MySQLDatabase.getInstance();
-      await pool.execute("SELECT 1"); // Query sederhana untuk test koneksi
+      if (!pool) return false;
+
+      // Test dengan timeout
+      const healthPromise = pool.execute("SELECT 1 as health_check, NOW() as server_time");
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Health check timeout')), 5000)
+      );
+
+      await Promise.race([healthPromise, timeoutPromise]);
       return true; // Koneksi sehat
-    } catch (error) {
+    } catch (error: any) {
       console.error("❌ MySQL health check failed:", error);
+      
+      // Auto reconnect on certain errors
+      if (error.message?.includes('Pool is closed') || 
+          error.code === 'PROTOCOL_CONNECTION_LOST' ||
+          error.code === 'ER_CONNECTION_LOST' ||
+          error.code === 'ECONNRESET') {
+        console.log('🔄 Attempting auto-reconnection due to health check failure...');
+        try {
+          await MySQLDatabase.forceReconnectWithRetry();
+          return true;
+        } catch (reconnectError) {
+          console.error('❌ Auto-reconnection failed:', reconnectError);
+        }
+      }
       return false; // Koneksi bermasalah
     }
   }
+
+  // ===== SAFE QUERY METHOD =====
+  // Method untuk execute query dengan auto-retry pada connection errors
+  static async safeQuery(sql: string, params: any[] = []): Promise<any> {
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const pool = MySQLDatabase.getInstance();
+        return await pool.execute(sql, params);
+      } catch (error: any) {
+        lastError = error;
+        console.error(`❌ Query attempt ${attempt} failed:`, error);
+        
+        if (error.message?.includes('Pool is closed') || 
+            error.code === 'PROTOCOL_CONNECTION_LOST' ||
+            error.code === 'ER_CONNECTION_LOST' ||
+            error.code === 'ECONNRESET') {
+          
+          if (attempt < 3) {
+            console.log(`🔄 Attempting database reconnection (attempt ${attempt}/3)...`);
+            try {
+              await MySQLDatabase.forceReconnectWithRetry();
+              // Wait a bit before retry
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            } catch (reconnectError) {
+              console.error('❌ Reconnection failed:', reconnectError);
+            }
+          }
+        }
+        
+        // If not a connection error or max attempts reached, throw immediately
+        if (attempt === 3 || (!error.message?.includes('Pool is closed') && 
+            error.code !== 'PROTOCOL_CONNECTION_LOST' &&
+            error.code !== 'ER_CONNECTION_LOST' &&
+            error.code !== 'ECONNRESET')) {
+          break;
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+
+  // ===== INSTANCE SAFE QUERY METHOD =====
+  // Instance method untuk safe query yang bisa dipanggil dengan this.db.safeQuery()
+  async safeQuery(sql: string, params: any[] = []): Promise<any> {
+    return MySQLDatabase.safeQuery(sql, params);
+  }
+
+  // ===== GRACEFUL SHUTDOWN =====
+  // Method untuk graceful shutdown database pool
+  static async shutdown(): Promise<void> {
+    if (MySQLDatabase.instance) {
+      console.log('🔄 Shutting down MySQL connection pool...');
+      try {
+        await MySQLDatabase.instance.end();
+        MySQLDatabase.instance = null;
+        console.log('✅ MySQL connection pool shut down gracefully');
+      } catch (error) {
+        console.error('❌ Error during MySQL shutdown:', error);
+      }
+    }
+  }
 }
+
+
+// ===== SIMPLIFIED DATABASE SERVICE =====
+// Centralized database service dengan error handling dan query optimization
+export class DatabaseService {
+  private static instance: DatabaseService | null = null;
+  private db: Pool;
+
+  private constructor() {
+    this.db = MySQLDatabase.getInstance();
+  }
+
+  // ===== SINGLETON PATTERN =====
+  static getInstance(): DatabaseService {
+    if (!DatabaseService.instance) {
+      DatabaseService.instance = new DatabaseService();
+    }
+    return DatabaseService.instance;
+  }
+
+  // ===== SAFE QUERY EXECUTION =====
+  async query(sql: string, params: any[] = []): Promise<any> {
+    try {
+      return await MySQLDatabase.safeQuery(sql, params);
+    } catch (error: any) {
+      console.error('❌ Database query failed:', error);
+      throw error;
+    }
+  }
+
+  // ===== CONNECTION STATUS =====
+  async isConnected(): Promise<boolean> {
+    return await MySQLDatabase.healthCheck();
+  }
+
+  // ===== GRACEFUL SHUTDOWN =====
+  async shutdown(): Promise<void> {
+    await MySQLDatabase.shutdown();
+    DatabaseService.instance = null;
+  }
+}
+
+// ===== SIMPLIFIED PERFORMANCE MONITOR =====
+// Lightweight performance monitoring untuk basic metrics
+export class PerformanceMonitor {
+  private static instance: PerformanceMonitor | null = null;
+  private metrics: Map<string, any> = new Map();
+  private startTime: number = Date.now();
+
+  static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
+
+  // ===== RECORD METRIC =====
+  recordMetric(name: string, value: number): void {
+    this.metrics.set(name, {
+      value,
+      timestamp: Date.now(),
+      count: (this.metrics.get(name)?.count || 0) + 1
+    });
+  }
+
+  // ===== GET SYSTEM METRICS =====
+  getSystemMetrics(): any {
+    const memUsage = process.memoryUsage();
+    
+    // Auto-detect runtime
+    const isNode = typeof process !== 'undefined' && process.versions?.node;
+    const isBun = typeof process !== 'undefined' && process.versions?.bun;
+    const runtime = isBun ? 'bun' : (isNode ? 'node' : 'unknown');
+    
+    return {
+      memory: {
+        rss: Math.round(memUsage.rss / 1024 / 1024), // MB
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+      },
+      uptime: Math.round(process.uptime()), // seconds
+      runtime,
+      metricsCount: this.metrics.size
+    };
+  }
+
+  // ===== CLEAR METRICS =====
+  clearMetrics(): void {
+    this.metrics.clear();
+  }
+}
+
+// ===== EXPORT SINGLETON INSTANCES =====
+export const databaseService = DatabaseService.getInstance();
+export const performanceMonitor = PerformanceMonitor.getInstance();
+
 
 // ===== MQTT CLIENT CLASS =====
 // Class singleton untuk mengelola koneksi MQTT client

@@ -38,7 +38,7 @@ export class UserService {
   // Mengambil semua user untuk admin dashboard
   async getAllUsers() {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress, is_admin FROM users"
       );
       return rows;
@@ -52,7 +52,7 @@ export class UserService {
   // Mengambil user spesifik berdasarkan ID dengan data formatting
   async getUserById(id: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, name, email, created_at, last_login, phone, whatsapp_notif, onboarding_completed, onboarding_progress, is_admin FROM users WHERE id = ?",
         [id]
       );
@@ -99,7 +99,7 @@ export class UserService {
       query += " WHERE id=?";
       params.push(id);
       
-      const [result] = await this.db.query<ResultSetHeader>(query, params);
+      const [result] = await (this.db as any).safeQuery(query, params);
       if (result.affectedRows > 0) {
         const updatedUser = await this.getUserById(id);
         return updatedUser;
@@ -138,7 +138,7 @@ export class UserService {
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id=?`;
       params.push(id);
       
-      const [result] = await this.db.query<ResultSetHeader>(query, params);
+      const [result] = await (this.db as any).safeQuery(query, params);
       if (result.affectedRows > 0) {
         const updatedUser = await this.getUserById(id);
         return updatedUser;
@@ -250,7 +250,7 @@ export class UserService {
 
   async updateWhatsAppNotifications(userId: string, enabled: boolean) {
     try {
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "UPDATE users SET whatsapp_notif = ? WHERE id = ?",
         [enabled, userId]
       );
@@ -263,7 +263,7 @@ export class UserService {
 
   async getWhatsAppNotificationStatus(userId: string): Promise<boolean> {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT whatsapp_notif FROM users WHERE id = ?",
         [userId]
       );
@@ -279,7 +279,7 @@ export class UserService {
   async updateOnboardingProgress(userId: string, taskId: number, completed: boolean = true) {
     try {
       // Get current progress
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT onboarding_progress FROM users WHERE id = ?",
         [userId]
       );
@@ -309,7 +309,7 @@ export class UserService {
       const isAllCompleted = allTasks.every(task => progress.includes(task));
       
       // Update database
-      const [updateResult] = await this.db.query<ResultSetHeader>(
+      const [updateResult] = await (this.db as any).safeQuery(
         "UPDATE users SET onboarding_progress = ?, onboarding_completed = ? WHERE id = ?",
         [JSON.stringify(progress), isAllCompleted, userId]
       );
@@ -323,7 +323,7 @@ export class UserService {
 
   async getOnboardingProgress(userId: string) {
     try {
-      const [rows] = await this.db.query(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT onboarding_progress, onboarding_completed FROM users WHERE id = ?",
         [userId]
       );

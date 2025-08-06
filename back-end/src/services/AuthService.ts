@@ -36,7 +36,7 @@ export class AuthService {
 
     try {
       // Pengecekan apakah email sudah terdaftar
-      const [existingUser] = await this.db.query<any[]>(
+      const [existingUser] = await (this.db as any).safeQuery(
         "SELECT id FROM users WHERE email = ?",
         [email]
       );
@@ -59,7 +59,7 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(password, 10);
       const name = email.split("@")[0];
 
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "INSERT INTO users (email, password, name, otp, otp_expires_at, is_verified, created_at) VALUES (?, ?, ?, ?, ?, FALSE, NOW())",
         [email, hashedPassword, name, otp, otpExpiresAt]
       );
@@ -98,7 +98,7 @@ export class AuthService {
 
     try {
       // Pengecekan apakah email sudah terdaftar
-      const [existingUser] = await this.db.query<any[]>(
+      const [existingUser] = await (this.db as any).safeQuery(
         "SELECT id FROM users WHERE email = ?",
         [email]
       );
@@ -114,7 +114,7 @@ export class AuthService {
       const hashedPassword = await bcrypt.hash(password, 10);
       const userName = name || email.split("@")[0];
 
-      const [result] = await this.db.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "INSERT INTO users (email, password, name, is_admin, created_at) VALUES (?, ?, ?, ?, NOW())",
         [email, hashedPassword, userName, is_admin || false]
       );
@@ -141,7 +141,7 @@ export class AuthService {
       };
     }
 
-    const [rows] = await this.db.query<any[]>(
+    const [rows] = await (this.db as any).safeQuery(
       "SELECT id, email, password, name, created_at, phone, is_admin, is_verified FROM users WHERE email = ?",
       [email]
     );
@@ -177,7 +177,7 @@ export class AuthService {
     const refreshToken = await response.text();
 
     const now = new Date();
-    await this.db.query(
+    await (this.db as any).safeQuery(
       "UPDATE users SET last_login = ?, refresh_token = ? WHERE id = ?",
       [now, refreshToken, user.id]
     );
@@ -212,7 +212,7 @@ export class AuthService {
     id: string,
     refreshTokenFromCookie: string | undefined
   ) {
-    const [rows] = await this.db.query<any[]>(
+    const [rows] = await (this.db as any).safeQuery(
       "SELECT refresh_token FROM users WHERE id = ?",
       [id]
     );
@@ -299,7 +299,7 @@ export class AuthService {
     const serverTime = new Date();
 
     try {
-      const [rows] = await this.db.query<any[]>(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, email, name, password, created_at, phone, is_admin FROM users WHERE email = ?",
         [payload.email]
       );
@@ -320,12 +320,12 @@ export class AuthService {
           };
         }
 
-        await this.db.query("UPDATE users SET last_login = ? WHERE id = ?", [
+        await (this.db as any).safeQuery("UPDATE users SET last_login = ? WHERE id = ?", [
           serverTime,
           userId,
         ]);
       } else {
-        const [result] = await this.db.query<ResultSetHeader>(
+        const [result] = await (this.db as any).safeQuery(
           "INSERT INTO users (password, email, name, created_at, last_login) VALUES (?, ?, ?, ?, ?)",
           [
             oauthPassword,
@@ -350,7 +350,7 @@ export class AuthService {
       );
       const refreshToken = await response.text();
 
-      await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      await (this.db as any).safeQuery("UPDATE users SET refresh_token = ? WHERE id = ?", [
         refreshToken,
         userId,
       ]);
@@ -400,7 +400,7 @@ export class AuthService {
     }
 
     try {
-      const [rows] = await this.db.query<any[]>(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT password FROM users WHERE id = ?",
         [id]
       );
@@ -424,7 +424,7 @@ export class AuthService {
       }
 
       const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-      await this.db.query("UPDATE users SET password = ? WHERE id = ?", [
+      await (this.db as any).safeQuery("UPDATE users SET password = ? WHERE id = ?", [
         hashedNewPassword,
         id,
       ]);
@@ -442,7 +442,7 @@ export class AuthService {
     }
 
     try {
-      const [rows] = await this.db.query<any[]>(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, name, password FROM users WHERE email = ?",
         [email]
       );
@@ -463,7 +463,7 @@ export class AuthService {
       const newPassword = Math.random().toString(36).substring(2, 10);
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      await this.db.query("UPDATE users SET password = ? WHERE id = ?", [
+      await (this.db as any).safeQuery("UPDATE users SET password = ? WHERE id = ?", [
         hashedPassword,
         user.id,
       ]);
@@ -494,7 +494,7 @@ export class AuthService {
     }
 
     try {
-      const [rows] = await this.db.query<any[]>(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, otp, otp_expires_at, is_verified FROM users WHERE email = ?",
         [email]
       );
@@ -525,7 +525,7 @@ export class AuthService {
       }
 
       // Verify user and clear OTP
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "UPDATE users SET is_verified = TRUE, otp = NULL, otp_expires_at = NULL WHERE email = ?",
         [email]
       );
@@ -549,7 +549,7 @@ export class AuthService {
     }
 
     try {
-      const [rows] = await this.db.query<any[]>(
+      const [rows] = await (this.db as any).safeQuery(
         "SELECT id, is_verified FROM users WHERE email = ?",
         [email]
       );
@@ -571,7 +571,7 @@ export class AuthService {
       const otpExpirationMinutes = parseInt(process.env.OTP_TIME || "10");
       const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
 
-      await this.db.query(
+      await (this.db as any).safeQuery(
         "UPDATE users SET otp = ?, otp_expires_at = ? WHERE email = ?",
         [otp, otpExpiresAt, email]
       );
@@ -590,7 +590,7 @@ export class AuthService {
   async logout(jwt: any, cookie: any) {
     const decoded = await authorizeRequest(jwt, cookie);
     const id = decoded.sub;
-    const [result] = await this.db.query<any[]>(
+    const [result] = await (this.db as any).safeQuery(
       "SELECT refresh_token FROM users WHERE id = ?",
       [id]
     );
@@ -599,7 +599,7 @@ export class AuthService {
     if (!refreshToken)
       return { status: 400, message: "Refresh token tidak valid." };
 
-    await this.db.query("UPDATE users SET refresh_token = ? WHERE id = ?", [
+    await (this.db as any).safeQuery("UPDATE users SET refresh_token = ? WHERE id = ?", [
       "",
       id,
     ]);

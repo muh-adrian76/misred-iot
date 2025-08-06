@@ -50,7 +50,7 @@ export class AlarmService {
   async createAlarm(data: CreateAlarmData): Promise<number> {
     try {
       // Mulai transaksi untuk konsistensi data
-      await this.db.query('START TRANSACTION');
+      await (this.db as any).safeQuery('START TRANSACTION');
       
       const query = `
         INSERT INTO alarms (
@@ -59,7 +59,7 @@ export class AlarmService {
         ) VALUES (?, ?, ?, ?, ?, ?)
       `;
 
-      const [result] = await this.db.query(query, [
+      const [result] = await (this.db as any).safeQuery(query, [
         data.description,
         data.user_id,
         data.device_id,
@@ -76,17 +76,17 @@ export class AlarmService {
           INSERT INTO alarm_conditions (alarm_id, operator, threshold) 
           VALUES (?, ?, ?)
         `;
-        await this.db.query(conditionQuery, [
+        await (this.db as any).safeQuery(conditionQuery, [
           alarmId,
           condition.operator,
           condition.threshold
         ]);
       }
 
-      await this.db.query('COMMIT');
+      await (this.db as any).safeQuery('COMMIT');
       return alarmId;
     } catch (error) {
-      await this.db.query('ROLLBACK');
+      await (this.db as any).safeQuery('ROLLBACK');
       console.error("Error creating alarm:", error);
       throw error;
     }
@@ -110,7 +110,7 @@ export class AlarmService {
         ORDER BY a.created_at DESC
       `;
 
-      const [rows] = await this.db.query(query, [userId]);
+      const [rows] = await (this.db as any).safeQuery(query, [userId]);
       const alarms = rows as any[];
 
       // Get conditions for each alarm and format data properly
@@ -121,7 +121,7 @@ export class AlarmService {
           WHERE alarm_id = ? 
           ORDER BY id
         `;
-        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
+        const [conditions] = await (this.db as any).safeQuery(conditionsQuery, [alarm.id]);
         
         // Convert threshold from string to number
         alarm.conditions = (conditions as any[]).map(condition => ({
@@ -169,7 +169,7 @@ export class AlarmService {
         WHERE a.id = ? AND a.user_id = ?
       `;
 
-      const [rows] = await this.db.query(query, [alarmId, userId]);
+      const [rows] = await (this.db as any).safeQuery(query, [alarmId, userId]);
       const result = rows as any[];
       
       if (result.length === 0) {
@@ -185,7 +185,7 @@ export class AlarmService {
         WHERE alarm_id = ? 
         ORDER BY id
       `;
-      const [conditions] = await this.db.query(conditionsQuery, [alarmId]);
+      const [conditions] = await (this.db as any).safeQuery(conditionsQuery, [alarmId]);
       
       // Convert threshold from string to number
       alarm.conditions = (conditions as any[]).map(condition => ({
@@ -219,7 +219,7 @@ export class AlarmService {
    */
   async updateAlarm(alarmId: number, userId: number, data: UpdateAlarmData): Promise<boolean> {
     try {
-      await this.db.query('START TRANSACTION');
+      await (this.db as any).safeQuery('START TRANSACTION');
 
       const updates: string[] = [];
       const values: any[] = [];
@@ -249,10 +249,10 @@ export class AlarmService {
           WHERE id = ? AND user_id = ?
         `;
 
-        const [result] = await this.db.query(query, values);
+        const [result] = await (this.db as any).safeQuery(query, values);
         
         if ((result as any).affectedRows === 0) {
-          await this.db.query('ROLLBACK');
+          await (this.db as any).safeQuery('ROLLBACK');
           return false;
         }
       }
@@ -260,7 +260,7 @@ export class AlarmService {
       // Update conditions if provided
       if (data.conditions !== undefined) {
         // Delete existing conditions
-        await this.db.query('DELETE FROM alarm_conditions WHERE alarm_id = ?', [alarmId]);
+        await (this.db as any).safeQuery('DELETE FROM alarm_conditions WHERE alarm_id = ?', [alarmId]);
         
         // Insert new conditions
         for (const condition of data.conditions) {
@@ -268,7 +268,7 @@ export class AlarmService {
             INSERT INTO alarm_conditions (alarm_id, operator, threshold) 
             VALUES (?, ?, ?)
           `;
-          await this.db.query(conditionQuery, [
+          await (this.db as any).safeQuery(conditionQuery, [
             alarmId,
             condition.operator,
             condition.threshold
@@ -276,10 +276,10 @@ export class AlarmService {
         }
       }
 
-      await this.db.query('COMMIT');
+      await (this.db as any).safeQuery('COMMIT');
       return true;
     } catch (error) {
-      await this.db.query('ROLLBACK');
+      await (this.db as any).safeQuery('ROLLBACK');
       console.error("Error updating alarm:", error);
       throw error;
     }
@@ -293,15 +293,15 @@ export class AlarmService {
       // Delete data terkait dalam urutan yang tepat untuk menghindari foreign key constraint errors
       
       // 1. Delete notifications yang terkait dengan alarm (FK ke alarm_id - CASCADE)
-      await this.db.query("DELETE FROM notifications WHERE alarm_id = ?", [alarmId]);
+      await (this.db as any).safeQuery("DELETE FROM notifications WHERE alarm_id = ?", [alarmId]);
       
       // 2. Delete alarm_conditions yang terkait dengan alarm (FK ke alarm_id - CASCADE)
       // Ini sebenarnya otomatis CASCADE, tapi untuk safety kita hapus manual
-      await this.db.query("DELETE FROM alarm_conditions WHERE alarm_id = ?", [alarmId]);
+      await (this.db as any).safeQuery("DELETE FROM alarm_conditions WHERE alarm_id = ?", [alarmId]);
       
       // 3. Finally, delete the alarm itself (akan trigger CASCADE untuk yang tersisa)
       const query = "DELETE FROM alarms WHERE id = ? AND user_id = ?";
-      const [result] = await this.db.query(query, [alarmId, userId]);
+      const [result] = await (this.db as any).safeQuery(query, [alarmId, userId]);
       
       return (result as any).affectedRows > 0;
     } catch (error) {
@@ -321,7 +321,7 @@ export class AlarmService {
         WHERE id = ? AND user_id = ?
       `;
 
-      const [result] = await this.db.query(query, [alarmId, userId]);
+      const [result] = await (this.db as any).safeQuery(query, [alarmId, userId]);
       return (result as any).affectedRows > 0;
     } catch (error) {
       console.error("Error toggling alarm status:", error);
@@ -348,7 +348,7 @@ export class AlarmService {
         ORDER BY a.created_at DESC
       `;
 
-      const [rows] = await this.db.query(query, [deviceId, userId]);
+      const [rows] = await (this.db as any).safeQuery(query, [deviceId, userId]);
       const alarms = rows as any[];
 
       // Get conditions for each alarm
@@ -359,7 +359,7 @@ export class AlarmService {
           WHERE alarm_id = ? 
           ORDER BY id
         `;
-        const [conditions] = await this.db.query(conditionsQuery, [alarm.id]);
+        const [conditions] = await (this.db as any).safeQuery(conditionsQuery, [alarm.id]);
         alarm.conditions = conditions;
       }
 
@@ -415,7 +415,7 @@ export class AlarmService {
   // Get alarms with complete data including conditions
   async getAllAlarms(user_id: string) {
     try {
-      const [rows] = await this.db.query(`
+      const [rows] = await (this.db as any).safeQuery(`
         SELECT 
           a.*,
           d.description as device_description,
@@ -432,7 +432,7 @@ export class AlarmService {
       // Get conditions for each alarm and format data properly
       const alarms = rows as any[];
       for (const alarm of alarms) {
-        const [conditionRows] = await this.db.query(
+        const [conditionRows] = await (this.db as any).safeQuery(
           "SELECT operator, threshold FROM alarm_conditions WHERE alarm_id = ?",
           [alarm.id]
         );
