@@ -73,8 +73,8 @@ export class PayloadService {
     dataType: string | undefined;
   }): Promise<number> {
     try {
-      console.log(`[HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
-      console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
+      // console.log(`[HTTP PAYLOAD] Memulai proses penyimpanan payload untuk device ID: ${deviceId}`);
+      // console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
       
       // STEP 1: Simpan raw data untuk backup dan debugging
       const [rawResult] = await this.db.query<ResultSetHeader>(
@@ -83,10 +83,10 @@ export class PayloadService {
         [deviceId, JSON.stringify(decrypted)]
       );
 
-      console.log(`[DATABASE] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
+      // console.log(`[DATABASE] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
       
       // STEP 2: Parse dan normalisasi data ke tabel payloads
-      console.log(`🔄 [PARSING] Memulai parsing dan normalisasi data sensor...`);
+      // console.log(`🔄 [PARSING] Memulai parsing dan normalisasi data sensor...`);
       const normalizedPayloads = await parseAndNormalizePayload(
         this.db,
         Number(deviceId), 
@@ -95,20 +95,20 @@ export class PayloadService {
         undefined // Tidak ada JWT payload tersedia di HTTP endpoint
       );
       
-      console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);
+      // console.log(`✅ [PARSING] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);
 
       // STEP 3: Broadcast real-time data ke user pemilik device
-      console.log(`[BROADCAST] Mengirim data real-time ke user via WebSocket...`);
+      // console.log(`[BROADCAST] Mengirim data real-time ke user via WebSocket...`);
       await broadcastSensorUpdates(this.db, broadcastToDeviceOwner, Number(deviceId), decrypted, "http", dataType);
-      console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
+      // console.log(`✅ [BROADCAST] Data real-time berhasil dikirim ke WebSocket`);
 
       // STEP 4: Update device status to online dan last_seen_at (real-time)
       if (this.deviceStatusService) {
-        console.log(`[DEVICE STATUS] Memperbarui status device ke online dan timestamp...`);
+        // console.log(`[DEVICE STATUS] Memperbarui status device ke online dan timestamp...`);
         // Update status ke online DAN last_seen_at sekaligus
         await this.deviceStatusService.updateDeviceStatusOnly(deviceId.toString(), "online");
         await this.deviceStatusService.updateDeviceLastSeen(Number(deviceId));
-        console.log(`✅ [DEVICE STATUS] Device ${deviceId} status updated to online`);
+        // console.log(`✅ [DEVICE STATUS] Device ${deviceId} status updated to online`);
         
         // Broadcast status online ke user pemilik device untuk real-time update
         await broadcastToDeviceOwner(this.db, Number(deviceId), {
@@ -121,12 +121,12 @@ export class PayloadService {
 
       // STEP 5: Check alarms setelah payload disimpan
       if (this.notificationService) {
-        console.log(`[ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
+        // console.log(`[ALARM] Memeriksa kondisi alarm untuk device ${deviceId}...`);
         await this.notificationService.checkAlarms(Number(deviceId), decrypted);
-        console.log(`✅ [ALARM] Pemeriksaan alarm selesai`);
+        // console.log(`✅ [ALARM] Pemeriksaan alarm selesai`);
       }
 
-      console.log(`🎉 [HTTP PAYLOAD] Semua proses payload berhasil diselesaikan untuk device ${deviceId}`);
+      // console.log(`🎉 [HTTP PAYLOAD] Semua proses payload berhasil diselesaikan untuk device ${deviceId}`);
       return rawResult.insertId;
     } catch (error) {
       console.error("❌ [HTTP PAYLOAD] Error dalam menyimpan HTTP payload:", error);
@@ -357,7 +357,7 @@ export class PayloadService {
         ]
       );
       
-      console.log(`📡 LoRa payload saved: Device ${device_id} → Datastream ${datastream_id} → Value ${value} → Validated: ${validatedValue}`);
+      // console.log(`📡 LoRa payload saved: Device ${device_id} → Datastream ${datastream_id} → Value ${value} → Validated: ${validatedValue}`);
       return result.insertId;
       
     } catch (error) {

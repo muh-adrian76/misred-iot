@@ -276,7 +276,7 @@ async function verifyDeviceJWTAndDecrypt({
   token: string;
 }) {
 
-  console.log(`🔐 [JWT VERIFY] Memulai verifikasi JWT untuk device: ${deviceId}`);
+  // console.log(`🔐 [JWT VERIFY] Memulai verifikasi JWT untuk device: ${deviceId}`);
   
   // STEP 1: Ambil device secret dari database untuk verifikasi
   const devices = await deviceService.getDeviceById(deviceId);
@@ -294,8 +294,8 @@ async function verifyDeviceJWTAndDecrypt({
     throw new Error("Device secret tidak valid");
   }
 
-  console.log(`✅ [JWT VERIFY] Device ditemukan: ${device.description || deviceId}`);
-  console.log(`🔑 [JWT VERIFY] Secret berhasil diambil untuk verifikasi`);
+  // console.log(`✅ [JWT VERIFY] Device ditemukan: ${device.description || deviceId}`);
+  // console.log(`🔑 [JWT VERIFY] Secret berhasil diambil untuk verifikasi`);
 
   try {
     // STEP 2: Manual JWT verification dengan device-specific secret
@@ -306,7 +306,7 @@ async function verifyDeviceJWTAndDecrypt({
       throw new Error("Invalid JWT format");
     }
     
-    console.log(`🔍 [JWT VERIFY] Memverifikasi signature JWT...`);
+    // console.log(`🔍 [JWT VERIFY] Memverifikasi signature JWT...`);
     // Verify signature menggunakan HMAC-SHA256 dengan device secret
     const data = `${header}.${payload}`;
     const crypto = require('crypto');
@@ -345,7 +345,7 @@ async function verifyDeviceJWTAndDecrypt({
       throw new Error("Invalid JWT signature");
     }
     
-    console.log(`✅ [JWT VERIFY] Signature JWT valid`);
+    // console.log(`✅ [JWT VERIFY] Signature JWT valid`);
     
     // STEP 3: Decode dan validasi payload
     let decodedPayload;
@@ -516,7 +516,7 @@ async function parseAndNormalizePayload(
       deviceTime = new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ');
       timestampSource = 'rawData';
       
-      console.log(`⏰ [PARSE] Menggunakan timestamp dari rawData: ${rawData.timestamp} → ${deviceTime}`);
+      // console.log(`⏰ [PARSE] Menggunakan timestamp dari rawData: ${rawData.timestamp} → ${deviceTime}`);
       
     } else if (jwtPayload?.iat && typeof jwtPayload.iat === 'number') {
       // Fallback: Gunakan JWT iat jika tidak ada timestamp di rawData
@@ -535,17 +535,17 @@ async function parseAndNormalizePayload(
       if (isLocalTime) {
         // Convert waktu lokal JWT (UTC+7) ke UTC untuk konsistensi database
         jwtTimestamp = jwtTimestamp - (7 * 3600 * 1000); // Kurangi 7 jam dalam milliseconds
-        console.log(`🌏 [PARSE] JWT iat terdeteksi waktu lokal, dikonversi ke UTC`);
+        // console.log(`🌏 [PARSE] JWT iat terdeteksi waktu lokal, dikonversi ke UTC`);
       }
       
       // Konversi ke MySQL DATETIME format
       deviceTime = new Date(jwtTimestamp).toISOString().slice(0, 19).replace('T', ' ');
       timestampSource = 'jwt_iat';
       
-      console.log(`⏰ [PARSE] Menggunakan timestamp dari JWT iat: ${jwtPayload.iat} → ${deviceTime} (source: ${timestampSource})`);
+      // console.log(`⏰ [PARSE] Menggunakan timestamp dari JWT iat: ${jwtPayload.iat} → ${deviceTime} (source: ${timestampSource})`);
       
     } else {
-      console.log(`⚠️ [PARSE] Tidak ada timestamp di rawData atau JWT iat, menggunakan server time`);
+      // console.log(`⚠️ [PARSE] Tidak ada timestamp di rawData atau JWT iat, menggunakan server time`);
       timestampSource = 'server';
     }
     
@@ -561,7 +561,7 @@ async function parseAndNormalizePayload(
           try {
             // Validasi dan normalisasi nilai sesuai konfigurasi datastream
             const { validatedValue, hasWarning, warningMessage } = validateAndNormalizeValue(value, datastream);
-            console.log(`💾 [PARSE] Menyimpan data ke database: Pin "${pin}" → Value: ${validatedValue}`);
+            // console.log(`💾 [PARSE] Menyimpan data ke database: Pin "${pin}" → Value: ${validatedValue}`);
             
             // Insert ke tabel payloads dengan metadata lengkap
             const [result] = await db.query(
@@ -584,7 +584,7 @@ async function parseAndNormalizePayload(
             );
             
             insertedIds.push((result as any).insertId);
-            console.log(`✅ [PARSE] Data berhasil disimpan dengan ID: ${(result as any).insertId}`);
+            // console.log(`✅ [PARSE] Data berhasil disimpan dengan ID: ${(result as any).insertId}`);
             
           } catch (insertError) {
             console.error(`❌ [PARSE] Error menyimpan data untuk pin "${pin}":`, insertError);

@@ -81,7 +81,7 @@ function generateRealtimeSensorData(): any {
 
   // Generate gradual variations (±5% change from current value)
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
-    const variation = (Math.random() - 1) * 0.1; // ±5% variation
+    const variation = (Math.random() - 5) * 0.1; // ±5% variation
     let newValue = range.current * (1 + variation);
 
     // Keep within realistic bounds
