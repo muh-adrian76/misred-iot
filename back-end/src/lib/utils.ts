@@ -259,7 +259,7 @@ function extractDeviceIdFromJWT(token: string): string | null {
     const decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
     return decodedPayload.sub || null; // Return subject (device_id) atau null
   } catch (error) {
-    console.warn("Failed to extract device_id from JWT:", error);
+    console.warn("Gagal mengekstrak device_id dari JWT:", error);
     return null; // Return null jika decoding gagal
   }
 }
@@ -303,7 +303,7 @@ async function verifyDeviceJWTAndDecrypt({
     
     if (!header || !payload || !signature) {
       console.error(`❌ [JWT VERIFY] Format JWT tidak valid`);
-      throw new Error("Invalid JWT format");
+      throw new Error("Format JWT tidak valid");
     }
     
     // console.log(`🔍 [JWT VERIFY] Memverifikasi signature JWT...`);
@@ -327,7 +327,7 @@ async function verifyDeviceJWTAndDecrypt({
     } else if (signature === expectedSignatureBase64urlBuffer) {
       signatureMatched = true;
     } else {
-      // Coba konversi base64 ke base64url jika ada padding issue
+      // Coba konversi base64 ke base64url jika ada masalah padding
       try {
         const base64ToBase64url = signature.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
         const base64urlToBase64 = signature.replace(/-/g, '+').replace(/_/g, '/');
@@ -342,7 +342,7 @@ async function verifyDeviceJWTAndDecrypt({
     
     if (!signatureMatched) {
       console.error(`❌ [JWT VERIFY] Signature JWT tidak cocok`);
-      throw new Error("Invalid JWT signature");
+      throw new Error("Signature JWT tidak valid");
     }
     
     // console.log(`✅ [JWT VERIFY] Signature JWT valid`);
@@ -353,10 +353,10 @@ async function verifyDeviceJWTAndDecrypt({
       decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
     } catch (decodeError) {
       console.error("❌ [JWT VERIFY] Gagal decode JWT payload:", decodeError);
-      throw new Error("Invalid JWT payload encoding");
+      throw new Error("Encoding JWT payload tidak valid");
     }
     
-    // STEP 4: Check expiration dengan timezone handling
+    // STEP 4: Periksa expiration dengan timezone handling
     const currentUtcTimestamp = Math.floor(Date.now() / 1000);
     if (decodedPayload.exp && decodedPayload.iat) {
       // Deteksi apakah JWT menggunakan waktu lokal (Indonesia +7) atau UTC
@@ -380,39 +380,39 @@ async function verifyDeviceJWTAndDecrypt({
     // STEP 5: Validasi keberadaan encrypted data
     if (!decodedPayload.data) {
       console.error(`❌ [JWT VERIFY] data tidak ditemukan di JWT`);
-      throw new Error("Missing data in JWT");
+      throw new Error("Data tidak ditemukan pada token JWT");
     }
     
-    // STEP 6: Handle different encryption methods (backward compatibility)
+    // STEP 6: Tangani berbagai metode enkripsi (backward compatibility)
     let decrypted;
     try {
-      // Method 1: Try parsing as JSON directly (untuk CustomJWT format terbaru)
+      // Method 1: Coba parsing sebagai JSON langsung (untuk CustomJWT format terbaru)
       decrypted = JSON.parse(decodedPayload.data);
     } catch (parseError) {
       try {
-        // Method 2: Try base64 decode (untuk format base64 encoded)
+        // Method 2: Coba base64 decode (untuk format base64 encoded)
         const decodedData = Buffer.from(decodedPayload.data, 'base64').toString();
         decrypted = JSON.parse(decodedData);
       } catch (base64Error) {
-        // Method 3: Fallback ke AES decryption (untuk backward compatibility)
+        // Method 3: Fallback ke dekripsi AES (untuk backward compatibility)
         try {
           const decryptedString = decryptAES(crypto, decodedPayload.data, secret);
           decrypted = JSON.parse(decryptedString);
         } catch (aesError) {
           console.error("❌ [DECRYPT] Semua metode dekripsi gagal:", aesError);
-          throw new Error("Unable to decrypt payload data");
+          throw new Error("Tidak dapat mendekripsi data payload");
         }
       }
     }
     
-    // Return object dengan decrypted data dan JWT payload untuk timestamp fallback
+    // Return objek dengan data terdekripsi dan JWT payload untuk fallback timestamp
     return { 
       decryptedData: decrypted, 
       jwtPayload: decodedPayload 
     };
     
   } catch (error) {
-    console.error("❌ [JWT VERIFY] JWT verification failed:", error);
+    console.error("❌ [JWT VERIFY] Verifikasi JWT gagal:", error);
     throw new Error(`Payload tidak valid: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -431,14 +431,14 @@ function validateAndNormalizeValue(
   if (typeof value === 'string') {
     numericValue = parseFloat(value);
     if (isNaN(numericValue)) {
-      throw new Error(`Invalid numeric value: ${value}`);
+      throw new Error(`Nilai numerik tidak valid: ${value}`);
     }
   } else if (typeof value === 'number') {
     numericValue = value; // Sudah number, langsung gunakan
   } else if (typeof value === 'boolean') {
     numericValue = value ? 1 : 0; // Boolean: true=1, false=0
   } else {
-    throw new Error(`Unsupported value type: ${typeof value}`);
+    throw new Error(`Tipe value tidak didukung: ${typeof value}`);
   }
 
   // STEP 2: Validasi tipe data khusus
@@ -504,12 +504,12 @@ async function parseAndNormalizePayload(
     let timestampSource = 'none';
     
     if (rawData.timestamp && typeof rawData.timestamp === 'number') {
-      // Primary: Gunakan timestamp dari rawData jika ada
+      // Utama: Gunakan timestamp dari rawData jika ada
       let timestamp = rawData.timestamp;
       
-      // Handle berbagai format timestamp (seconds vs milliseconds)
+      // Tangani berbagai format timestamp (detik vs milidetik)
       if (timestamp < 10000000000) {
-        timestamp = timestamp * 1000; // Konversi seconds ke milliseconds
+        timestamp = timestamp * 1000; // Konversi detik ke milidetik
       }
       
       // Konversi ke MySQL DATETIME format (YYYY-MM-DD HH:MM:SS)
@@ -522,7 +522,7 @@ async function parseAndNormalizePayload(
       // Fallback: Gunakan JWT iat jika tidak ada timestamp di rawData
       let jwtTimestamp = jwtPayload.iat;
       
-      // JWT iat biasanya dalam seconds, konversi ke milliseconds jika perlu
+      // JWT iat biasanya dalam detik, konversi ke milidetik jika perlu
       if (jwtTimestamp < 10000000000) {
         jwtTimestamp = jwtTimestamp * 1000;
       }
@@ -534,7 +534,7 @@ async function parseAndNormalizePayload(
       
       if (isLocalTime) {
         // Convert waktu lokal JWT (UTC+7) ke UTC untuk konsistensi database
-        jwtTimestamp = jwtTimestamp - (7 * 3600 * 1000); // Kurangi 7 jam dalam milliseconds
+        jwtTimestamp = jwtTimestamp - (7 * 3600 * 1000); // Kurangi 7 jam dalam milidetik
         // console.log(`🌏 [PARSE] JWT iat terdeteksi waktu lokal, dikonversi ke UTC`);
       }
       
@@ -603,13 +603,13 @@ async function parseAndNormalizePayload(
     }
     return insertedIds;
   } catch (error) {
-    console.error("Error in parseAndNormalizePayload:", error);
-    throw new Error("Failed to parse and normalize payload");
+    console.error("Kesalahan di parseAndNormalizePayload:", error);
+    throw new Error("Gagal melakukan parsing dan normalisasi payload");
   }
 }
 
-// ===== REAL-TIME WEBSOCKET BROADCASTING =====
-// Fungsi untuk broadcasting sensor updates real-time HANYA ke pemilik device
+// ===== BROADCASTING WEBSOCKET WAKTU-NYATA =====
+// Fungsi untuk broadcasting sensor updates waktu-nyata HANYA ke pemilik device
 async function broadcastSensorUpdates(
   db: any,
   broadcastFunction: any,
@@ -675,7 +675,7 @@ async function broadcastSensorUpdates(
       }
     }
   } catch (error) {
-    console.error("❌ Error in broadcastSensorUpdates:", error);
+    console.error("❌ Kesalahan di broadcastSensorUpdates:", error);
   }
 }
 
@@ -689,10 +689,10 @@ export {
   clearAuthCookie, // Clear authentication cookies
   renewToken, // Refresh token renewal
   decryptAES, // AES decryption utility
-  ageConverter, // Time string to seconds converter
+  ageConverter, // Konverter string waktu ke detik
   extractDeviceIdFromJWT, // Extract device ID from JWT payload
   verifyDeviceJWTAndDecrypt, // Device JWT verification and payload decryption
   parseAndNormalizePayload, // Raw payload parsing and database storage
-  broadcastSensorUpdates, // Real-time WebSocket broadcasting
+  broadcastSensorUpdates, // Broadcasting WebSocket waktu-nyata
   validateAndNormalizeValue, // Sensor value validation and normalization
 };

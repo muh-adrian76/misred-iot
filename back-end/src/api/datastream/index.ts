@@ -17,7 +17,7 @@ import {
 export function datastreamRoutes(datastreamService: DatastreamService) {
   return (
     new Elysia({ prefix: "/datastream" })
-      // ===== GET ALL DATASTREAMS ENDPOINT =====
+      // ===== ENDPOINT AMBIL SEMUA DATASTREAM =====
       // GET /datastream - Ambil semua datastream milik user
       .get(
         "/",
@@ -32,24 +32,24 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get all datastreams:", error);
+            console.error("Kesalahan saat mengambil semua datastream:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 result: [],
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
               result: [],
             };
           }
@@ -57,7 +57,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         getAllDatastreamsSchema
       )
 
-      // ===== GET DATASTREAMS BY DEVICE ENDPOINT =====
+      // ===== ENDPOINT AMBIL DATASTREAM PER PERANGKAT =====
       // GET /datastream/device/:deviceId - Ambil datastream berdasarkan device ID
       .get(
         "/device/:deviceId",
@@ -74,31 +74,31 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get datastreams by device ID:", error);
+            console.error("Kesalahan saat mengambil datastream berdasarkan device ID:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 result: [],
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
               result: [],
             };
           }
         }
       )
 
-      // ===== GET SINGLE DATASTREAM ENDPOINT =====
+      // ===== ENDPOINT AMBIL SATU DATASTREAM =====
       // GET /datastream/:id - Ambil datastream tertentu berdasarkan ID
       .get(
         "/:id",
@@ -120,29 +120,29 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get datastream by ID:", error);
+            console.error("Kesalahan saat mengambil datastream berdasarkan ID:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         }
       )
 
-      // ===== CREATE DATASTREAM ENDPOINT =====
+      // ===== ENDPOINT BUAT DATASTREAM =====
       // POST /datastream - Buat datastream baru untuk sensor device
       .post(
         "/",
@@ -163,7 +163,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               booleanValue,
             } = body;
 
-            // Buat datastream baru dengan validasi user ownership
+            // Buat datastream baru dengan validasi kepemilikan pengguna
             const datastreamId = await datastreamService.createDatastream({
               userId: user.sub,
               deviceId,
@@ -177,7 +177,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               booleanValue,
             });
 
-            // Return response sukses dengan ID datastream baru
+            // Response sukses dengan ID datastream baru
             return new Response(
               JSON.stringify({
                 message: "Datastream berhasil dibuat",
@@ -186,57 +186,39 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               { status: 201 }
             );
           } catch (error: any) {
-            console.error("Error in create datastream:", error);
+            console.error("Kesalahan saat membuat datastream:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors (validation, duplicate pin, etc)
+            // Tangani kesalahan lain (validasi, pin duplikat, dll)
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },
         postDatastreamSchema
       )
 
-      // ===== UPDATE DATASTREAM ENDPOINT =====
-      // PUT /datastream/:id - Update konfigurasi datastream sensor yang ada
+      // ===== ENDPOINT PERBARUI DATASTREAM =====
+      // PUT /datastream/:id - Perbarui konfigurasi datastream sensor yang ada
       .put(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            if (
-              params.id === "1" ||
-              params.id === "2" ||
-              params.id === "3" ||
-              params.id === "4" ||
-              params.id === "5" ||
-              params.id === "6" ||
-              params.id === "25" ||
-              params.id === "26" ||
-              params.id === "27" ||
-              params.id === "28" ||
-              params.id === "29" ||
-              params.id === "30"
-            ) {
-              throw new Error(
-                "Datastream ini tidak dapat diubah saat kuisioner berlangsung"
-              );
-            }
             await authorizeRequest(jwt, cookie);
 
-            // Ekstrak data yang akan diupdate dari request body
+            // Data yang akan diperbarui dari request body
             const {
               deviceId,
               pin,
@@ -249,7 +231,7 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               booleanValue,
             } = body;
 
-            // Update datastream dengan validasi user ownership
+            // Perbarui datastream dengan validasi kepemilikan
             const updated = await datastreamService.updateDatastream(
               params.id,
               {
@@ -265,34 +247,34 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
               }
             );
 
-            // Check jika update gagal
+            // Cek jika update gagal
             if (!updated) {
               return new Response("Datastream gagal diupdate", { status: 400 });
             }
 
-            // Return response sukses
+            // Response sukses
             return new Response(
               JSON.stringify({ message: "Datastream berhasil diupdate" }),
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in update datastream:", error);
+            console.error("Kesalahan saat memperbarui datastream:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors (validation, not found, etc)
+            // Tangani kesalahan lainnya (validasi, tidak ditemukan, dll)
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500 }
             );
@@ -301,64 +283,46 @@ export function datastreamRoutes(datastreamService: DatastreamService) {
         putDatastreamSchema
       )
 
-      // ===== DELETE DATASTREAM ENDPOINT =====
+      // ===== ENDPOINT HAPUS DATASTREAM =====
       // DELETE /datastream/:id - Hapus datastream sensor berdasarkan ID
       .delete(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            if (
-              params.id === "1" ||
-              params.id === "2" ||
-              params.id === "3" ||
-              params.id === "4" ||
-              params.id === "5" ||
-              params.id === "6" ||
-              params.id === "25" ||
-              params.id === "26" ||
-              params.id === "27" ||
-              params.id === "28" ||
-              params.id === "29" ||
-              params.id === "30"
-            ) {
-              throw new Error(
-                "Datastream ini tidak dapat dihapus saat kuisioner berlangsung"
-              );
-            }
             await authorizeRequest(jwt, cookie);
 
-            // Hapus datastream dengan validasi user ownership
+            // Hapus datastream dengan validasi kepemilikan
             const deleted = await datastreamService.deleteDatastream(params.id);
 
-            // Check jika delete gagal
+            // Cek jika proses hapus gagal
             if (!deleted) {
               return new Response("Datastream gagal dihapus", { status: 400 });
             }
 
-            // Return response sukses
+            // Response sukses
             return new Response(
               JSON.stringify({ message: "Datastream berhasil dihapus" }),
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in delete datastream:", error);
+            console.error("Kesalahan saat menghapus datastream:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors (not found, validation, etc)
+            // Tangani kesalahan lainnya (tidak ditemukan, validasi, dll)
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500 }
             );

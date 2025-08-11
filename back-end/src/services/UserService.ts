@@ -43,8 +43,8 @@ export class UserService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching all users:", error);
-      throw new Error("Failed to fetch users");
+      console.error("Gagal mengambil semua pengguna:", error);
+      throw new Error("Gagal mengambil data pengguna");
     }
   }
 
@@ -81,8 +81,8 @@ export class UserService {
       }
       return user;
     } catch (error) {
-      console.error("Error fetching user by ID:", error);
-      throw new Error("Failed to fetch user");
+      console.error("Gagal mengambil pengguna berdasarkan ID:", error);
+      throw new Error("Gagal mengambil data pengguna");
     }
   }
 
@@ -106,8 +106,8 @@ export class UserService {
       }
       return null;
     } catch (error) {
-      console.error("Error updating user:", error);
-      throw new Error("Failed to update user");
+      console.error("Gagal memperbarui pengguna:", error);
+      throw new Error("Gagal memperbarui pengguna");
     }
   }
 
@@ -132,7 +132,7 @@ export class UserService {
       }
       
       if (updates.length === 0) {
-        return null; // No updates to perform
+        return null; // Tidak ada perubahan untuk dilakukan
       }
       
       const query = `UPDATE users SET ${updates.join(", ")} WHERE id=?`;
@@ -145,8 +145,8 @@ export class UserService {
       }
       return null;
     } catch (error) {
-      console.error("Error updating user (admin):", error);
-      throw new Error("Failed to update user");
+      console.error("Gagal memperbarui pengguna (admin):", error);
+      throw new Error("Gagal memperbarui pengguna");
     }
   }
 
@@ -227,7 +227,7 @@ export class UserService {
         [id]
       );
 
-      // 12. Finally, delete the user
+      // 12. Terakhir, hapus pengguna
       const [result] = await connection.query<ResultSetHeader>(
         "DELETE FROM users WHERE id = ?",
         [id]
@@ -240,8 +240,8 @@ export class UserService {
     } catch (error) {
       // Rollback transaction on error
       await connection.rollback();
-      console.error("Error deleting user and related data:", error);
-      throw new Error("Failed to delete user and related data");
+      console.error("Gagal menghapus pengguna dan data terkait:", error);
+      throw new Error("Gagal menghapus pengguna dan data terkait");
     } finally {
       // Release connection
       connection.release();
@@ -256,8 +256,8 @@ export class UserService {
       );
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating WhatsApp notifications:", error);
-      throw new Error("Failed to update WhatsApp notifications");
+      console.error("Gagal memperbarui pengaturan notifikasi WhatsApp:", error);
+      throw new Error("Gagal memperbarui pengaturan notifikasi WhatsApp");
     }
   }
 
@@ -270,7 +270,7 @@ export class UserService {
       const result = Array.isArray(rows) ? (rows[0] as any) : null;
       return result ? Boolean(result.whatsapp_notif) : false;
     } catch (error) {
-      console.error("Error getting WhatsApp notification status:", error);
+      console.error("Gagal mengambil status notifikasi WhatsApp:", error);
       return false;
     }
   }
@@ -316,8 +316,8 @@ export class UserService {
       
       return updateResult.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating onboarding progress:", error);
-      throw new Error("Failed to update onboarding progress");
+      console.error("Gagal memperbarui progres onboarding:", error);
+      throw new Error("Gagal memperbarui progres onboarding");
     }
   }
 
@@ -347,7 +347,7 @@ export class UserService {
         completed: Boolean(result.onboarding_completed)
       };
     } catch (error) {
-      console.error("Error getting onboarding progress:", error);
+      console.error("Gagal mengambil progres onboarding:", error);
       return { progress: [], completed: false };
     }
   }

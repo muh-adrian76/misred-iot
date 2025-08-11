@@ -89,8 +89,8 @@ export class DeviceService {
 
       return id;
     } catch (error) {
-      console.error("Error creating device:", error);
-      throw new Error("Failed to create device");
+      console.error("Gagal membuat device:", error);
+      throw new Error("Gagal membuat device");
     }
   }
 
@@ -102,8 +102,8 @@ export class DeviceService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching all devices:", error);
-      throw new Error("Failed to fetch devices");
+      console.error("Gagal mengambil semua device:", error);
+      throw new Error("Gagal mengambil data device");
     }
   }
 
@@ -114,8 +114,8 @@ export class DeviceService {
       ]);
       return rows;
     } catch (error) {
-      console.error("Error fetching device by ID:", error);
-      throw new Error("Failed to fetch device");
+      console.error("Gagal mengambil device berdasarkan ID:", error);
+      throw new Error("Gagal mengambil device");
     }
   }
 
@@ -127,8 +127,8 @@ export class DeviceService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching device by secret:", error);
-      throw new Error("Failed to fetch device by secret");
+      console.error("Gagal mengambil secret device:", error);
+      throw new Error("Gagal mengambil secret device");
     }
   }
 
@@ -143,8 +143,8 @@ export class DeviceService {
       }
       return rows[0].new_secret;
     } catch (error) {
-      console.error("Error verifying old secret:", error);
-      throw new Error("Failed to verify old secret");
+      console.error("Gagal memverifikasi secret lama:", error);
+      throw new Error("Gagal memverifikasi secret lama");
     }
   }
 
@@ -176,8 +176,8 @@ export class DeviceService {
         user_id: user_id,
       };
     } catch (error) {
-      console.error("Error getting firmware version:", error);
-      throw new Error("Failed to get firmware version");
+      console.error("Gagal mengambil versi firmware:", error);
+      throw new Error("Gagal mengambil versi firmware");
     }
   }
 
@@ -187,7 +187,7 @@ export class DeviceService {
     firmware_url: string
   ) {
     try {
-      // Update device's current firmware version when it gets updated
+      // Perbarui versi firmware device saat terjadi pembaruan
       await (this.db as any).safeQuery(
         "UPDATE devices SET firmware_version = ? WHERE id = ?",
         [firmware_version, id]
@@ -198,8 +198,8 @@ export class DeviceService {
       );
       return updatedTime[0]?.updated_at || new Date();
     } catch (error) {
-      console.error("Error updating firmware version:", error);
-      throw new Error("Failed to update firmware version");
+      console.error("Gagal memperbarui versi firmware:", error);
+      throw new Error("Gagal memperbarui versi firmware");
     }
   }
 
@@ -238,8 +238,8 @@ export class DeviceService {
         },
       ];
     } catch (error) {
-      console.error("Error getting firmware list:", error);
-      throw new Error("Failed to get firmware list");
+      console.error("Gagal mengambil daftar firmware:", error);
+      throw new Error("Gagal mengambil daftar firmware");
     }
   }
 
@@ -275,8 +275,8 @@ export class DeviceService {
 
       return filePath;
     } catch (error) {
-      console.error("Error getting firmware file:", error);
-      throw new Error("Failed to get firmware file");
+      console.error("Gagal mengambil file firmware:", error);
+      throw new Error("Gagal mengambil file firmware");
     }
   }
 
@@ -301,13 +301,13 @@ export class DeviceService {
       );
 
       if (!firmware || !firmware.firmware_url) {
-        throw new Error("No firmware available for this board type");
+        throw new Error("Tidak ada firmware yang tersedia untuk jenis board ini");
       }
 
       return firmware.firmware_url;
     } catch (error) {
-      console.error("Error getting firmware URL:", error);
-      throw new Error("Failed to get firmware URL");
+      console.error("Gagal mengambil URL firmware:", error);
+      throw new Error("Gagal mengambil URL firmware");
     }
   }
 
@@ -327,8 +327,8 @@ export class DeviceService {
         // console.log(`🔄 Secret key untuk device ${device.id} diganti otomatis`);
       }
     } catch (error) {
-      console.error("Error refreshing device secrets:", error);
-      throw new Error("Failed to refresh device secrets");
+      console.error("Gagal menyegarkan secret device:", error);
+      throw new Error("Gagal menyegarkan secret device");
     }
   }
 
@@ -403,8 +403,8 @@ export class DeviceService {
 
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating device:", error);
-      throw new Error("Failed to update device");
+      console.error("Gagal memperbarui device:", error);
+      throw new Error("Gagal memperbarui device");
     }
   }
 
@@ -417,26 +417,26 @@ export class DeviceService {
       );
       const topicToCheck = deviceRows[0]?.mqtt_topic;
 
-      // Delete data dalam urutan yang tepat untuk menghindari foreign key constraint errors
+      // Hapus data dalam urutan yang tepat untuk menghindari error foreign key constraint
       // Semua tabel terkait device menggunakan ON DELETE CASCADE, jadi urutan sudah optimal
 
-      // 1. Delete notifications yang terkait dengan device (FK ke device_id - nullable)
+      // 1. Hapus notifications yang terkait dengan device (FK ke device_id - nullable)
       await (this.db as any).safeQuery("DELETE FROM notifications WHERE device_id = ?", [
         id,
       ]);
 
-      // 2. Delete device_commands yang terkait dengan device (FK ke device_id dan datastream_id)
+      // 2. Hapus device_commands yang terkait dengan device (FK ke device_id dan datastream_id)
       await (this.db as any).safeQuery("DELETE FROM device_commands WHERE device_id = ?", [
         id,
       ]);
 
-      // 3. Delete widgets yang menggunakan device ini (JSON extract dari inputs)
+      // 3. Hapus widgets yang menggunakan device ini (JSON extract dari inputs)
       await (this.db as any).safeQuery(
         "DELETE FROM widgets WHERE JSON_UNQUOTE(JSON_EXTRACT(inputs, '$.device_id')) = ?",
         [id]
       );
 
-      // 4. Delete alarm_conditions yang terkait dengan alarms dari device ini
+      // 4. Hapus alarm_conditions yang terkait dengan alarms dari device ini
       await (this.db as any).safeQuery(
         `
         DELETE ac FROM alarm_conditions ac 
@@ -446,19 +446,19 @@ export class DeviceService {
         [id]
       );
 
-      // 5. Delete alarms yang terkait dengan device (akan trigger CASCADE untuk alarm_conditions)
+      // 5. Hapus alarms yang terkait dengan device (akan memicu CASCADE untuk alarm_conditions)
       await (this.db as any).safeQuery("DELETE FROM alarms WHERE device_id = ?", [id]);
 
-      // 6. Delete payloads (FK ke device_id dan datastream_id - CASCADE)
+      // 6. Hapus payloads (FK ke device_id dan datastream_id - CASCADE)
       await (this.db as any).safeQuery("DELETE FROM payloads WHERE device_id = ?", [id]);
 
-      // 7. Delete raw_payloads yang terkait dengan device (FK ke device_id - CASCADE)
+      // 7. Hapus raw_payloads yang terkait dengan device (FK ke device_id - CASCADE)
       await (this.db as any).safeQuery("DELETE FROM raw_payloads WHERE device_id = ?", [id]);
 
-      // 8. Delete datastreams yang terkait dengan device (FK ke device_id - CASCADE)
+      // 8. Hapus datastreams yang terkait dengan device (FK ke device_id - CASCADE)
       await (this.db as any).safeQuery("DELETE FROM datastreams WHERE device_id = ?", [id]);
 
-      // 9. Finally, delete the device itself
+      // 9. Terakhir, hapus device itu sendiri
       const [result] = await (this.db as any).safeQuery(
         "DELETE FROM devices WHERE id = ? AND user_id = ?",
         [id, userId]
@@ -474,8 +474,8 @@ export class DeviceService {
 
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error deleting device:", error);
-      throw new Error("Failed to delete device");
+      console.error("Gagal menghapus device:", error);
+      throw new Error("Gagal menghapus device");
     }
   }
 
@@ -514,7 +514,7 @@ export class DeviceService {
       ]);
 
       console.log(
-        `Reset device data completed for device ${deviceId}: ${payloadCount} payloads, ${rawPayloadCount} raw_payloads deleted`
+        `Reset data device selesai untuk device ${deviceId}: ${payloadCount} payload, ${rawPayloadCount} raw_payload dihapus`
       );
 
       return {
@@ -522,8 +522,8 @@ export class DeviceService {
         rawPayloads: rawPayloadCount,
       };
     } catch (error) {
-      console.error("Error resetting device data:", error);
-      throw new Error("Failed to reset device data");
+      console.error("Gagal mereset data device:", error);
+      throw new Error("Gagal mereset data device");
     }
   }
 
@@ -542,13 +542,13 @@ export class DeviceService {
 
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating device firmware version:", error);
-      throw new Error("Failed to update device firmware version");
+      console.error("Gagal memperbarui versi firmware device:", error);
+      throw new Error("Gagal memperbarui versi firmware device");
     }
   }
 
   /**
-   * Get MQTT Topic Manager instance
+   * Ambil instance MQTT Topic Manager
    */
   getMQTTTopicManager(): MQTTTopicManager | undefined {
     return this.mqttTopicManager;

@@ -19,10 +19,36 @@ export class DeviceStatusService {
   private static instance: DeviceStatusService;
   private db: Pool;
   private statusUpdateInterval: NodeJS.Timeout | null = null;
+  private notificationService: any; // Shared notification service instance
 
-  constructor(database: Pool) {
+  constructor(database: Pool, notificationService?: any) {
     this.db = database;
+    this.notificationService = notificationService; // Use injected service if provided
+    
+    // Inisialisasi NotificationService secara asinkron jika tidak diinjeksikan
+    if (!this.notificationService) {
+      console.log('🔄 NotificationService tidak diinjeksikan, melakukan inisialisasi...');
+      this.initializeNotificationService().then(() => {
+        console.log('✅ NotificationService berhasil diinisialisasi di constructor DeviceStatusService');
+      }).catch((error) => {
+        console.error('❌ Gagal menginisialisasi NotificationService di constructor:', error);
+      });
+    } else {
+      console.log('✅ Menggunakan NotificationService yang diinjeksikan di DeviceStatusService');
+    }
+    
     this.startStatusMonitoring();  // Mulai monitoring otomatis
+  }
+
+  // Initialize notification service only if not injected
+  private async initializeNotificationService() {
+    try {
+      const { NotificationService } = await import('./NotificationService');
+      this.notificationService = new NotificationService(this.db);
+      console.log('✅ NotificationService berhasil diinisialisasi di DeviceStatusService');
+    } catch (error) {
+      console.error('❌ Gagal menginisialisasi NotificationService:', error);
+    }
   }
 
   // Singleton pattern untuk memastikan hanya ada satu instance
@@ -41,7 +67,7 @@ export class DeviceStatusService {
       // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn(`Database connection not available, skipping status update for device ${deviceId}`);
+        console.warn(`⚠️ Koneksi database tidak tersedia, pembaruan status untuk device ${deviceId} dilewati`);
         return;
       }
 
@@ -65,10 +91,10 @@ export class DeviceStatusService {
       });
       
     } catch (error) {
-      console.error(`Error updating device ${deviceId} last seen:`, error);
+      console.error(`❌ Gagal memperbarui last seen device ${deviceId}:`, error);
       // Jika error koneksi, coba restart monitoring
       if (error instanceof Error && error.message && error.message.includes('Pool is closed')) {
-        console.warn('Database pool is closed, attempting to restart status monitoring...');
+        console.warn('⚠️ Pool database tertutup, mencoba memulai ulang pemantauan status...');
         this.restartStatusMonitoring();
       }
     }
@@ -81,7 +107,7 @@ export class DeviceStatusService {
       await (this.db as any).safeQuery('SELECT 1');
       return true;
     } catch (error) {
-      console.error('Database connection check failed:', error);
+      console.error('❌ Pemeriksaan koneksi database gagal:', error);
       return false;
     }
   }
@@ -92,10 +118,10 @@ export class DeviceStatusService {
    */
   async updateAllDeviceStatuses(): Promise<{ updated: number; offline: number; online: number }> {
     try {
-      // Check database connection first
+      // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn('Database connection is not available, skipping status update');
+        console.warn('⚠️ Koneksi database tidak tersedia, pembaruan status dilewati');
         return { updated: 0, offline: 0, online: 0 };
       }
 
@@ -146,7 +172,7 @@ export class DeviceStatusService {
           
           // Process affected devices - broadcast untuk semua perubahan status
           for (const device of (affectedDevices as any[])) {
-            console.log(`🔄 Broadcasting status update for device ${device.id}: ${device.status}`);
+            console.log(`🔄 Menyiarkan pembaruan status untuk device ${device.id}: ${device.status}`);
             
             // Broadcast status_update untuk semua device yang berubah status
             const broadcastSuccess = await broadcastToDeviceOwner(this.db, device.id, {
@@ -157,13 +183,14 @@ export class DeviceStatusService {
             });
             
             if (broadcastSuccess) {
-              console.log(`✅ Status broadcast sent for device ${device.id}: ${device.status}`);
+              console.log(`✅ Broadcast status berhasil dikirim untuk device ${device.id}: ${device.status}`);
             } else {
-              console.log(`⚠️ Status broadcast failed for device ${device.id}: ${device.status} (user not connected)`);
+              console.log(`⚠️ Broadcast status gagal untuk device ${device.id}: ${device.status} (user tidak terhubung)`);
             }
 
-            // Send notification untuk device yang offline saja
+            // Kirim notifikasi hanya untuk device yang offline
             if (device.status === 'offline') {
+              console.log(`🚨 Perangkat ${device.id} terdeteksi offline, mengirim notifikasi...`);
               await this.sendDeviceOfflineNotification(device.id);
             }
           }
@@ -172,10 +199,10 @@ export class DeviceStatusService {
       
       return result;
     } catch (error) {
-      console.error('Error updating device statuses:', error);
-      // If it's a connection error, try to restart monitoring
+      console.error('❌ Gagal memperbarui status perangkat:', error);
+      // Jika error koneksi, coba restart monitoring
       if (error instanceof Error && error.message && error.message.includes('Pool is closed')) {
-        console.warn('Database pool is closed during status update, attempting to restart monitoring...');
+        console.warn('⚠️ Pool database tertutup saat pembaruan status, mencoba memulai ulang pemantauan...');
         this.restartStatusMonitoring();
       }
       return { updated: 0, offline: 0, online: 0 };
@@ -187,10 +214,10 @@ export class DeviceStatusService {
    */
   async getDeviceStatusInfo(deviceId: number): Promise<any> {
     try {
-      // Check database connection first
+      // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn(`Database connection not available for device ${deviceId} status check`);
+        console.warn(`⚠️ Koneksi database tidak tersedia untuk pengecekan status device ${deviceId}`);
         return null;
       }
 
@@ -215,7 +242,7 @@ export class DeviceStatusService {
       const [rows] = await (this.db as any).safeQuery(query, [deviceId]);
       return (rows as any[])[0] || null;
     } catch (error) {
-      console.error(`Error getting device ${deviceId} status:`, error);
+      console.error(`❌ Gagal mengambil status device ${deviceId}:`, error);
       return null;
     }
   }
@@ -225,10 +252,10 @@ export class DeviceStatusService {
    */
   async getUserDevicesWithStatus(userId: number): Promise<any[]> {
     try {
-      // Check database connection first
+      // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn(`Database connection not available for user ${userId} devices check`);
+        console.warn(`⚠️ Koneksi database tidak tersedia untuk pengecekan device user ${userId}`);
         return [];
       }
 
@@ -252,7 +279,7 @@ export class DeviceStatusService {
       const [rows] = await (this.db as any).safeQuery(query, [userId]);
       return rows as any[];
     } catch (error) {
-      console.error(`Error getting devices for user ${userId}:`, error);
+      console.error(`❌ Gagal mengambil daftar device untuk user ${userId}:`, error);
       return [];
     }
   }
@@ -271,14 +298,14 @@ export class DeviceStatusService {
    * Restart status monitoring (stop and start again)
    */
   private restartStatusMonitoring(): void {
-    console.log('Restarting status monitoring...');
+    console.log('🔄 Memulai ulang pemantauan status...');
     this.stopStatusMonitoring();
     
-    // Wait a bit before restarting
+    // Tunggu sebentar sebelum memulai ulang
     setTimeout(() => {
       this.startStatusMonitoring();
-      console.log('Status monitoring restarted successfully');
-    }, 5000); // Wait 5 seconds before restart
+      console.log('✅ Pemantauan status berhasil dimulai ulang');
+    }, 5000); // Tunggu 5 detik sebelum restart
   }
 
   /**
@@ -303,10 +330,10 @@ export class DeviceStatusService {
    */
   async getStatusStatistics(): Promise<any> {
     try {
-      // Check database connection first
+      // Cek koneksi database terlebih dahulu
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn('Database connection not available for status statistics');
+        console.warn('⚠️ Koneksi database tidak tersedia untuk statistik status');
         return null;
       }
 
@@ -324,7 +351,7 @@ export class DeviceStatusService {
       const [rows] = await (this.db as any).safeQuery(query);
       return (rows as any[])[0] || null;
     } catch (error) {
-      console.error('Error getting status statistics:', error);
+      console.error('❌ Gagal mengambil statistik status perangkat:', error);
       return null;
     }
   }
@@ -333,21 +360,31 @@ export class DeviceStatusService {
   // Mengirim notifikasi ketika device berubah status ke offline
   public async sendDeviceOfflineNotification(deviceId: number): Promise<void> {
     try {
-      console.log(`🔄 DeviceStatusService.sendDeviceOfflineNotification called for device ${deviceId}`);
+      // Get the minimum cooldown from all active alarms for this device
+      const cooldownQuery = `
+        SELECT cooldown_minutes
+        FROM alarms 
+        WHERE device_id = ? AND is_active = TRUE
+      `;
       
-      // Check if notification already sent in last 5 minutes to prevent spam
+      const [cooldownResult] = await (this.db as any).safeQuery(cooldownQuery, [deviceId]);
+      const deviceCooldownMinutes = (cooldownResult as any[])[0]?.cooldown_minutes || 1; // Default 1 menit jika tidak ada alarm
+
+      console.log(`⏱️ Menggunakan cooldown ${deviceCooldownMinutes} menit untuk notifikasi offline device ${deviceId}`);
+      
+      // Check if notification already sent within the cooldown period
       const recentNotificationQuery = `
         SELECT id FROM notifications 
         WHERE device_id = ? AND type = 'device_status' 
-        AND triggered_at >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+        AND triggered_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
         ORDER BY triggered_at DESC 
         LIMIT 1
       `;
       
-      const [recentNotifications] = await (this.db as any).safeQuery(recentNotificationQuery, [deviceId.toString()]);
+      const [recentNotifications] = await (this.db as any).safeQuery(recentNotificationQuery, [deviceId.toString(), deviceCooldownMinutes]);
       
       if ((recentNotifications as any[]).length > 0) {
-        console.log(`⚠️ Device offline notification already sent for device ${deviceId} in last 5 minutes, skipping duplicate`);
+        console.log(`⚠️ Notifikasi offline sudah terkirim untuk device ${deviceId} dalam ${deviceCooldownMinutes} menit terakhir, lewati duplikasi`);
         return;
       }
       
@@ -358,104 +395,141 @@ export class DeviceStatusService {
           u.id as user_id,
           u.name as user_name,
           u.phone as user_phone,
-          u.whatsapp_notif as whatsapp_notification
+          u.whatsapp_notif as whatsapp_notification,
+          u.email as user_email
         FROM devices d
         JOIN users u ON d.user_id = u.id
         WHERE d.id = ?
       `;
         
-      console.log(`🔍 Querying device and user info for device ${deviceId}`);
+      console.log(`🔍 Mengambil informasi perangkat dan user untuk device ${deviceId}`);
       const [result] = await (this.db as any).safeQuery(query, [deviceId.toString()]);
       const deviceData = (result as any[])[0];
         
       if (!deviceData) {
-        console.error(`❌ Device ${deviceId} or user not found for offline notification`);
+        console.error(`❌ Perangkat ${deviceId} atau user tidak ditemukan untuk notifikasi offline`);
         return;
       }
       
-      console.log(`✅ Found device data:`, {
-        device_name: deviceData.device_name,
-        user_id: deviceData.user_id,
-        user_name: deviceData.user_name,
-        whatsapp_notification: deviceData.whatsapp_notification
-      });
+      // Gunakan instance NotificationService bersama
+      if (!this.notificationService) {
+        console.log('⚠️ NotificationService tidak tersedia, melakukan inisialisasi...');
+        await this.initializeNotificationService();
+        
+        if (!this.notificationService) {
+          console.error('❌ Gagal menginisialisasi NotificationService, melewati notifikasi WhatsApp');
+          return;
+        }
+      } else {
+        console.log('✅ NotificationService tersedia, memeriksa kemampuan WhatsApp...');
+        
+        // Periksa apakah NotificationService memiliki method WhatsApp
+        if (typeof this.notificationService.sendWhatsAppNotification !== 'function') {
+          console.error('❌ NotificationService tidak memiliki method sendWhatsAppNotification');
+          return;
+        }
+        console.log('✅ Method sendWhatsAppNotification ditemukan');
+      }
 
-      // Dynamic import untuk NotificationService
-      const { NotificationService } = await import('./NotificationService');
-      const notificationService = new NotificationService(this.db);
-
-      // Create notification di database
-      console.log(`🔄 Creating device offline notification for device ${deviceId}, user ${deviceData.user_id}`);
+      // Buat notifikasi di database
+      console.log(`🔄 Membuat notifikasi perangkat offline untuk device ${deviceId}, user ${deviceData.user_id}`);
       
       await (this.db as any).safeQuery(
         "INSERT INTO notifications (user_id, type, title, message, priority, device_id, triggered_at, is_read) VALUES (?, ?, ?, ?, ?, ?, NOW(), FALSE)",
         [
           deviceData.user_id,
           "device_status",
-          "Status Perangkat",
+          "Perangkat Offline",
           `Perangkat "${deviceData.device_name}" telah offline dan tidak merespons`,
           "high", // Priority tinggi untuk device offline
           deviceId
         ]
       );
       
-      // Send WhatsApp notification jika user mengaktifkan notifikasi WhatsApp
-      if (deviceData.whatsapp_notification && deviceData.user_phone) {
-        console.log(`📲 Sending WhatsApp notification for device ${deviceId} offline to ${deviceData.user_phone}`);
+      // Kirim notifikasi WhatsApp jika user mengaktifkan notifikasi WhatsApp
+      if (Boolean(deviceData.whatsapp_notification) && deviceData.user_phone && deviceData.user_phone.trim() !== '') {
+        console.log(`📲 Mengirim notifikasi WhatsApp untuk device ${deviceId} offline ke ${deviceData.user_phone}`);
         
         const whatsappMessage = `🚨 PERINGATAN STATUS PERANGKAT\n\n` +
                                `📍 Perangkat: ${deviceData.device_name}\n` +
                                `🔴 Status: OFFLINE\n` +
                                `👤 Akun: ${deviceData.user_name}\n` +
+                               `📧 Email: ${deviceData.user_email}\n` +
                                `🕐 Waktu: ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB\n\n` +
                                `Mohon periksa koneksi perangkat Anda!`;
         
         try {
-          const whatsappResult = await notificationService.sendWhatsAppNotification(
+          // Cek status layanan WhatsApp - dengan penanganan error yang lebih baik
+          let whatsappStatus = { ready: false, initializing: false };
+          try {
+            if (this.notificationService && typeof this.notificationService.getWhatsAppStatus === 'function') {
+              whatsappStatus = this.notificationService.getWhatsAppStatus();
+            }
+          } catch (statusError) {
+            console.warn(`⚠️ Tidak dapat mengambil status WhatsApp:`, statusError);
+          }
+          
+          console.log(`📱 Status layanan WhatsApp sebelum mengirim:`, whatsappStatus);
+          
+          // Lanjutkan pengiriman meskipun pengecekan status gagal
+          const whatsappResult = await this.notificationService.sendWhatsAppNotification(
             deviceData.user_phone, 
             whatsappMessage
           );
           
           if (whatsappResult.success) {
-            console.log(`✅ WhatsApp notification sent successfully for device ${deviceId}`);
+            console.log(`✅ Notifikasi WhatsApp berhasil dikirim untuk device ${deviceId}`);
           } else {
-            console.warn(`⚠️ WhatsApp notification failed for device ${deviceId}:`, whatsappResult.error_message);
+            console.warn(`⚠️ Notifikasi WhatsApp gagal untuk device ${deviceId}:`, whatsappResult.error_message);
           }
         } catch (whatsappError) {
-          console.error(`❌ Error sending WhatsApp notification for device ${deviceId}:`, whatsappError);
+          console.error(`❌ Gagal mengirim notifikasi WhatsApp untuk device ${deviceId}:`, whatsappError);
         }
       } else {
-        console.log(`ℹ️ WhatsApp notification skipped for device ${deviceId} (disabled or no phone number)`);
+        console.log(`ℹ️ Notifikasi WhatsApp dilewati untuk device ${deviceId}:`, {
+          whatsapp_enabled: Boolean(deviceData.whatsapp_notification),
+          has_phone: Boolean(deviceData.user_phone),
+          phone_value: deviceData.user_phone
+        });
       }
 
-      // Send browser notification via WebSocket broadcasting
-      console.log(`📱 Broadcasting device offline notification for device ${deviceId} to user ${deviceData.user_id}`);
+      // Kirim notifikasi browser melalui WebSocket broadcasting
+      console.log(`📱 Menyiarkan notifikasi perangkat offline untuk device ${deviceId} ke user ${deviceData.user_id}`);
       try {
         const { broadcastToSpecificUser } = await import('../api/ws/user-ws');
         
-        broadcastToSpecificUser(deviceData.user_id.toString(), {
+        // Format yang sama dengan alarm notification di frontend
+        const browserNotification = {
           type: "notification",
           data: {
             id: `device_offline_${deviceId}_${Date.now()}`,
             type: "device_status",
-            title: "Status Perangkat",
+            title: "Perangkat Offline",
             message: `Perangkat "${deviceData.device_name}" telah offline dan tidak merespons`,
             priority: "high",
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            triggered_at: new Date().toISOString(), // Add triggered_at for frontend compatibility
             device_id: deviceId,
-            user_id: deviceData.user_id,
-            triggered_at: new Date().toISOString(),
-            is_read: false
+            device_description: deviceData.device_name,
+            user_email: deviceData.user_email
           }
-        });
+        };
         
-        console.log(`✅ Browser notification broadcasted for device ${deviceId} offline`);
+        const broadcastSuccess = broadcastToSpecificUser(deviceData.user_id.toString(), browserNotification);
+        
+        if (broadcastSuccess) {
+          console.log(`✅ Notifikasi browser berhasil disiarkan untuk device ${deviceId} offline`);
+        } else {
+          console.log(`⚠️ Notifikasi browser gagal disiarkan untuk device ${deviceId} (user tidak terhubung)`);
+        }
       } catch (broadcastError) {
-        console.error(`❌ Error broadcasting device offline notification for device ${deviceId}:`, broadcastError);
+        console.error(`❌ Gagal menyiarkan notifikasi perangkat offline untuk device ${deviceId}:`, broadcastError);
       }
 
-      console.log(`✅ Device offline notification processed for device ${deviceId} to user ${deviceData.user_name}`);
+      console.log(`✅ Proses notifikasi offline perangkat ${deviceId} untuk user ${deviceData.user_name} selesai`);
     } catch (error) {
-      console.error(`Error sending device offline notification for device ${deviceId}:`, error);
+      console.error(`❌ Gagal mengirim notifikasi offline perangkat ${deviceId}:`, error);
     }
   }
 
@@ -463,12 +537,12 @@ export class DeviceStatusService {
   // Method untuk update status device saja tanpa notifikasi (untuk API device)
   async updateDeviceStatusOnly(deviceId: string, status: "online" | "offline"): Promise<void> {
     try {
-      console.log(`🔄 DeviceStatusService.updateDeviceStatusOnly called: device ${deviceId} -> ${status}`);
+      console.log(`🔄 Memperbarui status device saja: device ${deviceId} -> ${status}`);
       
       // Check database connection first
       const isConnected = await this.checkDbConnection();
       if (!isConnected) {
-        console.warn(`⚠️ Database connection not available for device ${deviceId} status update`);
+        console.warn(`⚠️ Koneksi database tidak tersedia untuk device ${deviceId} status update`);
         return;
       }
 

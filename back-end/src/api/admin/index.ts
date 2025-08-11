@@ -29,7 +29,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       const title = `🔄 Firmware Terbaru Tersedia`;
       const message = `Admin telah mengunggah firmware baru untuk board ${boardType} versi ${firmwareVersion}.\nSilakan cek halaman OTAA Update untuk mengunduh firmware terbaru.\nWaktu: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`;
 
-      // Access database through the service's public method
+      // Akses database melalui method publik service
       const db = service.getDatabase();
 
       for (const user of affectedUsers) {
@@ -40,12 +40,12 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             'firmware_update',
             title,
             message,
-            'low', // Priority rendah untuk firmware update
+            'low', // Prioritas rendah untuk firmware update
             user.user_id
           ]
         );
 
-        // Broadcast notifikasi real-time via WebSocket (optional)
+        // Broadcast notifikasi real-time via WebSocket (opsional)
         try {
           const { broadcastToSpecificUser } = await import('../ws/user-ws');
           broadcastToSpecificUser(user.user_id.toString(), {
@@ -59,20 +59,20 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             timestamp: new Date().toISOString()
           });
         } catch (wsError: any) {
-          // WebSocket broadcast adalah optional
-          console.log(`WebSocket broadcast skipped for user ${user.user_id}:`, wsError?.message || "Unknown error");
+          // WebSocket broadcast bersifat opsional
+          console.log(`WebSocket broadcast dilewati untuk user ${user.user_id}:`, wsError?.message || "Unknown error");
         }
       }
 
-      console.log(`📦 Firmware update notifications sent to ${affectedUsers.length} users for board type ${boardType}`);
+      console.log(`📦 Notifikasi firmware update dikirim ke ${affectedUsers.length} user untuk board type ${boardType}`);
     } catch (error) {
-      console.error("Error sending firmware update notifications:", error);
+      console.error("Terjadi kesalahan saat mengirim notifikasi firmware:", error);
     }
   }
 
   return new Elysia({ prefix: "/admin" })
 
-    // ===== GET OVERVIEW STATISTICS ENDPOINT =====
+    // ===== ENDPOINT STATISTIK OVERVIEW =====
     // GET /admin/stats/overview - Ambil statistik overview sistem (hanya admin)
     .get(
       "/stats/overview",
@@ -86,7 +86,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -104,7 +104,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: stats // Total users, devices, alarms, payload count, dsb
           };
         } catch (error) {
-          console.error("Error getting overview stats:", error);
+          console.error("Terjadi kesalahan saat mengambil statistik overview:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat statistik overview"
@@ -114,7 +114,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getOverviewStatsSchema
     )
 
-    // ===== GET RECENT USERS ENDPOINT =====
+    // ===== ENDPOINT PENGGUNA TERBARU =====
     // GET /admin/stats/recent-users - Ambil daftar user terbaru dengan limit (hanya admin)
     .get(
       "/stats/recent-users",
@@ -128,7 +128,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -145,7 +145,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: formattedUsers // Array user terbaru dengan metadata
           };
         } catch (error) {
-          console.error("Error getting recent users:", error);
+          console.error("Terjadi kesalahan saat mengambil pengguna terbaru:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat data users terbaru"
@@ -155,7 +155,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getRecentUsersSchema
     )
 
-    // ===== GET ALL USERS WITH STATISTICS ENDPOINT =====
+    // ===== ENDPOINT SEMUA PENGGUNA DENGAN STATISTIK =====
     // GET /admin/users - Ambil semua user dengan statistik lengkap (hanya admin)
     .get(
       "/users",
@@ -169,7 +169,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -190,7 +190,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: formattedUsers // Array lengkap user dengan device count, alarm count, dsb
           };
         } catch (error) {
-          console.error("Error getting users with stats:", error);
+          console.error("Terjadi kesalahan saat mengambil pengguna beserta statistik:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat data users"
@@ -200,7 +200,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getAllUsersWithStatsSchema
     )
 
-    // ===== GET ALL DEVICES WITH STATISTICS ENDPOINT =====
+    // ===== ENDPOINT SEMUA DEVICE DENGAN STATISTIK =====
     // GET /admin/devices - Ambil semua device dengan statistik lengkap (hanya admin)
     .get(
       "/devices",
@@ -214,7 +214,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -230,7 +230,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: formattedDevices // Array device dengan payload count, alarm count, owner info
           };
         } catch (error) {
-          console.error("Error getting devices with stats:", error);
+          console.error("Terjadi kesalahan saat mengambil device beserta statistik:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat data devices"
@@ -240,7 +240,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getAllDevicesWithStatsSchema
     )
 
-    // ===== GET DEVICE LOCATIONS FOR MAPS ENDPOINT =====
+    // ===== ENDPOINT LOKASI DEVICE UNTUK PETA =====
     // GET /admin/devices/locations - Ambil lokasi semua device untuk maps (hanya admin)
     .get(
       "/devices/locations",
@@ -254,7 +254,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -262,8 +262,8 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           // Format koordinat dan timestamp untuk mapping/GIS
           const formattedDevices = devices.map((row) => ({
             ...row,
-            latitude: row.latitude !== undefined ? Number(row.latitude) : undefined, // Ensure number type
-            longitude: row.longitude !== undefined ? Number(row.longitude) : undefined, // Ensure number type
+            latitude: row.latitude !== undefined ? Number(row.latitude) : undefined, // Pastikan tipe number
+            longitude: row.longitude !== undefined ? Number(row.longitude) : undefined, // Pastikan tipe number
             last_seen: row.last_seen ? String(row.last_seen) : undefined // String timestamp
           }));
           return {
@@ -271,7 +271,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: formattedDevices // Array device dengan koordinat untuk maps
           };
         } catch (error) {
-          console.error("Error getting device locations:", error);
+          console.error("Terjadi kesalahan saat mengambil lokasi device:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat lokasi devices"
@@ -281,33 +281,33 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       getDeviceLocationsSchema
     )
 
-    // ===== UPDATE DEVICE LOCATION ENDPOINT =====
+    // ===== ENDPOINT PERBARUI LOKASI DEVICE =====
     // PUT /admin/devices/:id/location - Update lokasi device untuk admin GIS management
     .put(
       "/devices/:id/location",
       // @ts-ignore
       async ({ jwt, cookie, params, body }) => {
         try {
-          console.log("Received location update request:", { params, body });
+          console.log("Menerima permintaan pembaruan lokasi:", { params, body });
           
           const decoded = await authorizeRequest(jwt, cookie);
           const adminUser = await userService.getUserById(decoded.sub);
           
-          console.log("User authentication:", { userId: decoded.sub, isAdmin: adminUser?.is_admin });
+          console.log("Autentikasi pengguna:", { userId: decoded.sub, isAdmin: adminUser?.is_admin });
           
           // Validasi akses admin
           if (!adminUser?.is_admin) {
-            console.log("Authorization failed: User is not admin");
+            console.log("Otorisasi gagal: Bukan admin");
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
           const deviceId = parseInt(String(params.id));
           const { latitude, longitude, address } = body as any;
           
-          console.log("Parsed data:", { deviceId, latitude, longitude, address });
+          console.log("Data terurai:", { deviceId, latitude, longitude, address });
           
           // Validasi input data
           if (!deviceId || isNaN(deviceId)) {
@@ -326,7 +326,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           
           const updated = await adminService.updateDeviceLocation(deviceId, latitude, longitude, address);
           
-          console.log("Update result:", { updated });
+          console.log("Hasil pembaruan:", { updated });
           
           if (!updated) {
             return new Response(JSON.stringify({
@@ -335,14 +335,14 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             }), { status: 400 });
           }
           
-          console.log("Location update successful for device:", deviceId);
+          console.log("Pembaruan lokasi berhasil untuk device:", deviceId);
           
           return {
             status: "success",
             message: "Lokasi device berhasil diperbarui"
           };
         } catch (error: any) {
-          console.error("Error updating device location:", error);
+          console.error("Terjadi kesalahan saat memperbarui lokasi device:", error);
           console.error("Error stack:", error.stack);
           return new Response(JSON.stringify({
             status: "error",
@@ -354,7 +354,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
       putDeviceLocationSchema
     )
 
-    // ===== GET SYSTEM HEALTH ENDPOINT =====
+    // ===== ENDPOINT SISTEM HEALTH =====
     // GET /admin/system/health - Monitoring kesehatan sistem IoT (hanya admin)
     .get(
       "/system/health",
@@ -368,7 +368,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -378,7 +378,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             data: health // Database status, server uptime, service status, dsb
           };
         } catch (error) {
-          console.error("Error getting system health:", error);
+          console.error("Terjadi kesalahan saat mengambil status sistem:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal memuat status sistem"
@@ -403,14 +403,14 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
           const firmwares = await otaaService.getAllFirmwaresForAdmin();
           return { success: true, data: firmwares };
         } catch (error: any) {
-          console.error("Error fetching all firmwares for admin:", error);
+          console.error("Terjadi kesalahan saat mengambil semua firmware untuk admin:", error);
           return new Response(JSON.stringify({
             status: "error", 
             message: "Gagal mengambil data firmware",
@@ -433,14 +433,14 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
           const globalFirmwares = await otaaService.getGlobalFirmwaresGroupedByBoard();
           return { success: true, data: globalFirmwares };
         } catch (error: any) {
-          console.error("Error fetching global firmwares:", error);
+          console.error("Terjadi kesalahan saat mengambil firmware global:", error);
           return new Response(JSON.stringify({
             status: "error", 
             message: "Gagal mengambil data firmware global",
@@ -463,7 +463,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -518,11 +518,10 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           // Simpan file firmware
           await Bun.write(firmwarePath, file);
 
-          // Calculate file size and checksum
+          // Hitung ukuran file dan checksum
           const fileStats = await import('fs').then(fs => fs.statSync(firmwarePath));
           const fileSize = fileStats.size;
           
-          // Simple checksum calculation (you might want to use crypto for SHA256)
           const crypto = await import('crypto');
           const fileBuffer = await Bun.file(firmwarePath).arrayBuffer();
           const checksum = crypto.createHash('sha256').update(Buffer.from(fileBuffer)).digest('hex');
@@ -564,7 +563,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           };
 
         } catch (error: any) {
-          console.error("Error uploading global firmware:", error);
+          console.error("Terjadi kesalahan saat mengunggah firmware global:", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal mengupload firmware global",
@@ -587,7 +586,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
           if (!adminUser?.is_admin) {
             return new Response(JSON.stringify({
               status: "error",
-              message: "Unauthorized: Admin access required"
+              message: "Tidak terotorisasi: Akses admin diperlukan"
             }), { status: 403 });
           }
 
@@ -613,7 +612,7 @@ export function adminRoutes(adminService: AdminService, userService: UserService
             }), { status: 500 });
           }
         } catch (error: any) {
-          console.error("Error deleting firmware (admin):", error);
+          console.error("Terjadi kesalahan saat menghapus firmware (admin):", error);
           return new Response(JSON.stringify({
             status: "error",
             message: "Gagal menghapus firmware",

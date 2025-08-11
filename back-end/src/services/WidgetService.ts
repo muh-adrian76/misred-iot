@@ -45,7 +45,7 @@ export class WidgetService {
         // Format lama single device/datastream (compatibility)
         finalInputs = [{ device_id: parseInt(device_id), datastream_id: parseInt(datastream_id) }];
       } else {
-        throw new Error("Either inputs, datastream_ids, or device_id+datastream_id must be provided");
+        throw new Error("Harus menyertakan salah satu: inputs, datastream_ids, atau gabungan device_id+datastream_id");
       }
       
       const query = `INSERT INTO widgets (description, dashboard_id, inputs, type) VALUES (?, ?, ?, ?)`;
@@ -59,8 +59,8 @@ export class WidgetService {
       const [result] = await (this.db as any).safeQuery(query, params);
       return result.insertId;
     } catch (error) {
-      console.error("Error creating widget:", error);
-      throw new Error("Failed to create widget");
+      console.error("Gagal membuat widget:", error);
+      throw new Error("Gagal membuat widget");
     }
   }
 
@@ -74,8 +74,8 @@ export class WidgetService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching widgets by dashboard ID:", error);
-      throw new Error("Failed to fetch widgets");
+      console.error("Gagal mengambil widget berdasarkan ID dashboard:", error);
+      throw new Error("Gagal mengambil widget");
     }
   }
 
@@ -83,15 +83,15 @@ export class WidgetService {
   // Mengambil widget yang menggunakan device tertentu
   async getWidgetsByDeviceId(device_id: string) {
     try {
-      // Search widget yang mengandung device_id dalam inputs JSON
+      // Cari widget yang mengandung device_id dalam JSON inputs
       const [rows] = await (this.db as any).safeQuery(
         "SELECT * FROM widgets WHERE JSON_SEARCH(inputs, 'one', ?, NULL, '$[*].device_id') IS NOT NULL",
         [device_id]
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching widgets by device ID:", error);
-      throw new Error("Failed to fetch widgets");
+      console.error("Gagal mengambil widget berdasarkan ID perangkat:", error);
+      throw new Error("Gagal mengambil widget");
     }
   }
 
@@ -123,7 +123,7 @@ export class WidgetService {
         // Format lama single device/datastream (compatibility)
         finalInputs = [{ device_id: parseInt(device_id), datastream_id: parseInt(datastream_id) }];
       } else {
-        throw new Error("Either inputs, datastream_ids, or device_id+datastream_id must be provided");
+        throw new Error("Harus menyertakan salah satu: inputs, datastream_ids, atau gabungan device_id+datastream_id");
       }
       
       const query = `UPDATE widgets SET description = ?, dashboard_id = ?, inputs = ?, type = ? WHERE id = ?`;
@@ -138,8 +138,8 @@ export class WidgetService {
       const [result] = await (this.db as any).safeQuery(query, params);
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating widget:", error);
-      throw new Error("Failed to update widget");
+      console.error("Gagal memperbarui widget:", error);
+      throw new Error("Gagal memperbarui widget");
     }
   }
 
@@ -153,8 +153,8 @@ export class WidgetService {
       ) as [ResultSetHeader, FieldPacket[]];
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error deleting widget:", error);
-      throw new Error("Failed to delete widget");
+      console.error("Gagal menghapus widget:", error);
+      throw new Error("Gagal menghapus widget");
     }
   }
 }

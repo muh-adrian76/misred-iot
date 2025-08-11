@@ -31,8 +31,8 @@ const sendCommandSchema = {
         example: true,
       }),
       message: t.String({
-        description: "Pesan response",
-        example: "Command created successfully",
+        description: "Pesan respons",
+        example: "Command berhasil dibuat",
       }),
       data: t.Object({
         command_id: t.Number({
@@ -45,19 +45,19 @@ const sendCommandSchema = {
       success: t.Boolean({ example: false }),
       message: t.String({
         description: "Pesan error",
-        example: "Failed to create command",
+        example: "Gagal membuat command",
       }),
       error: t.Optional(t.String()),
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Mengirim command ke perangkat IoT via datastream",
-    summary: "Send command to device",
+    summary: "Kirim command ke perangkat",
   },
 };
 
@@ -119,13 +119,13 @@ const getCommandHistorySchema = {
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Mengambil riwayat command perangkat",
-    summary: "Get command history",
+    summary: "Ambil riwayat command",
   },
 };
 
@@ -173,13 +173,13 @@ const getPendingCommandsSchema = {
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Mengambil command yang masih pending untuk perangkat",
-    summary: "Get pending commands",
+    summary: "Ambil command pending",
   },
 };
 
@@ -207,25 +207,25 @@ const updateCommandStatusSchema = {
       success: t.Boolean({ example: true }),
       message: t.String({
         description: "Pesan berhasil",
-        example: "Command status updated successfully",
+        example: "Status command berhasil diperbarui",
       }),
     }),
     400: t.Object({
       success: t.Boolean({ example: false }),
       message: t.String({
         description: "Pesan error",
-        example: "Command not found or already updated",
+        example: "Command tidak ditemukan atau sudah diperbarui",
       }),
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Update status command (biasanya dipanggil oleh device atau WebSocket handler)",
-    summary: "Update command status",
+    summary: "Perbarui status command",
   },
 };
 
@@ -271,13 +271,13 @@ const getCommandStatsSchema = {
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Mengambil statistik command perangkat",
-    summary: "Get command statistics",
+    summary: "Ambil statistik command",
   },
 };
 
@@ -294,7 +294,7 @@ const cleanupCommandsSchema = {
       success: t.Boolean({ example: true }),
       message: t.String({
         description: "Pesan hasil cleanup",
-        example: "Marked 3 old commands as failed",
+        example: "Menandai 3 command lama sebagai gagal",
       }),
       data: t.Object({
         affected_commands: t.Number({
@@ -305,13 +305,13 @@ const cleanupCommandsSchema = {
     }),
     401: t.Object({
       success: t.Boolean({ example: false }),
-      message: t.String({ example: "Unauthorized" }),
+      message: t.String({ example: "Tidak terotorisasi" }),
     }),
   },
   detail: {
     tags: ["Device Command"],
     description: "Cleanup command lama yang masih pending (maintenance endpoint)",
-    summary: "Cleanup old commands",
+    summary: "Bersihkan command lama",
   },
 };
 

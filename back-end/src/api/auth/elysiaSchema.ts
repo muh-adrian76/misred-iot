@@ -9,12 +9,16 @@ const postRegisterSchema = {
     password: t.String({
       example: "contohpassword123",
     }),
-    name: t.Optional(t.String({
-      example: "Nama User",
-    })),
-    is_admin: t.Optional(t.Boolean({
-      example: false,
-    })),
+    name: t.Optional(
+      t.String({
+        example: "Nama User",
+      })
+    ),
+    is_admin: t.Optional(
+      t.Boolean({
+        example: false,
+      })
+    ),
   }),
   response: {
     201: t.Object(
@@ -43,7 +47,7 @@ const postRegisterSchema = {
   detail: {
     tags: ["Auth"],
     description: "Mendaftarkan Pengguna baru dengan UUID",
-    summary: "Register",
+    summary: "Daftar",
   },
 };
 
@@ -64,9 +68,9 @@ const postLoginSchema = {
           {
             id: t.String({ description: "ID pengguna", example: "1" }),
             name: t.String({
-            description: "Nama pengguna",
-            example: "contoh",
-          }),
+              description: "Nama pengguna",
+              example: "contoh",
+            }),
             email: t.String({
               description: "Email pengguna",
               example: "contoh@gmail.com",
@@ -98,7 +102,7 @@ const postLoginSchema = {
   detail: {
     tags: ["Auth"],
     description: "Memulai sesi Pengguna",
-    summary: "Login",
+    summary: "Masuk",
   },
 };
 
@@ -118,7 +122,7 @@ const postLogoutSchema = {
       {
         message: t.String({
           description: "Pesan error jika refresh token tidak ditemukan",
-          example: "Invalid refresh token.",
+          example: "Refresh token tidak valid.",
         }),
       },
       { description: "Refresh token tidak valid" }
@@ -127,7 +131,7 @@ const postLogoutSchema = {
   detail: {
     tags: ["Auth"],
     description: "Menghapus sesi Pengguna",
-    summary: "Logout",
+    summary: "Keluar",
   },
 };
 
@@ -158,7 +162,7 @@ const getVerifyTokenSchema = {
       {
         message: t.String({
           description: "Pesan error jika token tidak valid",
-          example: "Unauthorized. Token sudah tidak valid",
+          example: "Autentikasi gagal. Token tidak valid",
         }),
       },
       { description: "Token tidak valid" }
@@ -167,7 +171,7 @@ const getVerifyTokenSchema = {
   detail: {
     tags: ["JWT"],
     description: "Verifikasi token JWT",
-    summary: "Verify token",
+    summary: "Verifikasi token",
   },
 };
 
@@ -196,15 +200,15 @@ const getRefreshTokenSchema = {
   detail: {
     tags: ["JWT"],
     description: "Mengganti token JWT yang sudah kadaluarsa",
-    summary: "Refresh token",
+    summary: "Perbarui token",
   },
 };
 
 const postGoogleLoginSchema = {
   type: "json",
   body: t.Object({
-    code: t.String({ description: "Google OAuth code" }),
-    mode: t.String({ description: "Mode Google Login" }),
+    code: t.String({ description: "Kode Google OAuth" }),
+    mode: t.String({ description: "Mode Login Google" }),
   }),
   response: {
     200: t.Object(
@@ -241,7 +245,7 @@ const postGoogleLoginSchema = {
   detail: {
     tags: ["Auth"],
     description: "Login/register menggunakan Akun Google",
-    summary: "Google OAuth",
+    summary: "Login Google",
   },
 };
 
@@ -251,7 +255,7 @@ const postResetForgottenPasswordSchema = {
     email: t.String({
       description: "Email pengguna untuk reset password",
       example: "contoh@gmail.com",
-    })
+    }),
   }),
   response: {
     200: t.Object(
@@ -280,10 +284,10 @@ const postResetForgottenPasswordSchema = {
   },
   detail: {
     tags: ["Auth"],
-    description: "Mengubah password pengguna yang sudah terautentikasi",
-    summary: "Forgot Password",
+    description: "Mengatur ulang password melalui email (lupa password)",
+    summary: "Lupa Password",
   },
-}
+};
 
 const postResetPasswordSchema = {
   type: "json",
@@ -322,7 +326,7 @@ const postResetPasswordSchema = {
     description: "Mengubah password pengguna yang sudah terautentikasi",
     summary: "Reset Password",
   },
-}
+};
 
 export {
   postRegisterSchema,

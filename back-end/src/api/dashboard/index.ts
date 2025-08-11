@@ -17,7 +17,7 @@ import {
 export function dashboardRoutes(dashboardService: DashboardService) {
   return (
     new Elysia({ prefix: "/dashboard" })
-      // ===== GET USER DASHBOARDS ENDPOINT =====
+      // ===== ENDPOINT AMBIL SEMUA DASHBOARD USER =====
       // GET /dashboard - Ambil semua dashboard milik user
       .get(
         "/",
@@ -32,25 +32,25 @@ export function dashboardRoutes(dashboardService: DashboardService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get dashboards:", error);
+            console.error("Terjadi kesalahan saat mengambil dashboard:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Authentication failed",
+                  message: "Autentikasi gagal",
                 }),
                 { status: 401 }
               );
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -59,7 +59,7 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         getAllDashboardsSchema
       )
 
-      // ===== CREATE DASHBOARD ENDPOINT =====
+      // ===== ENDPOINT BUAT DASHBOARD =====
       // POST /dashboard - Buat dashboard baru dengan layout kustomisasi
       .post(
         "/",
@@ -98,25 +98,25 @@ export function dashboardRoutes(dashboardService: DashboardService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in create dashboard:", error);
+            console.error("Terjadi kesalahan saat membuat dashboard:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Authentication failed",
+                  message: "Autentikasi gagal",
                 }),
                 { status: 401 }
               );
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -125,18 +125,13 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         postDashboardSchema
       )
 
-      // ===== UPDATE DASHBOARD ENDPOINT =====
+      // ===== ENDPOINT PERBARUI DASHBOARD =====
       // PUT /dashboard/:id - Update dashboard description/layout
       .put(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            if (params.id === "8") {
-              throw new Error(
-                "Dashboard ini tidak dapat diubah saat kuisioner berlangsung, silahkan buat dashboard baru"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             //@ts-ignore
             const { description, widget_count, layout } = body;
@@ -163,25 +158,25 @@ export function dashboardRoutes(dashboardService: DashboardService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in update dashboard:", error);
+            console.error("Terjadi kesalahan saat mengubah dashboard:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Authentication failed",
+                  message: "Autentikasi gagal",
                 }),
                 { status: 401 }
               );
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -189,18 +184,13 @@ export function dashboardRoutes(dashboardService: DashboardService) {
         },
         putDashboardSchema
       )
-      // ===== DELETE DASHBOARD ENDPOINT =====
+      // ===== ENDPOINT HAPUS DASHBOARD =====
       // DELETE /dashboard/:id - Hapus dashboard dengan validasi ownership
       .delete(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            if (params.id === "8") {
-              throw new Error(
-                "Dashboard ini tidak dapat dihapus saat kuisioner berlangsung"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await dashboardService.deleteDashboard(
               decoded.sub,
@@ -214,25 +204,25 @@ export function dashboardRoutes(dashboardService: DashboardService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in delete dashboard:", error);
+            console.error("Terjadi kesalahan saat menghapus dashboard:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Authentication failed",
+                  message: "Autentikasi gagal",
                 }),
                 { status: 401 }
               );
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );

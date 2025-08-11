@@ -165,8 +165,7 @@ export default function ProfileInfoSection({
             </div>
           </div>
           {/* Switch untuk toggle notifikasi WhatsApp */}
-          <DescriptionTooltip content="Sementara dinonaktifkan saat kuisioner berlangsung.">
-            <Switch
+           <Switch
               variant="whatsapp" // Custom variant untuk WhatsApp styling
               checked={whatsappNotif && !!phoneNumber} // Hanya aktif jika ada nomor telepon dan setting enabled
               onCheckedChange={(checked) => {
@@ -174,10 +173,8 @@ export default function ProfileInfoSection({
                   setWhatsappNotif(checked); // Update setting hanya jika ada nomor telepon
                 }
               }}
-              // disabled={!isEditing || !phoneNumber} // Disable jika tidak editing atau belum ada nomor
-              disabled={true} // Disable jika tidak editing atau belum ada nomor
+              disabled={!isEditing || !phoneNumber} // Disable jika tidak editing atau belum ada nomor
             />
-          </DescriptionTooltip>
         </div>
 
         {/* Section informasi akun read-only */}

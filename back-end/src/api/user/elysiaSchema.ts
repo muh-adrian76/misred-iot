@@ -6,59 +6,59 @@ const getAllUsersSchema = {
     200: t.Object(
       {
         status: t.String({
-          description: "Status response",
+          description: "Status respons",
           example: "success",
         }),
         data: t.Array(
           t.Object({
             id: t.Number({
-              description: "ID user",
+              description: "ID pengguna",
               example: 1,
             }),
             name: t.String({
-              description: "Username user",
+              description: "Nama pengguna",
               example: "contoh",
             }),
             email: t.String({
-              description: "Email user",
+              description: "Email pengguna",
               example: "contoh@gmail.com",
             }),
             is_admin: t.Boolean({
-              description: "Status admin user",
+              description: "Status admin pengguna",
               example: false,
             }),
             created_at: t.String({
-              description: "Waktu pendaftaran user",
+              description: "Waktu pendaftaran pengguna",
               example: "2023-06-30T15:00:00Z",
             }),
             last_login: t.String({
-              description: "Waktu login terakhir user",
+              description: "Waktu login terakhir pengguna",
               example: "2023-07-30T15:00:00Z",
             }),
             phone: t.String({
-              description: "Nomor telepon user",
-              examples: "083117228331",
+              description: "Nomor telepon pengguna",
+              example: "083117228331",
             }),
           }),
-          { description: "Daftar semua user yang terdaftar" }
+          { description: "Daftar semua pengguna yang terdaftar" }
         ),
       },
-      { description: "Response yang berisi data semua user" }
+      { description: "Respons yang berisi data semua pengguna" }
     ),
     404: t.Object(
       {
         message: t.String({
-          description: "Pesan error jika tidak ada user ditemukan",
-          example: "Belum ada user yang terdaftar",
+          description: "Pesan error jika tidak ada pengguna ditemukan",
+          example: "Belum ada pengguna yang terdaftar",
         }),
       },
-      { description: "User tidak ditemukan" }
+      { description: "Pengguna tidak ditemukan" }
     ),
   },
   detail: {
     tags: ["User"],
-    description: "Mengambil semua data user",
-    summary: "Get all users",
+    description: "Mengambil semua data pengguna",
+    summary: "Ambil semua pengguna",
   },
 };
 
@@ -68,46 +68,46 @@ const getUserByIdSchema = {
     200: t.Object(
       {
         id: t.String({
-          description: "ID user",
+          description: "ID pengguna",
           example: 1,
         }),
         name: t.String({
-          description: "Username user",
+          description: "Nama pengguna",
           example: "contoh",
         }),
         email: t.String({
-          description: "Email user",
+          description: "Email pengguna",
           example: "contoh@gmail.com",
         }),
         created_at: t.String({
-          description: "Waktu pendaftaran user",
+          description: "Waktu pendaftaran pengguna",
           example: "2023-06-30T15:00:00Z",
         }),
         last_login: t.String({
-          description: "Waktu login terakhir user",
+          description: "Waktu login terakhir pengguna",
           example: "2023-07-30T15:00:00Z",
         }),
         phone: t.String({
-          description: "Nomor telepon user",
-          examples: "083117228331",
+          description: "Nomor telepon pengguna",
+          example: "083117228331",
         }),
       },
-      { description: "Response yang berisi data user berdasarkan ID" }
+      { description: "Respons yang berisi data pengguna berdasarkan ID" }
     ),
     404: t.Object(
       {
         message: t.String({
-          description: "Pesan error jika user tidak ditemukan",
-          example: "User tidak ditemukan",
+          description: "Pesan error jika pengguna tidak ditemukan",
+          example: "Pengguna tidak ditemukan",
         }),
       },
-      { description: "User tidak ditemukan" }
+      { description: "Pengguna tidak ditemukan" }
     ),
   },
   detail: {
     tags: ["User"],
-    description: "Mengambil data user berdasarkan ID",
-    summary: "Get user by ID",
+    description: "Mengambil data pengguna berdasarkan ID",
+    summary: "Ambil pengguna berdasarkan ID",
   },
 };
 
@@ -129,7 +129,7 @@ const putUserSchema = {
     ),
     is_admin: t.Optional(
       t.Boolean({
-        description: "Status admin user",
+        description: "Status admin pengguna",
         example: false,
       })
     ),
@@ -144,15 +144,15 @@ const putUserSchema = {
     200: t.Object(
       {
         message: t.String({
-          description: "Pesan sukses setelah berhasil memperbarui user",
-          example: "User berhasil diperbarui",
+          description: "Pesan sukses setelah berhasil memperbarui pengguna",
+          example: "Pengguna berhasil diperbarui",
         }),
         id: t.String({
-          description: "ID user yang berhasil diperbarui",
+          description: "ID pengguna yang berhasil diperbarui",
           example: 1,
         }),
       },
-      { description: "Data user berhasil diperbarui" }
+      { description: "Data pengguna berhasil diperbarui" }
     ),
     400: t.Object(
       {
@@ -167,17 +167,17 @@ const putUserSchema = {
       {
         message: t.String({
           description:
-            "Pesan error jika user dengan ID yang diberikan tidak ditemukan",
-          example: "User tidak ditemukan",
+            "Pesan error jika pengguna dengan ID yang diberikan tidak ditemukan",
+          example: "Pengguna tidak ditemukan",
         }),
       },
-      { description: "User tidak ditemukan" }
+      { description: "Pengguna tidak ditemukan" }
     ),
   },
   detail: {
     tags: ["User"],
-    description: "Memperbarui data user berdasarkan ID",
-    summary: "Update user",
+    description: "Memperbarui data pengguna berdasarkan ID",
+    summary: "Perbarui pengguna",
   },
 };
 
@@ -187,26 +187,26 @@ const deleteUserSchema = {
     200: t.Object(
       {
         message: t.String({
-          description: "Pesan berhasil menghapus user",
-          example: "User berhasil dihapus",
+          description: "Pesan berhasil menghapus pengguna",
+          example: "Pengguna berhasil dihapus",
         }),
       },
-      { description: "User berhasil dihapus" }
+      { description: "Pengguna berhasil dihapus" }
     ),
     404: t.Object(
       {
         message: t.String({
-          description: "Pesan error jika user tidak ditemukan",
-          example: "User tidak ditemukan",
+          description: "Pesan error jika pengguna tidak ditemukan",
+          example: "Pengguna tidak ditemukan",
         }),
       },
-      { description: "User tidak ditemukan" }
+      { description: "Pengguna tidak ditemukan" }
     ),
   },
   detail: {
     tags: ["User"],
-    description: "Menghapus data user berdasarkan ID",
-    summary: "Delete user",
+    description: "Menghapus data pengguna berdasarkan ID",
+    summary: "Hapus pengguna",
   },
 };
 

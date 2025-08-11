@@ -1,5 +1,5 @@
-// Hook untuk widget data management - handles time series data, real-time updates, dan aggregations
-// Supports: chart widgets, value widgets, real-time streaming via WebSocket
+// Hook untuk manajemen data widget - menangani data time series, pembaruan real-time, dan agregasi
+// Mendukung: widget chart, widget nilai, dan streaming real-time via WebSocket
 "use client";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -11,18 +11,18 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
   const { user } = useUser();
   const { ws } = useWebSocket();
   
-  // States untuk real-time data dan time series
-  const [realTimeData, setRealTimeData] = useState(null); // Latest single values
-  const [latestValue, setLatestValue] = useState(null); // For value widgets
-  const [realtimeTimeSeriesData, setRealtimeTimeSeriesData] = useState({}); // Real-time chart data
-  const [dynamicTimeAgo, setDynamicTimeAgo] = useState(null); // Dynamic timeAgo yang update setiap menit
+  // State untuk data real-time dan time series
+  const [realTimeData, setRealTimeData] = useState(null); // Nilai terbaru tunggal
+  const [latestValue, setLatestValue] = useState(null); // Untuk widget nilai
+  const [realtimeTimeSeriesData, setRealtimeTimeSeriesData] = useState({}); // Data chart real-time
+  const [dynamicTimeAgo, setDynamicTimeAgo] = useState(null); // timeAgo dinamis yang diperbarui tiap menit
   const lastUpdateTime = useRef(null);
   const timeAgoIntervalRef = useRef(null);
-  const latestTimestampRef = useRef(null); // Ref untuk menyimpan timestamp terbaru
-  const latestDataTypeRef = useRef(null); // Ref untuk menyimpan data_type terbaru
+  const latestTimestampRef = useRef(null); // Menyimpan timestamp terbaru
+  const latestDataTypeRef = useRef(null); // Menyimpan data_type terbaru
 
-  // Extract device-datastream pairs dari berbagai format widget input
-  // Supports multiple input formats untuk backward compatibility
+  // Ekstrak pasangan device-datastream dari berbagai format input widget
+  // Mendukung banyak format input untuk kompatibilitas mundur
   const pairs =
     Array.isArray(pairsInput) && pairsInput.length > 0
       ? pairsInput
@@ -41,7 +41,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 
   const isValidWidget = pairs.length > 0;
 
-  // Query untuk mendapatkan time series data semua pair - HANYA INITIAL LOAD
+  // Query untuk mendapatkan data time series semua pair - HANYA SAAT MUAT AWAL
   const {
     data: timeSeriesDataRaw,
     isLoading: isLoadingTimeSeries,
@@ -52,15 +52,15 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     queryFn: async () => {
       if (!isValidWidget) return [];
       // PENTING: Untuk multi-datastream, setiap datastream harus mendapat request terpisah
-      // agar count filter bekerja per datastream, bukan gabungan semua datastream
+      // agar filter count bekerja per datastream, bukan gabungan semua datastream
       const results = await Promise.all(
         pairs.map(async (pair) => {
-          // Tentukan endpoint berdasarkan filter type
+          // Tentukan endpoint berdasarkan tipe filter
           let endpoint;
           if (filterType === "time") {
             endpoint = `/payload/timeseries/${pair.device_id}/${pair.datastream_id}?range=${timeRange}`;
           } else if (filterType === "count") {
-            // Filter by count - SETIAP datastream mendapat ${dataCount} data terakhir
+            // Filter berdasarkan jumlah - SETIAP datastream mendapat ${dataCount} data terakhir
             endpoint = `/payload/timeseries/${pair.device_id}/${pair.datastream_id}?count=${dataCount}`;
           } else {
             endpoint = `/payload/timeseries/${pair.device_id}/${pair.datastream_id}?range=${timeRange}`;
@@ -70,8 +70,8 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           if (!response.ok) return [];
           const data = await response.json();
           
-          // Debug log untuk melihat data yang diterima
-          // console.log(`📊 Data received for Device ${pair.device_id} Datastream ${pair.datastream_id}:`, {
+          // Log debug untuk melihat data yang diterima
+          // console.log(`📊 Data diterima untuk Device ${pair.device_id} Datastream ${pair.datastream_id}:`, {
           //   count: data.result?.length || 0,
           //   filterType: data.filterType,
           //   dataCount: data.dataCount
@@ -87,12 +87,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       return results;
     },
     enabled: isValidWidget,
-    // HAPUS refetchInterval - hanya fetch sekali saat initial load
+    // HAPUS refetchInterval - hanya fetch sekali saat muat awal
     refetchInterval: false,
     staleTime: Infinity, // Data tidak pernah stale karena update via WebSocket
   });
 
-  // Query untuk mendapatkan datastream info (type, min_value, max_value)
+  // Query untuk mendapatkan info datastream (type, min_value, max_value)
   const {
     data: datastreamInfo,
     isLoading: isLoadingDatastream
@@ -117,10 +117,10 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       return results.filter(Boolean);
     },
     enabled: isValidWidget,
-    staleTime: 30000, // Datastream info rarely changes
+    staleTime: 30000, // Info datastream jarang berubah
   });
 
-  // Query untuk mendapatkan latest value semua pair - HANYA INITIAL LOAD
+  // Query untuk mendapatkan nilai terbaru semua pair - HANYA SAAT MUAT AWAL
   const {
     data: latestDataRaw,
     isLoading: isLoadingLatest,
@@ -150,12 +150,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       return results;
     },
     enabled: isValidWidget,
-    // HAPUS refetchInterval - hanya fetch sekali saat initial load
+    // HAPUS refetchInterval - hanya fetch sekali saat muat awal
     refetchInterval: false,
     staleTime: Infinity, // Data tidak pernah stale karena update via WebSocket
   });
 
-  // Set latest value dari semua pair (ambil yang terbaru)
+  // Set nilai terbaru dari semua pair (ambil yang paling baru)
   useEffect(() => {
     if (latestDataRaw && Array.isArray(latestDataRaw)) {
       // Ambil data terbaru berdasarkan device_time
@@ -172,13 +172,13 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     }
   }, [latestDataRaw]);
 
-  // Effect untuk memperbarui timeAgo secara berkala (setiap 1 menit)
+  // Efek untuk memperbarui timeAgo secara berkala (setiap 1 menit)
   useEffect(() => {
-    // Function untuk update timeAgo menggunakan ref
+    // Fungsi untuk memperbarui timeAgo menggunakan ref
     const updateTimeAgo = () => {
       if (latestTimestampRef.current) {
         const newTimeAgo = getTimeAgo(latestTimestampRef.current, latestDataTypeRef.current);
-        // console.log('🕐 TimeAgo updated:', {
+        // console.log('🕐 TimeAgo diperbarui:', {
         //   timestamp: latestTimestampRef.current,
         //   oldTimeAgo: dynamicTimeAgo,
         //   newTimeAgo: newTimeAgo,
@@ -188,45 +188,45 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       }
     };
 
-    // Set initial timeAgo ketika latestValue berubah
+    // Set timeAgo awal ketika latestValue berubah
     if (latestValue) {
       const timestamp = latestValue.timestamp || latestValue.device_time;
       latestTimestampRef.current = timestamp;
       latestDataTypeRef.current = latestValue.data_type;
       
-      // console.log('📍 Setting up timeAgo interval for:', {
+      // console.log('📍 Mengatur interval timeAgo untuk:', {
       //   timestamp: timestamp,
       //   dataType: latestValue.data_type
       // });
       
       updateTimeAgo();
       
-      // Clear interval sebelumnya jika ada
+      // Bersihkan interval sebelumnya jika ada
       if (timeAgoIntervalRef.current) {
         clearInterval(timeAgoIntervalRef.current);
-        // console.log('🧹 Cleared previous interval');
+        // console.log('🧹 Interval sebelumnya dibersihkan');
       }
       
-      // Set interval untuk update setiap 10 detik untuk testing (nanti ubah ke 60000ms)
+      // Set interval untuk update setiap 10 detik untuk pengujian (nanti ubah ke 60000ms)
       timeAgoIntervalRef.current = setInterval(() => {
-        // console.log('⏰ Interval triggered at:', new Date().toLocaleTimeString());
+        // console.log('⏰ Interval dipicu pada:', new Date().toLocaleTimeString());
         updateTimeAgo();
-      }, 30000); // 10 detik untuk testing
+      }, 10000); // 10 detik untuk pengujian
       
-      // console.log('✅ New interval set with ID:', timeAgoIntervalRef.current);
+      // console.log('✅ Interval baru disetel dengan ID:', timeAgoIntervalRef.current);
     }
 
-    // Cleanup interval saat component unmount atau latestValue berubah
+    // Cleanup interval saat komponen unmount atau latestValue berubah
     return () => {
       if (timeAgoIntervalRef.current) {
-        // console.log('🗑️ Cleaning up interval:', timeAgoIntervalRef.current);
+        // console.log('🗑️ Membersihkan interval:', timeAgoIntervalRef.current);
         clearInterval(timeAgoIntervalRef.current);
         timeAgoIntervalRef.current = null;
       }
     };
-  }, [latestValue]); // Re-run ketika latestValue berubah
+  }, [latestValue]); // Jalankan ulang ketika latestValue berubah
 
-  // Initialize real-time data dengan data dari server saat berhasil di-fetch
+  // Inisialisasi data real-time dengan data dari server saat fetch berhasil
   useEffect(() => {
     if (timeSeriesDataRaw) {
       const initialData = {};
@@ -235,7 +235,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           if (!initialData[item.datastream_id]) {
             initialData[item.datastream_id] = [];
           }
-          // Konversi timestamp dari UTC ke local time untuk initial data
+          // Konversi timestamp dari UTC ke waktu lokal untuk data awal
           const timestamp = item.timestamp || item.device_time;
           const convertedTime = convertUTCToLocalTime(timestamp);
           
@@ -250,7 +250,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     }
   }, [timeSeriesDataRaw]);
 
-  // Effect untuk re-apply sliding window ketika filter berubah
+  // Efek untuk menerapkan kembali sliding window ketika filter berubah
   useEffect(() => {
     if (filterType === "count" && Object.keys(realtimeTimeSeriesData).length > 0) {
       const countNum = parseInt(dataCount);
@@ -258,7 +258,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         setRealtimeTimeSeriesData(prevData => {
           const updated = { ...prevData };
           
-          // Re-apply sliding window untuk semua datastream
+          // Terapkan kembali sliding window untuk semua datastream
           Object.keys(updated).forEach(datastreamId => {
             if (updated[datastreamId] && updated[datastreamId].length > countNum) {
               updated[datastreamId] = updated[datastreamId]
@@ -277,7 +277,27 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     }
   }, [filterType, dataCount]);
 
-  // WebSocket real-time update listener
+  // Efek untuk membersihkan data real-time ketika time range berubah untuk mode "time"
+  useEffect(() => {
+    if (filterType === "time" && Object.keys(realtimeTimeSeriesData).length > 0) {
+      setRealtimeTimeSeriesData(prevData => {
+        const updated = { ...prevData };
+        
+        // Hapus data yang sudah di luar jangkauan waktu untuk semua datastream
+        Object.keys(updated).forEach(datastreamId => {
+          if (updated[datastreamId]) {
+            updated[datastreamId] = updated[datastreamId].filter(item => 
+              isWithinTimeRange(item.timestamp, timeRange)
+            );
+          }
+        });
+        
+        return updated;
+      });
+    }
+  }, [filterType, timeRange]);
+
+  // Listener pembaruan real-time via WebSocket
   useEffect(() => {
     if (!ws || !isValidWidget || !user) return;
 
@@ -299,7 +319,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           // karena backend sudah mengirim device timestamp yang benar
           const timestamp = data.device_time || data.timestamp;
           
-          // Update latest value langsung
+          // Perbarui nilai terbaru secara langsung
           setLatestValue({
             value: data.value,
             timestamp: timestamp, // Gunakan timestamp langsung dari WebSocket
@@ -312,41 +332,27 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             data_type: data.data_type,
           });
 
-          // Update dynamic timeAgo untuk data real-time baru
+          // Perbarui timeAgo dinamis untuk data real-time baru
           const newTimeAgo = getTimeAgo(timestamp, data.data_type);
           setDynamicTimeAgo(newTimeAgo);
 
-          // Update ref dengan timestamp dan data_type terbaru
+          // Simpan ref timestamp dan data_type terbaru
           latestTimestampRef.current = timestamp;
           latestDataTypeRef.current = data.data_type;
-
-          console.log('📡 WebSocket data received, setting up new interval:', {
-            timestamp: timestamp,
-            dataType: data.data_type,
-            timeAgo: newTimeAgo
-          });
 
           // Reset interval untuk timeAgo ketika ada data real-time baru
           if (timeAgoIntervalRef.current) {
             clearInterval(timeAgoIntervalRef.current);
-            console.log('🧹 Cleared WebSocket interval');
           }
-          // Set interval baru untuk update timeAgo setiap 10 detik untuk testing
+          // Set interval baru untuk memperbarui timeAgo setiap 10 detik untuk pengujian
           timeAgoIntervalRef.current = setInterval(() => {
-            console.log('⏰ WebSocket interval triggered at:', new Date().toLocaleTimeString());
             if (latestTimestampRef.current) {
               const updatedTimeAgo = getTimeAgo(latestTimestampRef.current, latestDataTypeRef.current);
-              console.log('🕐 WebSocket TimeAgo updated:', {
-                timestamp: latestTimestampRef.current,
-                newTimeAgo: updatedTimeAgo
-              });
               setDynamicTimeAgo(updatedTimeAgo);
             }
-          }, 10000); // 10 detik untuk testing
-          
-          console.log('✅ New WebSocket interval set with ID:', timeAgoIntervalRef.current);
+          }, 10000); // 10 detik untuk pengujian
 
-          // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
+          // TAMBAHKAN DATA BARU KE CHART SECARA REAL-TIME
           const newDataPoint = {
             id: data.id,
             device_id: data.device_id,
@@ -359,7 +365,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             unit: data.unit,
           };
 
-          // Update real-time chart data dengan sliding window management
+          // Perbarui data chart real-time dengan manajemen sliding window
           setRealtimeTimeSeriesData(prevData => {
             const updated = { ...prevData };
             const datastreamId = newDataPoint.datastream_id;
@@ -368,14 +374,20 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
               updated[datastreamId] = [];
             }
             
-            // Tambah data point baru
+            // Untuk filter time, cek apakah data baru masih dalam jangkauan waktu
+            if (filterType === "time" && !isWithinTimeRange(newDataPoint.timestamp, timeRange)) {
+              // Jika data baru di luar jangkauan waktu, jangan tambahkan
+              return updated;
+            }
+            
+            // Tambahkan data point baru
             updated[datastreamId] = [...updated[datastreamId], newDataPoint];
             
-            // SLIDING WINDOW MANAGEMENT berdasarkan filter type
+            // Manajemen SLIDING WINDOW berdasarkan tipe filter
             if (filterType === "count") {
               const countNum = parseInt(dataCount);
               if (!isNaN(countNum) && dataCount !== "all") {
-                // Untuk count filter: pertahankan hanya N data terakhir per datastream
+                // Untuk count filter: simpan hanya N data terakhir per datastream
                 updated[datastreamId] = updated[datastreamId]
                   .sort((a, b) => {
                     const timeA = new Date(a.timestamp || a.device_time);
@@ -385,7 +397,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
                   .slice(0, countNum); // Ambil N data terakhir
               }
             } else {
-              // Untuk time filter: batasi memory usage (max 1000 points per datastream)
+              // Untuk filter time, hapus data yang sudah di luar jangkauan waktu
+              updated[datastreamId] = updated[datastreamId].filter(item => 
+                isWithinTimeRange(item.timestamp, timeRange)
+              );
+              
+              // Batasi penggunaan memori (maks 1000 data per datastream)
               if (updated[datastreamId].length > 1000) {
                 updated[datastreamId] = updated[datastreamId]
                   .sort((a, b) => {
@@ -393,7 +410,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
                     const timeB = new Date(b.timestamp || b.device_time);
                     return timeB - timeA; // Descending (terbaru dulu)
                   })
-                  .slice(0, 1000); // Keep latest 1000                
+                  .slice(0, 1000); // Simpan 1000 data terbaru                
               }
             }
             
@@ -402,23 +419,23 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           lastUpdateTime.current = Date.now();
         }
       } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
+        console.error("Kesalahan saat menguraikan pesan WebSocket:", error);
       }
     };
     ws.addEventListener("message", handleMessage);
     return () => {
       ws.removeEventListener("message", handleMessage);
     };
-  }, [ws, pairs, user, timeRange, filterType, dataCount]); // Tetap perlu filterType dan dataCount untuk sliding window management
+  }, [ws, pairs, user, timeRange, filterType, dataCount]); // Tetap perlu filterType dan dataCount untuk manajemen sliding window
 
-  // Gabungkan time series data semua pair berdasarkan waktu
+  // Gabungkan data time series semua pair berdasarkan waktu
   const formattedTimeSeriesData = useMemo(() => {
     if (!Array.isArray(timeSeriesDataRaw) || timeSeriesDataRaw.length === 0) {
       return [];
     }
 
     if (filterType === "count") {
-      // Untuk count filter, proses setiap datastream terpisah untuk mempertahankan balance
+      // Untuk filter count, proses setiap datastream terpisah untuk mempertahankan keseimbangan
       const allDataPoints = [];
       const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
       
@@ -433,7 +450,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           const utcTime = convertUTCToLocalTime(timestamp);
           
           if (!utcTime) {
-            console.warn('Invalid timestamp in formattedTimeSeriesData:', timestamp);
+            console.warn('Timestamp tidak valid di formattedTimeSeriesData:', timestamp);
             return;
           }
           
@@ -455,10 +472,10 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         });
       });
       
-      // Sort timestamp dan ambil hanya data yang dibutuhkan untuk menjaga balance
+      // Urutkan timestamp dan ambil hanya data yang dibutuhkan untuk menjaga keseimbangan
       const sortedTimestamps = Array.from(timestampSet).sort();
       
-      // Buat chart data dengan mempertahankan balance per datastream
+      // Buat data chart dengan mempertahankan keseimbangan per datastream
       const chartData = [];
       
       sortedTimestamps.forEach(timeKey => {
@@ -472,12 +489,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           }),
         };
         
-        // Initialize semua datastream keys dengan null
+        // Inisialisasi semua key datastream dengan null
         deviceDatastreamKeys.forEach(dsKey => {
           dataPoint[dsKey] = null;
         });
         
-        // Set nilai untuk setiap datastream jika ada data pada timestamp ini
+        // Tetapkan nilai untuk setiap datastream jika ada data pada timestamp ini
         allDataPoints
           .filter(point => point.timeKey === timeKey)
           .forEach(point => {
@@ -487,7 +504,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         chartData.push(dataPoint);
       });
       
-      // Sort berdasarkan timestamp
+      // Urutkan berdasarkan timestamp
       const sortedData = chartData.sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );      
@@ -495,7 +512,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     }
     
     // LOGIKA LAMA UNTUK TIME FILTERING:
-    // Untuk time filter, gabungkan data berdasarkan timestamp seperti sebelumnya
+    // Untuk filter time, gabungkan data berdasarkan timestamp seperti sebelumnya
     const allData = [];
     const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
     
@@ -504,12 +521,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       const pair = pairs[pairIndex];
       
       pairData.forEach((item) => {
-        // Gunakan utility function untuk konversi timestamp
+        // Gunakan fungsi utilitas untuk konversi timestamp
         const timestamp = item.timestamp || item.device_time;
         const utcTime = convertUTCToLocalTime(timestamp);
         
         if (!utcTime) {
-          console.warn('Invalid timestamp in formattedTimeSeriesData:', timestamp);
+          console.warn('Timestamp tidak valid di formattedTimeSeriesData:', timestamp);
           return;
         }
         
@@ -526,7 +543,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       });
     });
 
-    // Urutkan SEMUA data berdasarkan waktu
+    // Urutkan semua data berdasarkan waktu
     allData.sort((a, b) => a.timestamp - b.timestamp);
 
     // Buat map waktu yang presisi (tanpa pembulatan)
@@ -546,17 +563,17 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             timeZone: timezoneConfig.timezone
           }),
         };
-        // Initialize semua datastream keys dengan null
+        // Inisialisasi semua key datastream dengan null
         deviceDatastreamKeys.forEach(dsKey => {
           timeMap[key][dsKey] = null;
         });
       }
       
-      // Set nilai untuk datastream ini
+      // Tetapkan nilai untuk datastream ini
       timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
     });
 
-    // Convert ke array dan urutkan
+    // Konversi ke array dan urutkan
     const sortedData = Object.values(timeMap).sort(
       (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
@@ -564,10 +581,10 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     return sortedData;
   }, [timeSeriesDataRaw, pairs, filterType, dataCount, timeRange]);
 
-  // Function untuk mendapatkan chart data yang sudah difilter berdasarkan time range atau count
+  // Fungsi untuk mendapatkan data chart yang sudah difilter berdasarkan time range atau count
   const getFilteredTimeSeriesData = useCallback(() => {
     if (filterType === "count") {
-      // Jika ada real-time data, gunakan sliding window approach
+      // Jika ada data real-time, gunakan pendekatan sliding window
       if (Object.keys(realtimeTimeSeriesData).length > 0) {
         const countNum = parseInt(dataCount);
         if (isNaN(countNum) || dataCount === "all") {
@@ -578,12 +595,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         const allDataPoints = [];
         const timestampSet = new Set();
         
-        // Proses setiap datastream untuk mendapat count data terakhir per datastream
+        // Proses setiap datastream untuk memperoleh N data terakhir per datastream
         pairs.forEach(pair => {
           const datastreamId = pair.datastream_id;
           const datastreamData = realtimeTimeSeriesData[datastreamId] || [];
           
-          // Sort berdasarkan timestamp dan ambil N data terakhir per datastream
+          // Urutkan berdasarkan timestamp dan ambil N data terakhir per datastream
           const sortedData = [...datastreamData]
             .sort((a, b) => {
               const timeA = new Date(a.timestamp || a.device_time);
@@ -591,12 +608,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
               return timeB - timeA; // Descending (terbaru dulu)
             })
             .slice(0, countNum) // Ambil N data terakhir
-            .reverse(); // Kembali ke chronological order
+            .reverse(); // Kembali ke urutan kronologis
           
-          // Convert ke format yang dibutuhkan chart
+          // Konversi ke format yang dibutuhkan chart
           sortedData.forEach(item => {
             const timestamp = item.timestamp || item.device_time;
-            // PERBAIKAN: Untuk real-time data, timestamp sudah dalam format yang benar
+            // Untuk data real-time, timestamp sudah dalam format yang benar
             const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
             timestampSet.add(timeKey);
             
@@ -614,7 +631,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           });
         });
         
-        // Buat chart data yang balanced
+        // Bangun data chart yang seimbang
         const sortedTimestamps = Array.from(timestampSet).sort();
         const chartData = [];
         
@@ -629,12 +646,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             }),
           };
           
-          // Initialize semua datastream keys dengan null
+          // Inisialisasi semua key datastream dengan null
           deviceDatastreamKeys.forEach(dsKey => {
             dataPoint[dsKey] = null;
           });
           
-          // Set nilai untuk setiap datastream jika ada data pada timestamp ini
+          // Tetapkan nilai untuk setiap datastream jika ada data pada timestamp ini
           allDataPoints
             .filter(point => point.timeKey === timeKey)
             .forEach(point => {
@@ -644,13 +661,13 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           chartData.push(dataPoint);
         });
         
-        // Sort berdasarkan timestamp
+        // Urutkan berdasarkan timestamp
         const sortedData = chartData.sort(
           (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
         );
         
-        // Debug log untuk hasil filter count
-        // console.log('Real-time count filter result:', {
+        // Log debug untuk hasil filter count
+        // console.log('Hasil filter count real-time:', {
         //   totalDataPoints: allDataPoints.length,
         //   chartDataLength: sortedData.length,
         //   countPerDatastream: countNum
@@ -659,44 +676,75 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         return sortedData;
       }
       
-      // Fallback ke database data jika belum ada real-time data
+      // Fallback ke data database jika belum ada data real-time
       return formattedTimeSeriesData;
     }
     
-    // Untuk time filtering, bisa gunakan real-time data jika tersedia
+    // PERBAIKAN UNTUK TIME FILTERING:
+    // Untuk pemfilteran berdasarkan waktu, SELALU prioritaskan data dari database (formattedTimeSeriesData)
+    // karena backend sudah melakukan filtering berdasarkan rentang waktu yang dipilih.
+    // Data real-time hanya untuk pembaruan tambahan, bukan pengganti keseluruhan.
+    
+    // Jika ada data real-time, gabungkan dengan data database untuk mendapatkan yang paling baru
     if (Object.keys(realtimeTimeSeriesData).length > 0) {
+      // Gabungkan data database dengan pembaruan real-time
       const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
       const allDataPoints = [];
       const timestampSet = new Set();
       
-      // Kumpulkan semua data dari real-time data
-      Object.values(realtimeTimeSeriesData).forEach(datastreamData => {
-        datastreamData.forEach(item => {
-          const timestamp = item.timestamp || item.device_time;
-          // PERBAIKAN: Untuk real-time data, timestamp sudah dalam format yang benar
-          const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
-          timestampSet.add(timeKey);
+      // 1. Tambahkan semua data dari database (sudah difilter berdasarkan rentang waktu)
+      if (Array.isArray(formattedTimeSeriesData)) {
+        formattedTimeSeriesData.forEach(dbItem => {
+          const timestamp = dbItem.timestamp;
+          timestampSet.add(timestamp);
           
-          allDataPoints.push({
-            timeKey,
-            timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
-            originalTimestamp: timeKey, // Gunakan timestamp langsung
-            device_id: item.device_id,
-            datastream_id: item.datastream_id,
-            value: parseFloat(item.value),
-            device_name: item.device_name,
-            sensor_name: item.sensor_name,
-            unit: item.unit,
+          // Ambil nilai datastream individual dari item database
+          deviceDatastreamKeys.forEach(key => {
+            if (dbItem[key] !== null && dbItem[key] !== undefined) {
+              const [, deviceId, datastreamId] = key.split('_');
+              allDataPoints.push({
+                timeKey: timestamp,
+                timestamp: new Date(timestamp),
+                originalTimestamp: timestamp,
+                device_id: parseInt(deviceId),
+                datastream_id: parseInt(datastreamId),
+                value: parseFloat(dbItem[key]),
+                device_name: dbItem.device_name || '',
+                sensor_name: dbItem.sensor_name || '',
+                unit: dbItem.unit || '',
+                source: 'database'
+              });
+            }
           });
         });
+      }
+      
+      // 2. Tambahkan data real-time yang belum ada di database
+      Object.values(realtimeTimeSeriesData).forEach(datastreamData => {
+        datastreamData.forEach(rtItem => {
+          const timestamp = rtItem.timestamp || rtItem.device_time;
+          const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
+          
+          // Tambahkan hanya jika timestamp ini belum ada di data database
+          if (!timestampSet.has(timeKey)) {
+            timestampSet.add(timeKey);
+            allDataPoints.push({
+              timeKey,
+              timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
+              originalTimestamp: timeKey,
+              device_id: rtItem.device_id,
+              datastream_id: rtItem.datastream_id,
+              value: parseFloat(rtItem.value),
+              device_name: rtItem.device_name,
+              sensor_name: rtItem.sensor_name,
+              unit: rtItem.unit,
+              source: 'realtime'
+            });
+          }
+        });
       });
-
-      // PERBAIKAN: Untuk time filtering, jangan filter lagi di frontend karena:
-      // 1. Backend sudah melakukan filtering berdasarkan time range
-      // 2. Real-time data adalah update incremental, bukan replacement lengkap
-      // 3. Double filtering bisa menyebabkan data hilang
-      // Jadi kita akan langsung buat chart data dari semua data yang sudah ada
-      // Langsung buat chart data tanpa filtering tambahan
+      
+      // 3. Susun data chart dari gabungan data database dan real-time
       const timeMap = {};
       
       allDataPoints.forEach((item) => {
@@ -705,24 +753,24 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         if (!timeMap[key]) {
           timeMap[key] = {
             timestamp: key,
-            originalTimestamp: item.originalTimestamp, // Ini sekarang sudah timestamp yang dikonversi
+            originalTimestamp: item.originalTimestamp,
             time: item.timestamp.toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
               timeZone: timezoneConfig.timezone
             }),
           };
-          // Initialize semua datastream keys dengan null
+          // Inisialisasi semua key datastream dengan null
           deviceDatastreamKeys.forEach(dsKey => {
             timeMap[key][dsKey] = null;
           });
         }
         
-        // Set nilai untuk datastream ini
+        // Tetapkan nilai untuk datastream ini
         timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
       });
 
-      // Convert ke array dan urutkan
+      // Konversi ke array dan urutkan
       const chartData = Object.values(timeMap).sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );
@@ -730,11 +778,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       return chartData;
     }
     
-    // Fallback ke initial data
+    // Fallback ke data database jika tidak ada data real-time
     return formattedTimeSeriesData;
   }, [realtimeTimeSeriesData, formattedTimeSeriesData, timeRange, dataCount, filterType, pairs]);
 
-  // Legend data untuk chart
+  // Data legenda untuk chart
   const legendData = pairs.map((pair, idx) => {
     // Cari info sensor dari latestDataRaw
     const latest = Array.isArray(latestDataRaw)
@@ -754,12 +802,12 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     };
   });
 
-  // Format latest value untuk display
+  // Format nilai terbaru untuk tampilan
   const formattedLatestValue = latestValue
     ? {
         value: parseFloat(latestValue.value),
         timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
-        timeAgo: dynamicTimeAgo || // Gunakan dynamic timeAgo yang ter-update otomatis
+        timeAgo: dynamicTimeAgo || // Gunakan timeAgo dinamis yang ter-update otomatis
           (latestValue.timestamp || latestValue.device_time
             ? getTimeAgo(latestValue.timestamp || latestValue.device_time, latestValue.data_type)
             : "none"),
@@ -771,13 +819,14 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       }
     : null;
 
-  // Helper function untuk menerjemahkan time range ke bahasa Indonesia
+  // Fungsi bantu untuk menerjemahkan time range ke bahasa Indonesia
   const getTimeRangeLabel = (range) => {
     const labels = {
       "1h": "1 jam terakhir",
       "12h": "12 jam terakhir", 
       "1d": "1 hari terakhir",
       "1w": "1 minggu terakhir",
+      "1m": "1 bulan terakhir",
     };
     return labels[range] || "1 jam terakhir";
   };
@@ -804,31 +853,31 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     isRealTimeConnected: !!ws,
     timeRange,
     timeRangeLabel: getTimeRangeLabel(timeRange),
-    datastreamInfo, // Add datastream info to return
-    realtimeTimeSeriesData, // Expose real-time data untuk debugging jika diperlukan
+    datastreamInfo, // Sertakan info datastream di return
+    realtimeTimeSeriesData, // Ekspos data real-time untuk debugging bila diperlukan
   };
 }
 
-// Helper function untuk menghitung waktu relatif dengan konversi UTC ke local
+// Fungsi bantu untuk menghitung waktu relatif dengan konversi UTC ke waktu lokal
 function getTimeAgo(timestamp, dataType) {
-  if (!timestamp) return "Unknown";
+  if (!timestamp) return "Tidak diketahui";
   if(dataType === "offline" || dataType === "pending") return "Baru saja";
   try {
-    // Gunakan utility function dari helper.js
+    // Gunakan fungsi utilitas dari helper.js
     const localTime = convertUTCToLocalTime(timestamp);
     
     if (!localTime) {
-      console.warn('Failed to convert timestamp for getTimeAgo:', timestamp);
-      return "Unknown";
+      console.warn('Gagal mengonversi timestamp di getTimeAgo:', timestamp);
+      return "Tidak diketahui";
     }
     
-    const now = new Date(); // Waktu lokal user
+    const now = new Date(); // Waktu lokal pengguna
     
     // Hitung selisih waktu
     const diffInSeconds = Math.floor((now - localTime) / 1000);
     
-    // Debug log untuk melihat perhitungan waktu
-    // console.log('getTimeAgo calculation:', {
+    // Log debug untuk melihat perhitungan waktu
+    // console.log('Perhitungan getTimeAgo:', {
     //   originalTimestamp: timestamp,
     //   localTime: localTime.toISOString(),
     //   now: now.toISOString(),
@@ -851,7 +900,40 @@ function getTimeAgo(timestamp, dataType) {
       return `${days} hari yang lalu`;
     }
   } catch (error) {
-    console.error('Error in getTimeAgo:', error, 'timestamp:', timestamp);
-    return "Unknown";
+    console.error('Kesalahan pada getTimeAgo:', error, 'timestamp:', timestamp);
+    return "Tidak diketahui";
   }
+}
+
+// Fungsi bantu untuk mengecek apakah timestamp berada dalam rentang waktu yang dipilih
+function isWithinTimeRange(timestamp, timeRange) {
+  if (!timeRange || timeRange === "all") return true;
+  
+  const now = new Date();
+  const dataTime = new Date(timestamp);
+  
+  // Hitung milidetik berdasarkan rentang waktu
+  let rangeInMs;
+  switch (timeRange) {
+    case "1h":
+      rangeInMs = 60 * 60 * 1000; // 1 jam
+      break;
+    case "12h":
+      rangeInMs = 12 * 60 * 60 * 1000; // 12 jam
+      break;
+    case "1d":
+      rangeInMs = 24 * 60 * 60 * 1000; // 1 hari
+      break;
+    case "1w":
+      rangeInMs = 7 * 24 * 60 * 60 * 1000; // 1 minggu
+      break;
+    case "1m":
+      rangeInMs = 30 * 24 * 60 * 60 * 1000; // 1 bulan (perkiraan)
+      break;
+    default:
+      return true; // Rentang tidak dikenali, izinkan semua data
+  }
+  
+  const timeDiff = now - dataTime;
+  return timeDiff >= 0 && timeDiff <= rangeInMs;
 }

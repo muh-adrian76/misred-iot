@@ -1,24 +1,24 @@
-// Hook untuk detect clicks outside element - berguna untuk close dropdown/modal saat click luar
-// Supports both mouse dan touch events untuk mobile compatibility
+// Hook untuk mendeteksi klik di luar elemen - berguna untuk menutup dropdown/modal saat klik di luar
+// Mendukung event mouse dan sentuh untuk kompatibilitas perangkat mobile
 import { useEffect } from 'react';
 
 function useClickOutside(ref, handler) {
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Return early jika ref tidak ada atau click masih di dalam element
+      // Kembalikan lebih awal jika ref tidak ada atau klik masih di dalam elemen
       if (!ref || !ref.current || ref.current.contains(event.target)) {
         return;
       }
 
-      // Execute handler jika click di luar element
+      // Jalankan handler jika klik di luar elemen
       handler(event);
     };
 
-    // Listen untuk mouse dan touch events
+    // Pasang listener untuk event mouse dan sentuh
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside); // Mobile support
+    document.addEventListener('touchstart', handleClickOutside); // Dukungan untuk mobile
 
-    // Cleanup listeners saat component unmount
+    // Bersihkan listener saat komponen dilepas (unmount)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);

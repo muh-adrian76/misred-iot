@@ -1,7 +1,7 @@
 /**
  * ===== DEVICE WEBSOCKET ROUTES - KOMUNIKASI REAL-TIME DENGAN DEVICE IoT =====
  * File ini mengatur koneksi WebSocket untuk komunikasi langsung dengan device IoT
- * Meliputi: device registration, sensor updates, heartbeat, command acknowledgment, control status
+ * Mencakup: registrasi device, pembaruan sensor, heartbeat, konfirmasi perintah, dan status kontrol
  */
 
 import { Elysia, t } from "elysia";
@@ -25,7 +25,7 @@ function updateDeviceActivity(device_id: string, ws: any) {
 }
 
 export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService: DeviceStatusService, db: Pool) {
-  // Simpan reference untuk digunakan di fungsi lain
+  // Simpan referensi untuk digunakan di fungsi lain
   globalDb = db;
   globalDeviceService = deviceService;
   globalDeviceStatusService = deviceStatusService;
@@ -43,21 +43,21 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
       status: t.Optional(t.String()),
       sensor: t.Optional(t.Any()),
       message: t.Optional(t.String()),
-      // Parameter untuk command acknowledgment
+      // Parameter untuk konfirmasi perintah
       command_id: t.Optional(t.Number()),
       success: t.Optional(t.Boolean()),
-      // Parameter untuk control status
+      // Parameter untuk status kontrol
       controls: t.Optional(t.Any()),
-      // Parameter untuk datastream payload
+      // Parameter untuk payload datastream
       datastream_id: t.Optional(t.Number()),
       value: t.Optional(t.Any()),
     }),
     // Handler ketika koneksi WebSocket terbuka
     open(ws) {
-      ws.send(JSON.stringify({ type: "hello", message: "Send your device_id" })); // Kirim greeting message
+      ws.send(JSON.stringify({ type: "hello", message: "Kirim device_id Anda" })); // Kirim pesan sambutan
     },
     async message(ws, data) {
-      // ===== DEVICE REGISTRATION HANDLER =====
+      // ===== HANDLER REGISTRASI DEVICE =====
       // Registrasi device menggunakan secret key
       if (data.type === "register" && data.secret) {
         try {
@@ -74,31 +74,31 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
             updateDeviceActivity(device.id.toString(), ws);
             ws.send(JSON.stringify({
               type: "registered",
-              message: "Device berhasil didaftarkan",
+              message: "Perangkat berhasil didaftarkan",
               device_id: device.id.toString(),
             }));
           } else {
             ws.send(JSON.stringify({
               type: "register_failed",
-              message: "Device tidak ditemukan di database",
+              message: "Perangkat tidak ditemukan di database",
             }));
           }
         } catch (error) {
-          console.error("Error registering device:", error);
+          console.error("Kesalahan saat registrasi perangkat:", error);
           ws.send(JSON.stringify({
             type: "register_failed",
-            message: "Error saat registrasi device",
+            message: "Terjadi kesalahan saat registrasi perangkat",
           }));
         }
         return;
       }
 
-      // ===== SENSOR DATA UPDATE HANDLER =====
-      // Device kirim data sensor via datastream
+      // ===== HANDLER PEMBARUAN DATA SENSOR =====
+      // Device mengirim data sensor via datastream
       if (data.type === "sensor_update" && data.device_id && data.datastream_id && data.value !== undefined) {
         updateDeviceActivity(data.device_id, ws);
         
-        // Broadcast data sensor ke user pemilik device
+        // Broadcast data sensor ke pemilik perangkat
         await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "sensor_update",
           device_id: parseInt(data.device_id),
@@ -114,8 +114,8 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
         }));
       }
       
-      // ===== DEVICE HEARTBEAT HANDLER =====
-      // Device kirim status online/offline secara berkala
+      // ===== HANDLER HEARTBEAT DEVICE =====
+      // Device mengirim status online/offline secara berkala
       if (data.type === "heartbeat" && data.device_id) {
         updateDeviceActivity(data.device_id, ws);
         
@@ -123,10 +123,10 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
         try {
           await deviceStatusService.updateDeviceStatusOnly(data.device_id, "online");
         } catch (error) {
-          console.error("Error updating device status:", error);
+          console.error("Kesalahan memperbarui status perangkat:", error);
         }
         
-        // Broadcast status online ke user pemilik device
+        // Broadcast status online ke pemilik perangkat
         await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "status_update",
           device_id: parseInt(data.device_id),
@@ -134,16 +134,16 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
           last_seen: new Date().toISOString(),
         });
         
-        ws.send(JSON.stringify({ type: "heartbeat_received", message: "Heartbeat received" }));
+        ws.send(JSON.stringify({ type: "heartbeat_received", message: "Heartbeat diterima" }));
       }
 
-      // ===== COMMAND ACKNOWLEDGMENT HANDLER =====
-      // Device konfirmasi eksekusi command yang diterima
+      // ===== HANDLER KONFIRMASI PERINTAH (ACK) =====
+      // Device mengonfirmasi eksekusi perintah yang diterima
       if (data.type === "command_ack" && data.device_id && data.command_id !== undefined) {
         updateDeviceActivity(data.device_id, ws);
         
         try {
-          // Update status command di database
+          // Update status perintah di database
           const status = data.success ? "acknowledged" : "failed";
           await deviceCommandService.updateCommandStatus(
             data.command_id,
@@ -151,9 +151,9 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
             new Date()
           );
           
-          console.log(`✅ Command ${data.command_id} acknowledged by device ${data.device_id}: ${data.success ? 'SUCCESS' : 'FAILED'}`);
+          console.log(`✅ Perintah ${data.command_id} dikonfirmasi oleh perangkat ${data.device_id}: ${data.success ? 'BERHASIL' : 'GAGAL'}`);
           
-          // Broadcast ke user pemilik device bahwa command telah dieksekusi
+          // Broadcast ke pemilik perangkat bahwa perintah telah dieksekusi
           await broadcastToDeviceOwner(db, parseInt(data.device_id), {
             type: "command_executed",
             device_id: parseInt(data.device_id),
@@ -164,24 +164,24 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
           
           ws.send(JSON.stringify({ 
             type: "command_ack_received", 
-            message: "Command acknowledgment processed",
+            message: "Konfirmasi perintah diproses",
             command_id: data.command_id 
           }));
         } catch (error) {
-          console.error("Error processing command ack:", error);
+          console.error("Kesalahan memproses konfirmasi perintah:", error);
           ws.send(JSON.stringify({ 
             type: "error", 
-            message: "Failed to process command acknowledgment" 
+            message: "Gagal memproses konfirmasi perintah" 
           }));
         }
       }
 
-      // ===== CONTROL STATUS UPDATE HANDLER =====
-      // Device melaporkan status current actuator via datastream
+      // ===== HANDLER STATUS KONTROL =====
+      // Device melaporkan status aktuator saat ini via datastream
       if (data.type === "control_status" && data.device_id && data.datastream_id !== undefined && data.value !== undefined) {
         updateDeviceActivity(data.device_id, ws);
         
-        // Broadcast status control saat ini ke user pemilik device
+        // Broadcast status kontrol saat ini ke pemilik perangkat
         await broadcastToDeviceOwner(db, parseInt(data.device_id), {
           type: "control_status_update",
           device_id: parseInt(data.device_id),
@@ -192,14 +192,14 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
         
         ws.send(JSON.stringify({ 
           type: "control_status_received", 
-          message: "Control status updated",
+          message: "Status kontrol diperbarui",
           datastream_id: data.datastream_id 
         }));
       }
     },
     // Handler ketika koneksi WebSocket ditutup
     close(ws) {
-      // Update status device ke offline ketika koneksi putus
+      // Update status perangkat menjadi offline ketika koneksi putus
       for (const [device_id, client] of deviceClients.entries()) {
         if (client.ws === ws) {
           deviceClients.delete(device_id);
@@ -215,10 +215,10 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
                 last_seen: new Date().toISOString(),
               });
               
-              // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
+              // KIRIM NOTIFIKASI PERANGKAT OFFLINE (WhatsApp + Browser + Database log)
               await globalDeviceStatusService.sendDeviceOfflineNotification(parseInt(device_id));
               
-              console.log(`🔴 Device ${device_id} marked as offline due to connection close`);
+              console.log(`🔴 Perangkat ${device_id} ditandai offline karena koneksi terputus`);
             })
             .catch(console.error);
         }
@@ -228,8 +228,8 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
 }
 
 
-// ===== HEARTBEAT CHECKER - AUTO OFFLINE DETECTION =====
-// Fungsi untuk mengecek SEMUA device yang tidak mengirim data selama 60 detik
+// ===== HEARTBEAT CHECKER - DETEKSI OFFLINE OTOMATIS =====
+// Fungsi untuk mengecek SEMUA device yang tidak mengirim data selama durasi timeout khusus
 export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, db: Pool) {
   return setInterval(async () => {
     try {
@@ -245,35 +245,35 @@ export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, 
       for (const device of activeDevices) {
         const deviceId = device.id.toString();
         const timeoutMinutes = device.offline_timeout_minutes || 1; // Default 1 menit
-        const timeoutMs = timeoutMinutes * 60 * 1000; // Convert ke milliseconds
+        const timeoutMs = timeoutMinutes * 60 * 1000; // Konversi ke milidetik
         let shouldMarkOffline = false;
         let lastSeenTime = 0;
 
-        // Cek WebSocket devices (real-time connection)
+        // Cek WebSocket devices (koneksi real-time)
         const wsClient = deviceClients.get(deviceId);
         if (wsClient) {
-          // Device terhubung via WebSocket - cek heartbeat dengan timeout custom
+          // Device terhubung via WebSocket - cek heartbeat dengan timeout kustom
           if (now - wsClient.lastSeen > timeoutMs) {
             shouldMarkOffline = true;
             deviceClients.delete(deviceId);
-            console.log(`🔴 WebSocket device ${deviceId} offline - no heartbeat for ${timeoutMinutes}m`);
+            console.log(`🔴 Perangkat WS ${deviceId} offline - tidak ada heartbeat selama ${timeoutMinutes}m`);
           }
         } else {
-          // Device HTTP/MQTT - cek last_seen_at dari database dengan timeout custom
+          // Device HTTP/MQTT - cek last_seen_at dari database dengan timeout kustom
           if (device.last_seen_at) {
             lastSeenTime = new Date(device.last_seen_at).getTime();
             if (now - lastSeenTime > timeoutMs) {
               shouldMarkOffline = true;
-              console.log(`🔴 HTTP/MQTT device ${deviceId} offline - no data for ${timeoutMinutes}m`);
+              console.log(`🔴 Perangkat HTTP/MQTT ${deviceId} offline - tidak ada data selama ${timeoutMinutes}m`);
             }
           } else if (device.status === 'online') {
             // Device online tapi tidak ada last_seen_at - anggap offline
             shouldMarkOffline = true;
-            console.log(`🔴 Device ${deviceId} offline - no last_seen_at record`);
+            console.log(`🔴 Perangkat ${deviceId} offline - tidak ada catatan last_seen_at`);
           }
         }
 
-        // Mark device as offline dan kirim notifikasi
+        // Tandai perangkat offline dan kirim notifikasi
         if (shouldMarkOffline) {
           try {
             // Update status database ke offline
@@ -287,27 +287,27 @@ export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, 
               last_seen: device.last_seen_at || new Date().toISOString(),
             });
             
-            // SEND DEVICE OFFLINE NOTIFICATION (WhatsApp + Browser + Database log)
+            // KIRIM NOTIFIKASI PERANGKAT OFFLINE (WhatsApp + Browser + Database log)
             await deviceStatusService.sendDeviceOfflineNotification(parseInt(deviceId));
             
-            console.log(`✅ Device ${deviceId} (${device.description}) marked as offline and notification sent`);
+            console.log(`✅ Perangkat ${deviceId} (${device.description}) ditandai offline dan notifikasi dikirim`);
           } catch (error) {
-            console.error(`❌ Error marking device ${deviceId} offline:`, error);
+            console.error(`❌ Kesalahan menandai perangkat ${deviceId} offline:`, error);
           }
         }
       }
     } catch (error) {
-      console.error("❌ Error in heartbeat checker:", error);
+      console.error("❌ Kesalahan pada heartbeat checker:", error);
     }
   }, 10000); // Cek setiap 10 detik
 }
 
-// ===== SEND COMMAND TO DEVICE =====
-// Fungsi untuk mengirim command ke device tertentu
+// ===== KIRIM PERINTAH KE PERANGKAT =====
+// Fungsi untuk mengirim perintah ke device tertentu
 export function sendToDevice(device_id: string, data: any) {
   const client = deviceClients.get(device_id);
   if (client && client.ws) {
-    client.ws.send(JSON.stringify(data)); // Serialize data ke JSON string
+    client.ws.send(JSON.stringify(data)); // Serialisasi data ke JSON string
     return true;
   }
   return false;

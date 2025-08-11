@@ -1,28 +1,28 @@
-// Hook untuk admin authentication - mengecek apakah user memiliki admin privileges
-// Digunakan untuk protect admin routes dan menampilkan konten admin-only
+// Hook untuk autentikasi admin - mengecek apakah user memiliki hak admin
+// Digunakan untuk melindungi rute admin dan menampilkan konten khusus admin
 "use client";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "./use-auth";
 import { fetchFromBackend } from "@/lib/helper";
 
 export function useAdminAuth() {
-  // Menggunakan useAuth dengan skipRedirect untuk manual handling
+  // Menggunakan useAuth dengan skipRedirect untuk penanganan manual
   const { isAuthenticated, loading: authLoading } = useAuth(true);
   
-  // States untuk admin status dan user data
-  const [isAdmin, setIsAdmin] = useState(undefined); // undefined = belum dicek, true/false = hasil check
+  // State untuk status admin dan data user
+  const [isAdmin, setIsAdmin] = useState(undefined); // undefined = belum dicek, true/false = hasil cek
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Effect untuk check admin status setelah authentication selesai
+  // Effect untuk cek status admin setelah autentikasi selesai
   useEffect(() => {
     const checkAdminStatus = async () => {
-      // Wait sampai auth loading selesai
+      // Tunggu sampai auth loading selesai
       if (authLoading) {
         return;
       }
 
-      // Jika tidak authenticated, set admin false
+      // Jika tidak terautentikasi, set admin = false
       if (!isAuthenticated) {
         setIsAdmin(false);
         setUser(null);
@@ -31,7 +31,7 @@ export function useAdminAuth() {
       }
 
       try {
-        // API call untuk check admin privileges
+        // Panggil API untuk cek hak admin
         const response = await fetchFromBackend("/auth/check-admin");
         if (response.ok) {
           const data = await response.json();
@@ -39,17 +39,17 @@ export function useAdminAuth() {
           setIsAdmin(data.isAdmin || false);
           setUser(data.user || null);
           if (!data.isAdmin) {
-            // Biarkan client.jsx yang handle tampilan error
+            // Biarkan client.jsx yang menangani tampilan error
             return;
           }
         } else {
           setIsAdmin(false);
           setUser(null);
-          // Jika check admin gagal, biarkan client.jsx yang handle
+          // Jika cek admin gagal, biarkan client.jsx yang menangani
           return;
         }
       } catch (error) {
-        console.error("useAdminAuth: Error checking admin status:", error);
+        console.error("useAdminAuth: Kesalahan saat memeriksa status admin:", error);
         setIsAdmin(false);
         setUser(null);
         // Error handling diserahkan ke client.jsx
@@ -62,7 +62,7 @@ export function useAdminAuth() {
     checkAdminStatus();
   }, [isAuthenticated, authLoading]);
   
-  // Memoize result untuk prevent unnecessary re-renders
+  // Memoize hasil untuk mencegah re-render yang tidak perlu
   const result = useMemo(() => ({
     isAdmin,
     isAuthenticated,

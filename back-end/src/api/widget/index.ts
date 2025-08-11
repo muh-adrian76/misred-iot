@@ -69,25 +69,25 @@ export function widgetRoutes(widgetService: WidgetService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in create widget:", error);
+            console.error("Kesalahan saat membuat widget:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Authentication failed",
+                  message: "Autentikasi gagal",
                 }),
                 { status: 401 }
               );
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -111,24 +111,24 @@ export function widgetRoutes(widgetService: WidgetService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get widgets by dashboard:", error);
+            console.error("Kesalahan saat mengambil widget berdasarkan dashboard:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 result: [],
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -152,24 +152,24 @@ export function widgetRoutes(widgetService: WidgetService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error in get widgets by device ID:", error);
+            console.error("Kesalahan saat mengambil widget berdasarkan device ID:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 result: [],
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -185,18 +185,6 @@ export function widgetRoutes(widgetService: WidgetService) {
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            if (
-              params.id === "11" ||
-              params.id === "12" ||
-              params.id === "13" ||
-              params.id === "14" ||
-              params.id === "15" ||
-              params.id === "51"
-            ) {
-              throw new Error(
-                "Dashboard ini tidak dapat diubah saat kuisioner berlangsung, silahkan buat dashboard baru"
-              );
-            }
             await authorizeRequest(jwt, cookie);
 
             // Update widget dengan data baru
@@ -212,23 +200,23 @@ export function widgetRoutes(widgetService: WidgetService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in update widget:", error);
+            console.error("Kesalahan saat mengupdate widget:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -244,18 +232,6 @@ export function widgetRoutes(widgetService: WidgetService) {
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            if (
-              params.id === "11" ||
-              params.id === "12" ||
-              params.id === "13" ||
-              params.id === "14" ||
-              params.id === "15" ||
-              params.id === "51"
-            ) {
-              throw new Error(
-                "Dashboard ini tidak dapat diubah saat kuisioner berlangsung, silahkan buat dashboard baru"
-              );
-            }
             await authorizeRequest(jwt, cookie);
 
             // Hapus widget dari database
@@ -271,23 +247,23 @@ export function widgetRoutes(widgetService: WidgetService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error in delete widget:", error);
+            console.error("Kesalahan saat menghapus widget:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );

@@ -7,16 +7,16 @@ import { markDatastreamCreated } from "@/lib/onboarding-utils";
 import unitOptions from "./unit.json";
 
 export function useDatastreamLogic() {
-  // Datastream state
+  // State datastream
   const [datastreams, setDatastreams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Device state
+  // State device
   const [devices, setDevices] = useState([]);
   const [loadingDevices, setLoadingDevices] = useState(false);
 
-  // UI state
+  // State UI
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [editFormOpen, setEditFormOpen] = useState(false);
   const [editDatastream, setEditDatastream] = useState(null);
@@ -28,13 +28,13 @@ export function useDatastreamLogic() {
   const { isAuthenticated } = useAuth();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
-  // Fetch datastreams
+  // Ambil daftar datastream
   const fetchDatastreams = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetchFromBackend(`/datastream`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ||"Gagal fetch datastream");
+      if (!res.ok) throw new Error(data.message ||"Gagal mengambil daftar datastream");
       setDatastreams(data.result || []);
     } catch(error) {
       errorToast(error.message || "Gagal mengambil data datastream");
@@ -43,16 +43,16 @@ export function useDatastreamLogic() {
     }
   }, []);
 
-  // Fetch devices
+  // Ambil daftar device (untuk referensi saat membuat/mengedit datastream)
   const fetchDevices = useCallback(async () => {
     setLoadingDevices(true);
     try {
       const res = await fetchFromBackend(`/device`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal fetch device");
+      if (!res.ok) throw new Error(data.message || "Gagal mengambil daftar perangkat");
       setDevices(data.result || []);
     } catch (error) {
-      errorToast(error.message || "Gagal mengambil data device");
+      errorToast(error.message || "Gagal mengambil data perangkat");
     } finally {
       setLoadingDevices(false);
     }
@@ -65,7 +65,7 @@ export function useDatastreamLogic() {
     }
   }, [isAuthenticated, fetchDatastreams, fetchDevices]);
 
-  // CRUD Handler
+  // Handler CRUD
   const handleAddDatastream = async (payload) => {
     try {
       const res = await fetchFromBackend("/datastream", {
@@ -78,15 +78,15 @@ export function useDatastreamLogic() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal tambah datastream");
+      if (!res.ok) throw new Error(data.message || "Gagal menambahkan datastream");
       successToast("Datastream berhasil ditambahkan!");
       await fetchDatastreams();
       setAddFormOpen(false);
       
-      // Trigger onboarding task completion
+      // Tandai penyelesaian tugas onboarding
       markDatastreamCreated();
     } catch(error) {
-      errorToast("Gagal tambah datastream!", error.message || "Terjadi kesalahan saat menambahkan datastream");
+      errorToast("Gagal menambahkan datastream!", error.message || "Terjadi kesalahan saat menambahkan datastream");
     }
   };
 
@@ -102,12 +102,12 @@ export function useDatastreamLogic() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal update datastream");
-      successToast("Datastream berhasil diupdate!");
+      if (!res.ok) throw new Error(data.message || "Gagal memperbarui datastream");
+      successToast("Datastream berhasil diperbarui!");
       await fetchDatastreams();
       setEditFormOpen(false);
     } catch (error) {
-      errorToast("Gagal update datastream!", error.message || "Terjadi kesalahan saat mengupdate datastream");
+      errorToast("Gagal memperbarui datastream!", error.message || "Terjadi kesalahan saat memperbarui datastream");
     }
   };
 
@@ -132,7 +132,7 @@ export function useDatastreamLogic() {
     }
   };
 
-  // Generate opsi pin 0-255
+  // Kumpulan pin yang sudah terpakai per device (untuk mencegah duplikasi)
   const usedPinsPerDevice = useMemo(() => {
     const map = {};
     for (const ds of datastreams) {
@@ -142,7 +142,7 @@ export function useDatastreamLogic() {
     return map;
   }, [datastreams]);
 
-  // Nilai desimal dalam tipe data double
+  // Pilihan format desimal untuk tipe data double
   const decimalOptions = [
     { label: "0.0", value: "0.0" },
     { label: "0.00", value: "0.00" },

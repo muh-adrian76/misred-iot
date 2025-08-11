@@ -1,6 +1,6 @@
 /**
  * ===== ADVANCED HEALTH CHECK ENDPOINT =====
- * Comprehensive health monitoring untuk semua komponen sistem
+ * Pemantauan kesehatan komprehensif untuk semua komponen sistem
  */
 
 import { Elysia } from 'elysia';
@@ -8,7 +8,7 @@ import { MySQLDatabase, performanceMonitor } from '../lib/middleware';
 
 export function healthCheckRoutes(mqttClient: any) {
   return new Elysia({ prefix: '/health' })
-    // ===== BASIC HEALTH CHECK =====
+    // ===== PEMERIKSAAN KESEHATAN DASAR =====
     .get('/', async () => {
       const startTime = Date.now();
       const health: any = {
@@ -19,7 +19,7 @@ export function healthCheckRoutes(mqttClient: any) {
         environment: process.env.NODE_ENV || 'development'
       };
 
-      // Database health check
+      // Pemeriksaan kesehatan Database
       try {
         const dbHealthy = await MySQLDatabase.healthCheck();
         health.database = {
@@ -33,7 +33,7 @@ export function healthCheckRoutes(mqttClient: any) {
         };
       }
 
-      // MQTT health check
+      // Pemeriksaan kesehatan MQTT
       try {
         health.mqtt = {
           status: mqttClient.connected ? 'connected' : 'disconnected',
@@ -46,7 +46,7 @@ export function healthCheckRoutes(mqttClient: any) {
         };
       }
 
-      // System metrics (auto-detect runtime)
+      // Metrik sistem (deteksi runtime otomatis)
       const isNode = typeof process !== 'undefined' && process.versions?.node;
       const isBun = typeof process !== 'undefined' && process.versions?.bun;
       const runtime = isBun ? 'bun' : (isNode ? 'node' : 'unknown');
@@ -64,7 +64,7 @@ export function healthCheckRoutes(mqttClient: any) {
 
       health.responseTime = Date.now() - startTime;
       
-      // Set HTTP status based on overall health
+      // Tentukan HTTP status berdasarkan kondisi kesehatan keseluruhan
       const isHealthy = health.database.status === 'healthy' && 
                        health.mqtt.status === 'connected';
       
@@ -74,14 +74,14 @@ export function healthCheckRoutes(mqttClient: any) {
       });
     })
 
-    // ===== DETAILED HEALTH CHECK =====
+    // ===== PEMERIKSAAN KESEHATAN DETAIL =====
     .get('/detailed', async () => {
       const health: any = {
         timestamp: new Date().toISOString(),
         services: {}
       };
 
-      // Database detailed check
+      // Pemeriksaan detail Database
       try {
         const dbHealthy = await MySQLDatabase.healthCheck();
         const connectionStats = await MySQLDatabase.getInstance().execute(
@@ -100,7 +100,7 @@ export function healthCheckRoutes(mqttClient: any) {
         };
       }
 
-      // Performance metrics (simplified)
+      // Metrik performa (disederhanakan)
       health.system = performanceMonitor.getSystemMetrics();
 
       return health;
@@ -109,7 +109,7 @@ export function healthCheckRoutes(mqttClient: any) {
     // ===== READINESS CHECK =====
     .get('/ready', async () => {
       try {
-        // Check all critical services
+        // Cek semua layanan kritikal
         const dbHealthy = await MySQLDatabase.healthCheck();
         const mqttConnected = mqttClient.connected;
         

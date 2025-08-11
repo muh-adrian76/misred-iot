@@ -29,76 +29,67 @@ const getAllDashboardsSchema = {
   detail: {
     tags: ["Dashboard"],
     description: "Mengambil semua dashboard milik user",
-    summary: "Get all dashboards",
+    summary: "Ambil semua dashboard",
   },
 };
 
 const postDashboardSchema = {
   type: "json",
   body: t.Object({
-    description: t.String(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
+    description: t.String({
+      description: "Deskripsi dashboard",
+      example: "Dashboard untuk memantau kondisi rumah",
+    }),
+    widget_count: t.Number({
+      description: "Jumlah widget di dashboard",
+      example: 4,
+    }),
+    layout: t.Optional(
+      t.Any({
+        description: "Konfigurasi layout dashboard (opsional)",
+        example: { widgets: [{ id: "w1", x: 0, y: 0, w: 2, h: 2 }] },
+      })
     ),
-    widget_count: t.Number(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    ),
-    layout: t.Optional(t.Any(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    )),
   }),
   response: {
-    201: t.Object({ id: t.Number(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    ), message: t.String(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    ) }),
+    201: t.Object({
+      id: t.Number({
+        description: "ID dashboard yang dibuat",
+        example: 101,
+      }),
+      message: t.String({
+        description: "Pesan sukses pembuatan dashboard",
+        example: "Dashboard berhasil dibuat",
+      }),
+    }),
   },
 };
 
 const putDashboardSchema = {
   type: "json",
   body: t.Object({
-    description: t.String(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
+    description: t.String({
+      description: "Deskripsi dashboard",
+      example: "Dashboard untuk memantau kondisi rumah",
+    }),
+    widget_count: t.Number({
+      description: "Jumlah widget di dashboard",
+      example: 4,
+    }),
+    layout: t.Optional(
+      t.Any({
+        description: "Konfigurasi layout dashboard (opsional)",
+        example: { widgets: [{ id: "w1", x: 0, y: 0, w: 2, h: 2 }] },
+      })
     ),
-    widget_count: t.Number(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    ),
-    layout: t.Optional(t.Any(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    )),
   }),
   response: {
-    200: t.Object({ message: t.String(
-      {
-        description: "Deskripsi dashboard",
-        example: "Dashboard untuk memantau kondisi rumah",
-      }
-    ) }),
+    200: t.Object({
+      message: t.String({
+        description: "Pesan setelah update dashboard",
+        example: "Dashboard berhasil diubah",
+      }),
+    }),
   },
 };
 
@@ -127,7 +118,7 @@ const deleteDashboardSchema = {
   detail: {
     tags: ["Dashboard"],
     description: "Menghapus dashboard berdasarkan ID",
-    summary: "Delete dashboard",
+    summary: "Hapus dashboard",
   },
 };
 

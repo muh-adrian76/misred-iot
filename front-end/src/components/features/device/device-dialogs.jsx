@@ -7,59 +7,59 @@ import DeleteDeviceForm from "@/components/custom/forms/device/delete-device-for
 // Import form untuk reset data device
 import ResetDeviceForm from "@/components/custom/forms/device/reset-device-form";
 
-// Komponen yang mengelola semua dialog/modal untuk device management
+// Komponen yang mengelola seluruh dialog/modal untuk manajemen perangkat
 export default function DeviceDialogs({
-  devices, // Data devices untuk referensi
-  addFormOpen, // State apakah dialog tambah device terbuka
-  setAddFormOpen, // Setter untuk dialog tambah device
-  handleAddDevice, // Handler untuk menambah device baru
-  editFormOpen, // State apakah dialog edit device terbuka
-  setEditFormOpen, // Setter untuk dialog edit device
-  editDevice, // Device yang dipilih untuk diedit
-  setEditDevice, // Setter untuk device yang akan diedit
-  handleEditDevice, // Handler untuk mengedit device
-  deleteFormOpen, // State apakah dialog hapus device terbuka
-  setDeleteFormOpen, // Setter untuk dialog hapus device
-  resetFormOpen, // State apakah dialog reset device terbuka
-  setResetFormOpen, // Setter untuk dialog reset device
-  openBoardPopover, // State popover untuk pilihan board
-  setOpenBoardPopover, // Setter untuk popover board
-  deviceToDelete, // Device yang akan dihapus
-  deviceToReset, // Device yang akan direset datanya
-  handleDeleteDevice, // Handler untuk menghapus device
-  handleResetDeviceData, // Handler untuk reset data device
-  deleteChecked, // State konfirmasi hapus
-  setDeleteChecked, // Setter untuk konfirmasi hapus
-  resetChecked, // State konfirmasi reset
-  setResetChecked, // Setter untuk konfirmasi reset
+  devices, // Data perangkat untuk referensi
+  addFormOpen, // Status dialog tambah perangkat
+  setAddFormOpen, // Setter dialog tambah perangkat
+  handleAddDevice, // Handler untuk menambah perangkat baru
+  editFormOpen, // Status dialog edit perangkat
+  setEditFormOpen, // Setter dialog edit perangkat
+  editDevice, // Perangkat yang dipilih untuk diedit
+  setEditDevice, // Setter perangkat yang akan diedit
+  handleEditDevice, // Handler untuk menyimpan perubahan perangkat
+  deleteFormOpen, // Status dialog hapus perangkat
+  setDeleteFormOpen, // Setter dialog hapus perangkat
+  resetFormOpen, // Status dialog reset data perangkat
+  setResetFormOpen, // Setter dialog reset data perangkat
+  openBoardPopover, // Status popover untuk pilihan board
+  setOpenBoardPopover, // Setter popover board
+  deviceToDelete, // Perangkat yang akan dihapus
+  deviceToReset, // Perangkat yang akan direset datanya
+  handleDeleteDevice, // Handler untuk menghapus perangkat
+  handleResetDeviceData, // Handler untuk reset data perangkat
+  deleteChecked, // Status konfirmasi hapus
+  setDeleteChecked, // Setter konfirmasi hapus
+  resetChecked, // Status konfirmasi reset
+  setResetChecked, // Setter konfirmasi reset
   setSelectedRows, // Setter untuk reset selected rows setelah operasi
   boardOptions, // Opsi board yang tersedia
-  isMobile, // Status apakah dalam mode mobile
+  isMobile, // Status mode mobile untuk responsivitas
 }) {
   return (
     <>
-      {/* Dialog untuk menambah device baru */}
+      {/* Dialog untuk menambah perangkat baru */}
       <AddDeviceForm
         open={addFormOpen}
         setOpen={setAddFormOpen}
         handleAddDevice={handleAddDevice}
-        openBoardPopover={openBoardPopover} // State popover board
+        openBoardPopover={openBoardPopover} // Status popover board
         setOpenBoardPopover={setOpenBoardPopover}
-        boardOptions={boardOptions} // Opsi board microcontroller
-        isMobile={isMobile} // Mode mobile untuk responsive
+        boardOptions={boardOptions} // Opsi board mikrokontroler
+        isMobile={isMobile} // Mode mobile untuk responsif
       />
-      {/* Dialog untuk mengedit device yang sudah ada */}
+      {/* Dialog untuk mengedit perangkat */}
       <EditDeviceForm
         open={editFormOpen}
         setOpen={setEditFormOpen}
-        editDevice={editDevice} // Data device yang akan diedit
+        editDevice={editDevice} // Data perangkat yang akan diedit
         handleEditDevice={handleEditDevice}
-        openBoardPopover={openBoardPopover} // State popover board
+        openBoardPopover={openBoardPopover} // Status popover board
         setOpenBoardPopover={setOpenBoardPopover}
-        boardOptions={boardOptions} // Opsi board microcontroller
-        isMobile={isMobile} // Mode mobile untuk responsive
+        boardOptions={boardOptions} // Opsi board mikrokontroler
+        isMobile={isMobile} // Mode mobile untuk responsif
       />
-      {/* Dialog untuk menghapus device */}
+      {/* Dialog untuk menghapus perangkat */}
       <DeleteDeviceForm
         open={deleteFormOpen}
         setOpen={setDeleteFormOpen}
@@ -69,7 +69,7 @@ export default function DeviceDialogs({
         setDeleteChecked={setDeleteChecked}
         setSelectedRows={setSelectedRows}
       />
-      {/* Dialog untuk reset data device */}
+      {/* Dialog untuk reset data perangkat */}
       <ResetDeviceForm
         open={resetFormOpen}
         setOpen={setResetFormOpen}

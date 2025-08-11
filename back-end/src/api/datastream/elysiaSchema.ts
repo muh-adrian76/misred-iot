@@ -26,7 +26,7 @@ const getAllDatastreamsSchema = {
   detail: {
     tags: ["Datastream"],
     description: "Mengambil semua datastream milik user",
-    summary: "Get all datastreams",
+    summary: "Ambil semua datastream",
   },
 };
 
@@ -41,8 +41,8 @@ const postDatastreamSchema = {
     description: t.Optional(t.String({ description: "Deskripsi datastream", example: "Sensor suhu ruangan" })),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
-    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"}),
-    booleanValue: t.String({description: "Nilai boolean", examples: "0"})
+    decimalValue: t.String({description: "Format nilai desimal", example: "0.00"}),
+    booleanValue: t.String({description: "Nilai boolean", example: "0"})
   }),
   response: {
     201: t.Object(
@@ -62,7 +62,7 @@ const postDatastreamSchema = {
   detail: {
     tags: ["Datastream"],
     description: "Membuat datastream baru (user_id diambil dari JWT)",
-    summary: "Create datastream",
+    summary: "Buat datastream",
   },
 };
 
@@ -76,8 +76,8 @@ const putDatastreamSchema = {
     description: t.Optional(t.String({ description: "Deskripsi datastream", example: "Sensor suhu ruangan" })),
     minValue: t.String({ description: "Nilai minimal", example: 0 }),
     maxValue: t.String({ description: "Nilai maksimal", example: 1 }),
-    decimalValue: t.String({description: "Format nilai desimal", examples: "0.00"}),
-    booleanValue: t.String({description: "Nilai boolean", examples: "0"})
+    decimalValue: t.String({description: "Format nilai desimal", example: "0.00"}),
+    booleanValue: t.String({description: "Nilai boolean", example: "0"})
   }),
   response: {
     200: t.Object(
@@ -96,7 +96,7 @@ const putDatastreamSchema = {
   detail: {
     tags: ["Datastream"],
     description: "Mengupdate datastream berdasarkan ID",
-    summary: "Update datastream",
+    summary: "Perbarui datastream",
   },
 };
 
@@ -119,7 +119,7 @@ const deleteDatastreamSchema = {
   detail: {
     tags: ["Datastream"],
     description: "Menghapus datastream berdasarkan ID",
-    summary: "Delete datastream",
+    summary: "Hapus datastream",
   },
 };
 

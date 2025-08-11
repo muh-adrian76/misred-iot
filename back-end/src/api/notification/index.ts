@@ -13,7 +13,7 @@ export function notificationRoutes(
   notificationService: NotificationService
 ) {
   return new Elysia({ prefix: "/notifications" })
-    // 📋 GET Notifications saat user login (semua notifikasi dengan status read/unread)
+    // 📋 GET Notifikasi saat user login (semua notifikasi dengan status dibaca/belum dibaca)
     .get(
       "/",
       //@ts-ignore
@@ -22,11 +22,11 @@ export function notificationRoutes(
           const user = await authorizeRequest(jwt, cookie);
           
           if (!user || !user.sub) {
-            console.error("❌ User not authenticated");
+            console.error("❌ Pengguna belum terautentikasi");
             set.status = 401;
             return {
               success: false,
-              message: "User ID not found",
+              message: "ID pengguna tidak ditemukan",
               notifications: [],
               total: 0
             };
@@ -34,30 +34,30 @@ export function notificationRoutes(
           
           const userId = parseInt(user.sub);
 
-          // Validate userId
+          // Validasi userId
           if (isNaN(userId) || userId <= 0) {
-            console.error("❌ Invalid user ID:", user.sub);
+            console.error("❌ ID pengguna tidak valid:", user.sub);
             set.status = 400;
             return {
               success: false,
-              message: "Invalid user ID",
+              message: "ID pengguna tidak valid",
               notifications: [],
               total: 0
             };
           }
 
-          // Get all notifications for the user (not just unread)
+          // Ambil semua notifikasi untuk pengguna (bukan hanya yang belum dibaca)
           // console.log(`🔍 Fetching recent notifications for user ${userId}`);
           const historyResult = await notificationService.getNotificationHistory(
-            userId, 1, 50, "all" // page 1, limit 50, all time range
+            userId, 1, 50, "all" // halaman 1, limit 50, seluruh rentang waktu
           );
           // console.log(`📊 Found ${historyResult.total} total notifications, showing ${historyResult.notifications.length} recent`);
 
-          // Format notifications untuk frontend dengan schema baru
+          // Format notifikasi untuk frontend sesuai skema baru
           const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: String(row.id),
             type: row.type || 'alarm',
-            title: row.title || row.alarm_description || 'Notification',
+            title: row.title || row.alarm_description || 'Notifikasi',
             message: row.message || `Perangkat: ${row.device_description}\nDatastream: ${row.datastream_description}(${row.field_name})\nNilai: ${row.sensor_value} (${row.conditions_text})`,
             priority: row.priority || 'medium',
             isRead: Boolean(row.is_read),
@@ -79,25 +79,25 @@ export function notificationRoutes(
             last_seen: new Date().toISOString()
           };
         } catch (error: any) {
-          console.error("Error fetching notifications:", error);
+          console.error("Kesalahan saat mengambil notifikasi:", error);
           
-          // Check if it's a database connection error
+          // Periksa jika ini kesalahan koneksi database
           if (error.code === 'ER_WRONG_ARGUMENTS' || error.errno === 1210) {
             set.status = 503;
             return {
               success: false,
-              message: "Database connection issue",
+              message: "Gangguan koneksi database",
               notifications: [],
               total: 0
             };
           }
           
-          // General database error
+          // Kesalahan umum database
           if (error.errno) {
             set.status = 503;
             return {
               success: false,
-              message: "Database error occurred",
+              message: "Terjadi kesalahan pada database",
               notifications: [],
               total: 0
             };
@@ -106,7 +106,7 @@ export function notificationRoutes(
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error",
+            message: "Kesalahan server internal",
             notifications: [],
             total: 0
           };
@@ -115,7 +115,7 @@ export function notificationRoutes(
       getRecentNotificationsSchema
     )
 
-    // 📋 GET History Notifications dengan pagination dan time range filter
+    // 📋 GET Riwayat Notifikasi dengan pagination dan filter rentang waktu
     .get(
       "/history",
       //@ts-ignore
@@ -127,7 +127,7 @@ export function notificationRoutes(
             set.status = 401;
             return {
               success: false,
-              message: "User not authenticated",
+              message: "Pengguna belum terautentikasi",
               notifications: [],
               pagination: {
                 page: 1,
@@ -143,7 +143,7 @@ export function notificationRoutes(
           const limit = Math.min(100, Math.max(1, parseInt(query.limit as string) || 20));
           const offset = (page - 1) * limit;
           const timeRange = query.timeRange as string || "all";
-          const type = query.type as string || ""; // Add type filter parameter
+          const type = query.type as string || ""; // Tambahkan parameter filter tipe
 
           // console.log("📊 API Debug - Parsed parameters:", {
           //   userId: userId,
@@ -157,22 +157,22 @@ export function notificationRoutes(
           //   timeRange: timeRange
           // });
 
-          // Validate userId
+          // Validasi userId
           if (isNaN(userId) || userId <= 0) {
-            console.error("❌ Invalid user ID:", user.sub);
+            console.error("❌ ID pengguna tidak valid:", user.sub);
             set.status = 400;
             return {
               success: false,
-              message: "Invalid user ID"
+              message: "ID pengguna tidak valid"
             };
           }
           
-          // Validate pagination parameters
+          // Validasi parameter pagination
           if (isNaN(page) || page < 1) {
             set.status = 400;
             return {
               success: false,
-              message: "Invalid page parameter"
+              message: "Parameter halaman (page) tidak valid"
             };
           }
 
@@ -180,21 +180,21 @@ export function notificationRoutes(
             set.status = 400;
             return {
               success: false,
-              message: "Invalid limit parameter (must be between 1-100)"
+              message: "Parameter limit tidak valid (harus antara 1–100)"
             };
           }
           
-          // Get notification history from service
-          console.log(`🔍 Fetching notification history for user ${userId}, page ${page}, limit ${limit}, timeRange ${timeRange}, type ${type}`);
+          // Ambil riwayat notifikasi dari service
+          console.log(`🔍 Mengambil riwayat notifikasi untuk pengguna ${userId}, halaman ${page}, limit ${limit}, rentang ${timeRange}, tipe ${type}`);
           const historyResult = await notificationService.getNotificationHistory(
             userId, page, limit, timeRange, type
           );
-          console.log(`📊 Found ${historyResult.total} total notifications, returning ${historyResult.notifications.length} for this page`);
+          console.log(`📊 Ditemukan total ${historyResult.total} notifikasi, mengembalikan ${historyResult.notifications.length} pada halaman ini`);
 
           const formattedNotifications = historyResult.notifications.map((row: any) => ({
             id: row.id,
             type: row.type || 'alarm',
-            title: row.title || row.alarm_description || 'Notification',
+            title: row.title || row.alarm_description || 'Notifikasi',
             message: row.message || `Perangkat: ${row.device_description}\nDatastream: ${row.datastream_description}\nNilai: ${row.sensor_value}`,
             priority: row.priority || 'medium',
             alarm_id: row.alarm_id || null,
@@ -206,7 +206,7 @@ export function notificationRoutes(
             sensor_value: row.sensor_value ? Number(row.sensor_value) : null,
             conditions_text: row.conditions_text || null,
             triggered_at: String(row.triggered_at),
-            whatsapp_sent: false, // Field tidak ada lagi di schema baru
+            whatsapp_sent: false, // Field tidak ada lagi di skema baru
             is_read: Boolean(row.is_read),
             read_at: String(row.triggered_at) // Gunakan triggered_at sebagai fallback
           }));
@@ -224,8 +224,8 @@ export function notificationRoutes(
           };
 
         } catch (error: any) {
-          console.error("Error fetching notification history:", error);
-          console.error("Error details:", {
+          console.error("Kesalahan saat mengambil riwayat notifikasi:", error);
+          console.error("Detail kesalahan:", {
             message: error.message,
             code: error.code,
             errno: error.errno,
@@ -233,13 +233,13 @@ export function notificationRoutes(
             sql: error.sql
           });
           
-          // Check if it's an authentication error from authorizeRequest
+          // Periksa jika ini kesalahan autentikasi dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
-            console.error("❌ Authentication error in notification history:", error.message);
+            console.error("❌ Kesalahan autentikasi saat mengambil riwayat notifikasi:", error.message);
             set.status = 401;
             return {
               success: false,
-              message: "Authentication failed",
+              message: "Autentikasi gagal",
               notifications: [],
               pagination: {
                 page: 1,
@@ -250,12 +250,12 @@ export function notificationRoutes(
             };
           }
           
-          // Check if it's a database connection error
+          // Periksa jika ini kesalahan koneksi database
           if (error.code === 'ER_WRONG_ARGUMENTS' || error.errno === 1210) {
             set.status = 503;
             return {
               success: false,
-              message: "Database connection issue",
+              message: "Gangguan koneksi database",
               notifications: [],
               pagination: {
                 page: 1,
@@ -266,12 +266,12 @@ export function notificationRoutes(
             };
           }
           
-          // General database error
+          // Kesalahan umum database
           if (error.errno) {
             set.status = 503;
             return {
               success: false,
-              message: "Database error occurred",
+              message: "Terjadi kesalahan pada database",
               notifications: [],
               pagination: {
                 page: 1,
@@ -285,7 +285,7 @@ export function notificationRoutes(
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error",
+            message: "Kesalahan server internal",
             notifications: [],
             pagination: {
               page: 1,
@@ -299,7 +299,7 @@ export function notificationRoutes(
       getNotificationHistorySchema
     )
 
-    // ✅ MARK All Notifications as Read
+    // ✅ Tandai semua notifikasi sebagai dibaca
     .put(
       "/read",
       //@ts-ignore
@@ -308,13 +308,13 @@ export function notificationRoutes(
           const user = await authorizeRequest(jwt, cookie);
           const userId = parseInt(user.sub);
           
-          // Validate userId
+          // Validasi userId
           if (isNaN(userId) || userId <= 0) {
-            console.error("❌ Invalid user ID:", user.sub);
+            console.error("❌ ID pengguna tidak valid:", user.sub);
             set.status = 400;
             return {
               success: false,
-              message: "Invalid user ID"
+              message: "ID pengguna tidak valid"
             };
           }
           const affectedRows = await notificationService.markAllAsRead(userId);
@@ -325,29 +325,29 @@ export function notificationRoutes(
             affected_rows: affectedRows
           };
         } catch (error: any) {
-          console.error("Error in mark all notifications as read:", error);
+          console.error("Kesalahan saat menandai semua notifikasi dibaca:", error);
           
-          // Check if it's an authentication error from authorizeRequest
+          // Periksa jika ini kesalahan autentikasi dari authorizeRequest
           if (error.message && error.message.includes('Unauthorized')) {
-            console.error("❌ Authentication error:", error.message);
+            console.error("❌ Kesalahan autentikasi:", error.message);
             set.status = 401;
             return {
               success: false,
-              message: "Authentication failed"
+              message: "Autentikasi gagal"
             };
           }
           
-          // Handle other errors
+          // Tangani kesalahan lainnya
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error"
+            message: "Kesalahan server internal"
           };
         }
       }
     )
 
-    // 🗑️ DELETE All Notifications 
+    // 🗑️ Hapus semua notifikasi
     .delete(
       "/",
       //@ts-ignore
@@ -356,17 +356,17 @@ export function notificationRoutes(
           const user = await authorizeRequest(jwt, cookie);
           const userId = parseInt(user.sub);
 
-          // Validate userId
+          // Validasi userId
           if (isNaN(userId) || userId <= 0) {
-            console.error("❌ Invalid user ID:", user.sub);
+            console.error("❌ ID pengguna tidak valid:", user.sub);
             set.status = 400;
             return {
               success: false,
-              message: "Invalid user ID"
+              message: "ID pengguna tidak valid"
             };
           }
 
-          // Delete all notifications for this user
+          // Hapus semua notifikasi untuk pengguna ini
           const affectedRows = await notificationService.deleteAllNotifications(userId);
 
           return {
@@ -375,17 +375,17 @@ export function notificationRoutes(
             affected_rows: affectedRows
           };
         } catch (error) {
-          console.error("Error deleting all notifications:", error);
+          console.error("Kesalahan saat menghapus semua notifikasi:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error"
+            message: "Kesalahan server internal"
           };
         }
       }
     )
 
-    // 🧪 SEND Test Notification
+    // 🧪 KIRIM Notifikasi Uji
     .post(
       "/test/send",
       //@ts-ignore
@@ -397,7 +397,7 @@ export function notificationRoutes(
             set.status = 400;
             return {
               success: false,
-              message: "Phone number and message are required",
+              message: "Nomor telepon dan pesan wajib diisi",
             };
           }
 
@@ -405,23 +405,63 @@ export function notificationRoutes(
 
           return {
             success: result.success,
-            message: result.success ? "Test notification sent successfully" : "Failed to send test notification",
+            message: result.success ? "Notifikasi uji berhasil dikirim" : "Gagal mengirim notifikasi uji",
             whatsapp_message_id: result.whatsapp_message_id,
             error_message: result.error_message,
           };
         } catch (error) {
-          console.error("Error sending test notification:", error);
+          console.error("Kesalahan saat mengirim notifikasi uji:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error during test notification",
+            message: "Kesalahan server internal saat mengirim notifikasi uji",
           };
         }
       },
       sendTestNotificationSchema
     )
 
-    // 🔄 RESET WhatsApp Connection
+    // 🧪 UJI Notifikasi Perangkat Offline
+    .post(
+      "/test/device-offline/:deviceId",
+      //@ts-ignore
+      async ({ params, set }) => {
+        try {
+          const { deviceId } = params;
+          
+          if (!deviceId) {
+            set.status = 400;
+            return {
+              success: false,
+              message: "ID perangkat wajib diisi"
+            };
+          }
+
+          console.log(`🧪 Menguji notifikasi perangkat offline untuk perangkat ${deviceId}`);
+          
+          // Import DeviceStatusService secara dinamis
+          const { DeviceStatusService } = await import('../../services/DeviceStatusService');
+          const deviceStatusService = new DeviceStatusService(notificationService.db, notificationService);
+          
+          // Trigger notifikasi perangkat offline
+          await deviceStatusService.sendDeviceOfflineNotification(parseInt(deviceId));
+
+          return {
+            success: true,
+            message: `Notifikasi uji perangkat offline dikirim untuk perangkat ${deviceId}`,
+          };
+        } catch (error) {
+          console.error("Kesalahan saat mengirim notifikasi uji perangkat offline:", error);
+          set.status = 500;
+          return {
+            success: false,
+            message: "Kesalahan server internal saat mengirim notifikasi uji perangkat offline",
+          };
+        }
+      }
+    )
+
+    // 🔄 RESET Koneksi WhatsApp
     .post(
       "/whatsapp/reset",
       //@ts-ignore
@@ -430,20 +470,20 @@ export function notificationRoutes(
           await notificationService.resetWhatsApp();
           return {
             success: true,
-            message: "WhatsApp connection reset successfully",
+            message: "Koneksi WhatsApp berhasil direset",
           };
         } catch (error) {
-          console.error("Error resetting WhatsApp connection:", error);
+          console.error("Kesalahan saat mereset koneksi WhatsApp:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Failed to reset WhatsApp connection",
+            message: "Gagal mereset koneksi WhatsApp",
           };
         }
       }
     )
 
-    // 📱 FORCE New QR Code
+    // 📱 PAKSA QR Code Baru
     .post(
       "/whatsapp/qr",
       //@ts-ignore
@@ -452,20 +492,20 @@ export function notificationRoutes(
           await notificationService.forceNewQRCode();
           return {
             success: true,
-            message: "New QR code generated successfully",
+            message: "Kode QR baru berhasil dibuat",
           };
         } catch (error) {
-          console.error("Error generating new QR code:", error);
+          console.error("Kesalahan saat membuat kode QR baru:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Failed to generate new QR code",
+            message: "Gagal membuat kode QR baru",
           };
         }
       }
     )
 
-    // 📊 WhatsApp Status
+    // 📊 Status WhatsApp
     .get(
       "/whatsapp/status",
       //@ts-ignore
@@ -478,20 +518,20 @@ export function notificationRoutes(
             success: true,
             whatsapp_status: status,
             system_health: systemHealth,
-            message: "WhatsApp status retrieved successfully",
+            message: "Status WhatsApp berhasil diambil",
           };
         } catch (error) {
-          console.error("Error getting WhatsApp status:", error);
+          console.error("Kesalahan saat mengambil status WhatsApp:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Failed to get WhatsApp status",
+            message: "Gagal mengambil status WhatsApp",
           };
         }
       }
     )
 
-    // 🔄 WhatsApp Toggle (Admin only)
+    // 🔄 Toggle WhatsApp (Admin saja)
     .post(
       "/whatsapp/toggle",
       //@ts-ignore
@@ -499,12 +539,12 @@ export function notificationRoutes(
         try {
           const user = await authorizeRequest(jwt, cookie);
           
-          // Check if user is admin (simplified check)
+          // Cek apakah user adalah admin (pengecekan sederhana)
           if (!user || !user.sub) {
             set.status = 401;
             return {
               success: false,
-              message: "Unauthorized",
+              message: "Tidak terotorisasi",
             };
           }
 
@@ -513,20 +553,20 @@ export function notificationRoutes(
 
           return {
             success: true,
-            message: `WhatsApp service ${enabled ? 'enabled' : 'disabled'} successfully`,
+            message: `Layanan WhatsApp berhasil ${enabled ? 'diaktifkan' : 'dinonaktifkan'}`,
           };
         } catch (error) {
-          console.error("Error toggling WhatsApp service:", error);
+          console.error("Kesalahan saat mengubah status layanan WhatsApp:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Failed to toggle WhatsApp service",
+            message: "Gagal mengubah status layanan WhatsApp",
           };
         }
       }
     )
 
-    // 🔄 WhatsApp Restart (Admin only)
+    // 🔄 Mulai ulang WhatsApp (Admin saja)
     .post(
       "/whatsapp/restart",
       //@ts-ignore
@@ -534,12 +574,12 @@ export function notificationRoutes(
         try {
           const user = await authorizeRequest(jwt, cookie);
           
-          // Check if user is admin (simplified check)
+          // Cek apakah user adalah admin (pengecekan sederhana)
           if (!user || !user.sub) {
             set.status = 401;
             return {
               success: false,
-              message: "Unauthorized",
+              message: "Tidak terotorisasi",
             };
           }
 
@@ -547,21 +587,21 @@ export function notificationRoutes(
 
           return {
             success: true,
-            message: "WhatsApp service restarted successfully",
+            message: "Layanan WhatsApp berhasil dimulai ulang",
           };
         } catch (error) {
-          console.error("Error restarting WhatsApp service:", error);
+          console.error("Kesalahan saat memulai ulang layanan WhatsApp:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Failed to restart WhatsApp service",
+            message: "Gagal memulai ulang layanan WhatsApp",
           };
         }
       }
     )
 
-    // 📱 DEVICE OFFLINE NOTIFICATION
-    // Endpoint untuk mengirim notifikasi ketika device offline
+    // 📱 NOTIFIKASI PERANGKAT OFFLINE
+    // Endpoint untuk mengirim notifikasi ketika perangkat offline
     .post(
       "/device-offline",
       //@ts-ignore
@@ -573,7 +613,7 @@ export function notificationRoutes(
             set.status = 401;
             return {
               success: false,
-              message: "Unauthorized access"
+              message: "Akses tidak diizinkan"
             };
           }
 
@@ -584,11 +624,11 @@ export function notificationRoutes(
             set.status = 400;
             return {
               success: false,
-              message: "Missing device_id or device_name"
+              message: "Parameter device_id atau device_name tidak ada"
             };
           }
 
-          // Verify device ownership
+          // Verifikasi kepemilikan perangkat
           const db = notificationService.db;
           const [deviceRows]: any = await db.query(
             "SELECT id, user_id FROM devices WHERE id = ?",
@@ -599,37 +639,37 @@ export function notificationRoutes(
             set.status = 403;
             return {
               success: false,
-              message: "Device not found or access denied"
+              message: "Perangkat tidak ditemukan atau akses ditolak"
             };
           }
 
-          // Create device offline notification
-          console.log(`🔄 Creating device offline notification via API for device ${device_id}, user ${userId}`);
+          // Buat notifikasi perangkat offline
+          console.log(`🔄 Membuat notifikasi perangkat offline via API untuk perangkat ${device_id}, pengguna ${userId}`);
           
           await db.query(
             "INSERT INTO notifications (user_id, type, title, message, priority, device_id, triggered_at, is_read) VALUES (?, ?, ?, ?, ?, ?, NOW(), FALSE)",
             [
               userId,
               "device_status",
-              "Device Offline",
-              `Device "${device_name}" telah offline dan tidak merespons`,
+              "Perangkat Offline",
+              `Perangkat \"${device_name}\" telah offline dan tidak merespons`,
               "high",
               device_id
             ]
           );
           
-          console.log(`✅ Device offline notification created via API for device ${device_id}`);
+          console.log(`✅ Notifikasi perangkat offline via API berhasil dibuat untuk perangkat ${device_id}`);
 
-          // Send real-time browser notification via WebSocket
+          // Kirim notifikasi real-time ke browser via WebSocket
           try {
             const { broadcastToSpecificUser } = await import('../ws/user-ws');
             const notificationData = {
               type: 'notification',
               data: {
-                id: Date.now(), // Temporary ID for real-time notification
+                id: Date.now(), // ID sementara untuk notifikasi real-time
                 type: 'device_status',
                 title: 'Perubahan Status Perangkat',
-                message: `Perangkat "${device_name}" telah offline dan tidak merespons`,
+                message: `Perangkat \"${device_name}\" telah offline dan tidak merespons`,
                 priority: 'high',
                 device_id: device_id,
                 device_name: device_name,
@@ -638,13 +678,13 @@ export function notificationRoutes(
               }
             };
             
-            console.log(`📡 Broadcasting device offline notification to user ${userId} via WebSocket`);
+            console.log(`📡 Mengirim broadcast notifikasi perangkat offline ke pengguna ${userId} via WebSocket`);
             broadcastToSpecificUser(userId.toString(), notificationData);
           } catch (wsError) {
-            console.error('Error broadcasting WebSocket notification:', wsError);
+            console.error('Kesalahan saat broadcast notifikasi WebSocket:', wsError);
           }
 
-          // Get user data for WhatsApp notification
+          // Ambil data user untuk notifikasi WhatsApp
           const [userRows]: any = await db.query(
             "SELECT name, phone, whatsapp_notif FROM users WHERE id = ?",
             [userId]
@@ -652,31 +692,31 @@ export function notificationRoutes(
 
           const userData = userRows[0];
 
-          // Send WhatsApp notification if enabled
+          // Kirim notifikasi WhatsApp bila diaktifkan
           if (userData && userData.whatsapp_notif && userData.phone) {
             try {
               await notificationService.sendWhatsAppNotification(
                 userData.phone,
-                `🔴 *Perubahan Status Perangkat*\n\nPerangkat "${device_name}" telah offline dan tidak merespons.\n\nSilakan periksa koneksi perangkat Anda.`
+                `🔴 *Perubahan Status Perangkat*\n\nPerangkat \"${device_name}\" telah offline dan tidak merespons.\n\nSilakan periksa koneksi perangkat Anda.`
               );
             } catch (whatsappError) {
-              console.error('Error sending WhatsApp notification for device offline:', whatsappError);
+              console.error('Kesalahan saat mengirim notifikasi WhatsApp untuk perangkat offline:', whatsappError);
             }
           }
 
-          console.log(`✅ Device offline notification sent for device ${device_id} (${device_name}) to user ${userId}`);
+          console.log(`✅ Notifikasi perangkat offline terkirim untuk perangkat ${device_id} (${device_name}) ke pengguna ${userId}`);
 
           return {
             success: true,
-            message: "Device offline notification sent successfully"
+            message: "Notifikasi perangkat offline berhasil dikirim"
           };
 
         } catch (error) {
-          console.error("Error sending device offline notification:", error);
+          console.error("Kesalahan saat mengirim notifikasi perangkat offline:", error);
           set.status = 500;
           return {
             success: false,
-            message: "Internal server error"
+            message: "Kesalahan server internal"
           };
         }
       },

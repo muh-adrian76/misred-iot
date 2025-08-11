@@ -92,7 +92,7 @@ const postDeviceSchema = {
   detail: {
     tags: ["Device"],
     description: "Menambahkan perangkat baru",
-    summary: "Create device",
+    summary: "Tambah perangkat",
   },
 };
 
@@ -179,7 +179,7 @@ const getAllDevicesSchema = {
   detail: {
     tags: ["Device"],
     description: "Mengambil semua data perangkat yang terdaftar",
-    summary: "Get all devices",
+    summary: "Ambil semua perangkat",
   },
 };
 
@@ -275,7 +275,7 @@ const getDeviceByIdSchema = {
   detail: {
     tags: ["Device"],
     description: "Mengambil data perangkat berdasarkan ID",
-    summary: "Get device by ID",
+    summary: "Ambil perangkat berdasarkan ID",
   },
 };
 
@@ -300,8 +300,8 @@ const getSecretByDeviceSchema = {
   },
   detail: {
     tags: ["Device"],
-    description: "Get device by secret/key",
-    summary: "Get device by secret",
+    description: "Ambil perangkat berdasarkan secret/key",
+    summary: "Ambil perangkat via secret",
   },
 };
 
@@ -363,8 +363,8 @@ const uploadFirmwareSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "Upload firmware file",
-    description: "Upload file firmware untuk device tertentu",
+    summary: "Unggah file firmware",
+    description: "Unggah file firmware untuk device tertentu",
   },
 };
 
@@ -389,7 +389,7 @@ const getFirmwareVersionSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "Get firmware version",
+    summary: "Ambil versi firmware",
     description: "Mengambil versi firmware perangkat berdasarkan ID",
   },
 };
@@ -404,7 +404,7 @@ const pingSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "Ping server",
+    summary: "Cek konektivitas server",
     description: "Cek konektivitas server IoT Device Verification",
   },
 };
@@ -437,7 +437,7 @@ const getFirmwareListSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "List firmware files",
+    summary: "Daftar file firmware",
     description: "Mengambil daftar file firmware untuk device tertentu",
   },
 };
@@ -465,8 +465,8 @@ const downloadFirmwareFileSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "Download firmware file",
-    description: "Download file firmware tertentu untuk device",
+    summary: "Unduh file firmware",
+    description: "Unduh file firmware tertentu untuk device",
   },
 };
 
@@ -508,7 +508,7 @@ const renewSecretSchema = {
   },
   detail: {
     tags: ["Device"],
-    summary: "Renew device secret",
+    summary: "Perbarui secret perangkat",
     description: "Memperbarui secret perangkat berdasarkan ID dan secret lama",
   },
 };
@@ -606,7 +606,7 @@ const putDeviceSchema = {
   detail: {
     tags: ["Device"],
     description: "Memperbarui data perangkat berdasarkan ID",
-    summary: "Update device",
+    summary: "Perbarui perangkat",
   },
 };
 
@@ -635,7 +635,7 @@ const deleteDeviceSchema = {
   detail: {
     tags: ["Device"],
     description: "Menghapus perangkat berdasarkan ID",
-    summary: "Delete device",
+    summary: "Hapus perangkat",
   },
 };
 
@@ -656,7 +656,7 @@ const updateDeviceStatusSchema = {
         }),
         message: t.String({
           description: "Pesan berhasil update status",
-          example: "Device status updated to offline",
+          example: "Status perangkat diperbarui menjadi offline",
         }),
         device_id: t.String({
           description: "ID device yang diupdate",
@@ -676,7 +676,7 @@ const updateDeviceStatusSchema = {
         }),
         message: t.String({
           description: "Pesan error jika input tidak valid",
-          example: "Invalid status. Must be 'online' or 'offline'",
+          example: "Status tidak valid. Harus 'online' atau 'offline'",
         }),
       },
       { description: "Input tidak valid" }
@@ -688,7 +688,7 @@ const updateDeviceStatusSchema = {
         }),
         message: t.String({
           description: "Pesan error jika device tidak ditemukan",
-          example: "Device not found or access denied",
+          example: "Perangkat tidak ditemukan atau akses ditolak",
         }),
       },
       { description: "Device tidak ditemukan" }
@@ -700,7 +700,7 @@ const updateDeviceStatusSchema = {
         }),
         message: t.String({
           description: "Pesan error jika tidak authorized",
-          example: "Authentication failed",
+          example: "Autentikasi gagal",
         }),
       },
       { description: "Tidak authorized" }
@@ -708,8 +708,8 @@ const updateDeviceStatusSchema = {
   },
   detail: {
     tags: ["Device"],
-    description: "Update status device (online/offline)",
-    summary: "Update device status",
+    description: "Perbarui status device (online/offline)",
+    summary: "Perbarui status perangkat",
   },
 };
 
@@ -730,7 +730,7 @@ const resetDeviceDataSchema = {
         }),
         message: t.String({
           description: "Pesan berhasil reset data device",
-          example: "Successfully reset all data for device Test Device",
+          example: "Berhasil mereset semua data untuk perangkat Test Device",
         }),
         device_id: t.String({
           description: "ID device yang direset",
@@ -754,7 +754,7 @@ const resetDeviceDataSchema = {
         }),
         message: t.String({
           description: "Pesan error jika tidak memiliki akses",
-          example: "Access denied",
+          example: "Akses ditolak",
         }),
       },
       { description: "Akses ditolak" }
@@ -766,7 +766,7 @@ const resetDeviceDataSchema = {
         }),
         message: t.String({
           description: "Pesan error jika device tidak ditemukan",
-          example: "Device not found",
+          example: "Perangkat tidak ditemukan",
         }),
       },
       { description: "Device tidak ditemukan" }
@@ -778,7 +778,7 @@ const resetDeviceDataSchema = {
         }),
         message: t.String({
           description: "Pesan error jika tidak authorized",
-          example: "Authentication failed",
+          example: "Autentikasi gagal",
         }),
       },
       { description: "Tidak authorized" }
@@ -787,7 +787,7 @@ const resetDeviceDataSchema = {
   detail: {
     tags: ["Device"],
     description: "Reset semua data payload untuk device tertentu",
-    summary: "Reset device data",
+    summary: "Reset data perangkat",
   },
 };
 

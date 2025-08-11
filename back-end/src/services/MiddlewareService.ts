@@ -141,7 +141,7 @@ export class MQTTService {
     token: string;
   }) {
     if (!this.deviceService) {
-      throw new Error("DeviceService not initialized");
+      throw new Error("DeviceService belum diinisialisasi");
     }
 
     return await verifyDeviceJWTAndDecrypt({
@@ -258,7 +258,7 @@ export class MQTTService {
       return rawResult.insertId;
     } catch (error) {
       console.error("❌ [MQTT PAYLOAD] Error dalam menyimpan MQTT payload:", error);
-      throw new Error("Failed to save MQTT payload");
+      throw new Error("Gagal menyimpan MQTT payload");
     }
   }
 
@@ -296,8 +296,8 @@ export class MQTTService {
             console.log(`✅ [MQTT] Pesan berhasil diparsing sebagai JSON`);
           } catch (parseError) {
             console.error(`❌ [MQTT] Gagal parsing JSON payload:`, parseError);
-            const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown parsing error';
-            throw new Error(`Invalid payload format: ${errorMessage}`);
+            const errorMessage = parseError instanceof Error ? parseError.message : 'Kesalahan parsing yang tidak diketahui';
+            throw new Error(`Format payload tidak valid: ${errorMessage}`);
           }
         }
 
@@ -334,7 +334,7 @@ export class MQTTService {
     });
 
     this.mqttClient.on("offline", () => {
-      console.log("⚠️  MQTT client offline");
+      console.log("⚠️  Klien MQTT offline");
     });
 
     // Optional: Cek penggunaan topik setiap 5 menit
@@ -346,24 +346,24 @@ export class MQTTService {
             (topic: string) => {
               this.mqttClient.subscribe(topic, (err) => {
                 if (!err) {
-                  console.log(`✅ Sync: Subscribed to topic: ${topic}`);
+                  console.log(`✅ Sinkronisasi: Berhasil subscribe topik: ${topic}`);
                 } else {
-                  console.error(`❌ Sync: Failed to subscribe to topic: ${topic}`, err);
+                  console.error(`❌ Sinkronisasi: Gagal subscribe topik: ${topic}`, err);
                 }
               });
             },
             (topic: string) => {
               this.mqttClient.unsubscribe(topic, (err) => {
                 if (!err) {
-                  console.log(`✅ Sync: Unsubscribed from topic: ${topic}`);
+                  console.log(`✅ Sinkronisasi: Berhasil unsubscribe topik: ${topic}`);
                 } else {
-                  console.error(`❌ Sync: Failed to unsubscribe from topic: ${topic}`, err);
+                  console.error(`❌ Sinkronisasi: Gagal unsubscribe topik: ${topic}`, err);
                 }
               });
             }
           );
         } catch (error) {
-          console.error("❌ MQTT topic sync error:", error);
+          console.error("❌ Kesalahan sinkronisasi topik MQTT:", error);
         }
       }
     }, 5 * 60 * 1000); // 5 minutes

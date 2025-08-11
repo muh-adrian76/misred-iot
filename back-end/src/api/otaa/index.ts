@@ -1,7 +1,7 @@
 /**
  * ===== OTAA (OVER-THE-AIR AUTHENTICATION) API ROUTES - FIRMWARE MANAGEMENT =====
  * File ini mengatur OTAA firmware management untuk device IoT
- * Meliputi: upload firmware, download, update check, board type management
+ * Meliputi: upload firmware, download, cek update, dan manajemen tipe board
  */
 
 import Elysia, { t } from "elysia";
@@ -19,7 +19,7 @@ import {
 export function otaaRoutes(otaaService: OtaaUpdateService) {
   return new Elysia({ prefix: "/otaa" })
     // ===== UPLOAD FIRMWARE ENDPOINT =====
-    // POST /otaa/upload - Upload firmware file untuk OTAA update
+    // POST /otaa/upload - Upload file firmware untuk OTAA update
     .post(
       "/upload",
       //@ts-ignore
@@ -61,7 +61,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           await Bun.write(`${uploadDir}/.gitkeep`, ''); // Pastikan direktori dibuat
           await Bun.write(`${uploadDir}/${newFileName}`, buffer);
 
-          // Calculate file metadata
+          // Hitung metadata file
           const fileSize = buffer.length;
           const crypto = await import('crypto');
           const checksum = crypto.createHash('sha256').update(buffer).digest('hex');
@@ -89,7 +89,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
             },
           };
         } catch (error: any) {
-          console.error("Error uploading firmware:", error);
+          console.error("Kesalahan saat mengunggah firmware:", error);
           return new Response(
             JSON.stringify({ error: error.message || "Gagal upload firmware" }),
             { status: 500, headers: { "Content-Type": "application/json" } }
@@ -109,7 +109,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           const firmwares = await otaaService.getAllFirmwares(decoded.sub);
           return { success: true, data: firmwares as any[] };
         } catch (error: any) {
-          console.error("Error fetching firmwares:", error);
+          console.error("Kesalahan saat mengambil data firmware:", error);
           return new Response(
             JSON.stringify({ 
               error: "Gagal mengambil data firmware",
@@ -147,7 +147,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
 
           return { success: true, data: firmware };
         } catch (error: any) {
-          console.error("Error fetching firmware:", error);
+          console.error("Kesalahan saat mengambil firmware:", error);
           return new Response(
             JSON.stringify({ 
               error: "Gagal mengambil firmware",
@@ -191,7 +191,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
             },
           });
         } catch (error: any) {
-          console.error("Error downloading firmware:", error);
+          console.error("Kesalahan saat mengunduh firmware:", error);
           return new Response(
             JSON.stringify({ 
               error: "Gagal download firmware",
@@ -213,7 +213,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
           const updateInfo = await otaaService.checkFirmwareUpdate(params.device_id);
           return { success: true, data: updateInfo };
         } catch (error: any) {
-          console.error("Error checking firmware update:", error);
+          console.error("Kesalahan saat memeriksa pembaruan firmware:", error);
           return new Response(
             JSON.stringify({ 
               error: "Gagal cek update firmware",
@@ -248,7 +248,7 @@ export function otaaRoutes(otaaService: OtaaUpdateService) {
 
           return { success: true, message: "Firmware berhasil dihapus" };
         } catch (error: any) {
-          console.error("Error deleting firmware:", error);
+          console.error("Kesalahan saat menghapus firmware:", error);
           return new Response(
             JSON.stringify({ 
               error: "Gagal menghapus firmware",

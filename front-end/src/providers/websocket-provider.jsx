@@ -51,17 +51,6 @@ export function WebSocketProvider({ children }) {
       user.id !== undefined &&
       user.email !== undefined;
 
-    // Debug logging untuk troubleshooting login issues (commented out)
-    // if (user && !isLoggedIn) {
-    //   console.log("🔍 User object exists but missing credentials:", {
-    //     hasUser: !!user,
-    //     hasId: !!(user?.id),
-    //     hasEmail: !!(user?.email),
-    //     id: user?.id || "empty",
-    //     email: user?.email || "empty"
-    //   });
-    // }
-
     return isLoggedIn;
   };
 
@@ -77,13 +66,13 @@ export function WebSocketProvider({ children }) {
           setAlarmNotifications(parsed);
         } else {
           console.warn(
-            "Invalid localStorage notifications structure, clearing"
+            "Struktur notifications di localStorage tidak valid, membersihkan"
           );
           localStorage.removeItem("notifications");
         }
       }
     } catch (error) {
-      console.warn("Failed to load notifications from localStorage:", error);
+      console.warn("Gagal memuat notifikasi dari localStorage:", error);
       localStorage.removeItem("notifications");
     } finally {
       setIsInitialized(true);
@@ -104,7 +93,7 @@ export function WebSocketProvider({ children }) {
           localStorage.removeItem("notifications");
         }
       } catch (error) {
-        console.warn("Failed to save notifications to localStorage:", error);
+        console.warn("Gagal menyimpan notifikasi ke localStorage:", error);
       }
     }
   }, [alarmNotifications, user, isInitialized]);
@@ -124,7 +113,7 @@ export function WebSocketProvider({ children }) {
       try {
         localStorage.removeItem("notifications");
       } catch (error) {
-        console.warn("Error clearing notifications from localStorage:", error);
+        console.warn("Gagal menghapus notifikasi dari localStorage:", error);
       }
     }
   }, [user, isInitialized]);
@@ -147,7 +136,7 @@ export function WebSocketProvider({ children }) {
     // Setup connection timeout untuk avoid hanging connections
     const connectionTimer = setTimeout(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
-        console.warn("⏰ Connection timeout - closing socket");
+        console.warn("⏰ Batas waktu koneksi tercapai - menutup socket");
         wsRef.current.close();
       }
     }, connectionTimeout);
@@ -204,7 +193,7 @@ export function WebSocketProvider({ children }) {
         }
 
         if (data.type === "status_update") {
-          console.log(`📡 Device status update received:`, data);
+          console.log(`📡 Pembaruan status perangkat diterima:`, data);
           setDeviceStatuses((prev) => {
             const newMap = new Map(prev);
             newMap.set(data.device_id, {
@@ -227,23 +216,23 @@ export function WebSocketProvider({ children }) {
         }
 
         if (data.type === "command_executed") {
-          console.log(`Command executed:`, data.success ? "SUCCESS" : "FAILED");
+          console.log(`Perintah dieksekusi:`, data.success ? "BERHASIL" : "GAGAL");
           // Update UI atau state jika diperlukan berdasarkan response command
         }
 
         if (data.type === "command_sent") {
           console.log(
-            `✅ Command sent to device ${data.device_id}:`,
+            `✅ Perintah dikirim ke perangkat ${data.device_id}:`,
             data.message
           );
         }
 
         if (data.type === "command_status") {
-          console.log(`📋 Command status update:`, data);
+          console.log(`📋 Pembaruan status perintah:`, data);
         }
 
         if (data.type === "echo") {
-          console.log(`🔊 Echo response:`, data.message);
+          console.log(`🔊 Respons echo:`, data.message);
         }
 
         if (data.type === "alarm_notification") {
@@ -253,7 +242,7 @@ export function WebSocketProvider({ children }) {
             const existingIds = prev.map((n) => n.id);
             if (existingIds.includes(data.data.id)) {
               console.log(
-                "⚠️ Duplicate notification detected, skipping:",
+                "⚠️ Notifikasi duplikat terdeteksi, dilewati:",
                 data.data.id
               );
               return prev; // Skip jika sudah ada
@@ -273,7 +262,7 @@ export function WebSocketProvider({ children }) {
 
         // Handle real-time device offline notifications
         if (data.type === "notification") {
-          console.log("📢 Real-time notification received:", data.data);
+          console.log("📢 Notifikasi real-time diterima:", data.data);
           
           // Tambahkan notifikasi real-time ke state dengan check duplikasi
           setAlarmNotifications((prev) => {
@@ -286,12 +275,12 @@ export function WebSocketProvider({ children }) {
             );
             
             if (isDuplicate) {
-              console.log("⚠️ Duplicate device notification detected, skipping:", data.data);
+              console.log("⚠️ Notifikasi perangkat duplikat terdeteksi, dilewati:", data.data);
               return prev;
             }
 
             // Tambahkan notifikasi baru dan limit ke 100 item
-            console.log("✅ Adding new real-time notification to state");
+            console.log("✅ Menambahkan notifikasi real-time baru ke state");
             return [data.data, ...prev].slice(0, 100);
           });
 
@@ -304,7 +293,7 @@ export function WebSocketProvider({ children }) {
           }
         }
       } catch (error) {
-        console.error("Message parse error:", error);
+        console.error("Gagal memproses pesan:", error);
       }
     };
 
@@ -316,12 +305,12 @@ export function WebSocketProvider({ children }) {
       connectionAttemptRef.current = false;
 
       console.log(
-        `🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`
+        `🔌 WebSocket ditutup. Kode: ${event.code}, Alasan: ${event.reason}`
       );
 
       // Handle specific close codes - don't reconnect immediately for certain failures
       if (event.code === 1008 && event.reason?.includes("not online")) {
-        console.error("🚨 User not online - will retry after delay");
+        console.error("🚨 Pengguna tidak online - akan mencoba lagi setelah jeda");
 
         // Retry connection after delay
         if (isUserLoggedIn(user)) {
@@ -349,7 +338,7 @@ export function WebSocketProvider({ children }) {
         }, reconnectDelay);
       } else if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
         console.error(
-          "❌ Max reconnection attempts reached. Please check your connection and backend server."
+          "❌ Batas maksimum percobaan koneksi tercapai. Periksa koneksi dan server backend."
         );
         // Tampilkan modal error koneksi untuk user
         setShowConnectionError(true);
@@ -359,7 +348,7 @@ export function WebSocketProvider({ children }) {
     socket.onerror = (error) => {
       clearTimeout(connectionTimer);
       connectionAttemptRef.current = false;
-      console.error("🚨 WebSocket error:", error);
+      console.error("🚨 Kesalahan WebSocket:", error);
     };
   };
 
@@ -379,7 +368,7 @@ export function WebSocketProvider({ children }) {
         try {
           // Double check user is still logged in before making any API calls
           if (!isUserLoggedIn(user)) {
-            console.log("❌ User logged out during initialization, aborting");
+            console.log("❌ User logout saat inisialisasi, membatalkan");
             setHasAuthChecked(true);
             return;
           }
@@ -389,7 +378,7 @@ export function WebSocketProvider({ children }) {
             try {
               if (!isUserLoggedIn(user)) {
                 console.log(
-                  "❌ User logged out before fetch, skipping notifications fetch"
+                  "❌ User logout sebelum fetch, melewati pengambilan notifikasi"
                 );
                 return;
               }
@@ -399,34 +388,31 @@ export function WebSocketProvider({ children }) {
                 localStorage.removeItem("notifications");
               } catch (error) {
                 console.warn(
-                  "Error clearing notifications from localStorage:",
+                  "Gagal menghapus notifikasi dari localStorage:",
                   error
                 );
               }
 
-              // console.log("🔍 Fetching notifications from backend...");
+              // console.log("🔍 Mengambil notifikasi dari backend...");
               const response = await fetchFromBackend("/notifications/");
 
               if (response.ok) {
                 const data = await response.json();
-                // console.log("✅ Notifications fetched successfully");
+                // console.log("✅ Notifikasi berhasil diambil");
                 if (data.success && data.notifications) {
                   // Final check before updating state
                   if (!isUserLoggedIn(user)) {
                     console.log(
-                      "❌ User logged out during fetch, discarding notifications"
+                      "❌ User logout saat fetch, membuang notifikasi"
                     );
                     return;
                   }
 
                   // Replace notifications dengan data fresh dari backend
-                  // Tidak merge dengan localStorage untuk menghindari duplikasi
                   setAlarmNotifications((prev) => {
-                    // Hanya ambil data fresh dari backend untuk konsistensi
-                    // dan hindari duplikasi dengan localStorage yang mungkin stale
                     const freshNotifications = data.notifications || [];
 
-                    // Filter hanya notifikasi yang belum dibaca (isRead: false)
+                    // Filter hanya notifikasi yang belum dibaca
                     const unreadNotifications = freshNotifications.filter(
                       (notification) =>
                         !notification.isRead && notification.isRead !== true
@@ -442,19 +428,17 @@ export function WebSocketProvider({ children }) {
                 }
               } else {
                 console.log(
-                  "❌ Failed to fetch notifications:",
+                  "❌ Gagal mengambil notifikasi:",
                   response.status
                 );
               }
             } catch (error) {
-              // Only log error if user is still logged in (avoid spam during logout)
               if (isUserLoggedIn(user)) {
-                console.error("Error fetching recent notifications:", error);
+                console.error("Kesalahan saat mengambil notifikasi terbaru:", error);
               }
             }
           };
 
-          // Only fetch notifications if user is still logged in
           if (isUserLoggedIn(user)) {
             fetchLoginNotifications();
           }
@@ -466,7 +450,6 @@ export function WebSocketProvider({ children }) {
           // Delayed connection to ensure backend is ready (only if user still logged in)
           if (isUserLoggedIn(user)) {
             const connectTimer = setTimeout(async () => {
-              // Final check before connecting
               if (isUserLoggedIn(user)) {
                 await createWebSocketConnection();
               }
@@ -477,9 +460,8 @@ export function WebSocketProvider({ children }) {
             };
           }
         } catch (error) {
-          // Only log error if user is still logged in
           if (isUserLoggedIn(user)) {
-            console.error("Error during initialization:", error);
+            console.error("Kesalahan saat inisialisasi:", error);
           }
           setHasAuthChecked(true);
         }
@@ -487,7 +469,7 @@ export function WebSocketProvider({ children }) {
 
       initializeWebSocketAndNotifications();
     } else if (isInitialized && !isUserLoggedIn(user)) {
-      // console.log("❌ User not logged in, skipping WebSocket initialization");
+      // console.log("❌ User tidak login, melewati inisialisasi WebSocket");
       setHasAuthChecked(false);
 
       // Clean up any pending connections or operations
@@ -527,10 +509,10 @@ export function WebSocketProvider({ children }) {
         timestamp: new Date().toISOString(),
       };
       ws.send(JSON.stringify(command));
-      console.log(`📤 Device command sent:`, command);
+      console.log(`📤 Perintah perangkat dikirim:`, command);
       return true;
     }
-    console.warn("❌ Cannot send command: WebSocket not connected");
+    console.warn("❌ Tidak dapat mengirim perintah: WebSocket belum terhubung");
     return false;
   };
 
@@ -543,7 +525,7 @@ export function WebSocketProvider({ children }) {
       try {
         localStorage.setItem("notifications", JSON.stringify(updated));
       } catch (error) {
-        console.warn("Error updating notifications in localStorage:", error);
+        console.warn("Kesalahan saat memperbarui notifikasi di localStorage:", error);
       }
 
       return updated;
@@ -557,7 +539,7 @@ export function WebSocketProvider({ children }) {
     try {
       localStorage.removeItem("notifications");
     } catch (error) {
-      console.warn("Error clearing notifications from localStorage:", error);
+      console.warn("Gagal menghapus notifikasi dari localStorage:", error);
     }
   };
 
@@ -566,14 +548,14 @@ export function WebSocketProvider({ children }) {
     if (ws && ws.readyState === WebSocket.OPEN) {
       const testMessage = {
         type: "echo",
-        message: "Hello from frontend!",
+        message: "Halo dari frontend!",
         timestamp: new Date().toISOString(),
       };
-      console.log(`🧪 Sending test message:`, testMessage);
+      console.log(`🧪 Mengirim pesan uji:`, testMessage);
       ws.send(JSON.stringify(testMessage));
       return true;
     }
-    console.warn("❌ Cannot test: WebSocket not connected");
+    console.warn("❌ Tidak dapat menguji: WebSocket belum terhubung");
     return false;
   };
 
@@ -588,11 +570,11 @@ export function WebSocketProvider({ children }) {
         value: 1,
         timestamp: new Date().toISOString(),
       };
-      console.log(`🧪 Sending test device command:`, testCommand);
+      console.log(`🧪 Mengirim perintah uji perangkat:`, testCommand);
       ws.send(JSON.stringify(testCommand));
       return true;
     }
-    console.warn("❌ Cannot test command: WebSocket not connected");
+    console.warn("❌ Tidak dapat menguji perintah: WebSocket belum terhubung");
     return false;
   };
 

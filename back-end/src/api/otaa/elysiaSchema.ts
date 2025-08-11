@@ -25,6 +25,11 @@ const uploadFirmwareSchema = {
       error: t.String(),
     }),
   },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Upload firmware",
+    description: "Unggah file firmware untuk pembaruan perangkat (OTAA)",
+  },
 };
 
 const getFirmwaresSchema = {
@@ -36,6 +41,11 @@ const getFirmwaresSchema = {
     500: t.Object({
       error: t.String(),
     }),
+  },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Daftar firmware",
+    description: "Mengambil semua firmware milik pengguna",
   },
 };
 
@@ -55,6 +65,11 @@ const getFirmwareByBoardSchema = {
       error: t.String(),
     }),
   },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Firmware berdasarkan tipe board",
+    description: "Mengambil firmware berdasarkan tipe board untuk pengguna",
+  },
 };
 
 const getBoardTypesSchema = {
@@ -65,6 +80,11 @@ const getBoardTypesSchema = {
     500: t.Object({
       error: t.String(),
     }),
+  },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Daftar tipe board",
+    description: "Mengambil daftar tipe board yang tersedia",
   },
 };
 
@@ -87,6 +107,11 @@ const checkUpdateSchema = {
       error: t.String(),
     }),
   },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Cek pembaruan firmware",
+    description: "Memeriksa apakah ada pembaruan firmware untuk perangkat",
+  },
 };
 
 const deleteFirmwareSchema = {
@@ -104,6 +129,11 @@ const deleteFirmwareSchema = {
     500: t.Object({
       error: t.String(),
     }),
+  },
+  detail: {
+    tags: ["OTAA"],
+    summary: "Hapus firmware",
+    description: "Menghapus firmware berdasarkan ID untuk pengguna",
   },
 };
 

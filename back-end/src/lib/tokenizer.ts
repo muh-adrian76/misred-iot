@@ -51,7 +51,7 @@ const app = new Elysia()
   .onError(({ code }) => {
     // Handle 404 Not Found error
     if (code === "NOT_FOUND") {
-      return "Route not found :("; // Response user-friendly untuk route tidak ditemukan
+      return "Halaman tidak ditemukan."; // Response user-friendly untuk route tidak ditemukan
     }
   });
 

@@ -1,18 +1,12 @@
 // ===== IMPORTS PLUGINS & MIDDLEWARE =====
-// Import plugin CORS untuk mengatur Cross-Origin Resource Sharing
+// Import plugin CORS untuk mengatur berbagi sumber daya lintas origin
 import { cors } from "@elysiajs/cors";
-// Import plugin JWT untuk autentikasi menggunakan JSON Web Token
+// Import plugin JWT untuk autentikasi menggunakan token web JSON
 import { jwt } from "@elysiajs/jwt";
 // Import plugin Swagger untuk dokumentasi API otomatis
 import { swagger } from "@elysiajs/swagger";
 // Import plugin static untuk melayani file statis (gambar, dokumen, dll)
 import { staticPlugin } from "@elysiajs/static";
-
-// ===== IMPORTS NODE.JS MODULES =====
-// Import fungsi filesystem untuk operasi file dan direktori
-import { existsSync, readdirSync, readFileSync } from "fs";
-// Import fungsi path untuk manipulasi path file
-import { join } from "path";
 
 // ===== IMPORTS ELYSIA FRAMEWORK =====
 // Import framework Elysia untuk membangun REST API
@@ -36,9 +30,9 @@ import { alarmRoutes } from "./api/alarm"; // Route sistem alarm
 import { notificationRoutes } from "./api/notification"; // Route notifikasi alarm
 import { dashboardRoutes } from "./api/dashboard"; // Route dashboard
 import { datastreamRoutes } from "./api/datastream"; // Route datastream sensor
-import { otaaRoutes } from "./api/otaa"; // Route Over-The-Air-Activation
+import { otaaRoutes } from "./api/otaa"; // Route aktivasi udara otomatis (OTAA)
 import { adminRoutes } from "./api/admin"; // Route admin panel
-import { healthCheckRoutes } from "./api/health"; // Route health monitoring
+import { healthCheckRoutes } from "./api/health"; // Route pemantauan kesehatan sistem
 
 // ===== IMPORTS WEBSOCKET ROUTES =====
 // Import route WebSocket untuk komunikasi real-time
@@ -46,7 +40,7 @@ import { userWsRoutes, broadcastToSpecificUser, broadcastToAllUsers } from "./ap
 import { deviceWsRoutes } from "./api/ws/device-ws"; // WebSocket device
 
 // ===== IMPORTS SERVICES =====
-// Import semua service class untuk business logic
+// Import semua service class untuk logika bisnis aplikasi
 import { AuthService } from "./services/AuthService"; // Service autentikasi
 import { UserService } from "./services/UserService"; // Service manajemen user
 import { DeviceService } from "./services/DeviceService"; // Service manajemen device IoT
@@ -96,8 +90,8 @@ class Server {
   async init() {
     // ===== DATABASE & MQTT INITIALIZATION =====
     // Inisialisasi koneksi database MySQL dan MQTT client
-    this.db = MySQLDatabase.getInstance(); // Singleton pattern untuk database
-    this.mqttClient = MQTTClient.getInstance(); // Singleton pattern untuk MQTT
+    this.db = MySQLDatabase.getInstance(); // Pola instance tunggal untuk database
+    this.mqttClient = MQTTClient.getInstance(); // Pola instance tunggal untuk MQTT
 
     // ===== SERVICE INITIALIZATION (PHASE 1) =====
     // Inisialisasi service yang tidak memiliki dependencies terlebih dahulu
@@ -110,7 +104,7 @@ class Server {
     this.datastreamService = new DatastreamService(this.db); // Service datastream
     this.otaaService = new OtaaUpdateService(this.db); // Service OTAA
     this.adminService = new AdminService(this.db); // Service admin
-    this.deviceStatusService = new DeviceStatusService(this.db); // Service status device
+    this.deviceStatusService = new DeviceStatusService(this.db, this.notificationService); // Service status device dengan shared notification
 
     // ===== MQTT SERVICE INITIALIZATION =====
     // Inisialisasi MQTT service dengan dependencies untuk notifikasi dan status
@@ -162,7 +156,7 @@ class Server {
 
       // ===== API ROUTES REGISTRATION =====
       // Registrasi semua route API dengan service yang sesuai
-      .use(healthCheckRoutes(this.mqttClient)) // Route health monitoring
+      .use(healthCheckRoutes(this.mqttClient)) // Route pemantauan kesehatan sistem
       .use(authRoutes(this.authService, this.userService)) // Route autentikasi
       .use(userRoutes(this.userService)) // Route manajemen user
       .use(deviceRoutes(this.deviceService, this.deviceStatusService)) // Route device IoT
@@ -183,7 +177,7 @@ class Server {
 
       // ===== PLUGINS CONFIGURATION =====
       // ===== CORS PLUGIN =====
-      // Konfigurasi Cross-Origin Resource Sharing untuk frontend
+      // Konfigurasi berbagi sumber daya lintas origin untuk frontend
       .use(
         cors({
           origin: [
@@ -312,7 +306,7 @@ class Server {
         // Test koneksi database sebelum melakukan operasi
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("⚠️ Database unhealthy during command cleanup, skipping...");
+          console.log("⚠️ Database tidak sehat selama command cleanup, dilewati...");
           return;
         }
         
@@ -321,10 +315,10 @@ class Server {
         const commandService = new DeviceCommandService(this.db);
         const affected = await commandService.markOldCommandsAsFailed(0.17); // 10 detik timeout
         if (affected > 0) {
-          console.log(`🧹 Marked ${affected} old device commands as failed`);
+          console.log(`🧹 Menandai ${affected} command device lama sebagai gagal`);
         }
       } catch (error: any) {
-        console.error("Error cleaning up device commands:", error);
+        console.error("❌ Kesalahan saat membersihkan command device:", error);
         
         // ===== CONNECTION ERROR HANDLING =====
         // Check jika error disebabkan oleh masalah koneksi database
@@ -334,7 +328,7 @@ class Server {
             error.code === "ENOTFOUND" ||
             error.code === "ETIMEDOUT" ||
             error.message?.includes('Pool is closed')) {
-          console.log("🔄 Database connection error detected during command cleanup");
+          console.log("🔄 Kesalahan koneksi database terdeteksi saat pembersihan command");
           // Let the health check mechanism handle reconnection
         }
       }
@@ -349,7 +343,7 @@ class Server {
         // Test koneksi database sebelum refresh secret
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("⚠️ Database unhealthy during secret refresh, skipping...");
+          console.log("⚠️ Database tidak sehat selama refresh secret, dilewati...");
           return;
         }
         
@@ -375,7 +369,7 @@ class Server {
             error.code === "ENOTFOUND" ||
             error.code === "ETIMEDOUT" ||
             error.message?.includes('Pool is closed')) {
-          console.log("🔄 Database connection error during secret refresh");
+          console.log("🔄 Kesalahan koneksi database saat refresh secret");
           // Let the health check mechanism handle reconnection
         }
         return; // Exit dari fungsi jika terjadi error
@@ -389,21 +383,21 @@ class Server {
       try {
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("🔄 Database health check failed, attempting reconnection...");
+          console.log("🔄 Health check database gagal, mencoba reconnect...");
           this.db = await MySQLDatabase.forceReconnectWithRetry();
           
           // Reinitialize services dengan database connection baru
           await this.reinitializeServices();
         }
       } catch (error) {
-        console.error("❌ Health check monitor error:", error);
+        console.error("❌ Kesalahan health check monitor:", error);
       }
     }, 60000); // Check setiap 1 menit
     intervals.push(healthCheckInterval);
 
-    // ===== GRACEFUL SHUTDOWN HANDLER =====
+    // ===== PENANGANAN SHUTDOWN GRACEFUL =====
     const gracefulShutdown = async (signal: string) => {
-      console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+      console.log(`\n🛑 Menerima signal ${signal}. Memulai graceful shutdown...`);
       
       // Clear all intervals (Bun compatible)
       intervals.forEach(interval => clearInterval(interval));
@@ -411,20 +405,20 @@ class Server {
       // Close database connections
       try {
         await MySQLDatabase.shutdown();
-        console.log("✅ Database connections closed");
+        console.log("✅ Koneksi database ditutup");
       } catch (error) {
-        console.error("❌ Error closing database:", error);
+        console.error("❌ Kesalahan saat menutup database:", error);
       }
       
       // Close MQTT connection
       try {
         this.mqttClient.end();
-        console.log("✅ MQTT connection closed");
+        console.log("✅ Koneksi MQTT ditutup");
       } catch (error) {
-        console.error("❌ Error closing MQTT:", error);
+        console.error("❌ Kesalahan saat menutup MQTT:", error);
       }
       
-      console.log("👋 Graceful shutdown completed");
+      console.log("👋 Shutdown graceful selesai");
       process.exit(0);
     };
 
@@ -441,7 +435,7 @@ class Server {
   // Method untuk reinisialisasi services dengan database connection baru
   private async reinitializeServices(): Promise<void> {
     try {
-      console.log("🔄 Reinitializing services with new database connection...");
+      console.log("🔄 Menginisialisasi ulang service dengan koneksi database baru...");
       
       // Reinitialize core services
       this.authService = new AuthService(this.db);
@@ -453,7 +447,7 @@ class Server {
       this.datastreamService = new DatastreamService(this.db);
       this.otaaService = new OtaaUpdateService(this.db);
       this.adminService = new AdminService(this.db);
-      this.deviceStatusService = new DeviceStatusService(this.db);
+      this.deviceStatusService = new DeviceStatusService(this.db, this.notificationService);
 
       // Reinitialize MQTT service
       this.mqttService = new MQTTService(this.db, this.notificationService, this.deviceStatusService);
@@ -477,9 +471,9 @@ class Server {
         this.deviceStatusService
       );
 
-      console.log("✅ Services reinitialized successfully");
+      console.log("✅ Service berhasil diinisialisasi ulang");
     } catch (error) {
-      console.error("❌ Failed to reinitialize services:", error);
+      console.error("❌ Gagal menginisialisasi ulang service:", error);
       throw error;
     }
   }

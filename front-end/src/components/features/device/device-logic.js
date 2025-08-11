@@ -32,16 +32,16 @@ export function useDeviceLogic() {
   const ws = useWebSocket();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
-  // Fetch devices milik user
+  // Ambil daftar device milik pengguna
   const fetchDevices = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetchFromBackend("/device");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal fetch device");
+      if (!res.ok) throw new Error(data.message || "Gagal mengambil daftar perangkat");
       setDevices(data.result || []);
     } catch (error) {
-      errorToast("Gagal mengambil data device", error.message);
+      errorToast("Gagal mengambil data perangkat", error.message);
     } finally {
       setLoading(false);
     }
@@ -51,14 +51,14 @@ export function useDeviceLogic() {
     if (isAuthenticated) fetchDevices();
   }, [isAuthenticated, fetchDevices]);
 
-  // Update device state
+  // Listener pembaruan device via WebSocket
   useEffect(() => {
     if (!ws) return;
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // console.log("WebSocket message received:", data);
+      // console.log("Pesan WebSocket diterima:", data);
       if (data.type === "status_update") {
-        console.log("Status update received:", data);
+        console.log("Pembaruan status perangkat diterima:", data);
         setDevices((prev) =>
           prev.map((dev) =>
             String(dev.id) === String(data.device_id)
@@ -68,13 +68,13 @@ export function useDeviceLogic() {
         );
       }
       if (data.type === "device_secret_refreshed") {
-        // console.log("Device secret refreshed:", data);
+        // console.log("Rahasia perangkat diperbarui:", data);
         fetchDevices(); 
       }
     };
   }, [fetchDevices, ws]);
 
-  // CRUD Handler
+  // Handler CRUD perangkat
   const handleAddDevice = async (payload) => {
     try {
       const res = await fetchFromBackend("/device", {
@@ -82,15 +82,15 @@ export function useDeviceLogic() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal tambah device");
-      successToast("Device berhasil ditambahkan!");
+      if (!res.ok) throw new Error(data.message || "Gagal menambahkan perangkat");
+      successToast("Perangkat berhasil ditambahkan!");
       fetchDevices();
       setAddFormOpen(false);
       
-      // Trigger onboarding task completion
+      // Tandai penyelesaian tugas onboarding
       markDeviceCreated();
     } catch(error) {
-      errorToast("Gagal tambah device!", error.message);
+      errorToast("Gagal menambahkan perangkat!", error.message);
     }
   };
 
@@ -101,12 +101,12 @@ export function useDeviceLogic() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal update device");
-      successToast("Device berhasil diupdate!");
+      if (!res.ok) throw new Error(data.message || "Gagal memperbarui perangkat");
+      successToast("Perangkat berhasil diperbarui!");
       fetchDevices();
       setEditFormOpen(false);
     } catch(error) {
-      errorToast("Gagal update device!", error.message);
+      errorToast("Gagal memperbarui perangkat!", error.message);
     }
   };
 
@@ -116,12 +116,12 @@ export function useDeviceLogic() {
         method: "DELETE",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal hapus device");
-      successToast("Device berhasil dihapus!");
+      if (!res.ok) throw new Error(data.message || "Gagal menghapus perangkat");
+      successToast("Perangkat berhasil dihapus!");
       fetchDevices();
       setDeleteFormOpen(false);
     } catch(error) {
-      errorToast("Gagal hapus device!", error.message);
+      errorToast("Gagal menghapus perangkat!", error.message);
     }
   };
 
@@ -131,38 +131,41 @@ export function useDeviceLogic() {
         method: "DELETE",
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal reset data device");
-      // Hilangkan koment ini jika ingin menampilkan jumlah payload yang dihapus
+      if (!res.ok) throw new Error(data.message || "Gagal mereset data perangkat");
+      // Hilangkan komentar di bawah jika ingin menampilkan jumlah payload yang dihapus
       // successToast(`Data perangkat berhasil direset!`, data.deleted_payload_count, data.deleted_raw_payload_count);
       successToast(`Data perangkat berhasil direset!`);
       setResetFormOpen(false);
     } catch(error) {
-      errorToast("Gagal reset data perangkat!", error.message);
+      errorToast("Gagal mereset data perangkat!", error.message);
     }
   };
 
+  // Perbarui info firmware perangkat di state lokal
   const updateDeviceFirmware = ({ device_id, firmware_version, firmware_url, updated_at }) => {
-  setDevices((prev) =>
-    prev.map((dev) =>
-      dev.id === device_id
-        ? {
-            ...dev,
-            firmware_version,
-            firmware_url,
-            updated_at,
-          }
-        : dev
-    )
-  );
-};
+    setDevices((prev) =>
+      prev.map((dev) =>
+        dev.id === device_id
+          ? {
+              ...dev,
+              firmware_version,
+              firmware_url,
+              updated_at,
+            }
+          : dev
+      )
+    );
+  };
 
+  // Handler ketika unggah firmware selesai
   const handleFirmwareUploaded = (data) => {
-    successToast("Firmware berhasil diupload!");
+    successToast("Firmware berhasil diunggah!");
     setUploadFirmwareSheetOpen(false);
-    // Refresh devices to get updated firmware info if needed
+    // Refresh daftar perangkat untuk mengambil info firmware terbaru bila diperlukan
     fetchDevices();
   };
 
+  // Opsi board yang tersedia
   const boardOptions = [
     "ESP32",
     "ESP8266",

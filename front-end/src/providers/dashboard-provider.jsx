@@ -50,7 +50,7 @@ export function DashboardProvider({ children }) {
             if (typeof layout === 'object' && layout !== null) {
               validatedData.tabLayouts[dashboardId] = layout;
             } else {
-              console.warn(`Skipping invalid layout for dashboard ${dashboardId}:`, layout);
+              console.warn(`Melewati layout tidak valid untuk dashboard ${dashboardId}:`, layout);
               // Set layout kosong jika data tidak valid
               validatedData.tabLayouts[dashboardId] = {};
             }
@@ -60,13 +60,13 @@ export function DashboardProvider({ children }) {
           setDashboardData(validatedData);
         } else {
           // Jika struktur data tidak valid, hapus dari localStorage
-          console.warn('Invalid localStorage data structure, clearing');
+          console.warn('Struktur data localStorage tidak valid, membersihkan');
           localStorage.removeItem("dashboard-data");
         }
       }
     } catch (error) {
       // Handle error saat parsing atau loading data
-      console.warn("Failed to load dashboard data from localStorage:", error);
+      console.warn("Gagal memuat data dashboard dari localStorage:", error);
       localStorage.removeItem("dashboard-data");
     } finally {
       // Tandai bahwa proses inisialisasi sudah selesai
@@ -94,7 +94,7 @@ export function DashboardProvider({ children }) {
         }
       } catch (error) {
         // Handle error saat menyimpan ke localStorage
-        console.warn("Failed to save dashboard data to localStorage:", error);
+        console.warn("Gagal menyimpan data dashboard ke localStorage:", error);
       }
     }
   }, [dashboardData.tabItems, dashboardData.tabLayouts, dashboardData.activeTab, isInitialized]);
@@ -143,7 +143,7 @@ export function DashboardProvider({ children }) {
     
     // Validasi parameter layouts harus berupa object
     if (typeof layouts !== 'object' || layouts === null) {
-      console.warn('Invalid layouts provided to updateTabLayouts:', layouts);
+      console.warn('Layouts tidak valid diberikan ke updateTabLayouts:', layouts);
       return;
     }
     
@@ -214,7 +214,7 @@ export function DashboardProvider({ children }) {
     
     // Validasi bahwa layouts adalah object yang valid
     if (typeof layouts !== 'object' || layouts === null) {
-      console.warn('Invalid layouts provided to setAllTabLayouts:', layouts);
+      console.warn('Layouts tidak valid diberikan ke setAllTabLayouts:', layouts);
       return;
     }
     
@@ -226,7 +226,7 @@ export function DashboardProvider({ children }) {
       if (typeof dashboardLayout === 'object' && dashboardLayout !== null) {
         validatedLayouts[dashboardId] = dashboardLayout;
       } else {
-        console.warn(`Invalid layout for dashboard ${dashboardId}:`, dashboardLayout);
+        console.warn(`Layout tidak valid untuk dashboard ${dashboardId}:`, dashboardLayout);
         // Set layout kosong untuk dashboard dengan data invalid
         validatedLayouts[dashboardId] = {};
       }
@@ -285,7 +285,7 @@ export function DashboardProvider({ children }) {
       const key = `dashboard_backup_${dashboardId}`;
       localStorage.setItem(key, JSON.stringify(layoutData));
     } catch (error) {
-      console.warn("Failed to save dashboard backup:", error);
+      console.warn("Gagal menyimpan cadangan dashboard:", error);
     }
   }, []);
 
@@ -298,7 +298,7 @@ export function DashboardProvider({ children }) {
       // Return data backup atau null jika tidak ada
       return stored ? JSON.parse(stored) : null;
     } catch (error) {
-      console.warn("Failed to load dashboard backup:", error);
+      console.warn("Gagal memuat cadangan dashboard:", error);
       return null;
     }
   }, []);
@@ -309,7 +309,7 @@ export function DashboardProvider({ children }) {
       const key = `dashboard_backup_${dashboardId}`;
       localStorage.removeItem(key);
     } catch (error) {
-      console.warn("Failed to remove dashboard backup:", error);
+      console.warn("Gagal menghapus cadangan dashboard:", error);
     }
   }, []);
 
@@ -325,7 +325,7 @@ export function DashboardProvider({ children }) {
         }
       });
     } catch (error) {
-      console.warn("Failed to clear dashboard backups:", error);
+      console.warn("Gagal menghapus semua cadangan dashboard:", error);
     }
   }, []);
 
@@ -371,7 +371,7 @@ export function useDashboard() {
   const context = useContext(DashboardContext);
   // Validasi bahwa hook digunakan dalam provider yang benar
   if (!context) {
-    throw new Error("useDashboard must be used within a DashboardProvider");
+    throw new Error("useDashboard harus digunakan di dalam DashboardProvider");
   }
   return context;
 }

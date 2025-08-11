@@ -130,7 +130,7 @@ export class PayloadService {
       return rawResult.insertId;
     } catch (error) {
       console.error("❌ [HTTP PAYLOAD] Error dalam menyimpan HTTP payload:", error);
-      throw new Error("Failed to save HTTP payload");
+      throw new Error("Gagal menyimpan HTTP payload");
     }
   }
 
@@ -151,8 +151,8 @@ export class PayloadService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching payloads by device ID:", error);
-      throw new Error("Failed to fetch payloads");
+      console.error("Gagal mengambil payload berdasarkan device ID:", error);
+      throw new Error("Gagal mengambil data payload");
     }
   }
 
@@ -178,8 +178,8 @@ export class PayloadService {
       );
       return rows;
     } catch (error) {
-      console.error("Error fetching payloads by device and datastream:", error);
-      throw new Error("Failed to fetch payloads");
+      console.error("Gagal mengambil payload berdasarkan device dan datastream:", error);
+      throw new Error("Gagal mengambil data payload");
     }
   }
 
@@ -192,8 +192,8 @@ export class PayloadService {
       );
       return rows[0]; // Single widget data
     } catch (error) {
-      console.error("Error fetching widget data:", error);
-      throw new Error("Failed to fetch widget data");
+      console.error("Gagal mengambil data widget:", error);
+      throw new Error("Gagal mengambil data widget");
     }
   }
 
@@ -230,12 +230,10 @@ export class PayloadService {
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
         let timeCondition = '';
-        // PERBAIKAN: Handle case untuk mendapatkan semua data
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
           timeCondition = ''; // Tidak ada filter waktu = semua data
         } else {
-          // PERBAIKAN: Gunakan UTC_TIMESTAMP() untuk konsistensi dengan frontend
           // dan pastikan perbandingan timezone yang tepat
           switch (timeRange) {
             case '1h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
@@ -287,8 +285,8 @@ export class PayloadService {
       
       return rows;
     } catch (error) {
-      console.error("❌ [PAYLOAD SERVICE] Error fetching time series data:", error);
-      throw new Error("Failed to fetch time series data");
+      console.error("❌ [PAYLOAD SERVICE] Gagal mengambil data time series:", error);
+      throw new Error("Gagal mengambil data time series");
     }
   }
 
@@ -361,7 +359,7 @@ export class PayloadService {
       return result.insertId;
       
     } catch (error) {
-      console.error("Error saving Lora payload:", error);
+      console.error("Gagal menyimpan payload LoRa:", error);
       throw error;
     }
   }

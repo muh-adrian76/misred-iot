@@ -2,11 +2,11 @@
  * ===== USER WEBSOCKET ROUTES - KOMUNIKASI REAL-TIME DENGAN USER DASHBOARD =====
  * File ini mengatur koneksi WebSocket untuk user dashboard real-time
  * 
- * SIMPLIFIED APPROACH (NO JWT TOKEN):
- * - WebSocket endpoint: /ws/user/{user_id}
- * - Authentication dilakukan melalui refresh_token di database
+ * PENDEKATAN SEDERHANA (TANPA JWT TOKEN):
+ * - Endpoint WebSocket: /ws/user/{user_id}
+ * - Autentikasi dilakukan melalui refresh_token di database
  * - Broadcast hanya ke user yang refresh_token IS NOT NULL (online)
- * - Lebih sederhana dan VPS-compatible
+ * - Lebih sederhana dan cocok untuk VPS
  */
 
 import { Elysia, t } from "elysia";
@@ -21,19 +21,19 @@ const PING_INTERVAL_MS = 30000; // 30 detik, optimal untuk VPS
 export function userWsRoutes(db: any) {
   return new Elysia({ prefix: "/ws" })
   .ws("/user/:user_id", {
-    // Remove strict body validation - messages are dynamic
+    // Hilangkan validasi ketat pada body - pesan bersifat dinamis
     // body: t.Object({...}),
     
-    // ===== WEBSOCKET CONNECTION OPEN HANDLER =====
+    // ===== HANDLER SAAT KONEKSI WEBSOCKET TERBUKA =====
     async open(ws) {
       try {
         const userId = ws.data.params?.user_id;
         if (!userId) {
-          ws.close(1008, "No user_id");
+          ws.close(1008, "user_id tidak ada");
           return;
         }
         
-        // Validasi user online status via refresh_token (optional - untuk extra security)
+        // Validasi status online user via refresh_token (opsional - untuk keamanan tambahan)
         if (db) {
           try {
             const [rows]: any = await db.query(
@@ -41,12 +41,12 @@ export function userWsRoutes(db: any) {
               [userId]
             );
             if (!rows.length) {
-              ws.close(1008, "User not online");
+              ws.close(1008, "Pengguna tidak online");
               return;
             }
           } catch (dbError) {
-            // Lanjutkan tanpa validasi jika DB error
-            console.warn("DB validation failed, allowing connection:", dbError);
+            // Lanjut tanpa validasi jika terjadi kesalahan DB
+            console.warn("Validasi DB gagal, koneksi tetap diizinkan:", dbError);
           }
         }
         
@@ -57,7 +57,7 @@ export function userWsRoutes(db: any) {
         }
         userClients.get(userId)!.add(ws);
         
-        // Ping interval untuk keep-alive
+        // Interval ping untuk keep-alive
         const pingInterval = setInterval(() => {
           try {
             ws.send(JSON.stringify({ type: "ping", timestamp: Date.now() }));
@@ -68,25 +68,25 @@ export function userWsRoutes(db: any) {
         wsPingIntervals.set(ws, pingInterval);
         
       } catch (error) {
-        ws.close(1008, "Connection failed");
+        ws.close(1008, "Koneksi gagal");
       }
     },
     
-    // ===== MESSAGE HANDLER =====
+    // ===== HANDLER PESAN =====
     message(ws, rawData) {
       try {
-        // Safe type casting untuk WebSocket message
+        // Casting tipe yang aman untuk pesan WebSocket
         const data = rawData as any;
         
-        // Basic validation
+        // Validasi dasar
         if (!data || typeof data !== 'object' || !data.type) {
-          console.warn("❌ Invalid WebSocket message format:", rawData);
+          console.warn("❌ Format pesan WebSocket tidak valid:", rawData);
           return;
         }
         
         if (data.type === "pong") return;
         
-        // Device command
+        // Perintah ke perangkat
         if (data.type === "device_command" && data.device_id && data.control_id) {
           const commandPayload = {
             type: "device_command",
@@ -102,12 +102,12 @@ export function userWsRoutes(db: any) {
             type: "command_sent", 
             device_id: data.device_id,
             command_id: commandPayload.command_id,
-            message: `Command sent to device ${data.device_id}`
+            message: `Perintah dikirim ke perangkat ${data.device_id}`
           }));
           return;
         }
         
-        // Legacy command support
+        // Dukungan perintah legacy
         if (data.type === "command" && data.device_id && data.command) {
           sendToDevice(data.device_id, {
             type: "command",
@@ -118,21 +118,21 @@ export function userWsRoutes(db: any) {
           return;
         }
         
-        // Echo test
+        // Uji echo
         if (data.type === "echo") {
           ws.send(JSON.stringify({ type: "echo", message: data.message }));
           return;
         }
         
-        // Log unknown message types for debugging
-        console.log("📥 Unknown WebSocket message type:", data.type);
+        // Log tipe pesan tidak dikenali untuk debugging
+        console.log("📥 Tipe pesan WebSocket tidak dikenali:", data.type);
         
       } catch (error) {
-        console.error("❌ Error processing WebSocket message:", error, rawData);
+        console.error("❌ Kesalahan memproses pesan WebSocket:", error, rawData);
       }
     },
     
-    // ===== CONNECTION CLOSE HANDLER =====
+    // ===== HANDLER SAAT KONEKSI DITUTUP =====
     close(ws) {
       const userId = wsUserMapping.get(ws);
       if (userId) {
@@ -155,15 +155,15 @@ export function userWsRoutes(db: any) {
   });
 }
 
-// ===== OPTIMIZED BROADCAST FUNCTIONS =====
+// ===== FUNGSI BROADCAST YANG DIOPTIMALKAN =====
 
-// ===== BROADCAST TO DEVICE OWNER (NEW SIMPLIFIED APPROACH) =====
+// ===== BROADCAST KE PEMILIK DEVICE (PENDEKATAN SEDERHANA) =====
 // Broadcast data sensor ke pemilik device yang online (menggunakan refresh_token)
 export async function broadcastToDeviceOwner(db: any, deviceId: number, data: any) {
   try {
-    console.log(`📡 broadcastToDeviceOwner called for device ${deviceId}, data:`, data);
+    console.log(`📡 broadcastToDeviceOwner dipanggil untuk device ${deviceId}, data:`, data);
     
-    // Single query untuk mendapatkan user_id dan cek online status sekaligus
+    // Single query untuk mendapatkan user_id dan cek status online sekaligus
     const [rows]: any = await db.query(
       `SELECT u.id as user_id 
        FROM devices d 
@@ -173,23 +173,23 @@ export async function broadcastToDeviceOwner(db: any, deviceId: number, data: an
     );
     
     if (!rows.length) {
-      console.log(`⚠️ Device ${deviceId} not found or user not online`);
+      console.log(`⚠️ Perangkat ${deviceId} tidak ditemukan atau pengguna tidak online`);
       return false; // Device tidak ditemukan atau user tidak online
     }
     
     const userId = rows[0].user_id.toString();
-    console.log(`📡 Broadcasting to user ${userId} for device ${deviceId}`);
+    console.log(`📡 Mengirim broadcast ke pengguna ${userId} untuk device ${deviceId}`);
     const result = broadcastToSpecificUser(userId, data);
-    console.log(`${result ? '✅' : '❌'} Broadcast result for device ${deviceId}: ${result}`);
+    console.log(`${result ? '✅' : '❌'} Hasil broadcast untuk device ${deviceId}: ${result}`);
     return result;
     
   } catch (error) {
-    console.error("❌ Error in broadcastToDeviceOwner:", error);
+    console.error("❌ Kesalahan di broadcastToDeviceOwner:", error);
     return false;
   }
 }
 
-// ===== BROADCAST TO SPECIFIC USER =====
+// ===== BROADCAST KE USER TERTENTU =====
 // Fungsi untuk broadcast ke user spesifik berdasarkan user_id
 export function broadcastToSpecificUser(userId: string, data: any) {
   const userSockets = userClients.get(userId);
@@ -201,7 +201,7 @@ export function broadcastToSpecificUser(userId: string, data: any) {
         ws.send(jsonData);
         successCount++;
       } catch (error) {
-        // Fail silently - frontend has failover
+        // Abaikan error - frontend punya mekanisme failover
       }
     }
     return successCount > 0;
@@ -209,7 +209,7 @@ export function broadcastToSpecificUser(userId: string, data: any) {
   return false;
 }
 
-// ===== BROADCAST TO ALL USERS =====
+// ===== BROADCAST KE SEMUA USER =====
 // Fungsi untuk broadcast ke semua user yang terhubung (untuk notifikasi global)
 export function broadcastToAllUsers(data: any) {
   const jsonData = JSON.stringify(data);
@@ -222,7 +222,7 @@ export function broadcastToAllUsers(data: any) {
           ws.send(jsonData);
           totalSent++;
         } catch (error) {
-          // Fail silently - frontend has failover
+          // Abaikan error - frontend punya mekanisme failover
         }
       }
     }

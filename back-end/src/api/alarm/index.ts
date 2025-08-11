@@ -19,7 +19,7 @@ export function alarmRoutes(alarmService: AlarmService) {
   return (
     new Elysia({ prefix: "/alarm" })
 
-      // ===== CREATE ALARM ENDPOINT =====
+      // ===== ENDPOINT BUAT ALARM =====
       // POST /alarm - Membuat alarm baru dengan kondisi threshold
       .post(
         "/",
@@ -55,30 +55,30 @@ export function alarmRoutes(alarmService: AlarmService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error creating alarm:", error);
+            console.error("Terjadi kesalahan saat membuat alarm:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         },
         createAlarmSchema
       )
 
-      // ===== GET ALL ALARMS ENDPOINT =====
+      // ===== ENDPOINT AMBIL SEMUA ALARM =====
       // GET /alarm - Ambil semua alarm milik user yang sedang login
       .get(
         "/",
@@ -95,24 +95,24 @@ export function alarmRoutes(alarmService: AlarmService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error fetching alarms:", error);
+            console.error("Terjadi kesalahan saat mengambil alarm:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 alarms: [],
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
               alarms: [],
             };
           }
@@ -120,7 +120,7 @@ export function alarmRoutes(alarmService: AlarmService) {
         getAlarmsSchema
       )
 
-      // ===== GET ALARM BY ID ENDPOINT =====
+      // ===== ENDPOINT AMBIL ALARM BERDASARKAN ID =====
       // GET /alarm/:alarmId - Ambil detail alarm berdasarkan ID dengan validasi ownership
       .get(
         "/:alarmId",
@@ -151,45 +151,36 @@ export function alarmRoutes(alarmService: AlarmService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error fetching alarm:", error);
+            console.error("Terjadi kesalahan saat mengambil detail alarm:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         },
         getAlarmByIdSchema
       )
 
-      // ===== UPDATE ALARM ENDPOINT =====
+      // ===== ENDPOINT PERBARUI ALARM =====
       // PUT /alarm/:alarmId - Update konfigurasi alarm dengan validasi ownership
       .put(
         "/:alarmId",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            if (
-              params.alarmId === "1" ||
-              params.alarmId === "2" ||
-              params.alarmId === "4"
-            ) {
-              throw new Error(
-                "Alarm ini tidak dapat diubah saat kuisioner berlangsung"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             const updated = await alarmService.updateAlarm(
               Number(params.alarmId),
@@ -215,23 +206,23 @@ export function alarmRoutes(alarmService: AlarmService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error updating alarm:", error);
+            console.error("Terjadi kesalahan saat mengupdate alarm:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -240,22 +231,13 @@ export function alarmRoutes(alarmService: AlarmService) {
         updateAlarmSchema
       )
 
-      // ===== DELETE ALARM ENDPOINT =====
+      // ===== ENDPOINT HAPUS ALARM =====
       // DELETE /alarm/:alarmId - Hapus alarm dengan validasi ownership
       .delete(
         "/:alarmId",
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            if (
-              params.alarmId === "1" ||
-              params.alarmId === "2" ||
-              params.alarmId === "4"
-            ) {
-              throw new Error(
-                "Alarm ini tidak dapat dihapus saat kuisioner berlangsung"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await alarmService.deleteAlarm(
               Number(params.alarmId),
@@ -280,23 +262,23 @@ export function alarmRoutes(alarmService: AlarmService) {
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error deleting alarm:", error);
+            console.error("Terjadi kesalahan saat menghapus alarm:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );

@@ -96,7 +96,7 @@ export class AdminService {
         totalPayloads
       };
     } catch (error) {
-      console.error("Error getting overview stats:", error);
+      console.error("Gagal mengambil statistik overview:", error);
       throw error;
     }
   }
@@ -115,7 +115,7 @@ export class AdminService {
       const [users] = await this.db.safeQuery(query, [limit]);
       return users;
     } catch (error) {
-      console.error("Error getting recent users:", error);
+      console.error("Gagal mengambil daftar user terbaru:", error);
       throw error;
     }
   }
@@ -137,7 +137,7 @@ export class AdminService {
       const [users] = await this.db.safeQuery(query, [limit]);
       return users;
     } catch (error) {
-      console.error("Error getting active users:", error);
+      console.error("Gagal mengambil daftar user aktif:", error);
       throw error;
     }
   }
@@ -175,7 +175,7 @@ export class AdminService {
       const [devices] = await this.db.safeQuery(query);
       return devices;
     } catch (error) {
-      console.error("Error getting device locations:", error);
+      console.error("Gagal mengambil lokasi device:", error);
       throw error;
     }
   }
@@ -184,7 +184,7 @@ export class AdminService {
   // Update koordinat dan alamat device
   async updateDeviceLocation(deviceId: number, latitude: number, longitude: number, address?: string): Promise<boolean> {
     try {
-      console.log("Updating device location:", { deviceId, latitude, longitude, address });
+      console.log("Memperbarui lokasi device:", { deviceId, latitude, longitude, address });
       
       const query = `
         UPDATE devices 
@@ -193,12 +193,12 @@ export class AdminService {
       `;
       
       const [result] = await this.db.safeQuery(query, [latitude, longitude, address || null, deviceId]);
-      console.log("Update result:", result);
+      console.log("Hasil update:", result);
       
       return result.affectedRows > 0;
     } catch (error) {
-      console.error("Error updating device location:", error);
-      console.error("Query parameters:", { deviceId, latitude, longitude, address });
+      console.error("Gagal memperbarui lokasi device:", error);
+      console.error("Parameter query:", { deviceId, latitude, longitude, address });
       throw error;
     }
   }
@@ -239,7 +239,7 @@ export class AdminService {
         uptime     // Waktu server berjalan
       };
     } catch (error) {
-      console.error("Error getting system health:", error);
+      console.error("Gagal mengecek kesehatan sistem:", error);
       return {
         status: 'error',
         database: false,
@@ -288,7 +288,7 @@ export class AdminService {
         return [];  // Tidak ada user
       }
     } catch (error) {
-      console.error("💥 Error getting users with stats:", error);
+      console.error("💥 Gagal mengambil data user dengan statistik:", error);
       // Jika query kompleks gagal, gunakan data user biasa
       try {
         const [fallbackUsers] = await this.db.safeQuery(`SELECT * FROM users ORDER BY created_at DESC`);
@@ -299,7 +299,7 @@ export class AdminService {
           alarm_count: 0
         }));
       } catch (fallbackError) {
-        console.error("💥 Fallback query also failed:", fallbackError);
+        console.error("💥 Query cadangan juga gagal:", fallbackError);
         throw error;
       }
     }
@@ -336,7 +336,7 @@ export class AdminService {
       const [devices] = await this.db.safeQuery(query);
       return devices;
     } catch (error) {
-      console.error("Error getting devices with stats:", error);
+      console.error("Gagal mengambil data device dengan statistik:", error);
       throw error;
     }
   }

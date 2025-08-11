@@ -25,28 +25,28 @@ export function userRoutes(userService: UserService) {
         // @ts-ignore
         async ({ jwt, cookie, set }) => {
           try {
-            await authorizeRequest(jwt, cookie.auth); // Verifikasi authentication
+            await authorizeRequest(jwt, cookie.auth); // Verifikasi autentikasi
             const users = await userService.getAllUsers();
             return { status: "success", data: users };
           } catch (error: any) {
-            console.error("Error in get all users:", error);
+            console.error("Kesalahan saat mengambil semua pengguna:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 data: [],
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
               data: [],
             };
           }
@@ -61,37 +61,37 @@ export function userRoutes(userService: UserService) {
         // @ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            await authorizeRequest(jwt, cookie); // Verifikasi authentication
+            await authorizeRequest(jwt, cookie); // Verifikasi autentikasi
             const user = await userService.getUserById(params.id);
             if (!user) {
               return new Response("User tidak ditemukan", { status: 404 });
             }
-            return user; // Return detail user tanpa sensitive data
+            return user; // Kembalikan detail user tanpa data sensitif
           } catch (error: any) {
-            console.error("Error in get user by ID:", error);
+            console.error("Kesalahan saat mengambil pengguna berdasarkan ID:", error);
 
-            // Handle authentication error dari authorizeRequest
+            // Tangani error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         },
         getUserByIdSchema
       )
 
-      // Admin: Update user by ID
+      // ===== ADMIN: PERBARUI USER BERDASARKAN ID =====
       .put(
         "/:id",
         // @ts-ignore
@@ -99,13 +99,13 @@ export function userRoutes(userService: UserService) {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
 
-            // Check if user is admin
+            // Cek apakah user adalah admin
             const adminUser = await userService.getUserById(decoded.sub);
             if (!adminUser?.is_admin) {
               return new Response(
                 JSON.stringify({
                   status: "error",
-                  message: "Unauthorized: Admin access required",
+                  message: "Tidak diizinkan: Akses admin diperlukan",
                 }),
                 { status: 403 }
               );
@@ -128,23 +128,23 @@ export function userRoutes(userService: UserService) {
               id: params.id.toString(),
             };
           } catch (error: any) {
-            console.error("Error in admin update user:", error);
+            console.error("Kesalahan saat memperbarui pengguna (admin):", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -153,7 +153,7 @@ export function userRoutes(userService: UserService) {
         putUserSchema
       )
 
-      // Admin: Delete user by ID
+      // ===== ADMIN: HAPUS USER BERDASARKAN ID =====
       .delete(
         "/:id",
         // @ts-ignore
@@ -161,13 +161,13 @@ export function userRoutes(userService: UserService) {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
 
-            // Check if user is admin
+            // Cek apakah user adalah admin
             const adminUser = await userService.getUserById(decoded.sub);
             if (!adminUser?.is_admin) {
               return new Response(
                 JSON.stringify({
                   status: "error",
-                  message: "Unauthorized: Admin access required",
+                  message: "Tidak diizinkan: Akses admin diperlukan",
                 }),
                 { status: 403 }
               );
@@ -184,23 +184,23 @@ export function userRoutes(userService: UserService) {
               message: "User berhasil dihapus",
             };
           } catch (error: any) {
-            console.error("Error in admin delete user:", error);
+            console.error("Kesalahan saat menghapus pengguna (admin):", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -209,18 +209,13 @@ export function userRoutes(userService: UserService) {
         deleteUserSchema
       )
 
-      // User: Update own profile
+      // ===== USER: PERBARUI PROFIL SENDIRI =====
       .put(
         "/",
         // @ts-ignore
         async ({ jwt, cookie, body, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            if (decoded.sub === "1") {
-              throw new Error(
-                "Akun ini tidak dapat diubah saat kuisioner berlangsung"
-              );
-            }
             const { name, phone, whatsapp_notif } = body;
             const phoneNumber = phone ?? "";
 
@@ -235,23 +230,23 @@ export function userRoutes(userService: UserService) {
             }
             return new Response(JSON.stringify(updatedUser), { status: 200 });
           } catch (error: any) {
-            console.error("Error in update own profile:", error);
+            console.error("Kesalahan saat memperbarui profil sendiri:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -260,18 +255,13 @@ export function userRoutes(userService: UserService) {
         putUserSchema
       )
 
-      // Delete user
+      // ===== USER: HAPUS AKUN SENDIRI =====
       .delete(
         "/",
         // @ts-ignore
         async ({ jwt, cookie, set }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            if (decoded.sub === "1") {
-              throw new Error(
-                "Akun ini tidak dapat dihapus saat kuisioner berlangsung"
-              );
-            }
             const deleted = await userService.deleteUser(decoded.sub);
             if (!deleted) {
               return new Response("User gagal dihapus", { status: 400 });
@@ -280,23 +270,23 @@ export function userRoutes(userService: UserService) {
               message: "User berhasil dihapus",
             };
           } catch (error: any) {
-            console.error("Error in delete own account:", error);
+            console.error("Kesalahan saat menghapus akun sendiri:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -305,7 +295,7 @@ export function userRoutes(userService: UserService) {
         deleteUserSchema
       )
 
-      // Get WhatsApp notification status
+      // ===== GET: STATUS NOTIFIKASI WHATSAPP =====
       .get(
         "/whatsapp-notifications",
         // @ts-ignore
@@ -320,23 +310,23 @@ export function userRoutes(userService: UserService) {
               whatsapp_notifications_enabled: enabled,
             };
           } catch (error: any) {
-            console.error("Error in get WhatsApp notification status:", error);
+            console.error("Kesalahan saat mengambil status notifikasi WhatsApp:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -344,7 +334,7 @@ export function userRoutes(userService: UserService) {
         }
       )
 
-      // Update WhatsApp notification status
+      // ===== PUT: PERBARUI STATUS NOTIFIKASI WHATSAPP =====
       .put(
         "/whatsapp-notifications",
         // @ts-ignore
@@ -361,7 +351,7 @@ export function userRoutes(userService: UserService) {
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Failed to update WhatsApp notification settings",
+                  message: "Gagal memperbarui pengaturan notifikasi WhatsApp",
                 }),
                 { status: 400 }
               );
@@ -369,35 +359,35 @@ export function userRoutes(userService: UserService) {
 
             return {
               success: true,
-              message: "WhatsApp notification settings updated successfully",
+              message: "Pengaturan notifikasi WhatsApp berhasil diperbarui",
             };
           } catch (error: any) {
             console.error(
-              "Error in update WhatsApp notification status:",
+              "Kesalahan saat memperbarui status notifikasi WhatsApp:",
               error
             );
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         }
       )
 
-      // Get onboarding progress
+      // ===== GET: ONBOARDING PROGRESS PENGGUNA SENDIRI =====
       .get(
         "/onboarding-progress",
         // @ts-ignore
@@ -412,29 +402,29 @@ export function userRoutes(userService: UserService) {
               ...progress,
             };
           } catch (error: any) {
-            console.error("Error in get onboarding progress:", error);
+            console.error("Kesalahan saat mengambil progres onboarding:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         }
       )
 
-      // Get onboarding progress by user ID
+      // ===== GET: ONBOARDING PROGRESS BERDASARKAN USER ID =====
       .get(
         "/onboarding-progress/:userId",
         // @ts-ignore
@@ -453,31 +443,31 @@ export function userRoutes(userService: UserService) {
             };
           } catch (error: any) {
             console.error(
-              "Error in get onboarding progress by user ID:",
+              "Kesalahan saat mengambil progres onboarding berdasarkan user ID:",
               error
             );
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         }
       )
 
-      // Update onboarding progress
+      // ===== POST: PERBARUI ONBOARDING PROGRESS =====
       .post(
         "/onboarding-progress",
         // @ts-ignore
@@ -499,7 +489,7 @@ export function userRoutes(userService: UserService) {
               return new Response(
                 JSON.stringify({
                   success: false,
-                  message: "Failed to update onboarding progress",
+                  message: "Gagal memperbarui progres onboarding",
                 }),
                 { status: 400 }
               );
@@ -507,26 +497,26 @@ export function userRoutes(userService: UserService) {
 
             return {
               success: true,
-              message: "Onboarding progress updated successfully",
+              message: "Progres onboarding berhasil diperbarui",
             };
           } catch (error: any) {
-            console.error("Error in update onboarding progress:", error);
+            console.error("Kesalahan saat memperbarui progres onboarding:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa apakah error autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lain
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Terjadi kesalahan pada server",
             };
           }
         }

@@ -11,18 +11,18 @@ const postWidgetSchema = {
       example: 1,
     }),
     device_id: t.Optional(t.Union([t.String(), t.Number()], {
-      description: "ID perangkat yang terkait dengan widget (backward compatibility)",
+      description: "ID perangkat yang terkait dengan widget (kompatibilitas lama)",
       example: 1,
     })),
     datastream_id: t.Optional(t.Union([t.String(), t.Number()], {
-      description: "ID datastream yang terkait dengan widget (backward compatibility)",
+      description: "ID datastream yang terkait dengan widget (kompatibilitas lama)",
       example: 1,
     })),
     datastream_ids: t.Optional(t.Array(t.Object({
       device_id: t.Number(),
       datastream_id: t.Number()
     }), {
-      description: "Array of device-datastream pairs (max 5 for monitoring widgets)",
+      description: "Array pasangan device-datastream (maks 5 untuk widget monitoring)",
       example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
       maxItems: 5,
     })),
@@ -30,7 +30,7 @@ const postWidgetSchema = {
       device_id: t.Number(),
       datastream_id: t.Number()
     }), {
-      description: "Direct inputs array (preferred format)",
+      description: "Array inputs langsung (format yang disarankan)",
       example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
       maxItems: 5,
     })),
@@ -63,7 +63,7 @@ const postWidgetSchema = {
   detail: {
     tags: ["Widget"],
     description: "Menambahkan data widget baru",
-    summary: "Create widget",
+    summary: "Buat widget",
   },
 };
 
@@ -80,7 +80,7 @@ const getAllWidgetsSchema = {
             device_id: t.Number({ description: "ID perangkat", example: 1 }),
             datastream_id: t.Number({ description: "ID datastream", example: 1 }),
             type: t.String({ description: "Tipe widget", example: "line" }),
-            widget_key: t.String({ description: "Widget key unik", example: "unique-widget-key" }),
+            widget_key: t.String({ description: "Kunci unik widget", example: "unique-widget-key" }),
           }),
           { description: "Daftar semua data widget" }
         ),
@@ -100,7 +100,7 @@ const getAllWidgetsSchema = {
   detail: {
     tags: ["Widget"],
     description: "Mengambil semua data widget",
-    summary: "Get all widgets",
+    summary: "Ambil semua widget",
   },
 };
 
@@ -115,10 +115,10 @@ const getWidgetByDeviceIdSchema = {
             description: t.String({ description: "Deskripsi widget", example: "COD Widget" }),
             dashboard_id: t.Number({ description: "ID dashboard", example: 1 }),
             device_id: t.Number({ description: "ID perangkat", example: 1 }),
-            datastream_id: t.Union([t.Number(), t.Null()], { description: "ID datastream (backward compatibility)", example: 1 }),
-            datastream_ids: t.Union([t.Array(t.Number()), t.Null()], { description: "Array of datastream IDs", example: [1, 2, 3] }),
+            datastream_id: t.Union([t.Number(), t.Null()], { description: "ID datastream (kompatibilitas lama)", example: 1 }),
+            datastream_ids: t.Union([t.Array(t.Number()), t.Null()], { description: "Array ID datastream", example: [1, 2, 3] }),
             type: t.String({ description: "Tipe widget", example: "line" }),
-            widget_key: t.String({ description: "Widget key unik", example: "unique-widget-key" }),
+            widget_key: t.String({ description: "Kunci unik widget", example: "unique-widget-key" }),
           }),
           { description: "Daftar widget berdasarkan device_id" }
         ),
@@ -143,7 +143,7 @@ const getWidgetByDeviceIdSchema = {
   detail: {
     tags: ["Widget"],
     description: "Mengambil data widget berdasarkan device_id",
-    summary: "Get widget by device_id",
+    summary: "Ambil widget berdasarkan device_id",
   },
 };
 
@@ -159,18 +159,18 @@ const putWidgetSchema = {
       example: 1,
     }),
     device_id: t.Optional(t.Number({
-      description: "ID perangkat yang terkait dengan widget (backward compatibility)",
+      description: "ID perangkat yang terkait dengan widget (kompatibilitas lama)",
       example: 1,
     })),
     datastream_id: t.Optional(t.Number({
-      description: "ID datastream yang terkait dengan widget (backward compatibility)",
+      description: "ID datastream yang terkait dengan widget (kompatibilitas lama)",
       example: 1,
     })),
     datastream_ids: t.Optional(t.Array(t.Object({
       device_id: t.Number(),
       datastream_id: t.Number()
     }), {
-      description: "Array of device-datastream pairs (max 5 for monitoring widgets)",
+      description: "Array pasangan device-datastream (maks 5 untuk widget monitoring)",
       example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
       maxItems: 5,
     })),
@@ -178,7 +178,7 @@ const putWidgetSchema = {
       device_id: t.Number(),
       datastream_id: t.Number()
     }), {
-      description: "Direct inputs array (preferred format)",
+      description: "Array inputs langsung (format yang disarankan)",
       example: [{ device_id: 1, datastream_id: 1 }, { device_id: 2, datastream_id: 8 }],
       maxItems: 5,
     })),
@@ -188,8 +188,8 @@ const putWidgetSchema = {
     200: t.Object(
       {
         message: t.String({
-          description: "Pesan sukses setelah berhasil mengupdate widget",
-          example: "Berhasil mengupdate data widget.",
+          description: "Pesan sukses setelah berhasil memperbarui widget",
+          example: "Berhasil memperbarui data widget.",
         }),
       },
       { description: "Data widget berhasil diperbarui" }
@@ -206,8 +206,8 @@ const putWidgetSchema = {
   },
   detail: {
     tags: ["Widget"],
-    description: "Mengupdate data widget berdasarkan ID",
-    summary: "Update widget",
+    description: "Memperbarui data widget berdasarkan ID",
+    summary: "Perbarui widget",
   },
 };
 
@@ -236,7 +236,7 @@ const deleteWidgetSchema = {
   detail: {
     tags: ["Widget"],
     description: "Menghapus data widget berdasarkan ID",
-    summary: "Delete widget",
+    summary: "Hapus widget",
   },
 };
 

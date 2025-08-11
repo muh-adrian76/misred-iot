@@ -4,12 +4,12 @@
  * Menyediakan fungsi registrasi, login, verifikasi, dan manajemen token
  * 
  * Fitur utama:
- * - Register user dengan email/password dan OTP verification
+ * - Registrasi user dengan email/password dan verifikasi OTP
  * - Login dengan Google OAuth dan email/password
- * - JWT token management (access + refresh token)  
- * - Password reset dan forgot password
- * - OTP verification system
- * - Admin user registration
+ * - Manajemen token JWT (access + refresh token)
+ * - Reset kata sandi dan lupa kata sandi
+ * - Sistem verifikasi OTP
+ * - Registrasi user admin
  */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 import { OAuth2Client } from "google-auth-library";
@@ -23,8 +23,14 @@ export class AuthService {
     this.db = db;
   }
 
-  // ===== REGISTER USER =====
-  // Registrasi user baru dengan email/password dan OTP verification
+  /**
+   * Registrasi user baru dengan email/password.
+   * Alur:
+   * - Validasi format email dan cek duplikasi di database
+   * - Generate OTP 6 digit dengan masa berlaku (default 10 menit)
+   * - Hash password menggunakan bcrypt
+   * - Simpan user dengan status belum terverifikasi (is_verified = FALSE)
+   */
   async register({ email, password }: { password: string; email: string }) {
     // Validasi format email
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
@@ -83,6 +89,10 @@ export class AuthService {
     }
   }
 
+  /**
+   * Registrasi user admin (opsional).
+   * Catatan: is_admin default false. Pastikan endpoint ini dibatasi hak akses.
+   */
   async registerAdmin({ email, password, name, is_admin }: { 
     password: string; 
     email: string; 
@@ -133,6 +143,14 @@ export class AuthService {
     }
   }
 
+  /**
+   * Login dengan email/password.
+   * - Validasi format email
+   * - Cek akun Google OAuth (tidak bisa login dengan password)
+   * - Verifikasi password (bcrypt)
+   * - Pastikan akun sudah diverifikasi (kecuali user Google OAuth)
+   * - Minta refresh token dari layanan TOKENIZER dan simpan ke DB
+   */
   async login({ email, password }: { email: string; password: string }) {
     if (email && !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return {
@@ -142,7 +160,7 @@ export class AuthService {
     }
 
     const [rows] = await (this.db as any).safeQuery(
-      "SELECT id, email, password, name, created_at, phone, is_admin, is_verified FROM users WHERE email = ?",
+      "SELECT id, email, password, name, created_at, phone, whatsapp_notif, is_admin, is_verified FROM users WHERE email = ?",
       [email]
     );
 
@@ -163,7 +181,7 @@ export class AuthService {
       return { status: 401, message: "Kredensial tidak valid" };
     }
 
-    // Check if account is verified (skip for Google OAuth users)
+    // Periksa apakah akun sudah diverifikasi (abaikan untuk user Google OAuth)
     if (!user.is_verified && user.password !== "GOOGLE_OAUTH_USER") {
       return { 
         status: 401, 
@@ -191,11 +209,16 @@ export class AuthService {
         created_at: user.created_at.toISOString(),
         last_login: now.toISOString(),
         phone: user.phone,
+        whatsapp_notif: user.whatsapp_notif,
       },
       refreshToken: refreshToken,
     };
   }
 
+  /**
+   * Verifikasi token akses menggunakan helper authorizeRequest.
+   * Mengembalikan decoded payload jika valid.
+   */
   async verifyToken(jwt: any, cookie: any) {
     try {
       const decoded = await authorizeRequest(jwt, cookie);
@@ -203,10 +226,16 @@ export class AuthService {
         return { status: 200, message: "Token valid", decoded };
       }
     } catch (error) {
-      return { status: 401, message: "Unauthorized. Token sudah tidak valid" };
+      return { status: 401, message: "Tidak diizinkan. Token sudah tidak valid" };
     }
   }
 
+  /**
+   * Perbarui access token menggunakan refresh token yang tersimpan di DB.
+   * - Pastikan refresh token dari cookie sama dengan yang ada di DB
+   * - Jika valid, buat access token baru
+   * TODO: Pertimbangkan rotasi refresh token untuk keamanan tambahan
+   */
   async renewToken(
     jwt: any,
     id: string,
@@ -240,14 +269,20 @@ export class AuthService {
       });
       return { status: 200, accessToken: newAccessToken };
     } catch (err) {
-      console.error("JWT verify error:", err);
-      return { status: 401, message: "Invalid or expired refresh token" };
+      console.error("Error verifikasi JWT:", err);
+      return { status: 401, message: "Refresh token tidak valid atau sudah kedaluwarsa" };
     }
   }
 
+  /**
+   * Login menggunakan Google OAuth.
+   * - Mendukung mode popup (postmessage) dan redirect URL dari env
+   * - Jika user belum ada, buat akun baru dengan password sentinel "GOOGLE_OAUTH_USER"
+   * - Jika user sudah ada tetapi bukan akun Google, tolak login via Google
+   */
   async googleLogin({ code, mode }: { code: string; mode: string }) {
     if (!code) {
-      return { status: 400, message: "Missing code" };
+      return { status: 400, message: "Kode tidak ditemukan" };
     }
 
     const redirectUris =
@@ -282,11 +317,11 @@ export class AuthService {
     }
 
     if (!tokens || !payload) {
-      return { status: 401, message: "Invalid Google code" };
+      return { status: 401, message: "Kode Google tidak valid" };
     }
 
     if (!payload?.email) {
-      return { status: 400, message: "Email not found in Google token" };
+      return { status: 400, message: "Email tidak ditemukan pada token Google" };
     }
 
     let userId: number;
@@ -295,12 +330,13 @@ export class AuthService {
     let userCreatedAt: string;
     let userPhone: string = "";
     let userIsAdmin: boolean = false;
+    let userWhatsappNotif: boolean = false; // Tambahkan field untuk notifikasi WhatsApp
     const oauthPassword: string = "GOOGLE_OAUTH_USER"; // Kredensial khusus untuk Gmail
     const serverTime = new Date();
 
     try {
       const [rows] = await (this.db as any).safeQuery(
-        "SELECT id, email, name, password, created_at, phone, is_admin FROM users WHERE email = ?",
+        "SELECT id, email, name, password, created_at, phone, whatsapp_notif, is_admin FROM users WHERE email = ?",
         [payload.email]
       );
 
@@ -310,6 +346,7 @@ export class AuthService {
         userPassword = rows[0].password;
         userCreatedAt = rows[0].created_at;
         userPhone = rows[0].phone;
+        userWhatsappNotif = Boolean(rows[0].whatsapp_notif);
         userIsAdmin = Boolean(rows[0].is_admin);
 
         if (userPassword !== "GOOGLE_OAUTH_USER") {
@@ -339,6 +376,7 @@ export class AuthService {
         userName = payload.name || payload.email.split("@")[0];
         userCreatedAt = serverTime.toISOString();
         userIsAdmin = false; // Default admin status untuk Google OAuth
+        userWhatsappNotif = false; // Default WhatsApp notification status
 
         if (result.affectedRows === 0) {
           return { status: 400, message: "Gagal menambahkan user Google." };
@@ -364,6 +402,7 @@ export class AuthService {
           created_at: userCreatedAt,
           last_login: serverTime.toISOString(),
           phone: userPhone,
+          whatsapp_notif: userWhatsappNotif,
         },
         refreshToken: refreshToken,
       };
@@ -376,6 +415,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Ganti kata sandi ketika user mengetahui kata sandi lama.
+   * - Validasi input dan panjang minimal password
+   * - Tolak untuk akun Google OAuth (tidak punya password lokal)
+   */
   async resetPassword(
     id: string,
     { oldPassword, newPassword }: { oldPassword: string; newPassword: string }
@@ -436,6 +480,11 @@ export class AuthService {
     }
   }
 
+  /**
+   * Reset kata sandi untuk kasus lupa password.
+   * - Generate password acak dan simpan ke DB setelah di-hash
+   * Catatan keamanan: Sebaiknya kirim password/token reset via email, jangan dikembalikan sebagai response API di produksi.
+   */
   async resetForgottenPassword({ email }: { email: string }) {
     if (!email || !/^[\w\.-]+@[\w\.-]+\.[A-Za-z]{2,}$/.test(email)) {
       return { status: 400, message: "Email tidak valid." };
@@ -478,6 +527,12 @@ export class AuthService {
     }
   }
 
+  /**
+   * Verifikasi OTP untuk aktivasi akun.
+   * - Validasi format OTP (6 digit)
+   * - Cek kedaluwarsa OTP dan kecocokan
+   * - Set is_verified = TRUE jika valid dan hapus OTP dari DB
+   */
   async verifyOTP({ email, otp }: { email: string; otp: string }) {
     if (!email || !otp) {
       return {
@@ -535,11 +590,16 @@ export class AuthService {
         message: "Verifikasi berhasil! Akun Anda sekarang aktif.",
       };
     } catch (error) {
-      console.error("Error in verifyOTP:", error);
+      console.error("Error pada verifyOTP:", error);
       return { status: 500, message: "Terjadi kesalahan pada server." };
     }
   }
 
+  /**
+   * Kirim ulang OTP verifikasi.
+   * - Generate OTP baru dan perbarui masa berlaku
+   * Catatan: Untuk keamanan produksi, jangan kirim nilai OTP di response.
+   */
   async resendOTP({ email }: { email: string }) {
     if (!email) {
       return {
@@ -564,10 +624,10 @@ export class AuthService {
         return { status: 400, message: "Akun sudah diverifikasi." };
       }
 
-      // Generate new OTP
+      // Generate OTP baru
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Set OTP expiration time (default 10 minutes, configurable via env)
+      // Set waktu kedaluwarsa OTP (default 10 menit, bisa dikonfigurasi via env)
       const otpExpirationMinutes = parseInt(process.env.OTP_TIME || "10");
       const otpExpiresAt = new Date(Date.now() + otpExpirationMinutes * 60 * 1000);
 
@@ -582,11 +642,15 @@ export class AuthService {
         otp: otp
       };
     } catch (error) {
-      console.error("Error in resendOTP:", error);
+      console.error("Error pada resendOTP:", error);
       return { status: 500, message: "Terjadi kesalahan pada server." };
     }
   }
 
+  /**
+   * Logout user.
+   * - Mengosongkan refresh token di database untuk mencegah penyalahgunaan
+   */
   async logout(jwt: any, cookie: any) {
     const decoded = await authorizeRequest(jwt, cookie);
     const id = decoded.sub;

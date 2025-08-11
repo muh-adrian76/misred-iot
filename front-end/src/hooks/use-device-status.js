@@ -1,23 +1,23 @@
-// Hook untuk real-time device status tracking - gabungan database + WebSocket data
-// Provides: online/offline status, last seen time, activity level monitoring
+// Hook untuk pelacakan status perangkat real-time - gabungan data database + WebSocket
+// Menyediakan: status online/offline, waktu terakhir terlihat, dan pemantauan tingkat aktivitas
 import { useState, useEffect, useCallback } from 'react';
 import { useWebSocket } from '@/providers/websocket-provider';
 import { fetchFromBackend } from '@/lib/helper';
 
 export function useDeviceStatus(devices) {
-  const [deviceStatuses, setDeviceStatuses] = useState({}); // Map device status by ID
+  const [deviceStatuses, setDeviceStatuses] = useState({}); // Peta status perangkat per ID
   const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
   const { deviceStatuses: wsDeviceStatuses, isConnected } = useWebSocket();
 
-  // Effect untuk merge device data dari database dengan real-time WebSocket updates
+  // Effect untuk menggabungkan data perangkat dari database dengan update real-time WebSocket
   useEffect(() => {
     if (devices && Array.isArray(devices)) {
       const statusMap = {};
       devices.forEach(device => {
-        // Combine database data dengan WebSocket real-time status
+        // Gabungkan data database dengan status real-time dari WebSocket
         const wsStatus = wsDeviceStatuses.get(device.id);
         statusMap[device.id] = {
-          status: wsStatus?.status || device.status || 'offline', // Real-time priority
+          status: wsStatus?.status || device.status || 'offline', // Prioritas real-time
           lastSeenAt: wsStatus?.timestamp || device.last_seen_at,
           activityLevel: device.activity_level || 'unknown',
           secondsSinceLastSeen: device.seconds_since_last_seen || null
@@ -28,7 +28,7 @@ export function useDeviceStatus(devices) {
     }
   }, [devices, wsDeviceStatuses]);
 
-  // Listen for WebSocket real-time status updates - REAL-TIME ONLY
+  // Dengarkan pembaruan status real-time dari WebSocket - HANYA REAL-TIME
   useEffect(() => {
     if (wsDeviceStatuses && wsDeviceStatuses.size > 0) {
       setDeviceStatuses(prev => {
@@ -37,7 +37,7 @@ export function useDeviceStatus(devices) {
 
         wsDeviceStatuses.forEach((statusData, deviceId) => {
           if (prev[deviceId]) {
-            console.log(`🔄 Real-time device ${deviceId} status update:`, statusData);
+            console.log(`🔄 Pembaruan status perangkat real-time ${deviceId}:`, statusData);
             updated[deviceId] = {
               ...prev[deviceId],
               status: statusData.status,
@@ -57,7 +57,7 @@ export function useDeviceStatus(devices) {
     }
   }, [wsDeviceStatuses]);
 
-  // Simple timer untuk update "seconds since last seen" display saja (tidak untuk logic offline)
+  // Timer sederhana untuk memperbarui tampilan "detik sejak terakhir terlihat" (hanya untuk display)
   useEffect(() => {
     const interval = setInterval(() => {
       setDeviceStatuses(prev => {
@@ -71,7 +71,7 @@ export function useDeviceStatus(devices) {
             const lastSeen = new Date(device.lastSeenAt).getTime();
             const secondsSince = Math.floor((now - lastSeen) / 1000);
             
-            // Update seconds since last seen untuk display saja
+            // Perbarui seconds since last seen untuk tampilan saja
             if (device.secondsSinceLastSeen !== secondsSince) {
               updated[deviceId] = {
                 ...device,
@@ -88,12 +88,12 @@ export function useDeviceStatus(devices) {
 
         return hasChanges ? updated : prev;
       });
-    }, 5000); // Update every 5 seconds - HANYA UNTUK DISPLAY
+    }, 5000); // Perbarui setiap 5 detik - HANYA UNTUK TAMPILAN
 
     return () => clearInterval(interval);
-  }, []); // Removed dependencies - hanya untuk display timer
+  }, []); // Tidak ada dependency - hanya untuk timer tampilan
 
-  // Get status for specific device
+  // Ambil status untuk perangkat tertentu
   const getDeviceStatus = useCallback((deviceId) => {
     return deviceStatuses[deviceId] || {
       status: 'offline',
@@ -103,7 +103,7 @@ export function useDeviceStatus(devices) {
     };
   }, [deviceStatuses]);
 
-  // Get status statistics
+  // Statistik status
   const getStatusStats = useCallback(() => {
     const stats = {
       total: 0,
@@ -124,20 +124,20 @@ export function useDeviceStatus(devices) {
     return stats;
   }, [deviceStatuses]);
 
-  // Force refresh status (manual trigger)
+  // Paksa refresh status (pemicu manual)
   const refreshDeviceStatuses = useCallback(() => {
-    // Sederhana: hanya update timestamp untuk trigger re-render
+    // Sederhana: hanya perbarui timestamp untuk memicu re-render
     setLastUpdateTime(Date.now());
   }, []);
 
-  // Format time since last seen
+  // Format waktu sejak terakhir terlihat
   const formatTimeSinceLastSeen = useCallback((secondsSince) => {
-    if (!secondsSince || secondsSince < 0) return 'Never';
+    if (!secondsSince || secondsSince < 0) return 'Belum pernah';
     
-    if (secondsSince < 60) return `${secondsSince}s ago`;
-    if (secondsSince < 3600) return `${Math.floor(secondsSince / 60)}m ago`;
-    if (secondsSince < 86400) return `${Math.floor(secondsSince / 3600)}h ago`;
-    return `${Math.floor(secondsSince / 86400)}d ago`;
+    if (secondsSince < 60) return `${secondsSince} dtk lalu`;
+    if (secondsSince < 3600) return `${Math.floor(secondsSince / 60)} mnt lalu`;
+    if (secondsSince < 86400) return `${Math.floor(secondsSince / 3600)} jam lalu`;
+    return `${Math.floor(secondsSince / 86400)} hr lalu`;
   }, []);
 
   return {

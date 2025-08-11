@@ -34,7 +34,7 @@ import { GlowingEffect } from "@/components/ui/glowing-effect";
 // Import hook untuk status device
 import { useDeviceStatus } from "@/hooks/use-device-status";
 
-// Komponen konten utama untuk halaman device management
+// Komponen badge status sederhana
 export default function DeviceContent({
   devices, // Data array devices
   loading, // Status loading
@@ -69,7 +69,7 @@ export default function DeviceContent({
       : successToast("UID berhasil disalin ke clipboard.");
   };
 
-  // Simple status badge component
+  // Komponen badge status
   const StatusBadge = ({ device }) => {
     const deviceStatus = getDeviceStatus(device.id);
     const isOnline = deviceStatus.status === "online";
@@ -254,7 +254,7 @@ export default function DeviceContent({
           <motion.img
             key="device-image"
             src="/device.svg"
-            alt="No Devices"
+            alt="Tidak ada perangkat"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -279,7 +279,7 @@ export default function DeviceContent({
 
   return (
     <>
-      {/* Section DataTable */}
+      {/* Bagian DataTable */}
       <AnimatePresence mode="wait">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -325,7 +325,7 @@ export default function DeviceContent({
         </motion.div>
       </AnimatePresence>
 
-      {/* Section OTAA */}
+      {/* Bagian OTAA */}
       <OtaaForm
         open={uploadFirmwareSheetOpen}
         setOpen={setUploadFirmwareSheetOpen}

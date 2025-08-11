@@ -1,20 +1,20 @@
 // ===== IMPORTS =====
 // Import MQTT client untuk komunikasi dengan broker MQTT
 import { connect, MqttClient } from "mqtt";
-// Import MySQL pool untuk koneksi database dengan connection pooling
+// Import MySQL pool untuk koneksi database dengan pengelompokan koneksi
 import mysql, { Pool } from "mysql2/promise";
 
 // ===== MYSQL DATABASE CLASS =====
-// Class singleton untuk mengelola koneksi database MySQL dengan connection pooling
+// Class tunggal untuk mengelola koneksi database MySQL dengan pengelompokan koneksi
 export class MySQLDatabase {
-  // Instance tunggal untuk pattern singleton
+  // Instance tunggal untuk pola instance tunggal
   private static instance: Pool | null = null;
   private static isReconnecting: boolean = false;
   private static reconnectAttempts: number = 0;
   private static maxReconnectAttempts: number = 5;
 
   // ===== GET INSTANCE METHOD =====
-  // Method untuk mendapatkan instance database dengan lazy initialization
+  // Method untuk mendapatkan instance database dengan inisialisasi bertahap
   static getInstance(): Pool {
     // Jika instance belum ada, buat instance baru
     if (!MySQLDatabase.instance) {
@@ -28,11 +28,11 @@ export class MySQLDatabase {
           database: process.env.MYSQL_NAME, // Nama database
           port: Number(process.env.MYSQL_PORT), // Port database
           waitForConnections: true, // Tunggu koneksi jika pool penuh
-          connectionLimit: 15, // Increased connection limit
+          connectionLimit: 15, // Peningkatan batas koneksi
           queueLimit: 0, // Tidak ada limit antrian query
           idleTimeout: 300000, // Timeout idle 5 menit
-          maxIdle: 8, // Increased idle connections
-          keepAliveInitialDelay: 0, // Keep alive settings
+          maxIdle: 8, // Peningkatan koneksi idle
+          keepAliveInitialDelay: 0, // Pengaturan keep alive
           enableKeepAlive: true
         });
         
@@ -52,7 +52,7 @@ export class MySQLDatabase {
             MySQLDatabase.reconnectAttempts = 0;
           })
           .catch((err) => {
-            console.error("❌ Initial MySQL connection test failed:", err);
+            console.error("❌ Tes koneksi awal MySQL gagal:", err);
             // Reset instance jika koneksi gagal untuk retry berikutnya
             MySQLDatabase.instance = null;
           });
@@ -72,7 +72,7 @@ export class MySQLDatabase {
     if (MySQLDatabase.isReconnecting) return;
     
     MySQLDatabase.isReconnecting = true;
-    console.log('🔄 Handling MySQL connection lost...');
+    console.log('🔄 Menangani koneksi MySQL yang terputus...');
     
     try {
       await MySQLDatabase.forceReconnectWithRetry();
@@ -85,23 +85,23 @@ export class MySQLDatabase {
   // Method untuk memaksa reconnect database dengan retry mechanism
   static async forceReconnectWithRetry(): Promise<Pool> {
     if (MySQLDatabase.isReconnecting && MySQLDatabase.reconnectAttempts >= MySQLDatabase.maxReconnectAttempts) {
-      throw new Error('Max reconnection attempts reached');
+      throw new Error('Maksimum percobaan reconnect telah tercapai');
     }
 
     MySQLDatabase.reconnectAttempts++;
-    console.log(`🔄 Forcing MySQL reconnection... (Attempt ${MySQLDatabase.reconnectAttempts}/${MySQLDatabase.maxReconnectAttempts})`);
+    console.log(`🔄 Memaksa reconnect MySQL... (Percobaan ${MySQLDatabase.reconnectAttempts}/${MySQLDatabase.maxReconnectAttempts})`);
     
     if (MySQLDatabase.instance) {
       try {
-        // Tutup pool connection yang ada dengan graceful shutdown
+        // Tutup pool connection yang ada dengan shutdown bertahap
         await MySQLDatabase.instance.end();
       } catch (err) {
-        console.warn("⚠️ Error closing existing pool:", err);
+        console.warn("⚠️ Kesalahan saat menutup pool yang ada:", err);
       }
       MySQLDatabase.instance = null; // Reset instance
     }
 
-    // Wait before retry (exponential backoff)
+    // Tunggu sebelum mencoba lagi (penundaan bertahap)
     const delay = Math.min(1000 * Math.pow(2, MySQLDatabase.reconnectAttempts - 1), 10000);
     await new Promise(resolve => setTimeout(resolve, delay));
 
@@ -115,12 +115,12 @@ export class MySQLDatabase {
   // Method untuk memaksa reconnect database (berguna saat koneksi terputus)
   static forceReconnect(): Pool {
     if (MySQLDatabase.instance) {
-      console.log("🔄 Forcing MySQL reconnection...");
+      console.log("🔄 Memaksa reconnect MySQL...");
       try {
         // Tutup pool connection yang ada
         MySQLDatabase.instance.end();
       } catch (err) {
-        console.warn("⚠️ Error closing existing pool:", err);
+        console.warn("⚠️ Kesalahan saat menutup pool yang ada:", err);
       }
       MySQLDatabase.instance = null; // Reset instance
     }
@@ -130,8 +130,8 @@ export class MySQLDatabase {
     return newInstance;
   }
 
-  // ===== ENHANCED HEALTH CHECK METHOD =====
-  // Method untuk mengecek kesehatan koneksi database dengan comprehensive check
+  // ===== METODE PEMERIKSAAN KESEHATAN TINGKAT LANJUT =====
+  // Method untuk mengecek kesehatan koneksi database dengan pemeriksaan menyeluruh
   static async healthCheck(): Promise<boolean> {
     try {
       const pool = MySQLDatabase.getInstance();
@@ -140,25 +140,25 @@ export class MySQLDatabase {
       // Test dengan timeout
       const healthPromise = pool.execute("SELECT 1 as health_check, NOW() as server_time");
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Health check timeout')), 5000)
+        setTimeout(() => reject(new Error('Timeout health check')), 5000)
       );
 
       await Promise.race([healthPromise, timeoutPromise]);
       return true; // Koneksi sehat
     } catch (error: any) {
-      console.error("❌ MySQL health check failed:", error);
+      console.error("❌ Health check MySQL gagal:", error);
       
       // Auto reconnect on certain errors
       if (error.message?.includes('Pool is closed') || 
           error.code === 'PROTOCOL_CONNECTION_LOST' ||
           error.code === 'ER_CONNECTION_LOST' ||
           error.code === 'ECONNRESET') {
-        console.log('🔄 Attempting auto-reconnection due to health check failure...');
+        console.log('🔄 Mencoba reconnect otomatis karena pemeriksaan kesehatan gagal...');
         try {
           await MySQLDatabase.forceReconnectWithRetry();
           return true;
         } catch (reconnectError) {
-          console.error('❌ Auto-reconnection failed:', reconnectError);
+          console.error('❌ Reconnect otomatis gagal:', reconnectError);
         }
       }
       return false; // Koneksi bermasalah
@@ -173,10 +173,34 @@ export class MySQLDatabase {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const pool = MySQLDatabase.getInstance();
-        return await pool.execute(sql, params);
+        
+        // ===== TRANSACTION COMMANDS HANDLING =====
+        // Use query() for transaction commands that don't support prepared statements
+        const transactionCommands = [
+          'START TRANSACTION',
+          'BEGIN',
+          'COMMIT',
+          'ROLLBACK',
+          'SET TRANSACTION',
+          'SAVEPOINT',
+          'RELEASE SAVEPOINT',
+          'ROLLBACK TO SAVEPOINT'
+        ];
+        
+        const isTransactionCommand = transactionCommands.some(cmd => 
+          sql.trim().toUpperCase().startsWith(cmd)
+        );
+        
+        if (isTransactionCommand) {
+          // Use query() for transaction commands
+          return await pool.query(sql, params);
+        } else {
+          // Use execute() for regular queries (supports prepared statements)
+          return await pool.execute(sql, params);
+        }
       } catch (error: any) {
         lastError = error;
-        console.error(`❌ Query attempt ${attempt} failed:`, error);
+        console.error(`❌ Percobaan query ke-${attempt} gagal:`, error);
         
         if (error.message?.includes('Pool is closed') || 
             error.code === 'PROTOCOL_CONNECTION_LOST' ||
@@ -184,14 +208,14 @@ export class MySQLDatabase {
             error.code === 'ECONNRESET') {
           
           if (attempt < 3) {
-            console.log(`🔄 Attempting database reconnection (attempt ${attempt}/3)...`);
+            console.log(`🔄 Mencoba reconnect database (percobaan ${attempt}/3)...`);
             try {
               await MySQLDatabase.forceReconnectWithRetry();
               // Wait a bit before retry
               await new Promise(resolve => setTimeout(resolve, 1000));
               continue;
             } catch (reconnectError) {
-              console.error('❌ Reconnection failed:', reconnectError);
+              console.error('❌ Reconnect gagal:', reconnectError);
             }
           }
         }
@@ -215,17 +239,17 @@ export class MySQLDatabase {
     return MySQLDatabase.safeQuery(sql, params);
   }
 
-  // ===== GRACEFUL SHUTDOWN =====
-  // Method untuk graceful shutdown database pool
+  // ===== SHUTDOWN BERTAHAP =====
+  // Method untuk shutdown bertahap database pool
   static async shutdown(): Promise<void> {
     if (MySQLDatabase.instance) {
-      console.log('🔄 Shutting down MySQL connection pool...');
+      console.log('🔄 Mematikan connection pool MySQL...');
       try {
         await MySQLDatabase.instance.end();
         MySQLDatabase.instance = null;
-        console.log('✅ MySQL connection pool shut down gracefully');
+        console.log('✅ Connection pool MySQL berhasil dimatikan dengan bertahap');
       } catch (error) {
-        console.error('❌ Error during MySQL shutdown:', error);
+        console.error('❌ Kesalahan saat shutdown MySQL:', error);
       }
     }
   }
@@ -242,7 +266,7 @@ export class DatabaseService {
     this.db = MySQLDatabase.getInstance();
   }
 
-  // ===== SINGLETON PATTERN =====
+  // ===== POLA INSTANCE TUNGGAL =====
   static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
       DatabaseService.instance = new DatabaseService();
@@ -255,7 +279,7 @@ export class DatabaseService {
     try {
       return await MySQLDatabase.safeQuery(sql, params);
     } catch (error: any) {
-      console.error('❌ Database query failed:', error);
+      console.error('❌ Query database gagal:', error);
       throw error;
     }
   }
@@ -395,7 +419,7 @@ class ChirpstackService {
     });
 
     const data: ApplicationResponse = await response.json();
-    console.log("Application created:", data);
+    console.log("Aplikasi berhasil dibuat:", data);
     return data.id; // Return ID aplikasi yang dibuat
   }
 
@@ -425,7 +449,7 @@ class ChirpstackService {
     );
 
     const data: IntegrationResponse = await response.json();
-    console.log("HTTP Integration added:", data);
+    console.log("HTTP Integration berhasil ditambahkan:", data);
   }
 
   // ===== ADD DEVICE =====
@@ -456,7 +480,7 @@ class ChirpstackService {
     });
 
     const data: DeviceResponse = await response.json();
-    console.log("Device added:", data);
+    console.log("Device berhasil ditambahkan:", data);
     return data.device.dev_eui; // Return Device EUI
   }
 
@@ -484,7 +508,7 @@ class ChirpstackService {
     );
 
     const data = await response.json();
-    console.log("Device keys added:", data);
+    console.log("Device keys berhasil ditambahkan:", data);
   }
 
   // ===== SETUP DEVICE (COMPLETE FLOW) =====

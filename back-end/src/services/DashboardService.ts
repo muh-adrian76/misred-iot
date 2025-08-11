@@ -1,14 +1,14 @@
 /**
  * ===== DASHBOARD SERVICE =====
  * Service untuk mengelola dashboard user dalam sistem IoT
- * Menyediakan CRUD operations untuk dashboard dan layout management
+ * Menyediakan operasi CRUD untuk dashboard dan pengelolaan layout
  * 
  * Fitur utama:
- * - Get dashboard berdasarkan user ID
- * - Create dashboard baru dengan layout JSON
- * - Update dashboard dan layout widget
- * - Delete dashboard
- * - Widget count management
+ * - Ambil dashboard berdasarkan user ID
+ * - Buat dashboard baru dengan layout JSON
+ * - Perbarui dashboard dan layout widget
+ * - Hapus dashboard
+ * - Manajemen jumlah widget
  */
 import { Pool, ResultSetHeader } from "mysql2/promise";
 
@@ -19,7 +19,7 @@ export class DashboardService {
     this.db = db;
   }
 
-  // ===== GET DASHBOARDS BY USER ID =====
+  // ===== AMBIL DASHBOARD BERDASARKAN USER ID =====
   // Mengambil semua dashboard milik user tertentu
   async getDashboardsByUserId(userId: string) {
     try {
@@ -28,7 +28,7 @@ export class DashboardService {
         [userId]
       );
       
-      // Debug log untuk melihat struktur data dashboard
+      // Log debug (opsional) untuk melihat struktur data dashboard
       // if (Array.isArray(rows)) {
       //   rows.forEach((dashboard: any) => {
       //     console.log(`Dashboard ${dashboard.id}:`, {
@@ -43,34 +43,34 @@ export class DashboardService {
       
       return rows;
     } catch (error) {
-      console.error("Error fetching dashboards by user ID:", error);
-      throw new Error("Failed to fetch dashboards");
+      console.error("Gagal mengambil dashboard berdasarkan user ID:", error);
+      throw new Error("Gagal mengambil data dashboard");
     }
   }
 
-  // ===== CREATE DASHBOARD =====
-  // Membuat dashboard baru dengan deskripsi, widget count, dan layout
+  // ===== BUAT DASHBOARD =====
+  // Membuat dashboard baru dengan deskripsi, jumlah widget, dan layout
   async createDashboard(userId: string, description: string, widgetCount: number, layout?: any) {
     try {
       const [result] = await (this.db as any).safeQuery(
         "INSERT INTO dashboards (user_id, description, widget_count, layout) VALUES (?, ?, ?, ?)",
         [userId, description, widgetCount, layout ? JSON.stringify(layout) : null]
       );
-      return result.insertId;
+      return (result as any).insertId;
     } catch (error) {
-      console.error("Error creating dashboard:", error);
-      throw new Error("Failed to create dashboard");
+      console.error("Gagal membuat dashboard:", error);
+      throw new Error("Gagal membuat dashboard");
     }
   }
 
-  // ===== UPDATE DASHBOARD =====
-  // Update dashboard dengan deskripsi, widget count, dan layout baru
+  // ===== PERBARUI DASHBOARD =====
+  // Perbarui dashboard dengan deskripsi, jumlah widget, dan layout baru
   async updateDashboard(userId: string, dashboardId: string, description: string, widgetCount:number, layout?: any) {
     try {
       if (layout) {
-        // Debug layout untuk troubleshooting
-        // console.log('Layout JSON string:', JSON.stringify(layout));
-        // console.log('Layout JSON string length:', JSON.stringify(layout).length);
+        // Debug layout (opsional) untuk troubleshooting
+        // console.log('String JSON layout:', JSON.stringify(layout));
+        // console.log('Panjang string JSON layout:', JSON.stringify(layout).length);
       }
       
       const [result] = await (this.db as any).safeQuery(
@@ -78,14 +78,14 @@ export class DashboardService {
         [description, layout ? JSON.stringify(layout) : null, widgetCount, dashboardId, userId]
       );
       
-      return result.affectedRows > 0;
+      return (result as any).affectedRows > 0;
     } catch (error) {
-      console.error("Error updating dashboard:", error);
-      throw new Error("Failed to update dashboard");
+      console.error("Gagal memperbarui dashboard:", error);
+      throw new Error("Gagal memperbarui dashboard");
     }
   }
 
-  // ===== DELETE DASHBOARD =====
+  // ===== HAPUS DASHBOARD =====
   // Menghapus dashboard berdasarkan ID dan user ID
   async deleteDashboard(userId: string, dashboardId: string) {
     try {
@@ -93,9 +93,9 @@ export class DashboardService {
         "DELETE FROM dashboards WHERE id = ? AND user_id = ?",
         [dashboardId, userId]
       );
-      return result.affectedRows > 0;
+      return (result as any).affectedRows > 0;
     } catch (error: any) {
-      console.error("Error deleting dashboard:", error);
+      console.error("Gagal menghapus dashboard:", error);
       throw new Error(error.message);
     }
   }

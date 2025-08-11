@@ -34,7 +34,7 @@ export function UserProvider({ children }) {
       if (storedUser) setUser(JSON.parse(storedUser));
     } catch (error) {
       // Handle error jika localStorage tidak accessible atau data corrupt
-      console.error("Error accessing localStorage:", error);
+      console.error("Kesalahan saat mengakses localStorage:", error);
     } finally {
       // Tandai bahwa proses inisialisasi sudah selesai
       setIsInitialized(true);

@@ -41,7 +41,7 @@ export const createAlarmSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Menambah alarm baru",
-    summary: "Create alarm"
+    summary: "Buat alarm"
   }
 };
 
@@ -78,7 +78,7 @@ export const getAlarmsSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Mengambil semua alarm user",
-    summary: "Get alarms"
+    summary: "Ambil daftar alarm"
   }
 };
 
@@ -119,7 +119,7 @@ export const getAlarmByIdSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Mengambil alarm berdasarkan ID",
-    summary: "Get alarm by ID"
+    summary: "Ambil alarm berdasarkan ID"
   }
 };
 
@@ -130,6 +130,8 @@ export const updateAlarmSchema = {
   }),
   body: t.Object({
     description: t.Optional(t.String({ minLength: 1, maxLength: 255 })),
+    device_id: t.Optional(t.Number({ minimum: 1 })),
+    datastream_id: t.Optional(t.Number({ minimum: 1 })),
     conditions: t.Optional(t.Array(conditionSchema, { minItems: 1, maxItems: 5 })),
     is_active: t.Optional(t.Boolean()),
     cooldown_minutes: t.Optional(t.Number({ minimum: 0, maximum: 1440 }))
@@ -155,8 +157,8 @@ export const updateAlarmSchema = {
   },
   detail: {
     tags: ["Alarm"],
-    description: "Update alarm",
-    summary: "Update alarm"
+    description: "Perbarui alarm",
+    summary: "Perbarui alarm"
   }
 };
 
@@ -182,6 +184,6 @@ export const deleteAlarmSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Hapus alarm",
-    summary: "Delete alarm"
+    summary: "Hapus alarm"
   }
 };

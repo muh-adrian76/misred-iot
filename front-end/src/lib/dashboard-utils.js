@@ -1,20 +1,20 @@
-// Konfigurasi Bootstrap widths untuk responsive grid layout
-// FIXED - sudah disesuaikan dengan widget constraints untuk consistency
+// Konfigurasi lebar Bootstrap untuk tata letak grid responsif
+// TETAP (FIXED) - sudah disesuaikan dengan batasan widget untuk konsistensi
 export const bootstrapWidths = { 
-  lg: 4,    // Desktop: 4 columns (3 widgets per row)
-  md: 6,    // Tablet: 6 columns (2 widgets per row) 
-  sm: 12,   // Mobile: 12 columns (1 widget per row)
-  xs: 12,   // Extra small: 12 columns
-  xxs: 12   // Extra extra small: 12 columns
+  lg: 4,    // Desktop: 4 kolom (3 widget per baris)
+  md: 6,    // Tablet: 6 kolom (2 widget per baris) 
+  sm: 12,   // Mobile: 12 kolom (1 widget per baris)
+  xs: 12,   // Layar sangat kecil: 12 kolom
+  xxs: 12   // Layar ekstra kecil: 12 kolom
 };
 
-// Grid columns untuk setiap breakpoint (total 12 columns system)
+// Jumlah kolom grid untuk setiap breakpoint (total 12 kolom, sistem grid 12-kolom)
 export const cols = { lg: 12, md: 12, sm: 12, xs: 12, xxs: 12 };
 
-// Resize handles yang tersedia - semua 4 corner untuk UX yang baik
+// Handle pengubahan ukuran yang tersedia - semua 4 sudut untuk pengalaman pengguna yang baik
 export const availableHandles = ["s", "w", "e", "n", "sw", "nw", "se", "ne"];
 
-// Generate initial responsive layouts untuk multiple widgets
+// Hasilkan layout responsif awal untuk banyak widget
 // Mengatur posisi otomatis berdasarkan jumlah widget dan breakpoint
 export function generateInitialLayouts(count) {
   const layoutPerBreakpoint = {};
@@ -25,10 +25,10 @@ export function generateInitialLayouts(count) {
     const columns = cols[bp];
     layoutPerBreakpoint[bp] = Array.from({ length: count }).map((_, i) => ({
       i: i.toString(),
-      x: (i * width) % columns, // Auto positioning dalam grid
-      y: Math.floor(i / (columns / width)) * 6, // Tinggi default 6 rows
+      x: (i * width) % columns, // Posisi otomatis dalam grid
+      y: Math.floor(i / (columns / width)) * 6, // Tinggi bawaan 6 baris
       w: width,
-      h: 6, // Default height sesuai minimum chart height
+      h: 6, // Tinggi bawaan sesuai tinggi minimum grafik
       resizeHandles: availableHandles
     }));
   }
@@ -36,7 +36,7 @@ export function generateInitialLayouts(count) {
   return layoutPerBreakpoint;
 }
 
-// Generate responsive layout untuk single widget dengan posisi custom
+// Hasilkan layout responsif untuk satu widget dengan posisi kustom
 export function generateWidgetLayout(widgetId, position = {}) {
   const responsiveLayout = {};
   const breakpoints = Object.keys(bootstrapWidths);
@@ -45,9 +45,9 @@ export function generateWidgetLayout(widgetId, position = {}) {
     responsiveLayout[bp] = {
       i: widgetId.toString(),
       x: position.x || 0,
-      y: position.y || Infinity, // Infinity = auto place di bawah
+      y: position.y || Infinity, // Infinity = tempatkan otomatis di bagian bawah
       w: bootstrapWidths[bp],
-      h: position.h || 6, // Default height 6 rows
+      h: position.h || 6, // Tinggi bawaan 6 baris
       resizeHandles: availableHandles
     };
   }
@@ -55,7 +55,7 @@ export function generateWidgetLayout(widgetId, position = {}) {
   return responsiveLayout;
 }
 
-// Find available position for new widget
+// Cari posisi kosong yang tersedia untuk widget baru
 export function findAvailablePosition(existingLayouts, breakpoint = 'lg') {
   const width = bootstrapWidths[breakpoint];
   const existingItems = existingLayouts[breakpoint] || [];
@@ -75,27 +75,27 @@ export function findAvailablePosition(existingLayouts, breakpoint = 'lg') {
     }
   }
   
-  // If no position found, place at bottom
+  // Jika tidak ada posisi yang ditemukan, letakkan di bagian bawah
   return { 
     x: 0, 
     y: Math.max(0, ...existingItems.map(item => item.y + item.h)), 
     w: width, 
-    h: 6  // Default height of 6 rows
+    h: 6  // Tinggi bawaan 6 baris
   };
 }
 
-// Get widget constraints based on type and breakpoint (RESPONSIVE - FIXED)
+// Dapatkan batasan widget berdasarkan tipe dan breakpoint (Responsif - Tetap)
 export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
   const chartTypes = ["area", "bar", "line", "pie"];
   const controlTypes = ["switch", "slider"];
   const monitorTypes = ["gauge", "text"];
   
   if (chartTypes.includes(widgetType)) {
-    // Chart responsive constraints (matched with bootstrapWidths)
+    // Batas responsif untuk grafik (disesuaikan dengan bootstrapWidths)
     switch (breakpoint) {
       case 'lg':
         return {
-          minW: 4,     // Match bootstrap width for charts
+          minW: 4,     // Sesuai lebar bootstrap untuk grafik
           minH: 6, 
           maxW: 12,
           maxH: 12,
@@ -103,7 +103,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
         };
       case 'md':
         return {
-          minW: 6,     // Match bootstrap width for charts
+          minW: 6,     // Sesuai lebar bootstrap untuk grafik
           minH: 6, 
           maxW: 12,
           maxH: 12,
@@ -113,7 +113,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
       case 'xs':
       case 'xxs':
         return {
-          minW: 12,    // Match bootstrap width for charts (full width on mobile)
+          minW: 12,    // Lebar penuh di perangkat mobile
           minH: 6, 
           maxW: 12,
           maxH: 12,
@@ -129,19 +129,19 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
         };
     }
   } else if (controlTypes.includes(widgetType)) {
-    // Control responsive constraints (smaller widgets)
+    // Batas responsif untuk kontrol (widget lebih kecil)
     switch (breakpoint) {
       case 'lg':
         return {
-          minW: 2,     // Smaller controls on large screens
+          minW: 2,     // Kontrol lebih kecil di layar besar
           minH: 4, 
-          maxW: 6,     // Allow more flexible sizing 
+          maxW: 6,     // Ukuran lebih fleksibel 
           maxH: 8, 
           isResizable: true,
         };
       case 'md':
         return {
-          minW: 3,     // Medium controls on medium screens
+          minW: 3,     // Sedikit lebih besar di layar sedang
           minH: 4, 
           maxW: 8,
           maxH: 8, 
@@ -149,7 +149,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
         };
       case 'sm':
         return {
-          minW: 6,     // Half width on small screens
+          minW: 6,     // Setengah lebar di layar kecil
           minH: 4, 
           maxW: 12, 
           maxH: 8, 
@@ -158,7 +158,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
       case 'xs':
       case 'xxs':
         return {
-          minW: 12,    // Full width on mobile
+          minW: 12,    // Lebar penuh di perangkat mobile
           minH: 4, 
           maxW: 12, 
           maxH: 8, 
@@ -174,19 +174,19 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
         };
     }
   } else if (monitorTypes.includes(widgetType)) {
-    // Monitor widgets (gauge, text) - medium size constraints
+    // Widget monitor (gauge, teks) - batas ukuran menengah
     switch (breakpoint) {
       case 'lg':
         return {
-          minW: 3,     // Medium size for gauges/text on large screens
+          minW: 3,     // Ukuran menengah untuk gauge/teks di layar besar
           minH: 5, 
-          maxW: 8,     // Not too large but flexible
+          maxW: 8,     // Tidak terlalu besar namun fleksibel
           maxH: 10, 
           isResizable: true,
         };
       case 'md':
         return {
-          minW: 4,     // Slightly larger on medium screens
+          minW: 4,     // Sedikit lebih besar di layar sedang
           minH: 5, 
           maxW: 10,
           maxH: 10, 
@@ -194,7 +194,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
         };
       case 'sm':
         return {
-          minW: 6,     // Half width on small screens
+          minW: 6,     // Setengah lebar di layar kecil
           minH: 5, 
           maxW: 12, 
           maxH: 10, 
@@ -203,7 +203,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
       case 'xs':
       case 'xxs':
         return {
-          minW: 12,    // Full width on mobile
+          minW: 12,    // Lebar penuh di perangkat mobile
           minH: 5, 
           maxW: 12, 
           maxH: 10, 
@@ -220,7 +220,7 @@ export function getWidgetConstraints(widgetType, breakpoint = 'lg') {
     }
   }
 
-  // Default constraints (fallback)
+  // Batasan bawaan (fallback)
   return {
     minW: 4,
     minH: 4,

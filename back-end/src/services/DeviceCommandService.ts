@@ -1,15 +1,15 @@
 /**
  * ===== DEVICE COMMAND SERVICE =====
- * Service untuk mengelola perintah ke IoT devices
+ * Service untuk mengelola perintah ke perangkat IoT
  * Mendukung komunikasi via MQTT, WebSocket, dan HTTP polling
  * 
  * Fitur utama:
- * - Send command ke device (set_value, toggle, reset)
- * - Multi-protocol support (MQTT, WebSocket, HTTP)
- * - Command status tracking dan acknowledgment
- * - Command history dan statistics
- * - Auto cleanup untuk pending commands
- * - Real-time notification via WebSocket
+ * - Kirim perintah ke perangkat (set_value, toggle, reset)
+ * - Dukungan multi-protokol (MQTT, WebSocket, HTTP)
+ * - Pelacakan status perintah dan konfirmasi (ack)
+ * - Riwayat perintah dan statistik
+ * - Pembersihan otomatis untuk perintah pending
+ * - Notifikasi real-time via WebSocket
  */
 import mysql, { Pool } from "mysql2/promise";
 import { type DeviceCommand, type CommandStatus } from "../lib/types";
@@ -19,14 +19,14 @@ import { broadcastToDeviceOwner } from "../api/ws/user-ws";
 // Lazy import untuk menghindari circular dependency
 let sendToDevice: any = null;
 
-// Initialize broadcast functions untuk WebSocket communication
+// Inisialisasi fungsi broadcast untuk komunikasi WebSocket
 const initializeBroadcasting = async () => {
   if (!sendToDevice) {
     try {
       const deviceWs = await import("../api/ws/device-ws");
       sendToDevice = deviceWs.sendToDevice;
     } catch (error) {
-      console.warn("Failed to import sendToDevice:", error);
+      console.warn("Gagal mengimpor fungsi WebSocket sendToDevice:", error);
     }
   }
 };
@@ -39,7 +39,7 @@ export class DeviceCommandService {
     this.db = db;
     this.mqttClient = MQTTClient.getInstance();
     
-    // Initialize broadcasting functions untuk WebSocket
+    // Inisialisasi fungsi broadcast untuk WebSocket
     initializeBroadcasting();
   }
 
@@ -108,13 +108,13 @@ export class DeviceCommandService {
 
       return commandId;
     } catch (error) {
-      console.error("Error creating command:", error);
+      console.error("Gagal membuat command:", error);
       throw error;
     }
   }
 
   /**
-   * Send command to device via appropriate protocol
+   * Kirim command ke device sesuai protokol yang tepat
    */
   private async sendCommandToDevice(
     commandId: number,
@@ -134,9 +134,9 @@ export class DeviceCommandService {
         timestamp: new Date().toISOString()
       };
 
-      console.log(`📤 Sending command to device ${deviceId} via ${datastream.protocol}:`, commandPayload);
+      console.log(`📤 Mengirim command ke device ${deviceId} via ${datastream.protocol}:`, commandPayload);
 
-      // Update command status to 'sent'
+      // Update status command menjadi 'sent'
       await this.updateCommandStatus(commandId, 'sent');
 
       switch (datastream.protocol?.toLowerCase()) {
@@ -149,19 +149,19 @@ export class DeviceCommandService {
           break;
         case 'http':
         default:
-          // HTTP will be handled by device polling /device-command/pending endpoint
-          console.log(`📋 Command ${commandId} queued for HTTP device ${deviceId}`);
+          // HTTP akan ditangani oleh perangkat melalui endpoint polling /device-command/pending
+          console.log(`📋 Command ${commandId} diantrekan untuk device HTTP ${deviceId}`);
           break;
       }
     } catch (error) {
-      console.error(`❌ Failed to send command ${commandId}:`, error);
+      console.error(`❌ Gagal mengirim command ${commandId}:`, error);
       await this.updateCommandStatus(commandId, 'failed');
       throw error;
     }
   }
 
   /**
-   * Send command via MQTT
+   * Kirim command via MQTT
    */
   private async sendViaMQTT(deviceId: number, commandPayload: any): Promise<void> {
     try {
@@ -170,24 +170,24 @@ export class DeviceCommandService {
       
       this.mqttClient.publish(topic, message, { qos: 1 }, (error) => {
         if (error) {
-          console.error(`❌ MQTT command publish failed for device ${deviceId}:`, error);
+          console.error(`❌ Gagal publish command MQTT untuk device ${deviceId}:`, error);
         } else {
-          console.log(`✅ MQTT command sent to device ${deviceId} on topic ${topic}`);
+          console.log(`✅ Command MQTT terkirim ke device ${deviceId} pada topik ${topic}`);
         }
       });
     } catch (error) {
-      console.error(`❌ MQTT send error:`, error);
+      console.error(`❌ Error pengiriman MQTT:`, error);
       throw error;
     }
   }
 
   /**
-   * Send command via WebSocket
+   * Kirim command via WebSocket
    */
   private async sendViaWebSocket(deviceId: number, commandPayload: any): Promise<void> {
     try {
       if (!sendToDevice) {
-        throw new Error("WebSocket sendToDevice function not available");
+        throw new Error("Fungsi WebSocket sendToDevice tidak tersedia");
       }
 
       const sent = sendToDevice(deviceId.toString(), {
@@ -199,15 +199,15 @@ export class DeviceCommandService {
         throw new Error(`Device ${deviceId} tidak terhubung via WebSocket`);
       }
 
-      console.log(`✅ WebSocket command sent to device ${deviceId}`);
+      console.log(`✅ Command WebSocket terkirim ke device ${deviceId}`);
     } catch (error) {
-      console.error(`❌ WebSocket send error:`, error);
+      console.error(`❌ Error pengiriman WebSocket:`, error);
       throw error;
     }
   }
 
   /**
-   * Update command status
+   * Perbarui status command
    */
   async updateCommandStatus(
     commandId: number,
@@ -225,7 +225,7 @@ export class DeviceCommandService {
   }
 
   /**
-   * Get pending commands for a device
+   * Ambil command pending untuk device
    */
   async getPendingCommands(deviceId: number): Promise<DeviceCommand[]> {
     const [rows] = await (this.db as any).safeQuery(
@@ -241,14 +241,14 @@ export class DeviceCommandService {
   }
 
   /**
-   * Get command history for a device
+   * Ambil riwayat command untuk device
    */
   async getCommandHistory(
     deviceId: number,
     limit: number = 50,
     offset: number = 0
   ): Promise<DeviceCommand[]> {
-    // Ensure parameters are valid integers
+    // Pastikan parameter bertipe integer yang valid
     const validDeviceId = parseInt(String(deviceId));
     const validLimit = Math.max(1, Math.min(100, parseInt(String(limit)) || 50));
     const validOffset = Math.max(0, parseInt(String(offset)) || 0);
@@ -269,7 +269,7 @@ export class DeviceCommandService {
   }
 
   /**
-   * Get commands by status
+   * Ambil command berdasarkan status
    */
   async getCommandsByStatus(status: CommandStatus): Promise<DeviceCommand[]> {
     const [rows] = await (this.db as any).safeQuery(
@@ -287,9 +287,9 @@ export class DeviceCommandService {
   }
 
   /**
-   * Mark old pending commands as failed (cleanup) - updated timeout to 10 seconds
+   * Tandai command pending lama menjadi failed (pembersihan) - timeout ~10 detik
    */
-  async markOldCommandsAsFailed(olderThanMinutes: number = 0.17): Promise<number> { // 0.17 minutes = ~10 seconds
+  async markOldCommandsAsFailed(olderThanMinutes: number = 0.17): Promise<number> {
     const cutoffTime = new Date(Date.now() - olderThanMinutes * 60 * 1000);
     
     const [result] = await (this.db as any).safeQuery(
@@ -304,7 +304,7 @@ export class DeviceCommandService {
   }
 
   /**
-   * Get command statistics for a device
+   * Ambil statistik command untuk device
    */
   async getCommandStats(deviceId: number, days: number = 7): Promise<any> {
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);

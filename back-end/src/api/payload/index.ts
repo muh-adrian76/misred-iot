@@ -47,7 +47,7 @@ export function payloadRoutes(payloadService: PayloadService) {
               set.status = 401;
               return {
                 error: "Format token tidak valid",
-                message: "Bearer token format required",
+                message: "Format Bearer token diperlukan",
               };
             }
 
@@ -82,11 +82,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               device_id: deviceId,
             };
           } catch (error: any) {
-            console.error("Error processing HTTP payload:", error);
+            console.error("Kesalahan memproses HTTP payload:", error);
             set.status = 500;
             return {
               error: "Gagal memproses payload",
-              message: error.message || "Internal server error",
+              message: error.message || "Terjadi kesalahan pada server",
             };
           }
         },
@@ -122,11 +122,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               device_id: dev_eui,
             };
           } catch (e: any) {
-            console.error("Error processing LoRa payload:", e);
+            console.error("Kesalahan memproses payload LoRa:", e);
             set.status = e.message === "Device not found" ? 404 : 500;
             return {
               error: "Gagal memproses payload LoRa",
-              message: e.message || "Internal server error",
+              message: e.message || "Terjadi kesalahan pada server",
             };
           }
         },
@@ -146,11 +146,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error fetching payloads by device ID:", error);
+            console.error("Kesalahan mengambil payload berdasarkan device ID:", error);
             return new Response(
               JSON.stringify({
                 error: "Gagal mengambil payload",
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -176,13 +176,13 @@ export function payloadRoutes(payloadService: PayloadService) {
             });
           } catch (error: any) {
             console.error(
-              "Error fetching payloads by device and datastream:",
+              "Kesalahan mengambil payload berdasarkan device dan datastream:",
               error
             );
             return new Response(
               JSON.stringify({
                 error: "Gagal mengambil payload",
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -204,11 +204,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error fetching widget data:", error);
+            console.error("Kesalahan mengambil data widget:", error);
             return new Response(
               JSON.stringify({
                 error: "Gagal mengambil data widget",
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -248,11 +248,11 @@ export function payloadRoutes(payloadService: PayloadService) {
               }
             );
           } catch (error: any) {
-            console.error("Error fetching time series data:", error);
+            console.error("Kesalahan mengambil data time series:", error);
             return new Response(
               JSON.stringify({
                 error: "Gagal mengambil time series data",
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );

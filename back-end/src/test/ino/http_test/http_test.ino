@@ -8,7 +8,7 @@
 
 // ---- SETUP VARIABEL ------
 #define DEVICE_ID "1"
-#define JWT_SECRET "7deb2f791b15363eef661cb9ce475dcb"
+#define JWT_SECRET "23050c3dcef3c669690aab113a21c3b2"
 
 // Waktu lokal (GMT +7)
 WiFiUDP ntpUDP;
@@ -193,32 +193,38 @@ void sendSensorDataHTTP() {
 float readPHSensor() {
   // pH sensor: 6.5 - 8.5 (realistic water pH range)
   return 6.5 + (random(0, 200) / 100.0);
+  // return 7.08;
 }
 
 float readFlowSensor() {
   // Flow sensor: 10 - 50 L/min
   return 10.0 + (random(0, 4000) / 100.0);
+  // return 31.37;
 }
 
 float readCODSensor() {
   // COD sensor: 20 - 80 mg/L
   return 20.0 + (random(0, 6000) / 100.0);
+  // return 61.19;
 }
 
 float readTempSensor() {
   // Temperature sensor: 20 - 35°C
   return 20.0 + (random(0, 1500) / 100.0);
+  // return 21.62;
 }
 
 float readNH3NSensor() {
   // NH3N sensor: 0.1 - 5.0 mg/L
   return 0.1 + (random(0, 490) / 100.0);
+  // return 2.69;
 }
 
 float readNTUSensor() {
   // NTU sensor: 1 - 20 NTU
   return 1.0 + (random(0, 1900) / 100.0);
-}
+  // return 15.78;
+  }
 
 // Create JWT token using CustomJWT library
 String createJWTWithCustomJWT(String data) {

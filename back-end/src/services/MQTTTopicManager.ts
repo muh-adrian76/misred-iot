@@ -32,8 +32,8 @@ export class MQTTTopicManager {
       );
       return rows[0]?.count || 0;
     } catch (error) {
-      console.error("Error getting topic usage count:", error);
-      return 0; // Return 0 untuk graceful fallback
+      console.error("Gagal mengambil jumlah penggunaan topik:", error);
+      return 0; // Kembalikan 0 sebagai fallback yang aman
     }
   }
 
@@ -41,14 +41,14 @@ export class MQTTTopicManager {
   // Mendapatkan semua unique topics yang digunakan oleh devices
   async getAllActiveTopics(): Promise<string[]> {
     try {
-      // Use safe query method with auto-retry
+      // Gunakan metode query aman dengan auto-retry
       const [rows]: any = await this.safeDbQuery(
         "SELECT DISTINCT mqtt_topic FROM devices WHERE mqtt_topic IS NOT NULL AND protocol = 'MQTT'"
       );
       return rows.map((row: any) => row.mqtt_topic).filter(Boolean);
     } catch (error) {
-      console.error("Error getting all active topics:", error);
-      return []; // Return empty array untuk graceful fallback
+      console.error("Gagal mengambil semua topik aktif:", error);
+      return []; // Return array kosong untuk fallback yang aman
     }
   }
 
@@ -58,20 +58,20 @@ export class MQTTTopicManager {
     try {
       return await (this.db as any).safeQuery(sql, params);
     } catch (error: any) {
-      // Check jika error disebabkan pool closed
+      // Cek jika error disebabkan pool tertutup atau koneksi terputus
       if (error.message?.includes('Pool is closed') || 
           error.code === 'PROTOCOL_CONNECTION_LOST' ||
           error.code === 'ER_CONNECTION_LOST') {
-        console.warn('🔄 Database connection issue in MQTT Topic Manager, attempting recovery...');
+        console.warn('🔄 Masalah koneksi database pada MQTT Topic Manager, mencoba pemulihan...');
         
-        // Import MySQLDatabase untuk force reconnect
+        // Impor MySQLDatabase untuk memaksa koneksi ulang
         const { MySQLDatabase } = await import('../lib/middleware');
         this.db = MySQLDatabase.forceReconnect();
         
-        // Retry query dengan connection baru
+        // Coba ulang eksekusi query dengan koneksi baru
         return await (this.db as any).safeQuery(sql, params);
       }
-      throw error; // Re-throw jika bukan connection error
+      throw error; // Lempar ulang jika bukan error koneksi
     }
   }
 
@@ -104,7 +104,7 @@ export class MQTTTopicManager {
         this.subscribedTopics.add(topic);
         return true;
       } catch (error) {
-        console.error(`❌ MQTT: Failed to subscribe to topic '${topic}':`, error);
+        console.error(`❌ MQTT: Gagal subscribe ke topik '${topic}':`, error);
         return false;
       }
     } else {
@@ -132,7 +132,7 @@ export class MQTTTopicManager {
         this.topicUsageCount.delete(topic);
         return true;
       } catch (error) {
-        console.error(`❌ MQTT: Failed to unsubscribe from topic '${topic}':`, error);
+        console.error(`❌ MQTT: Gagal unsubscribe dari topik '${topic}':`, error);
         return false;
       }
     } else {
@@ -174,7 +174,7 @@ export class MQTTTopicManager {
   }
 
   /**
-   * Get current subscription status
+   * Ambil status subscription saat ini
    */
   getSubscriptionStatus(): {
     subscribedTopics: string[];

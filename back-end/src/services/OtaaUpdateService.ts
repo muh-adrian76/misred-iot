@@ -65,7 +65,7 @@ export class OtaaUpdateService {
               unlinkSync(oldFilePath);
             }
           } catch (error) {
-            console.warn("Failed to delete old firmware file:", error);
+            console.warn("Gagal menghapus file firmware lama:", error);
           }
         }
 
@@ -93,8 +93,8 @@ export class OtaaUpdateService {
         return result.insertId;
       }
     } catch (error) {
-      console.error("Error creating/updating firmware:", error);
-      throw new Error("Failed to save firmware");
+      console.error("Gagal membuat/memperbarui firmware:", error);
+      throw new Error("Gagal menyimpan firmware");
     }
   }
 
@@ -113,8 +113,8 @@ export class OtaaUpdateService {
       const [rows]: any = await (this.db as any).safeQuery(query, params);
       return rows[0] || null;
     } catch (error) {
-      console.error("Error fetching firmware by board type:", error);
-      throw new Error("Failed to fetch firmware");
+      console.error("Gagal mengambil firmware berdasarkan board type:", error);
+      throw new Error("Gagal mengambil firmware");
     }
   }
 
@@ -128,8 +128,8 @@ export class OtaaUpdateService {
       const [rows] = await (this.db as any).safeQuery(query, params);
       return rows;
     } catch (error) {
-      console.error("Error fetching all firmwares:", error);
-      throw new Error("Failed to fetch firmwares");
+      console.error("Gagal mengambil semua firmware:", error);
+      throw new Error("Gagal mengambil daftar firmware");
     }
   }
 
@@ -154,8 +154,8 @@ export class OtaaUpdateService {
       const [rows] = await (this.db as any).safeQuery(query);
       return rows;
     } catch (error) {
-      console.error("Error fetching all firmwares for admin:", error);
-      throw new Error("Failed to fetch firmwares for admin");
+      console.error("Gagal mengambil semua firmware untuk admin:", error);
+      throw new Error("Gagal mengambil daftar firmware untuk admin");
     }
   }
 
@@ -192,8 +192,8 @@ export class OtaaUpdateService {
 
       return groupedFirmwares;
     } catch (error) {
-      console.error("Error fetching global firmwares grouped by board:", error);
-      throw new Error("Failed to fetch global firmwares grouped by board");
+      console.error("Gagal mengambil firmware global per board:", error);
+      throw new Error("Gagal mengambil firmware global per board");
     }
   }
 
@@ -235,7 +235,7 @@ export class OtaaUpdateService {
       ) as [ResultSetHeader, FieldPacket[]];
       return result.insertId;
     } catch (error) {
-      console.error("Error creating global firmware with versioning:", error);
+      console.error("Gagal membuat firmware global dengan versioning:", error);
       throw error; // Re-throw untuk handling di API
     }
   }
@@ -267,7 +267,7 @@ export class OtaaUpdateService {
               unlinkSync(oldFilePath);
             }
           } catch (error) {
-            console.warn("Failed to delete old global firmware file:", error);
+            console.warn("Gagal menghapus file firmware global lama:", error);
           }
         }
 
@@ -286,8 +286,8 @@ export class OtaaUpdateService {
         return result.insertId;
       }
     } catch (error) {
-      console.error("Error creating global firmware:", error);
-      throw new Error("Failed to save global firmware");
+      console.error("Gagal membuat firmware global:", error);
+      throw new Error("Gagal menyimpan firmware global");
     }
   }
 
@@ -309,8 +309,8 @@ export class OtaaUpdateService {
 
       return null;
     } catch (error) {
-      console.error("Error getting latest firmware for user:", error);
-      throw new Error("Failed to get latest firmware");
+      console.error("Gagal mendapatkan firmware terbaru untuk user:", error);
+      throw new Error("Gagal mendapatkan firmware terbaru");
     }
   }
 
@@ -324,8 +324,8 @@ export class OtaaUpdateService {
       );
       return rows[0] || null;
     } catch (error) {
-      console.error("Error getting firmware by ID:", error);
-      throw new Error("Failed to get firmware info");
+      console.error("Gagal mengambil firmware berdasarkan ID:", error);
+      throw new Error("Gagal mengambil info firmware");
     }
   }
 
@@ -343,8 +343,8 @@ export class OtaaUpdateService {
       const [rows] = await (this.db as any).safeQuery(query, [board_type]);
       return rows;
     } catch (error) {
-      console.error("Error getting users with board type:", error);
-      throw new Error("Failed to get users with board type");
+      console.error("Gagal mengambil user dengan board type:", error);
+      throw new Error("Gagal mengambil daftar user berdasarkan board type");
     }
   }
 
@@ -352,7 +352,7 @@ export class OtaaUpdateService {
   // Menghapus firmware beserta file fisiknya
   async deleteFirmware(id: string, user_id: number) {
     try {
-      console.log(`🗑️ [DELETE FIRMWARE] Starting deletion for ID: ${id}, User: ${user_id}`);
+      console.log(`🗑️ [DELETE FIRMWARE] Memulai penghapusan untuk ID: ${id}, User: ${user_id}`);
       
       // Get firmware info sebelum menghapus
       const [firmware]: any = await (this.db as any).safeQuery(
@@ -364,20 +364,20 @@ export class OtaaUpdateService {
         // Hapus file fisik dari storage
         try {
           const filePath = firmware[0].firmware_url.replace('/public/', `${process.cwd()}/src/assets/`);
-          console.log(`🔍 [DELETE FIRMWARE] Attempting to delete file: ${filePath}`);
+          console.log(`🔍 [DELETE FIRMWARE] Mencoba menghapus file: ${filePath}`);
           
           // Cek apakah file ada sebelum mencoba menghapus
           if (existsSync(filePath)) {
             unlinkSync(filePath); // Hapus file secara sinkron
-            console.log(`✅ [DELETE FIRMWARE] Successfully deleted firmware file: ${filePath}`);
+            console.log(`✅ [DELETE FIRMWARE] Berhasil menghapus file firmware: ${filePath}`);
           } else {
-            console.warn(`⚠️ [DELETE FIRMWARE] File not found: ${filePath}`);
+            console.warn(`⚠️ [DELETE FIRMWARE] Berkas tidak ditemukan: ${filePath}`);
           }
         } catch (fileError) {
-          console.error(`❌ [DELETE FIRMWARE] Failed to delete firmware file:`, fileError);
+          console.error(`❌ [DELETE FIRMWARE] Gagal menghapus berkas firmware:`, fileError);
         }
       } else {
-        console.warn(`⚠️ [DELETE FIRMWARE] No firmware found with ID ${id} for user ${user_id}`);
+        console.warn(`⚠️ [DELETE FIRMWARE] Tidak ada firmware dengan ID ${id} untuk user ${user_id}`);
       }
 
       // Hapus dari database
@@ -387,12 +387,12 @@ export class OtaaUpdateService {
       ) as [ResultSetHeader, FieldPacket[]];
       
       const success = result.affectedRows > 0;
-      console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Database deletion result: ${result.affectedRows} rows affected`);
+      console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Hasil penghapusan di database: ${result.affectedRows} baris terpengaruh`);
       
       return success;
     } catch (error) {
-      console.error("❌ [DELETE FIRMWARE] Error deleting firmware:", error);
-      throw new Error("Failed to delete firmware");
+      console.error("❌ [DELETE FIRMWARE] Gagal menghapus firmware:", error);
+      throw new Error("Gagal menghapus firmware");
     }
   }
 
@@ -405,7 +405,7 @@ export class OtaaUpdateService {
       );
 
       if (device.length === 0) {
-        throw new Error("Device not found");
+        throw new Error("Perangkat tidak ditemukan");
       }
 
       const { board_type, firmware_version: currentVersion, user_id } = device[0];
@@ -416,7 +416,7 @@ export class OtaaUpdateService {
       if (!latestFirmware) {
         return {
           hasUpdate: false,
-          message: "No firmware available for this board type"
+          message: "Tidak ada firmware yang tersedia untuk tipe board ini"
         };
       }
 
@@ -429,12 +429,12 @@ export class OtaaUpdateService {
         firmwareUrl: hasUpdate ? latestFirmware.firmware_url : null,
         firmwareSource: latestFirmware.source, // 'user' atau 'global'
         message: hasUpdate 
-          ? `Firmware update available from ${latestFirmware.source === 'global' ? 'Global Repository' : 'Your Upload'}` 
-          : "Device is up to date"
+          ? `Pembaruan firmware tersedia dari ${latestFirmware.source === 'global' ? 'Repositori Global' : 'Unggahan Anda'}` 
+          : "Perangkat sudah versi terbaru"
       };
     } catch (error) {
-      console.error("Error checking firmware update:", error);
-      throw new Error("Failed to check firmware update");
+      console.error("Gagal memeriksa pembaruan firmware:", error);
+      throw new Error("Gagal memeriksa pembaruan firmware");
     }
   }
 }

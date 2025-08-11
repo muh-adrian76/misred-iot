@@ -19,7 +19,7 @@ export const testApiConnectionSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Test koneksi ke API service",
-    summary: "Test API connection"
+    summary: "Uji koneksi API"
   }
 };
 
@@ -47,7 +47,7 @@ export const sendTestNotificationSchema = {
   detail: {
     tags: ["Alarm"],
     description: "Kirim test notifikasi WhatsApp",
-    summary: "Send test notification"
+    summary: "Kirim notifikasi uji"
   }
 };
 
@@ -87,7 +87,7 @@ export const getRecentNotificationsSchema = {
   detail: {
     tags: ["Notifications"],
     description: "Mengambil notifikasi alarm sejak last login atau 24 jam terakhir",
-    summary: "Get notifications for login"
+    summary: "Ambil notifikasi saat login"
   }
 };
 
@@ -161,7 +161,7 @@ export const getNotificationHistorySchema = {
   detail: {
     tags: ["Notifications"],
     description: "Mengambil riwayat notifikasi dengan pagination dan filter waktu",
-    summary: "Get notification history"
+    summary: "Ambil riwayat notifikasi"
   }
 };
 
@@ -196,6 +196,6 @@ export const sendDeviceOfflineNotificationSchema = {
   detail: {
     tags: ["Notifications"],
     description: "Kirim notifikasi ketika device offline terdeteksi dari frontend",
-    summary: "Send device offline notification"
+    summary: "Kirim notifikasi perangkat offline"
   }
 };

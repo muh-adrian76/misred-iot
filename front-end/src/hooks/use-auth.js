@@ -1,13 +1,13 @@
-// Hook untuk user authentication - verify token dan handle auto-redirect
-// Digunakan di seluruh aplikasi untuk protect routes dan check login status
+// Hook untuk autentikasi user - verifikasi token dan handle auto-redirect
+// Dipakai di seluruh aplikasi untuk melindungi rute dan memeriksa status login
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fetchFromBackend } from "@/lib/helper";
 
-// Helper function untuk verify token dengan backend
-// Includes error handling dan optional redirect ke 401 page
+// Helper untuk verifikasi token ke backend
+// Termasuk penanganan error dan opsi redirect ke halaman 401
 const verifyToken = async (router, skipRedirect = false) => {
   try {
     const res = await fetchFromBackend("/auth/verify-token", {
@@ -24,8 +24,8 @@ const verifyToken = async (router, skipRedirect = false) => {
 
     return true;
   } catch (error) {
-    console.error("useAuth: Network error during token verification:", error);
-    // Network error juga dianggap unauthorized
+    console.error("useAuth: Kesalahan jaringan saat verifikasi token:", error);
+    // Kesalahan jaringan juga dianggap tidak terautentikasi
     if (!skipRedirect) {
       router.push("/401");
     }
@@ -33,10 +33,10 @@ const verifyToken = async (router, skipRedirect = false) => {
   }
 };
 
-// Main useAuth hook - check authentication status dengan auto-redirect
+// Hook utama useAuth - cek status autentikasi dengan auto-redirect
 export const useAuth = (skipRedirect = false) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true); // Loading state untuk prevent flash content
+  const [loading, setLoading] = useState(true); // Loading state untuk mencegah flash konten
   const router = useRouter();
 
   useEffect(() => {
@@ -45,15 +45,15 @@ export const useAuth = (skipRedirect = false) => {
         const isValid = await verifyToken(router, skipRedirect);
         setIsAuthenticated(isValid);
         
-        // Double-check redirect jika token invalid
+        // Double-check redirect jika token tidak valid
         if (!isValid && !skipRedirect) {
           router.push("/401");
         }
       } catch (error) {
-        console.error("useAuth: Error in checkToken:", error);
+        console.error("useAuth: Kesalahan pada checkToken:", error);
         setIsAuthenticated(false);
         
-        // Error handling dengan redirect ke 401
+        // Penanganan error dengan redirect ke 401
         if (!skipRedirect) {
           router.push("/401");
         }

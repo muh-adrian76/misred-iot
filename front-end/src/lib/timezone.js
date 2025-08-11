@@ -1,20 +1,20 @@
-// Timezone utility functions untuk formatting waktu dengan zona waktu Indonesia
+// Fungsi utilitas timezone untuk memformat waktu dengan zona waktu Indonesia
 import { timezoneConfig } from './helper';
 
 /**
- * Format timestamp dengan timezone yang dikonfigurasi (default: Asia/Jakarta)
- * Mengkonversi UTC timestamp ke local time Indonesia dengan format lengkap
- * @param {string|Date|number} timestamp - Input timestamp dalam format apapun
- * @param {object} options - Options untuk custom formatting
- * @returns {string} Formatted timestamp string dengan timezone info
+ * Format timestamp dengan timezone terkonfigurasi (default: Asia/Jakarta)
+ * Mengonversi timestamp UTC ke waktu lokal Indonesia dengan format lengkap
+ * @param {string|Date|number} timestamp - Input timestamp dalam format apa pun
+ * @param {object} options - Opsi untuk kustomisasi format
+ * @returns {string} String timestamp terformat dengan info timezone
  */
 export function formatTimestamp(timestamp, options = {}) {
-  if (!timestamp) return 'Unknown';
+  if (!timestamp) return 'Tidak diketahui';
   
   const date = new Date(timestamp);
-  if (isNaN(date.getTime())) return 'Invalid Date';
+  if (isNaN(date.getTime())) return 'Tanggal tidak valid';
   
-  // Default options untuk format Indonesia (DD/MM/YYYY HH:mm:ss)
+  // Opsi default untuk format Indonesia (DD/MM/YYYY HH:mm:ss)
   const defaultOptions = {
     year: 'numeric',
     month: '2-digit',
@@ -30,16 +30,16 @@ export function formatTimestamp(timestamp, options = {}) {
   try {
     return date.toLocaleString('id-ID', formatOptions) + ` (${timezoneConfig.display})`;
   } catch (error) {
-    console.error('Error formatting timestamp:', error);
-    return 'Format Error';
+    console.error('Kesalahan saat memformat timestamp:', error);
+    return 'Kesalahan Format';
   }
 }
 
 /**
- * Format waktu saja (HH:mm) tanpa tanggal dan timezone display
- * Berguna untuk display jam pada widget atau komponen kecil
+ * Format hanya jam (HH:mm) tanpa tanggal dan tampilan timezone
+ * Berguna untuk menampilkan jam pada widget atau komponen kecil
  * @param {string|Date|number} timestamp 
- * @returns {string} Formatted time string (HH:mm)
+ * @returns {string} String waktu terformat (HH:mm)
  */
 export function formatTimeOnly(timestamp) {
   return formatTimestamp(timestamp, {
@@ -50,9 +50,9 @@ export function formatTimeOnly(timestamp) {
 }
 
 /**
- * Format tanggal saja (DD/MM/YYYY) tanpa waktu dan timezone display
+ * Format hanya tanggal (DD/MM/YYYY) tanpa waktu dan tampilan timezone
  * @param {string|Date|number} timestamp 
- * @returns {string} Formatted date string
+ * @returns {string} String tanggal terformat
  */
 export function formatDateOnly(timestamp) {
   return formatTimestamp(timestamp, {
@@ -64,24 +64,24 @@ export function formatDateOnly(timestamp) {
 }
 
 /**
- * Get timezone display string
- * @returns {string} Timezone display (e.g., "GMT +7")
+ * Ambil string tampilan timezone
+ * @returns {string} Tampilan timezone (contoh, "GMT +7")
  */
 export function getTimezoneDisplay() {
   return timezoneConfig.display;
 }
 
 /**
- * Get configured timezone name
- * @returns {string} Timezone name (e.g., "Asia/Jakarta")
+ * Ambil nama timezone terkonfigurasi
+ * @returns {string} Nama timezone (contoh, "Asia/Jakarta")
  */
 export function getTimezoneName() {
   return timezoneConfig.timezone;
 }
 
 /**
- * Get timezone offset in hours
- * @returns {number} Offset in hours (e.g., 7 for GMT+7)
+ * Ambil offset timezone dalam jam
+ * @returns {number} Offset dalam jam (contoh, 7 untuk GMT+7)
  */
 export function getTimezoneOffset() {
   return timezoneConfig.offset;

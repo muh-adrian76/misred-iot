@@ -9,10 +9,8 @@ import { AnimatePresence } from "framer-motion";
 // Import tooltip untuk deskripsi
 import DescriptionTooltip from "@/components/custom/other/description-tooltip";
 import { motion } from "framer-motion";
-// Import efek glow untuk UI
-import { GlowingEffect } from "@/components/ui/glowing-effect";
 
-// Komponen konten utama untuk halaman datastream management
+// Komponen konten utama untuk halaman pengelolaan datastream
 export default function DatastreamContent({
   datastreams, // Data array datastream
   loading, // Status loading
@@ -140,7 +138,7 @@ export default function DatastreamContent({
           <motion.img
             key="datastream-image"
             src="/datastream.svg"
-            alt="No Datastreams"
+            alt="Tidak ada datastream"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}

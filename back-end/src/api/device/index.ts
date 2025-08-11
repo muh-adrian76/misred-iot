@@ -42,13 +42,13 @@ export function deviceRoutes(
   return (
     new Elysia({ prefix: "/device" })
 
-      // ===== CONNECTIVITY CHECK ENDPOINT =====
-      // GET /device/ping - Check server connectivity untuk device
+      // ===== ENDPOINT CEK KONEKTIVITAS =====
+      // GET /device/ping - Cek konektivitas server untuk device
       .get(
         "/ping",
         (): any => {
           try {
-            // Return status server untuk device connectivity check
+            // Kembalikan status server untuk pengecekan konektivitas device
             return new Response(
               JSON.stringify({
                 status: "ok",
@@ -57,11 +57,11 @@ export function deviceRoutes(
               })
             );
           } catch (error: any) {
-            console.error("Error in ping endpoint:", error);
+            console.error("Kesalahan pada endpoint ping:", error);
             return new Response(
               JSON.stringify({
-                error: "Server error",
-                message: error.message || "Internal server error",
+                error: "Kesalahan server",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -70,7 +70,7 @@ export function deviceRoutes(
         pingSchema
       )
 
-      // ===== CREATE DEVICE ENDPOINT =====
+      // ===== ENDPOINT BUAT DEVICE =====
       // POST /device - Buat device IoT baru dengan konfigurasi lengkap
       .post(
         "/",
@@ -94,7 +94,7 @@ export function deviceRoutes(
               firmware_url,
             } = body;
 
-            // Generate secret key untuk device authentication
+            // Generate secret key untuk autentikasi device
             const new_secret = randomBytes(16).toString("hex");
             const user_id = decoded.sub;
 
@@ -123,30 +123,30 @@ export function deviceRoutes(
               { status: 201 }
             );
           } catch (error: any) {
-            console.error("Error creating device:", error);
+            console.error("Kesalahan saat membuat perangkat:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },
         postDeviceSchema
       )
 
-      // Get all devices
+      // Ambil semua perangkat
       .get(
         "/",
         //@ts-ignore
@@ -155,7 +155,7 @@ export function deviceRoutes(
             const decoded = await authorizeRequest(jwt, cookie);
             const devices = await deviceService.getAllUserDevices(decoded.sub);
 
-            // Tambahkan status information jika DeviceStatusService tersedia
+            // Tambahkan informasi status jika DeviceStatusService tersedia
             let devicesWithStatus = devices;
             if (deviceStatusService) {
               devicesWithStatus =
@@ -166,24 +166,24 @@ export function deviceRoutes(
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error fetching all devices:", error);
+            console.error("Kesalahan saat mengambil semua perangkat:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
                 result: [],
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
               result: [],
             };
           }
@@ -191,7 +191,7 @@ export function deviceRoutes(
         getAllDevicesSchema
       )
 
-      // Get device by ID
+      // Ambil perangkat berdasarkan ID
       .get(
         "/:id",
         //@ts-ignore
@@ -209,30 +209,30 @@ export function deviceRoutes(
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error fetching device by ID:", error);
+            console.error("Kesalahan saat mengambil perangkat berdasarkan ID:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },
         getDeviceByIdSchema
       )
 
-      // Get device by secret/key
+      // Ambil device berdasarkan secret/key
       .get(
         "/secret/:id",
         //@ts-ignore
@@ -249,11 +249,11 @@ export function deviceRoutes(
               status: 200,
             });
           } catch (error: any) {
-            console.error("Error fetching device secret:", error);
+            console.error("Kesalahan saat mengambil secret perangkat:", error);
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch device secret",
-                message: error.message || "Internal server error",
+                error: "Gagal mengambil secret perangkat",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -262,7 +262,7 @@ export function deviceRoutes(
         getSecretByDeviceSchema
       )
 
-      // Upload firmware
+      // Unggah firmware
       .post(
         "/firmware/upload/:deviceId",
         //@ts-ignore
@@ -320,30 +320,30 @@ export function deviceRoutes(
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error uploading firmware:", error);
+            console.error("Kesalahan saat mengunggah firmware:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },
         uploadFirmwareSchema
       )
 
-      // Get firmware version
+      // Ambil versi firmware
       .get(
         "/firmware/version/:deviceId",
         //@ts-ignore
@@ -363,11 +363,11 @@ export function deviceRoutes(
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error fetching firmware version:", error);
+            console.error("Kesalahan saat mengambil versi firmware:", error);
             return new Response(
               JSON.stringify({
-                error: "Failed to fetch firmware version",
-                message: error.message || "Internal server error",
+                error: "Gagal mengambil versi firmware",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500, headers: { "Content-Type": "application/json" } }
             );
@@ -376,7 +376,7 @@ export function deviceRoutes(
         getFirmwareVersionSchema
       )
 
-      // ESP32 Report Firmware Version (untuk update setelah OTA)
+      // ESP32 melaporkan versi firmware (setelah OTA)
       .post(
         "/firmware/report/:deviceId",
         //@ts-ignore
@@ -390,39 +390,39 @@ export function deviceRoutes(
               set.status = 400;
               return {
                 success: false,
-                message: "firmware_version is required",
+                message: "firmware_version wajib diisi",
               };
             }
 
-            // Update firmware_version di database
+            // Perbarui firmware_version di database
             await deviceService.updateDeviceFirmwareVersion(
               deviceId,
               firmware_version
             );
 
             console.log(
-              `✅ Device ${deviceId} reported firmware version: ${firmware_version}`
+              `✅ Perangkat ${deviceId} melaporkan versi firmware: ${firmware_version}`
             );
 
             return {
               success: true,
-              message: "Firmware version updated successfully",
+              message: "Versi firmware berhasil diperbarui",
               device_id: deviceId,
               new_version: firmware_version,
             };
           } catch (error) {
-            console.error("Error updating device firmware version:", error);
+            console.error("Kesalahan saat memperbarui versi firmware perangkat:", error);
             set.status = 500;
             return {
               success: false,
-              message: "Failed to update firmware version",
+              message: "Gagal memperbarui versi firmware",
               error: error instanceof Error ? error.message : "Unknown error",
             };
           }
         }
       )
 
-      // Download Firmware Device
+      // Unduh daftar firmware perangkat
       .get(
         "/firmware/:deviceId/",
         async ({ params, set }) => {
@@ -477,19 +477,19 @@ export function deviceRoutes(
           );
           return {
             success: true,
-            message: "Firmware version updated successfully",
+            message: "Versi firmware berhasil diperbarui",
             device_id: params.deviceId,
             new_version: firmware_version,
           };
         } catch (error) {
           return {
             success: false,
-            message: "Failed to update firmware version",
+            message: "Gagal memperbarui versi firmware",
           };
         }
       })
 
-      // Renew device secret
+      // Perbarui secret perangkat
       .post(
         "/renew-secret/:device_id",
         //@ts-ignore
@@ -504,7 +504,7 @@ export function deviceRoutes(
                 oldSecret
               );
 
-              console.log(`🔄 Device ${deviceID} secret renewed:`, newSecret);
+              console.log(`🔄 Secret perangkat ${deviceID} diperbarui:`, newSecret);
               // Kirim secret baru
               return new Response(
                 JSON.stringify({
@@ -535,17 +535,12 @@ export function deviceRoutes(
         renewSecretSchema
       )
 
-      // Update device
+      // Perbarui device
       .put(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, body, set }) => {
           try {
-            if (params.id === "1" || params.id === "2") {
-              throw new Error(
-                "Device ini tidak dapat diubah saat kuisioner berlangsung"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             const updated = await deviceService.updateDevice(
               params.id,
@@ -555,7 +550,7 @@ export function deviceRoutes(
             if (!updated) {
               return new Response(
                 JSON.stringify({
-                  error: "Failed to update device",
+                  error: "Gagal memperbarui perangkat",
                   message: "Perangkat gagal diupdate",
                 }),
                 { status: 400, headers: { "Content-Type": "application/json" } }
@@ -569,23 +564,23 @@ export function deviceRoutes(
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error updating device:", error);
+            console.error("Kesalahan saat memperbarui perangkat:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500 }
             );
@@ -594,17 +589,12 @@ export function deviceRoutes(
         putDeviceSchema
       )
 
-      // Delete device
+      // Hapus device
       .delete(
         "/:id",
         //@ts-ignore
         async ({ jwt, cookie, params, set }) => {
           try {
-            if (params.id === "1" || params.id === "2") {
-              throw new Error(
-                "Device ini tidak dapat dihapus saat kuisioner berlangsung"
-              );
-            }
             const decoded = await authorizeRequest(jwt, cookie);
             const deleted = await deviceService.deleteDevice(
               params.id,
@@ -613,7 +603,7 @@ export function deviceRoutes(
             if (!deleted) {
               return new Response(
                 JSON.stringify({
-                  error: "Failed to delete device",
+                  error: "Gagal menghapus perangkat",
                   message: "Perangkat gagal dihapus",
                 }),
                 { status: 400, headers: { "Content-Type": "application/json" } }
@@ -624,23 +614,23 @@ export function deviceRoutes(
               { status: 200 }
             );
           } catch (error: any) {
-            console.error("Error deleting device:", error);
+            console.error("Kesalahan saat menghapus perangkat:", error);
 
-            // Check if it's an authentication error from authorizeRequest
+            // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Kesalahan autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani kesalahan lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Kesalahan server internal",
               }),
               { status: 500 }
             );
@@ -649,8 +639,8 @@ export function deviceRoutes(
         deleteDeviceSchema
       )
 
-      // ===== UPDATE DEVICE STATUS ENDPOINT =====
-      // PUT /device/:id/status - Update status device (online/offline)
+      // ===== ENDPOINT PERBARUI STATUS DEVICE =====
+      // PUT /device/:id/status - Perbarui status device (online/offline)
       .put(
         "/:id/status",
         //@ts-ignore
@@ -664,11 +654,11 @@ export function deviceRoutes(
               set.status = 400;
               return {
                 success: false,
-                message: "Invalid status. Must be 'online' or 'offline'",
+                message: "Status tidak valid. Harus 'online' atau 'offline'",
               };
             }
 
-            // Verify device ownership
+            // Verifikasi kepemilikan perangkat
             const deviceResult = await deviceService.getDeviceById(deviceId);
             const devices = deviceResult as any[];
 
@@ -676,59 +666,59 @@ export function deviceRoutes(
               set.status = 404;
               return {
                 success: false,
-                message: "Device not found",
+                message: "Perangkat tidak ditemukan",
               };
             }
 
-            // Check if device belongs to the user
+            // Cek apakah perangkat milik pengguna
             if (devices[0].user_id !== parseInt(decoded.sub)) {
               set.status = 403;
               return {
                 success: false,
-                message: "Access denied",
+                message: "Akses ditolak",
               };
             }
 
-            // Update only the device status in database (without notification)
+            // Perbarui hanya status perangkat di database (tanpa notifikasi)
             if (deviceStatusService) {
               await deviceStatusService.updateDeviceStatusOnly(
                 deviceId,
                 status
               );
             } else {
-              // Fallback if deviceStatusService is not available
-              throw new Error("DeviceStatusService not available");
+              // Fallback jika deviceStatusService tidak tersedia
+              throw new Error("DeviceStatusService tidak tersedia");
             }
 
             return {
               success: true,
-              message: `Device status updated to ${status}`,
+              message: `Status perangkat diperbarui menjadi ${status}`,
               device_id: deviceId,
               status: status,
             };
           } catch (error: any) {
-            console.error("Error updating device status:", error);
+            console.error("Kesalahan saat memperbarui status perangkat:", error);
 
             if (error.message && error.message.includes("Unauthorized")) {
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },
         updateDeviceStatusSchema
       )
 
-      // ===== RESET DEVICE DATA ENDPOINT =====
-      // DELETE /device/:id/data - Reset all payload data for specific device
+      // ===== ENDPOINT RESET DATA DEVICE =====
+      // DELETE /device/:id/data - Reset seluruh data payload untuk device tertentu
       .delete(
         "/:id/data",
         //@ts-ignore
@@ -737,7 +727,7 @@ export function deviceRoutes(
             const decoded = await authorizeRequest(jwt, cookie);
             const deviceId = params.id;
 
-            // Verify device ownership
+            // Verifikasi kepemilikan perangkat
             const deviceResult = await deviceService.getDeviceById(deviceId);
             const devices = deviceResult as any[];
 
@@ -745,44 +735,44 @@ export function deviceRoutes(
               set.status = 404;
               return {
                 success: false,
-                message: "Device not found",
+                message: "Perangkat tidak ditemukan",
               };
             }
 
-            // Check if device belongs to the user
+            // Cek apakah perangkat milik pengguna
             if (devices[0].user_id !== parseInt(decoded.sub)) {
               set.status = 403;
               return {
                 success: false,
-                message: "Access denied",
+                message: "Akses ditolak",
               };
             }
 
-            // Reset device payload data
+            // Reset data payload perangkat
             const deletedCount = await deviceService.resetDeviceData(deviceId);
 
             return {
               success: true,
-              message: `Successfully reset all data for device ${devices[0].description}`,
+              message: `Berhasil mereset semua data untuk perangkat ${devices[0].description}`,
               device_id: deviceId,
               deleted_payload_count: deletedCount.payloads,
               deleted_raw_payload_count: deletedCount.rawPayloads,
             };
           } catch (error: any) {
-            console.error("Error resetting device data:", error);
+            console.error("Kesalahan saat mereset data perangkat:", error);
 
             if (error.message && error.message.includes("Unauthorized")) {
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
             set.status = 500;
             return {
               success: false,
-              message: "Internal server error",
+              message: "Kesalahan server internal",
             };
           }
         },

@@ -21,7 +21,7 @@ import {
 export const deviceCommandRoutes = (db: Pool) =>
   new Elysia({ prefix: "/device-command" })
     
-    // ===== SEND COMMAND TO DEVICE ENDPOINT =====
+    // ===== ENDPOINT KIRIM COMMAND KE PERANGKAT =====
     // POST /device-command/send - Kirim command ke device IoT via datastream
     .post(
       "/send",
@@ -31,14 +31,14 @@ export const deviceCommandRoutes = (db: Pool) =>
         if (!user) {
           return {
             success: false,
-            message: "Unauthorized - Authentication required"
+            message: "Tidak terotorisasi - Autentikasi diperlukan"
           };
         }
 
         const commandService = new DeviceCommandService(db);
         
         try {
-          // Buat command baru dengan validasi user ownership
+          // Buat command baru dengan validasi kepemilikan pengguna
           const commandId = await commandService.createCommand(
             body.device_id,
             body.datastream_id,
@@ -53,7 +53,7 @@ export const deviceCommandRoutes = (db: Pool) =>
             data: { command_id: commandId }
           };
         } catch (error: any) {
-          console.error("Error creating command:", error);
+          console.error("Kesalahan saat membuat command:", error);
           return {
             success: false,
             message: "Gagal mengirim command ke device",
@@ -61,21 +61,10 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        body: t.Object({
-          device_id: t.Number(),
-          datastream_id: t.Number(),
-          command_type: t.Union([
-            t.Literal("set_value"),
-            t.Literal("toggle"),
-            t.Literal("reset")
-          ]),
-          value: t.Number()
-        })
-      }
+      sendCommandSchema
     )
 
-    // ===== GET COMMAND HISTORY ENDPOINT =====
+    // ===== ENDPOINT RIWAYAT COMMAND =====
     // GET /device-command/history/:device_id - Ambil riwayat command device
     .get(
       "/history/:device_id",
@@ -84,7 +73,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         // if (!user) {
         //   return {
         //     success: false,
-        //     message: "Unauthorized"
+        //     message: "Tidak terotorisasi"
         //   };
         // }
 
@@ -106,7 +95,7 @@ export const deviceCommandRoutes = (db: Pool) =>
             data: commands
           };
         } catch (error: any) {
-          console.error("Error getting command history:", error);
+          console.error("Kesalahan saat mengambil riwayat command:", error);
           return {
             success: false,
             message: "Gagal mengambil riwayat command",
@@ -114,18 +103,10 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        params: t.Object({
-          device_id: t.String()
-        }),
-        query: t.Object({
-          limit: t.Optional(t.String()),
-          offset: t.Optional(t.String())
-        })
-      }
+      getCommandHistorySchema
     )
 
-    // ===== GET PENDING COMMANDS ENDPOINT =====
+    // ===== ENDPOINT COMMAND PENDING =====
     // GET /device-command/pending/:device_id - Ambil command yang belum dieksekusi
     .get(
       "/pending/:device_id",
@@ -134,7 +115,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         // if (!user) {
         //   return {
         //     success: false,
-        //     message: "Unauthorized"
+        //     message: "Tidak terotorisasi"
         //   };
         // }
 
@@ -151,7 +132,7 @@ export const deviceCommandRoutes = (db: Pool) =>
             data: commands
           };
         } catch (error: any) {
-          console.error("Error getting pending commands:", error);
+          console.error("Kesalahan saat mengambil command pending:", error);
           return {
             success: false,
             message: "Gagal mengambil pending commands",
@@ -159,14 +140,10 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        params: t.Object({
-          device_id: t.String()
-        })
-      }
+      getPendingCommandsSchema
     )
 
-    // ===== UPDATE COMMAND STATUS ENDPOINT =====
+    // ===== ENDPOINT UPDATE STATUS COMMAND =====
     // PATCH /device-command/status/:command_id - Update status command (biasanya dari device)
     .patch(
       "/status/:command_id",
@@ -175,7 +152,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         // if (!user) {
         //   return {
         //     success: false,
-        //     message: "Unauthorized"
+        //     message: "Tidak terotorisasi"
         //   };
         // }
 
@@ -203,7 +180,7 @@ export const deviceCommandRoutes = (db: Pool) =>
             };
           }
         } catch (error: any) {
-          console.error("Error updating command status:", error);
+          console.error("Kesalahan saat memperbarui status command:", error);
           return {
             success: false,
             message: "Gagal update status command",
@@ -211,22 +188,10 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        params: t.Object({
-          command_id: t.String()
-        }),
-        body: t.Object({
-          status: t.Union([
-            t.Literal("pending"),
-            t.Literal("sent"),
-            t.Literal("acknowledged"),
-            t.Literal("failed")
-          ])
-        })
-      }
+      updateCommandStatusSchema
     )
 
-    // ===== GET COMMAND STATISTICS ENDPOINT =====
+    // ===== ENDPOINT STATISTIK COMMAND =====
     // GET /device-command/stats/:device_id - Ambil statistik command device
     .get(
       "/stats/:device_id",
@@ -235,7 +200,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         // if (!user) {
         //   return {
         //     success: false,
-        //     message: "Unauthorized"
+        //     message: "Tidak terotorisasi"
         //   };
         // }
 
@@ -255,7 +220,7 @@ export const deviceCommandRoutes = (db: Pool) =>
             data: stats
           };
         } catch (error: any) {
-          console.error("Error getting command stats:", error);
+          console.error("Kesalahan saat mengambil statistik command:", error);
           return {
             success: false,
             message: "Gagal mengambil statistik command",
@@ -263,17 +228,10 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        params: t.Object({
-          device_id: t.String()
-        }),
-        query: t.Object({
-          days: t.Optional(t.String())
-        })
-      }
+      getCommandStatsSchema
     )
 
-    // ===== CLEANUP OLD COMMANDS ENDPOINT =====
+    // ===== ENDPOINT BERSIHKAN COMMAND LAMA =====
     // POST /device-command/cleanup - Bersihkan command lama (maintenance endpoint)
     .post(
       "/cleanup",
@@ -282,7 +240,7 @@ export const deviceCommandRoutes = (db: Pool) =>
         // if (!user) {
         //   return {
         //     success: false,
-        //     message: "Unauthorized"
+        //     message: "Tidak terotorisasi"
         //   };
         // }
 
@@ -291,16 +249,16 @@ export const deviceCommandRoutes = (db: Pool) =>
         try {
           const olderThanMinutes = body.older_than_minutes || 5;
           
-          // Tandai command lama sebagai failed untuk maintenance
+          // Tandai command lama sebagai gagal untuk maintenance
           const affected = await commandService.markOldCommandsAsFailed(olderThanMinutes);
 
           return {
             success: true,
-            message: `Berhasil menandai ${affected} command lama sebagai failed`,
+            message: `Berhasil menandai ${affected} command lama sebagai gagal`,
             data: { affected_commands: affected }
           };
         } catch (error: any) {
-          console.error("Error cleaning up commands:", error);
+          console.error("Kesalahan saat membersihkan command:", error);
           return {
             success: false,
             message: "Gagal membersihkan command lama",
@@ -308,9 +266,5 @@ export const deviceCommandRoutes = (db: Pool) =>
           };
         }
       },
-      {
-        body: t.Object({
-          older_than_minutes: t.Optional(t.Number())
-        })
-      }
+      cleanupCommandsSchema
     );

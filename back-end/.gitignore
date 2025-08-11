@@ -50,3 +50,5 @@ wwebjs_auth/
 
 # OTAA
 /src/assets/firmware/
+
+certificates/

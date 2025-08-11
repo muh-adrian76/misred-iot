@@ -1,17 +1,17 @@
-// Utility function untuk mendeteksi authentication errors berdasarkan response
-// Digunakan untuk auto-redirect ke halaman 401 saat token expired/invalid
+// Fungsi utilitas untuk mendeteksi error autentikasi berdasarkan response
+// Dipakai untuk auto-redirect ke halaman 401 saat token kedaluwarsa/tidak valid
 const isAuthError = (response, errorData, errorText, endpoint) => {
-  // Skip auto-redirect untuk endpoint auth - biarkan form handle sendiri
+  // Lewati auto-redirect untuk endpoint auth - biarkan form menangani sendiri
   if (endpoint && (endpoint.includes('/auth'))) {
     return false;
   }
   
-  // 1. Status 401 selalu auth error (token expired/invalid)
+  // 1. Status 401 selalu error autentikasi (token kedaluwarsa/tidak valid)
   if (response.status === 401) return true;
   
-  // 2. Status 500 dengan message pattern auth-related
+  // 2. Status 500 dengan pola pesan terkait autentikasi
   if (response.status === 500) {
-    // Check JSON error message
+    // Cek pesan error JSON
     if (errorData?.message) {
       const message = errorData.message.toLowerCase();
       return message.includes('unauthorized') ||
@@ -23,7 +23,7 @@ const isAuthError = (response, errorData, errorText, endpoint) => {
              message.includes('token') && (message.includes('expired') || message.includes('kadaluwarsa'));
     }
     
-    // Check text response untuk pattern yang sama
+    // Cek text response untuk pola yang sama
     if (errorText) {
       const text = errorText.toLowerCase();
       return text.includes('unauthorized') ||
@@ -39,24 +39,24 @@ const isAuthError = (response, errorData, errorText, endpoint) => {
   return false;
 };
 
-// Fungsi untuk handle authentication error dengan cleanup dan redirect
+// Fungsi untuk menangani error autentikasi dengan pembersihan state dan redirect
 const handleAuthError = (response, errorDetails) => {
-  console.error("❌ Authentication error detected - redirecting to 401 page");
-  console.error("Response status:", response.status);
-  console.error("Error details:", errorDetails);
+  console.error("❌ Terdeteksi error autentikasi - mengalihkan ke halaman 401");
+  console.error("Status response:", response.status);
+  console.error("Detail error:", errorDetails);
   
-  // Clear auth state dari localStorage
+  // Bersihkan state autentikasi dari localStorage
   if (typeof window !== 'undefined') {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('user');
     
-    // Redirect ke halaman 401
+    // Arahkan ke halaman 401
     window.location.href = '/401';
   }
 };
 
-// Fungsi utama untuk fetch data dari backend API dengan error handling otomatis
-// Includes: credentials, auto auth error detection, dan redirect handling
+// Fungsi utama untuk fetch data dari backend API dengan penanganan error otomatis
+// Termasuk: credentials, deteksi otomatis error autentikasi, dan redirect
 export async function fetchFromBackend(endpoint, options = {}) {
   const server = process.env.NEXT_PUBLIC_BACKEND_URL;
 
@@ -70,20 +70,20 @@ export async function fetchFromBackend(endpoint, options = {}) {
       credentials: "include", // penting untuk HttpOnly cookies
     });
 
-    // Handle direct 401 responses (token expired/invalid)
+    // Tangani response 401 langsung (token kedaluwarsa/tidak valid)
     if (response.status === 401) {
       if (isAuthError(response, null, null, endpoint)) {
-        handleAuthError(response, "Direct 401 response");
-        return response; // Return untuk compatibility
+        handleAuthError(response, "Response 401 langsung");
+        return response; // Kembalikan untuk kompatibilitas
       }
     }
 
-    // Handle 500 errors yang mungkin auth-related (refresh token issues)
+    // Tangani error 500 yang mungkin terkait autentikasi (refresh token issues)
     if (response.status === 500) {
       try {
         const errorData = await response.clone().json();
         
-        // Detect auth-related 500 errors
+        // Deteksi error 500 terkait autentikasi
         if (isAuthError(response, errorData, null, endpoint)) {
           handleAuthError(response, errorData);
           return response;
@@ -98,24 +98,24 @@ export async function fetchFromBackend(endpoint, options = {}) {
             return response;
           }
         } catch (textError) {
-          // Ignore parsing errors for non-auth 500 errors
+          // Abaikan error parsing untuk error 500 yang bukan autentikasi
         }
       }
     }
 
     return response;
   } catch (networkError) {
-    console.error("❌ Network error in fetchFromBackend:", networkError);
+    console.error("❌ Kesalahan jaringan pada fetchFromBackend:", networkError);
     
-    // For network errors, don't auto-redirect, let the calling component handle it
+    // Untuk kesalahan jaringan, jangan auto-redirect, biarkan komponen pemanggil yang menangani
     throw networkError;
   }
 }
 
-// Direktori logo
+// Direktori logo/brand
 export const brandLogo = `/${process.env.NEXT_PUBLIC_LOGO}`;
 
-// Timezone Configuration
+// Konfigurasi Timezone
 const getTimezoneConfig = () => {
   const gmtZone = process.env.NEXT_PUBLIC_GMT_ZONE || '+7';
   const zoneNumber = parseInt(gmtZone.replace('+', '').replace('-', ''));
@@ -135,16 +135,16 @@ const getTimezoneConfig = () => {
   };
 };
 
-// Export timezone config untuk digunakan di file lain
+// Ekspor konfigurasi timezone untuk dipakai di file lain
 export const timezoneConfig = getTimezoneConfig();
 
-// Fungsi untuk konversi UTC ke timezone yang dikonfigurasi
+// Fungsi untuk konversi UTC ke timezone terkonfigurasi
 export function convertUTCToLocalTime(utcTimestamp) {
   if (!utcTimestamp) return null;
   
   let utcTime;
   if (typeof utcTimestamp === 'string') {
-    // Pastikan string diparsing sebagai UTC
+    // Pastikan string diparse sebagai UTC
     if (!utcTimestamp.includes('Z') && !utcTimestamp.includes('+') && !utcTimestamp.includes('-')) {
       utcTime = new Date(utcTimestamp + 'Z');
     } else {
@@ -155,16 +155,16 @@ export function convertUTCToLocalTime(utcTimestamp) {
   }
   
   if (isNaN(utcTime.getTime())) {
-    console.warn('Invalid timestamp for convertUTCToLocalTime:', utcTimestamp);
+    console.warn('Timestamp tidak valid untuk convertUTCToLocalTime:', utcTimestamp);
     return null;
   }
   
-  // Tambahkan offset timezone sesuai konfigurasi (misal GMT+7)
+  // Tambahkan offset timezone sesuai konfigurasi (mis. GMT+7)
   const localDate = new Date(utcTime.getTime() + (timezoneConfig.offset * 60 * 60 * 1000));
   return localDate;
 }
 
-// Fungsi untuk konversi tanggal ke zona waktu yang dikonfigurasi
+// Fungsi untuk konversi tanggal ke zona waktu terkonfigurasi
 export function convertDate(dateString) {
   const date = new Date(dateString).toLocaleString("id-ID", {
     timeZone: timezoneConfig.timezone,

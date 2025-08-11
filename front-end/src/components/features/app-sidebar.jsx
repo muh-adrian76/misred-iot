@@ -11,37 +11,36 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-// Import utility helper dan navigation
+// Import utilitas helper dan navigasi
 import { brandLogo } from "@/lib/helper"; // Helper untuk logo brand
 import { Link } from "next-view-transitions"; // Link dengan view transitions
 import { motion } from "framer-motion"; // Library untuk animasi
 
 /**
- * Komponen Sidebar aplikasi dengan menu navigasi
- * Mendukung mode collapsible dan responsive design
- * @param {Object} props - Props komponen
- * @param {Array} props.sidebarMenu - Array menu items dengan icon, title, url
- * @param {string} props.pathname - Path saat ini untuk highlight menu aktif
- * @param {boolean} props.isMobile - Flag untuk deteksi mobile device
- * @param {string} props.logoFont - Class font untuk brand text
+ * Komponen Sidebar aplikasi dengan menu navigasi.
+ * Mendukung mode dapat-diciutkan (collapsible) dan desain responsif.
+ * @param {Object} props - Properti komponen
+ * @param {Array} props.sidebarMenu - Daftar item menu dengan ikon, judul, url
+ * @param {string} props.pathname - Path saat ini untuk menyorot menu aktif
+ * @param {boolean} props.isMobile - Penanda untuk deteksi perangkat mobile
+ * @param {string} props.logoFont - Kelas font untuk teks brand
  * @returns {JSX.Element} Sidebar dengan menu navigasi dan animasi
  */
 export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, logoFont, ...props }) {
-  // Konten utama sidebar yang dapat digunakan dengan/tanpa wrapper animasi
-  // Konten utama sidebar yang dapat digunakan dengan/tanpa wrapper animasi
+  // Konten utama sidebar yang dapat digunakan dengan/tanpa pembungkus animasi
   const sidebarContent = (
-    // Sidebar dengan konfigurasi collapsible dan floating variant
+    // Sidebar dengan konfigurasi dapat-diciutkan (collapsible) dan varian mengambang (floating)
     <Sidebar collapsible="icon" variant="floating" {...props}>
       
-      {/* Sidebar Header - Logo dan brand */}
+      {/* Header Sidebar - Logo dan brand */}
       <SidebarHeader className="border-b-2">
         <div className="flex gap-3 items-center">
-          {/* Logo Image */}
+          {/* Gambar logo */}
           <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
             <img src={brandLogo} alt="Logo" className="size-6" />
           </div>
           
-          {/* Brand Text dengan custom font */}
+          {/* Teks brand dengan font kustom */}
           <div className="grid flex-1 text-left text-lg leading-tight">
             <h1 className={`truncate text-2xl font-bold tracking-wide ${logoFont}`}>
               MiSREd-IoT
@@ -50,31 +49,31 @@ export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, logoF
         </div>
       </SidebarHeader>
       
-      {/* Sidebar Content - Menu navigasi */}
+      {/* Konten Sidebar - Menu navigasi */}
       <SidebarContent>
         <SidebarGroup>
-          {/* Group Label */}
+          {/* Label grup */}
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           
-          {/* Menu Items */}
+          {/* Item menu */}
           <SidebarMenu>
             {sidebarMenu.map((item) => {
-              // Check apakah menu item sedang aktif berdasarkan pathname
+              // Cek apakah item menu sedang aktif berdasarkan pathname
               const isActive = pathname === item.url;
 
               return (
                 <SidebarMenuItem key={item.title}>
-                  {/* Menu Button dengan Link wrapper */}
+                  {/* Tombol menu dengan pembungkus Link */}
                   <SidebarMenuButton
-                    asChild // Menggunakan child component sebagai button
-                    isActive={isActive} // Highlight jika menu aktif
-                    className="transition-all font-semibold duration-200" // Smooth transitions
+                    asChild // Menggunakan komponen anak sebagai tombol
+                    isActive={isActive} // Sorot jika menu aktif
+                    className="transition-all font-semibold duration-200" // Transisi halus
                   >
                     {/* Link dengan view transitions */}
                     <Link href={item.url} aria-disabled={item.disabled}>
-                      {/* Menu Icon */}
+                      {/* Ikon menu */}
                       {item.icon && <item.icon />}
-                      {/* Menu Title */}
+                      {/* Judul menu */}
                       <span className="ml-2">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -85,25 +84,25 @@ export default function AppSidebar({ sidebarMenu = [], pathname, isMobile, logoF
         </SidebarGroup>
       </SidebarContent>
       
-      {/* Sidebar Rail - Handler untuk resize */}
+      {/* Sidebar Rail - pengendali untuk mengubah ukuran */}
       <SidebarRail />
     </Sidebar>
   );
 
-  // Conditional rendering berdasarkan device type
+  // Render kondisional berdasarkan jenis perangkat
   if (isMobile) {
-    // Untuk mobile: return konten langsung tanpa animasi wrapper
+    // Untuk mobile: kembalikan konten langsung tanpa pembungkus animasi
     return <>{sidebarContent}</>;
   }
 
-  // Untuk desktop: wrap dengan motion.div untuk animasi slide
+  // Untuk desktop: bungkus dengan motion.div untuk animasi slide
   return (
     <motion.div
-      // Animasi slide in dari kiri dengan fade
-      initial={{ opacity: 0, x: -50 }} // State awal: tidak terlihat dan di kiri
-      animate={{ opacity: 1, x: 0 }} // State akhir: terlihat dan posisi normal
-      exit={{ opacity: 0, x: -50 }} // State keluar: fade out dan slide ke kiri
-      transition={{ duration: 1, delay: 1, ease: "easeInOut" }} // Konfigurasi timing
+      // Animasi slide masuk dari kiri dengan fade
+      initial={{ opacity: 0, x: -50 }} // Keadaan awal: tidak terlihat dan di kiri
+      animate={{ opacity: 1, x: 0 }} // Keadaan akhir: terlihat dan posisi normal
+      exit={{ opacity: 0, x: -50 }} // Keadaan keluar: fade out dan slide ke kiri
+      transition={{ duration: 1, delay: 1, ease: "easeInOut" }} // Konfigurasi waktu
     >
       {sidebarContent}
     </motion.div>

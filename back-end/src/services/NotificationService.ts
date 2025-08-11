@@ -35,6 +35,7 @@ export interface AlarmData {
   datastream_description: string;  // Deskripsi datastream
   device_description: string;      // Deskripsi device
   whatsapp_number: string;         // Nomor WhatsApp user (dari users.phone)
+  whatsapp_notification_enabled: boolean; // Status aktif notifikasi WhatsApp (dari users.whatsapp_notif)
   user_name: string;               // Nama user
   user_email: string;              // Email user
   condition_operator: string;      // Operator kondisi (>, <, =, dll)
@@ -272,19 +273,19 @@ export class NotificationService {
 
     // Authentication event - session validation
     this.whatsAppClient.on("auth_failure", (msg) => {
-      console.error("❌ WhatsApp Web authentication failed:", msg);
+      console.error("❌ Gagal otentikasi WhatsApp Web:", msg);
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
 
-      // Clean up corrupted session on auth failure
+      // Bersihkan sesi yang korup saat gagal otentikasi
       this.cleanupSessionFiles().then(() => {
-        console.log("✅ Session telah di-reset karena kegagalan otentikasi");
+        console.log("✅ Sesi telah di-reset karena kegagalan otentikasi");
       });
     });
 
     // Client ready event
     this.whatsAppClient.on("ready", () => {
-      console.log("✅ WhatsApp Web client sudah aktif!");
+      console.log("✅ Klien WhatsApp Web sudah aktif!");
       this.isWhatsAppReady = true;
       this.isWhatsAppInitializing = false;
     });
@@ -307,45 +308,45 @@ export class NotificationService {
 
     // Disconnected event
     this.whatsAppClient.on("disconnected", (reason) => {
-      console.log("⚠️ WhatsApp Web disconnected:", reason);
+      console.log("⚠️ WhatsApp Web terputus:", reason);
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
 
-      // Check if disconnect reason requires QR code
+      // Periksa apakah alasan putus membutuhkan QR code baru
       if (
         reason === "LOGOUT" ||
         reason === "CONFLICT" ||
         reason === "UNLAUNCHED"
       ) {
-        console.log("🔄 Session invalid, akan memerlukan QR code baru...");
-        // Clean up corrupted session
+        console.log("🔄 Sesi tidak valid, akan membutuhkan QR code baru...");
+        // Bersihkan sesi yang korup
         this.cleanupSessionFiles().then(() => {
-          console.log("🗑️ Corrupted session cleaned up");
+          console.log("🗑️ Sesi yang korup telah dibersihkan");
         });
       }
 
-      // Auto-reconnect after disconnection (with delay)
+      // Auto-reconnect setelah terputus (dengan jeda)
       setTimeout(() => {
-        console.log("🔄 Attempting to reconnect WhatsApp Web...");
+        console.log("🔄 Mencoba menyambungkan kembali WhatsApp Web...");
         this.startWhatsAppInitialization().catch((error) => {
-          console.error("❌ Auto-reconnect failed:", error);
+          console.error("❌ Gagal auto-reconnect:", error);
         });
-      }, 10000); // 10 second delay
+      }, 10000); // Jeda 10 detik
     });
 
     // Error event
     this.whatsAppClient.on("error", (error) => {
-      console.error("❌ WhatsApp Web error:", error);
+      console.error("❌ Error WhatsApp Web:", error);
       this.isWhatsAppReady = false;
 
-      // Handle specific errors
+      // Tangani error spesifik
       if (
         error.message.includes("Session closed") ||
         error.message.includes("Protocol error")
       ) {
-        console.log("📱 Session/Protocol error, cleaning up...");
+        console.log("📱 Error sesi/protokol, membersihkan...");
         this.cleanupSessionFiles().then(() => {
-          console.log("🗑️ Session cleaned up due to error");
+          console.log("🗑️ Sesi dibersihkan karena error");
         });
       }
     });
@@ -363,42 +364,42 @@ export class NotificationService {
 
     // Remote session saved event
     this.whatsAppClient.on("remote_session_saved", () => {
-      console.log("💾 WhatsApp session remote saved successfully");
-      console.log("🔗 Session persistence verified");
+      console.log("💾 Sesi WhatsApp remote berhasil disimpan");
+      console.log("🔗 Persistensi sesi terverifikasi");
     });
 
     // Add change state event for better debugging
     this.whatsAppClient.on("change_state", (state) => {
-      console.log(`🔄 WhatsApp state changed to: ${state}`);
+      console.log(`🔄 Status WhatsApp berubah menjadi: ${state}`);
     });
   }
 
   /**
-   * Start WhatsApp client initialization
+   * Mulai inisialisasi klien WhatsApp
    */
   private async startWhatsAppInitialization(): Promise<void> {
     if (this.isWhatsAppInitializing) {
-      console.log("⚠️ WhatsApp client already initializing, skipping...");
+      console.log("⚠️ Klien WhatsApp sedang dalam proses inisialisasi, lewati...");
       return;
     }
 
     if (this.isWhatsAppReady) {
-      console.log("✅ WhatsApp client already ready");
+      console.log("✅ Klien WhatsApp sudah siap");
       return;
     }
 
-    console.log("🚀 Starting WhatsApp Web initialization...");
+    console.log("🚀 Memulai inisialisasi WhatsApp Web...");
     this.isWhatsAppInitializing = true;
 
     try {
-      // Check if session exists before initializing
+      // Cek apakah sesi sudah ada sebelum inisialisasi
       const sessionExists = await this.checkSessionExists();
-      console.log(`� Session exists: ${sessionExists ? "YES" : "NO"}`);
+      console.log(`📁 Status sesi: ${sessionExists ? "ADA" : "TIDAK ADA"}`);
 
       if (sessionExists) {
-        console.log("📱 Mencari session yang ada...");
+        console.log("📱 Mencari sesi yang ada...");
       } else {
-        console.log("📱 Tidak ada session yang ditemukan.");
+        console.log("📱 Tidak ada sesi yang ditemukan.");
       }
 
       // Initialize with extended timeout for WhatsApp Web
@@ -412,24 +413,24 @@ export class NotificationService {
 
       await Promise.race([initPromise, timeoutPromise]);
     } catch (error) {
-      console.error("❌ WhatsApp initialization failed:", error);
+      console.error("❌ Inisialisasi WhatsApp gagal:", error);
       this.isWhatsAppInitializing = false;
 
-      // If timeout, likely session is corrupted
+      // Jika timeout, kemungkinan sesi korup
       if (error instanceof Error && error.message.includes("timeout")) {
         console.log(
-          "🗑️ Initialization timeout, cleaning up corrupted session..."
+          "🗑️ Timeout inisialisasi, membersihkan sesi yang korup..."
         );
         await this.cleanupSessionFiles();
 
-        // Try one more time after cleanup with longer delay
-        console.log("🔄 Retrying after session cleanup...");
+        // Coba sekali lagi setelah pembersihan dengan jeda lebih lama
+        console.log("🔄 Mencoba lagi setelah pembersihan sesi...");
         await new Promise((resolve) => setTimeout(resolve, 5000));
 
         try {
           this.isWhatsAppInitializing = true;
           console.log(
-            "🔄 Second attempt: initializing fresh WhatsApp client..."
+            "🔄 Percobaan kedua: menginisialisasi klien WhatsApp baru..."
           );
 
           // Reinitialize client completely
@@ -439,29 +440,29 @@ export class NotificationService {
           const isReady = await this.waitForWhatsAppReady(120000); // 2 minutes
 
           if (!isReady) {
-            throw new Error("WhatsApp Web still not ready after retry");
+            throw new Error("WhatsApp Web masih belum siap setelah percobaan ulang");
           }
         } catch (retryError) {
           console.error(
-            "❌ WhatsApp initialization failed even after cleanup:",
+            "❌ Inisialisasi WhatsApp gagal meskipun sudah dibersihkan:",
             retryError
           );
           this.isWhatsAppInitializing = false;
           this.whatsAppDisabled = true;
           console.log(
-            "⚠️ WhatsApp notifications permanently disabled for this session"
+            "⚠️ Notifikasi WhatsApp dinonaktifkan permanen untuk sesi ini"
           );
         }
       } else {
-        // Other errors
-        console.log("❌ Non-timeout error, disabling WhatsApp service");
+        // Error lainnya
+        console.log("❌ Bukan error timeout, menonaktifkan layanan WhatsApp");
         this.whatsAppDisabled = true;
       }
     }
   }
 
   /**
-   * Wait for WhatsApp client to be ready
+   * Tunggu sampai klien WhatsApp siap digunakan
    */
   private async waitForWhatsAppReady(
     timeoutMs: number = 60000
@@ -672,6 +673,7 @@ export class NotificationService {
           ds.pin as field_name, ds.type as data_type, ds.description as datastream_description,
           dev.description as device_description,
           u.phone as whatsapp_number, u.name as user_name, u.email as user_email,
+          u.whatsapp_notif as whatsapp_notification_enabled,
           ac.operator as condition_operator, ac.threshold as condition_value
         FROM alarms a
         JOIN datastreams ds ON a.datastream_id = ds.id  
@@ -805,13 +807,29 @@ export class NotificationService {
             console.log(`📱 [ALARM TRIGGERED] Mengirim notifikasi browser`);
             const browserResult = await this.sendBrowserNotification(alarm, numericValue);
             
-            // Kirim notifikasi WhatsApp jika tersedia
-            if (alarm.whatsapp_number) {
-              console.log(`📲 [ALARM TRIGGERED] Mengirim notifikasi WhatsApp ke ${alarm.whatsapp_number}`);
+            // Kirim notifikasi WhatsApp jika user mengaktifkan dan nomor tersedia
+            console.log(`🔍 [ALARM TRIGGERED] Checking WhatsApp notification conditions:`, {
+              whatsapp_number: alarm.whatsapp_number,
+              whatsapp_notification_enabled: alarm.whatsapp_notification_enabled,
+              should_send: Boolean(alarm.whatsapp_notification_enabled) && Boolean(alarm.whatsapp_number)
+            });
+            
+            if (Boolean(alarm.whatsapp_notification_enabled) && alarm.whatsapp_number && alarm.whatsapp_number.trim() !== '') {
+              console.log(`📲 [ALARM TRIGGERED] Mengirim notifikasi WhatsApp ke ${alarm.whatsapp_number} untuk alarm ${alarm.id}`);
               const whatsappMessage = this.formatAlarmMessage(alarm, numericValue);
               const whatsappResult = await this.sendWhatsAppNotification(alarm.whatsapp_number, whatsappMessage);
+              
+              if (whatsappResult.success) {
+                console.log(`✅ [ALARM TRIGGERED] WhatsApp notification berhasil dikirim untuk alarm ${alarm.id}`);
+              } else {
+                console.warn(`⚠️ [ALARM TRIGGERED] WhatsApp notification gagal untuk alarm ${alarm.id}:`, whatsappResult.error_message);
+              }
             } else {
-              console.log(`ℹ️ [ALARM TRIGGERED] Nomor WhatsApp tidak tersedia untuk alarm ${alarm.id}`);
+              console.log(`ℹ️ [ALARM TRIGGERED] WhatsApp notification skipped untuk alarm ${alarm.id}:`, {
+                whatsapp_enabled: Boolean(alarm.whatsapp_notification_enabled),
+                has_phone: Boolean(alarm.whatsapp_number),
+                phone_value: alarm.whatsapp_number
+              });
             }
 
             console.log(`✅ [ALARM TRIGGERED] Semua notifikasi alarm berhasil diproses untuk alarm ${alarm.id}`);
@@ -845,7 +863,7 @@ export class NotificationService {
    */
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      console.log("🧪 Testing WhatsApp Web connection...");
+      console.log("🧪 Menguji koneksi WhatsApp Web...");
 
       if (this.whatsAppDisabled) {
         return {
@@ -873,10 +891,10 @@ export class NotificationService {
         } (${info.wid.user})`,
       };
     } catch (error) {
-      console.error("❌ WhatsApp Web connection test failed:", error);
+      console.error("❌ Uji koneksi WhatsApp Web gagal:", error);
       return {
         success: false,
-        message: `Connection test failed: ${
+        message: `Uji koneksi gagal: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       };
@@ -919,7 +937,7 @@ export class NotificationService {
         },
       };
     } catch (error) {
-      console.error("❌ Error getting alarm stats:", error);
+      console.error("❌ Gagal mengambil statistik alarm:", error);
       throw error;
     }
   }
@@ -939,17 +957,17 @@ export class NotificationService {
    */
   async resetWhatsApp(): Promise<void> {
     try {
-      console.log("🔄 Resetting WhatsApp Web connection...");
+      console.log("🔄 Mereset koneksi WhatsApp Web...");
 
       this.isWhatsAppReady = false;
       this.isWhatsAppInitializing = false;
 
       if (this.whatsAppClient) {
         try {
-          console.log("️ Destroying WhatsApp client...");
+          console.log("🛑 Menghentikan klien WhatsApp...");
           await this.whatsAppClient.destroy();
         } catch (destroyError) {
-          console.log("⚠️ Warning during client destruction:", destroyError);
+          console.log("⚠️ Peringatan saat menghentikan klien:", destroyError);
         }
       }
 
@@ -959,21 +977,21 @@ export class NotificationService {
       // Wait a bit before reinitializing
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // Reinitialize
-      console.log("🔄 Reinitializing WhatsApp client...");
+      // Inisialisasi ulang
+      console.log("🔄 Menginisialisasi ulang klien WhatsApp...");
       this.initializeWhatsAppClient();
 
       console.log(
-        "✅ WhatsApp Web reset complete, new QR code will be generated"
+        "✅ Reset WhatsApp Web selesai, QR code baru akan dihasilkan"
       );
     } catch (error) {
-      console.error("❌ Error during WhatsApp reset:", error);
+      console.error("❌ Error saat mereset WhatsApp:", error);
       this.whatsAppDisabled = true;
     }
   }
 
   /**
-   * Clean up session files (for troubleshooting)
+   * Bersihkan berkas sesi (untuk troubleshooting)
    */
   private async cleanupSessionFiles(): Promise<void> {
     try {
@@ -995,27 +1013,27 @@ export class NotificationService {
         // Wait a bit to ensure filesystem operations complete
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (accessError) {
-        console.log("📁 No session files to clean up (directory not found)");
+        console.log("📁 Tidak ada berkas sesi untuk dibersihkan (direktori tidak ditemukan)");
       }
     } catch (error) {
-      console.log("⚠️ Warning: Could not clean up session files:", error);
+      console.log("⚠️ Peringatan: Tidak dapat membersihkan berkas sesi:", error);
     }
   }
 
   /**
-   * Force generate new QR code
+   * Paksa generate QR code baru
    */
   async forceNewQRCode(): Promise<void> {
     try {
-      console.log("🔄 Forcing new QR code generation...");
+      console.log("🔄 Memaksa pembuatan QR code baru...");
       await this.resetWhatsApp();
     } catch (error) {
-      console.error("❌ Error forcing new QR code:", error);
+      console.error("❌ Error saat memaksa QR code baru:", error);
     }
   }
 
   /**
-   * Check if session exists
+   * Cek apakah sesi tersedia
    */
   async checkSessionExists(): Promise<boolean> {
     try {
@@ -1033,7 +1051,7 @@ export class NotificationService {
 
         // Check for various session file patterns
         const files = await fs.readdir(sessionPath);
-        console.log(`📁 Session directory contains: ${files.length} files`);
+        console.log(`📁 Direktori sesi berisi: ${files.length} berkas`);
 
         // Look for critical session files
         //@ts-ignore
@@ -1049,7 +1067,7 @@ export class NotificationService {
         const hasDefault = files.includes("Default");
 
         console.log(
-          `� Session validation - WABrowserId: ${hasWABrowserId}, WASecretBundle: ${hasWASecretBundle}, WAToken: ${hasWAToken}, Default: ${hasDefault}`
+          `🧪 Validasi sesi - WABrowserId: ${hasWABrowserId}, WASecretBundle: ${hasWASecretBundle}, WAToken: ${hasWAToken}, Default: ${hasDefault}`
         );
 
         // Session is valid if we have at least some critical files or Default directory
@@ -1069,7 +1087,7 @@ export class NotificationService {
                 file.includes("IndexedDB")
             );
             console.log(
-              `📁 Default directory has ${defaultFiles.length} files, session storage: ${hasSessionStorage}`
+              `📁 Direktori Default memiliki ${defaultFiles.length} berkas, session storage: ${hasSessionStorage}`
             );
             return hasSessionStorage;
           } catch {
@@ -1079,11 +1097,11 @@ export class NotificationService {
 
         return isValid;
       } catch {
-        console.log("📁 Session directory not found");
+        console.log("📁 Direktori sesi tidak ditemukan");
         return false;
       }
     } catch (error) {
-      console.error("❌ Error checking session:", error);
+      console.error("❌ Error saat memeriksa sesi:", error);
       return false;
     }
   }

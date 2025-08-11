@@ -1,17 +1,17 @@
-// Hook dan Provider untuk WhatsApp notification status management
-// Handles: status fetching, enable/disable notifications, context sharing
+// Hook dan Provider untuk manajemen status notifikasi WhatsApp
+// Menangani: pengambilan status, mengaktifkan/menonaktifkan notifikasi, dan berbagi context
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { fetchFromBackend } from '@/lib/helper';
 
-// Context untuk share WhatsApp status across components
+// Context untuk berbagi status WhatsApp antar komponen
 const WhatsAppStatusContext = createContext();
 
-// Provider component untuk WhatsApp notification status
+// Komponen Provider untuk status notifikasi WhatsApp
 export function WhatsAppStatusProvider({ children }) {
   const [whatsappEnabled, setWhatsappEnabled] = useState(false); // Status notifikasi WA
   const [loading, setLoading] = useState(true);
 
-  // Fetch current WhatsApp notification status dari backend
+  // Ambil status notifikasi WhatsApp saat ini dari backend
   const fetchWhatsAppStatus = useCallback(async () => {
     try {
       setLoading(true);
@@ -21,13 +21,13 @@ export function WhatsAppStatusProvider({ children }) {
         setWhatsappEnabled(data.whatsapp_notifications_enabled || false);
       }
     } catch (error) {
-      console.error("Error fetching WhatsApp status:", error);
+      console.error("Kesalahan saat mengambil status WhatsApp:", error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Update WhatsApp status (biasanya dipanggil setelah API call berhasil)
+  // Perbarui status WhatsApp (biasanya dipanggil setelah API call berhasil)
   const updateWhatsAppStatus = useCallback((newStatus) => {
     setWhatsappEnabled(newStatus);
   }, []);
@@ -54,16 +54,16 @@ export function WhatsAppStatusProvider({ children }) {
   );
 }
 
-// Hook to use WhatsApp status
+// Hook untuk menggunakan status WhatsApp dari context
 export function useWhatsAppStatus() {
   const context = useContext(WhatsAppStatusContext);
   if (!context) {
-    throw new Error('useWhatsAppStatus must be used within a WhatsAppStatusProvider');
+    throw new Error('useWhatsAppStatus harus digunakan di dalam WhatsAppStatusProvider');
   }
   return context;
 }
 
-// Custom hook for components that don't need the provider
+// Hook mandiri untuk komponen yang tidak memakai Provider
 export function useWhatsAppStatusStandalone() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -77,7 +77,7 @@ export function useWhatsAppStatusStandalone() {
         setWhatsappEnabled(data.whatsapp_notifications_enabled || false);
       }
     } catch (error) {
-      console.error("Error fetching WhatsApp status:", error);
+      console.error("Kesalahan saat mengambil status WhatsApp:", error);
     } finally {
       setLoading(false);
     }

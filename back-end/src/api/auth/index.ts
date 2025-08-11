@@ -27,7 +27,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
   return (
     new Elysia({ prefix: "/auth" })
 
-      // ===== USER REGISTRATION ENDPOINT =====
+      // ===== ENDPOINT REGISTRASI PENGGUNA =====
       // POST /auth/register - Mendaftarkan user baru dengan verifikasi OTP
       .post(
         "/register",
@@ -41,7 +41,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postRegisterSchema
       )
 
-      // ===== OTP VERIFICATION ENDPOINT =====
+      // ===== ENDPOINT VERIFIKASI OTP =====
       // POST /auth/verify-otp - Verifikasi kode OTP untuk aktivasi akun
       .post(
         "/verify-otp",
@@ -53,8 +53,8 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       )
 
-      // ===== RESEND OTP ENDPOINT =====
-      // POST /auth/resend-otp - Kirim ulang kode OTP jika expired/tidak diterima
+      // ===== ENDPOINT KIRIM ULANG OTP =====
+      // POST /auth/resend-otp - Kirim ulang kode OTP jika kedaluwarsa/tidak diterima
       .post(
         "/resend-otp",
         async ({ body }: any) => {
@@ -65,7 +65,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         }
       )
 
-      // ===== ADMIN USER REGISTRATION ENDPOINT =====
+      // ===== ENDPOINT REGISTRASI USER OLEH ADMIN =====
       // POST /auth/admin/register - Admin mendaftarkan user baru (bypass OTP)
       .post(
         "/admin/register",
@@ -76,10 +76,13 @@ export function authRoutes(authService: AuthService, userService: UserService) {
           // Validasi apakah user yang request adalah admin
           const adminUser = await userService.getUserById(decoded.sub);
           if (!adminUser?.is_admin) {
-            return new Response(JSON.stringify({
-              status: "error",
-              message: "Unauthorized: Admin access required"
-            }), { status: 403 });
+            return new Response(
+              JSON.stringify({
+                status: "error",
+                message: "Tidak terotorisasi: Akses admin diperlukan",
+              }),
+              { status: 403 }
+            );
           }
 
           const result = await authService.registerAdmin(body);
@@ -91,7 +94,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postRegisterSchema
       )
 
-      // ===== USER LOGIN ENDPOINT =====
+      // ===== ENDPOINT LOGIN PENGGUNA =====
       // POST /auth/login - Login user dengan email/password dan set authentication cookies
       .post(
         "/login",
@@ -122,14 +125,14 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               status: result.status,
             });
           } catch (error) {
-            console.error(error); // Log error untuk debugging
+            console.error("Kesalahan saat login:", error);
             return { status: 500, message: "Terjadi kesalahan pada server." };
           }
         },
         postLoginSchema
       )
 
-      // ===== TOKEN VERIFICATION ENDPOINT =====
+      // ===== ENDPOINT VERIFIKASI TOKEN =====
       // GET /auth/verify-token - Verifikasi validitas JWT token dari cookies
       .get(
         "/verify-token",
@@ -149,7 +152,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         getVerifyTokenSchema
       )
 
-      // ===== REFRESH TOKEN ENDPOINT =====
+      // ===== ENDPOINT REFRESH TOKEN =====
       // GET /auth/renew/:id - Generate access token baru menggunakan refresh token
       .get(
         "/renew/:id",
@@ -168,7 +171,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         getRefreshTokenSchema
       )
 
-      // ===== GOOGLE OAUTH LOGIN ENDPOINT =====
+      // ===== ENDPOINT LOGIN GOOGLE OAUTH =====
       // POST /auth/google - Login menggunakan Google OAuth dengan token/code
       .post(
         "/google",
@@ -199,59 +202,69 @@ export function authRoutes(authService: AuthService, userService: UserService) {
               status: result.status,
             });
           } catch (error) {
-            console.error(error); // Log error untuk debugging
+            console.error("Kesalahan saat login Google:", error);
             return { status: 500, message: "Terjadi kesalahan pada server." };
           }
         },
         postGoogleLoginSchema
       )
 
-      // ===== GOOGLE OAUTH CALLBACK ENDPOINT =====
+      // ===== ENDPOINT CALLBACK GOOGLE OAUTH =====
       // GET /auth/google/callback - Handle redirect dari Google OAuth untuk mobile app
-      .get("/google/callback", 
+      .get(
+        "/google/callback",
         // @ts-ignore
         async ({ request, cookie, jwt }) => {
-        const url = new URL(request.url);
-        const code = url.searchParams.get("code"); // Authorization code dari Google
-        if (!code) {
-          return new Response(
-            JSON.stringify({ message: "Authorization code not provided" }),
-            { status: 400 }
-          );
-        }
-        
-        try {
-          const result = await authService.googleLogin({ code, mode: "redirect" });
-          
-          if (result.status === 200 && result.user?.id && result.refreshToken) {
-            // Set authentication cookies
-            await setAuthCookie(
-              cookie,
-              jwt,
-              result.user.id.toString(),
-              result.refreshToken
+          const url = new URL(request.url);
+          const code = url.searchParams.get("code"); // Authorization code dari Google
+          if (!code) {
+            return new Response(
+              JSON.stringify({ message: "Authorization code tidak disediakan" }),
+              { status: 400 }
             );
-            
-            // Generate JWT token untuk redirect ke aplikasi Android
-            const token = await jwt.sign({
-              sub: result.user.id,
-              iat: Date.now(),
-              type: "access",
-            });
-            
-            // Redirect ke aplikasi Android WebView dengan custom scheme
-            return redirect(`misredapp://callback?token=${token}`);
-          } else {
-            // Jika login gagal, redirect ke halaman error
-            return redirect(`${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(result.message || "Authentication failed")}`);
           }
-        } catch (error) {
-          console.error("Google callback error:", error);
-          return redirect(`${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent("Authentication failed")}`);
+          
+          try {
+            const result = await authService.googleLogin({ code, mode: "redirect" });
+            
+            if (result.status === 200 && result.user?.id && result.refreshToken) {
+              // Set authentication cookies
+              await setAuthCookie(
+                cookie,
+                jwt,
+                result.user.id.toString(),
+                result.refreshToken
+              );
+              
+              // Generate JWT token untuk redirect ke aplikasi Android
+              const token = await jwt.sign({
+                sub: result.user.id,
+                iat: Date.now(),
+                type: "access",
+              });
+              
+              // Redirect ke aplikasi Android WebView dengan custom scheme
+              return redirect(`misredapp://callback?token=${token}`);
+            } else {
+              // Jika login gagal, redirect ke halaman error
+              return redirect(
+                `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(
+                  result.message || "Autentikasi gagal"
+                )}`
+              );
+            }
+          } catch (error) {
+            console.error("Google callback error:", error);
+            return redirect(
+              `${process.env.FRONTEND_URL}/auth/error?message=${encodeURIComponent(
+                "Autentikasi gagal"
+              )}`
+            );
+          }
         }
-      })
+      )
 
-      // ===== FORGOT PASSWORD RESET ENDPOINT =====
+      // ===== ENDPOINT RESET PASSWORD (LUPA PASSWORD) =====
       // PUT /auth/reset-forgotten-password - Reset password menggunakan OTP (lupa password)
       .put(
         "/reset-forgotten-password",
@@ -265,7 +278,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postResetForgottenPasswordSchema
       )
 
-      // ===== PASSWORD CHANGE ENDPOINT =====
+      // ===== ENDPOINT GANTI PASSWORD =====
       // PUT /auth/reset-password - Ganti password untuk user yang sudah login
       .put(
         "/reset-password",
@@ -273,17 +286,14 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         async ({ jwt, cookie, body, set }: any) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            if (
-              decoded.sub === "1"
-            ) {
-              throw new Error(
-                "Password akun ini tidak dapat diubah saat kuisioner berlangsung"
-              );
-            }
+            
             if (!decoded) {
-              return new Response(JSON.stringify({ message: "Unauthorized" }), {
-                status: 401,
-              });
+              return new Response(
+                JSON.stringify({ message: "Tidak terotorisasi" }),
+                {
+                  status: 401,
+                }
+              );
             }
             const result = await authService.resetPassword(decoded.sub, body);
             return new Response(JSON.stringify(result), {
@@ -291,19 +301,19 @@ export function authRoutes(authService: AuthService, userService: UserService) {
             });
           } catch (error: any) {
             if (error.message && error.message.includes("Unauthorized")) {
-              console.error("❌ Authentication error:", error.message);
+              console.error("❌ Error autentikasi:", error.message);
               set.status = 401;
               return {
                 success: false,
-                message: "Authentication failed",
+                message: "Autentikasi gagal",
               };
             }
 
-            // Handle other errors
+            // Tangani error lainnya
             return new Response(
               JSON.stringify({
                 success: false,
-                message: error.message || "Internal server error",
+                message: error.message || "Terjadi kesalahan pada server",
               }),
               { status: 500 }
             );
@@ -312,7 +322,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postResetPasswordSchema
       )
 
-      // ===== USER LOGOUT ENDPOINT =====
+      // ===== ENDPOINT LOGOUT PENGGUNA =====
       // POST /auth/logout - Logout user dan hapus authentication cookies
       .post(
         "/logout",
@@ -328,7 +338,7 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         postLogoutSchema
       )
 
-      // ===== ADMIN AUTHORIZATION CHECK ENDPOINT =====
+      // ===== ENDPOINT CEK AKSES ADMIN =====
       // GET /auth/check-admin - Cek apakah user yang login memiliki akses admin
       .get(
         "/check-admin",
@@ -336,42 +346,34 @@ export function authRoutes(authService: AuthService, userService: UserService) {
         async ({ jwt, cookie }) => {
           try {
             const decoded = await authorizeRequest(jwt, cookie);
-            // console.log("🔍 Decoded JWT:", { sub: decoded.sub });
             
             const user = await userService.getUserById(decoded.sub);
-            // console.log("🔍 User from database:", { 
-            //   id: user?.id, 
-            //   name: user?.name, 
-            //   email: user?.email,
-            //   is_admin: user?.is_admin,
-            //   is_admin_type: typeof user?.is_admin,
-            //   boolean_value: Boolean(user?.is_admin)
-            // });
             
             const response = {
               status: 200,
-              isAdmin: Boolean(user?.is_admin), // Convert ke boolean untuk konsistensi
+              isAdmin: Boolean(user?.is_admin),
               user: {
                 id: user?.id,
                 name: user?.name,
                 email: user?.email,
-              }
+              },
             };
             
-            // console.log("🔍 Sending response:", response);
-            
-            return new Response(JSON.stringify(response), { 
+            return new Response(JSON.stringify(response), {
               status: 200,
               headers: {
-                'Content-Type': 'application/json'
-              }
+                "Content-Type": "application/json",
+              },
             });
           } catch (error) {
-            console.error("❌ Admin check error:", error);
-            return new Response(JSON.stringify({
-              status: 401,
-              message: "Unauthorized"
-            }), { status: 401 });
+            console.error("❌ Error cek admin:", error);
+            return new Response(
+              JSON.stringify({
+                status: 401,
+                message: "Tidak terotorisasi",
+              }),
+              { status: 401 }
+            );
           }
         }
       )
