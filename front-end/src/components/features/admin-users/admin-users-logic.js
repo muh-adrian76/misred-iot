@@ -39,8 +39,8 @@ export function useAdminUsersLogic() {
       
       // Cek apakah response sukses
       if (!response.ok) {
-        console.error("❌ HTTP Error:", response.status, response.statusText);
-        errorToast(`HTTP Error: ${response.status}`);
+        console.error("❌ Kesalahan HTTP:", response.status, response.statusText);
+        errorToast(`Kesalahan HTTP: ${response.status}`);
         return;
       }
       
@@ -52,7 +52,7 @@ export function useAdminUsersLogic() {
         // Set data users jika berhasil
         setUsers(data.data || []);
       } else {
-        console.error("❌ Backend returned error:", data);
+  console.error("❌ Backend mengembalikan error:", data);
         errorToast(data.message || "Gagal memuat data users");
       }
     } catch (error) {

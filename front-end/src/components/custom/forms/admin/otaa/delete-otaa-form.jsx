@@ -35,7 +35,7 @@ export default function DeleteOTAAForm({
               <div className="p-3 bg-muted rounded-md space-y-1 text-sm">
                 <p><strong>Board Type:</strong> {firmwareToDelete.board_type}</p>
                 <p><strong>Versi:</strong> {firmwareToDelete.firmware_version}</p>
-                <p><strong>User ID:</strong> {firmwareToDelete.user_id}</p>
+                <p><strong>ID Pengguna:</strong> {firmwareToDelete.user_id}</p>
               </div>
               <p className="text-destructive font-medium">
                 ⚠️ File fisik dan data database akan dihapus. Tindakan ini tidak dapat dibatalkan.

@@ -55,7 +55,7 @@ export default function ThemeButton({variant = "outline"}) {
 
   return (
     // Tooltip untuk menjelaskan fungsi button
-    <DescriptionTooltip content="Ganti Tema">
+  <DescriptionTooltip content="Ganti Tema">
       <Button
         variant={variant} // Variant button (default: outline)
         size="icon" // Ukuran button khusus untuk ikon
@@ -83,7 +83,7 @@ export default function ThemeButton({variant = "outline"}) {
               ) : (
                 <Sun className="w-5 h-5" />
               )}
-              <span className="sr-only">Toggle theme</span>
+              <span className="sr-only">Ganti tema</span>
             </motion.div>
           )}
         </AnimatePresence>

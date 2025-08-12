@@ -96,7 +96,7 @@ export default function LoginForm({
               <div className="flex gap-4 mb-4 justify-center items-center">
                 <Link href="/auth" className="flex gap-3 items-center">
                   <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-                    <img src={brandLogo} alt="Logo" />
+                    <img src={brandLogo} alt="Logo Merek" />
                   </div>
                   <h1 className={`text-3xl tracking-wider ${logoFont}`}>
                     MiSREd-IoT
@@ -179,7 +179,7 @@ export default function LoginForm({
               <div className="grid grid-cols-1">
                 <GoogleButton
                   router={router}
-                  action="Log In"
+                  action="Masuk"
                   isLoading={isLoading}
                   setIsLoading={setIsLoading}
                   setUser={setUser}
@@ -191,7 +191,7 @@ export default function LoginForm({
       </motion.div>
     </div>
 
-    {/* OTP Modal */}
+  {/* Modal OTP untuk verifikasi akun yang belum aktif */}
     <OTPModal
       isOpen={showOTPModal}
       onClose={() => setShowOTPModal(false)}

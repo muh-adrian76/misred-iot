@@ -1,12 +1,12 @@
-// Admin Overviews Dialogs - untuk dialog/modal yang diperlukan di halaman overviews
+// Dialog Admin Overviews - kumpulan dialog/modal yang diperlukan di halaman ringkasan admin
 
 export default function AdminOverviewsDialogs({ 
-  // Props untuk dialog states akan ditambahkan sesuai kebutuhan
+  // Tambahkan props untuk mengontrol state dialog sesuai kebutuhan
 }) {
   return (
     <>
-      {/* Dialog components akan ditambahkan di sini sesuai kebutuhan */}
-      {/* Contoh: Settings Dialog, System Status Dialog, dll */}
+      {/* Komponen dialog akan ditambahkan di sini sesuai kebutuhan */}
+      {/* Contoh: Dialog Pengaturan, Dialog Status Sistem, dll. */}
     </>
   );
 }

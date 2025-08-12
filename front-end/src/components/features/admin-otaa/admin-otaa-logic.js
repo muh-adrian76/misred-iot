@@ -1,6 +1,6 @@
-// Custom hook untuk Admin OTAA Logic - handles all firmware management state and operations
-// State management: firmwares list, loading states, search, filters
-// API operations: fetchFirmwares, uploadFirmware, deleteFirmware, downloadFirmware
+// Hook kustom untuk Logika Admin OTAA - mengelola seluruh state dan operasi manajemen firmware
+// Manajemen state: daftar firmware, status loading, pencarian, filter
+// Operasi API: fetchFirmwares, uploadFirmware, deleteFirmware, downloadFirmware
 "use client";
 
 import { useState, useEffect } from "react";
@@ -9,26 +9,26 @@ import { fetchFromBackend } from "@/lib/helper";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 
 export function useAdminOTAALogic() {
-  // Authentication state
+  // State autentikasi
   const { isAuthenticated, isAdmin } = useAdminAuth();
 
-  // Main data state
-  const [firmwares, setFirmwares] = useState([]); // All firmwares
-  const [globalFirmwares, setGlobalFirmwares] = useState({}); // Global firmwares grouped by board type
-  const [loading, setLoading] = useState(false); // Loading state for fetch
-  const [globalLoading, setGlobalLoading] = useState(false); // Loading state for global firmwares
-  const [uploading, setUploading] = useState(false); // Loading state for upload
+  // State data utama
+  const [firmwares, setFirmwares] = useState([]); // Semua firmware
+  const [globalFirmwares, setGlobalFirmwares] = useState({}); // Firmware global dikelompokkan per tipe board
+  const [loading, setLoading] = useState(false); // Status loading untuk fetch
+  const [globalLoading, setGlobalLoading] = useState(false); // Status loading untuk firmware global
+  const [uploading, setUploading] = useState(false); // Status loading untuk upload
 
-  // Search and filter state
-  const [searchTerm, setSearchTerm] = useState(""); // Search functionality
-  const [selectedBoardType, setSelectedBoardType] = useState("all"); // Filter by board type
-  const [boardTypes, setBoardTypes] = useState([]); // Available board types
+  // State pencarian dan filter
+  const [searchTerm, setSearchTerm] = useState(""); // Fitur pencarian
+  const [selectedBoardType, setSelectedBoardType] = useState("all"); // Filter berdasarkan tipe board
+  const [boardTypes, setBoardTypes] = useState([]); // Daftar tipe board yang tersedia
 
-  // Dialog states
+  // State dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [firmwareToDelete, setFirmwareToDelete] = useState(null);
 
-  // Upload form state
+  // State form upload
   const [uploadForm, setUploadForm] = useState({
     board_type: "",
     firmware_version: "",
@@ -37,9 +37,9 @@ export function useAdminOTAALogic() {
     description: ""
   });
 
-  // ===== API OPERATIONS =====
+  // ===== OPERASI API =====
 
-  // Fetch firmwares from ADMIN API (semua firmware dari semua user)
+  // Ambil firmware dari ADMIN API (semua firmware dari semua pengguna)
   const fetchFirmwares = async () => {
     setLoading(true);
     try {
@@ -48,7 +48,7 @@ export function useAdminOTAALogic() {
         const data = await response.json();
         if (data.success) {
           setFirmwares(data.data);
-          // Extract unique board types for filter
+          // Ambil tipe board unik untuk filter
           const types = [...new Set(data.data.map(fw => fw.board_type))];
           setBoardTypes(types);
         } else {
@@ -57,14 +57,14 @@ export function useAdminOTAALogic() {
         }
       }
     } catch (error) {
-      console.error("Error fetching firmwares:", error);
+      console.error("Gagal mengambil daftar firmware:", error);
       errorToast("Gagal memuat data firmware");
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch global firmwares grouped by board type
+  // Ambil firmware global yang dikelompokkan per tipe board
   const fetchGlobalFirmwares = async () => {
     setGlobalLoading(true);
     try {
@@ -78,18 +78,18 @@ export function useAdminOTAALogic() {
         }
       }
     } catch (error) {
-      console.error("Error fetching global firmwares:", error);
+      console.error("Gagal mengambil firmware global:", error);
       errorToast("Gagal memuat data firmware global");
     } finally {
       setGlobalLoading(false);
     }
   };
 
-  // Handle file upload validation
+  // Validasi saat unggah file
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
+      // Validasi tipe file
       const allowedTypes = ['.bin', '.hex'];
       const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
       
@@ -98,8 +98,8 @@ export function useAdminOTAALogic() {
         return;
       }
 
-      // Validate file size (10MB max)
-      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      // Validasi ukuran file (maks 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB dalam byte
       if (file.size > maxSize) {
         errorToast("Ukuran file maksimal 10MB!");
         return;
@@ -113,7 +113,7 @@ export function useAdminOTAALogic() {
     }
   };
 
-  // Admin dapat mengupload firmware GLOBAL untuk semua user dengan board type yang sama
+  // Admin dapat mengunggah firmware GLOBAL untuk semua pengguna dengan tipe board yang sama
   const handleUploadFirmware = async (e) => {
     e.preventDefault();
     
@@ -140,7 +140,7 @@ export function useAdminOTAALogic() {
       const data = await response.json();
       
       if (response.ok && data.success) {
-        successToast(`Firmware global berhasil diupload! Akan mempengaruhi ${data.data.affected_users} user dengan board ${data.data.board_type}.`);
+        successToast(`Firmware global berhasil diunggah! Akan mempengaruhi ${data.data.affected_users} pengguna dengan board ${data.data.board_type}.`);
         
         // Reset form
         setUploadForm({
@@ -151,25 +151,25 @@ export function useAdminOTAALogic() {
           description: ""
         });
         
-        // Refresh firmware list
+        // Segarkan daftar firmware
         await fetchFirmwares();
         await fetchGlobalFirmwares();
       } else {
-        throw new Error(data.message || "Gagal mengupload firmware global");
+        throw new Error(data.message || "Gagal mengunggah firmware global");
       }
     } catch (error) {
-      console.error("Upload error:", error);
-      errorToast(error.message || "Gagal mengupload firmware global!");
+      console.error("Kesalahan unggah:", error);
+      errorToast(error.message || "Gagal mengunggah firmware global!");
     } finally {
       setUploading(false);
     }
   };
 
-  // Handle download firmware
+  // Unduh firmware
   const handleDownload = async (boardType, filename) => {
     try {
       const response = await fetchFromBackend(`/otaa/download/${boardType}/${filename}`);
-      if (!response.ok) throw new Error("Gagal download firmware");
+      if (!response.ok) throw new Error("Gagal mengunduh firmware");
       
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -183,20 +183,20 @@ export function useAdminOTAALogic() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
-      successToast("Firmware berhasil didownload!");
+  successToast("Firmware berhasil diunduh!");
     } catch (error) {
-      console.error("Download error:", error);
-      errorToast("Gagal download firmware!");
+  console.error("Kesalahan unduh:", error);
+  errorToast("Gagal mengunduh firmware!");
     }
   };
 
-  // Handle delete start - open confirmation dialog
+  // Mulai hapus - buka dialog konfirmasi
   const handleDeleteStart = (firmware) => {
     setFirmwareToDelete(firmware);
     setDeleteDialogOpen(true);
   };
 
-  // Handle delete confirm - actually delete the firmware using ADMIN API
+  // Konfirmasi hapus - hapus firmware menggunakan ADMIN API
   const handleDeleteConfirm = async () => {
     if (!firmwareToDelete) return;
     
@@ -209,7 +209,7 @@ export function useAdminOTAALogic() {
         const result = await response.json();
         if (result.success) {
           successToast("Firmware berhasil dihapus!");
-          fetchFirmwares(); // Refresh data
+          fetchFirmwares(); // Segarkan data
         } else {
           errorToast(result.message || "Gagal menghapus firmware!");
         }
@@ -217,7 +217,7 @@ export function useAdminOTAALogic() {
         errorToast("Gagal menghapus firmware!");
       }
     } catch (error) {
-      console.error("Delete error:", error);
+      console.error("Kesalahan hapus:", error);
       errorToast("Gagal menghapus firmware!");
     } finally {
       setDeleteDialogOpen(false);
@@ -225,15 +225,15 @@ export function useAdminOTAALogic() {
     }
   };
 
-  // Handle delete cancel - close dialog
+  // Batalkan hapus - tutup dialog
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setFirmwareToDelete(null);
   };
 
-  // ===== COMPUTED VALUES =====
+  // ===== NILAI TURUNAN (COMPUTED) =====
 
-  // Filter firmwares based on search and board type (support owner_display untuk global vs user firmware)
+  // Filter firmware berdasarkan pencarian dan tipe board (mendukung owner_display untuk firmware global vs pengguna)
   const filteredFirmwares = firmwares.filter(firmware => {
     const matchesSearch = firmware.firmware_url.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           firmware.firmware_version.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -245,7 +245,7 @@ export function useAdminOTAALogic() {
     return matchesSearch && matchesBoardType;
   });
 
-  // Load data on component mount
+  // Muat data saat komponen dipasang
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
       fetchFirmwares();
@@ -253,7 +253,7 @@ export function useAdminOTAALogic() {
     }
   }, [isAuthenticated, isAdmin]);
 
-  // Daft board options for form select
+  // Daftar opsi board untuk pilihan di form
   const boardOptions = [
     "ESP32",
     "ESP8266",
@@ -262,37 +262,37 @@ export function useAdminOTAALogic() {
     "Lainnya",
   ];
 
-  // Return all state and functions for components to use
+  // Kembalikan semua state dan fungsi yang dibutuhkan komponen
   return {
-    // Authentication
+    // Autentikasi
     isAuthenticated,
     isAdmin,
     
-    // Data state
+    // State data
     firmwares,
     filteredFirmwares,
     globalFirmwares,
     boardTypes,
     boardOptions,
     
-    // Loading states
+    // Status loading
     loading,
     uploading,
     globalLoading,
     
-    // Search and filter
+    // Pencarian dan filter
     searchTerm,
     setSearchTerm,
     selectedBoardType,
     setSelectedBoardType,
     
-    // Upload form
+    // Form upload
     uploadForm,
     setUploadForm,
     handleFileUpload,
     handleUploadFirmware,
     
-    // Delete dialog
+    // Dialog hapus
     deleteDialogOpen,
     setDeleteDialogOpen,
     firmwareToDelete,
@@ -300,7 +300,7 @@ export function useAdminOTAALogic() {
     handleDeleteConfirm,
     handleDeleteCancel,
     
-    // Actions
+    // Aksi
     fetchFirmwares,
     fetchGlobalFirmwares,
     handleDownload,

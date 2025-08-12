@@ -126,7 +126,7 @@ export function LocationPicker({
         setActiveCity(city)
       }
     } catch (error) {
-      console.log("Error fetching location:", error)
+  console.log("Kesalahan mengambil lokasi:", error)
     } finally {
       setIsLoading(false)
     }
@@ -159,10 +159,10 @@ export function LocationPicker({
         setSuggestions([]) // Clear suggestions
         setIsPopoverOpen(false) // Close popover jika sedang terbuka
       } else {
-        console.log("No location found")
+  console.log("Lokasi tidak ditemukan")
       }
     } catch (error) {
-      console.log("Error searching location:", error)
+  console.log("Kesalahan mencari lokasi:", error)
     } finally {
       setIsLoading(false)
     }
@@ -175,7 +175,7 @@ export function LocationPicker({
   const getCurrentLocation = useCallback(() => {
     // Validasi browser environment - geolocation hanya tersedia di browser
     if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      setError("Geolocation is only available in browser environment")
+  setError("Geolokasi hanya tersedia di lingkungan browser")
       return
     }
 
@@ -184,7 +184,7 @@ export function LocationPicker({
 
     // Check browser support untuk geolocation
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by this browser")
+  setError("Geolokasi tidak didukung oleh browser ini")
       setIsLoading(false)
       return
     }
@@ -196,16 +196,16 @@ export function LocationPicker({
       getLocation(latitude, longitude)
     }, (error) => {
       // Handle berbagai tipe error dengan pesan yang user-friendly
-      let errorMessage = "Unable to retrieve location"
+  let errorMessage = "Tidak dapat mengambil lokasi"
       switch (error.code) {
         case error.PERMISSION_DENIED:
-          errorMessage = "Location access denied by user"
+          errorMessage = "Akses lokasi ditolak oleh pengguna"
           break
         case error.POSITION_UNAVAILABLE:
-          errorMessage = "Location information unavailable"
+          errorMessage = "Informasi lokasi tidak tersedia"
           break
         case error.TIMEOUT:
-          errorMessage = "Location request timed out"
+          errorMessage = "Permintaan lokasi melebihi batas waktu"
           break
       }
       setError(errorMessage)
@@ -239,7 +239,7 @@ export function LocationPicker({
       const data = await res.json();
       setSuggestions(data);
     } catch (error) {
-      console.log("Error fetching suggestions:", error);
+  console.log("Kesalahan mengambil saran lokasi:", error);
       setSuggestions([]);
     } finally {
       setIsFetchingSuggestions(false);
@@ -353,7 +353,7 @@ export function LocationPicker({
                 }}
                 noInfo
                 onKeyUp={(e) => e.key === 'Enter' && suggestions.length === 0 && searchLocation()}
-                aria-label="Search for location"
+                aria-label="Cari lokasi"
                 aria-describedby={suggestions.length > 0 ? "suggestions-list" : undefined}
                 className={appliedTheme.input} />
             </div>
@@ -364,7 +364,7 @@ export function LocationPicker({
               variant="outline"
               onClick={searchLocation}
               disabled={isLoading || !locationSearch.trim()}
-              title="Search Location">
+              title="Cari Lokasi">
               {isLoading ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
               ) : (
@@ -377,7 +377,7 @@ export function LocationPicker({
               variant="outline"
               onClick={getCurrentLocation}
               className={appliedTheme.locateButton}
-              title="Use Current Location">
+              title="Gunakan Lokasi Saat Ini">
               <Locate className="h-4 w-4" />
             </Button>
           </div>
@@ -387,7 +387,7 @@ export function LocationPicker({
             <div
               id="suggestions-list"
               role="listbox"
-              aria-label="Location suggestions"
+              aria-label="Saran lokasi"
               className={appliedTheme.suggestionsContainer}>
               {suggestions.map((suggestion) => (
                 <div
@@ -427,14 +427,14 @@ export function LocationPicker({
               <LoaderCircle
                 size={20}
                 className={cn("animate-spin mx-auto", appliedTheme.suggestionIcon)} />
-              <p className="text-sm text-muted-foreground mt-1">Searching locations...</p>
+              <p className="text-sm text-muted-foreground mt-1">Mencari lokasi...</p>
             </div>
           )}
 
           {/* Empty state ketika tidak ada hasil pencarian */}
           {locationSearch.length >= 2 && !isFetchingSuggestions && suggestions.length === 0 && (
             <div className={appliedTheme.loadingContainer}>
-              <p className="text-sm text-muted-foreground">No locations found for &quot;{locationSearch}&quot;</p>
+              <p className="text-sm text-muted-foreground">Tidak ada lokasi untuk &quot;{locationSearch}&quot;</p>
             </div>
           )}
 
@@ -488,7 +488,7 @@ export function LocationPicker({
                 value={locationSearch}
                 onChange={(e) => setLocationSearch(e.target.value)}
                 onKeyUp={(e) => e.key === 'Enter' && suggestions.length === 0 && searchLocation()}
-                aria-label="Search for location"
+                aria-label="Cari lokasi"
                 noInfo
                 aria-describedby={suggestions.length > 0 ? "suggestions-list" : undefined}
                 className={appliedTheme.input} />
@@ -499,7 +499,7 @@ export function LocationPicker({
               variant="outline"
               onClick={searchLocation}
               disabled={isLoading || !locationSearch.trim()}
-              title="Search Location">
+              title="Cari Lokasi">
               {isLoading ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" />
               ) : (
@@ -511,7 +511,7 @@ export function LocationPicker({
               variant="outline"
               onClick={getCurrentLocation}
               className={appliedTheme.locateButton}
-              title="Use Current Location">
+              title="Gunakan Lokasi Saat Ini">
               <Locate className="h-4 w-4" />
             </Button>
           </div>
@@ -548,14 +548,14 @@ export function LocationPicker({
               <LoaderCircle
                 size={20}
                 className={cn("animate-spin mx-auto", appliedTheme.suggestionIcon)} />
-              <p className="text-sm text-muted-foreground mt-1">Searching locations...</p>
+              <p className="text-sm text-muted-foreground mt-1">Mencari lokasi...</p>
             </div>
           )}
 
           {/* Empty state dalam popover */}
           {locationSearch.length >= 2 && !isFetchingSuggestions && suggestions.length === 0 && (
             <div className={appliedTheme.loadingContainer}>
-              <p className="text-sm text-muted-foreground">No locations found for &quot;{locationSearch}&quot;</p>
+              <p className="text-sm text-muted-foreground">Tidak ada lokasi untuk &quot;{locationSearch}&quot;</p>
             </div>
           )}
 

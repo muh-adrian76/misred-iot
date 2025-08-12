@@ -7,7 +7,7 @@ import { useRef, useEffect } from "react";
 // Import styled-components untuk styling kustom
 import styled from "styled-components";
 
-// Komponen checkbox button dengan styling kustom dan animasi
+// Komponen tombol checkbox dengan styling kustom dan animasi
 const CheckboxButton = ({
   id, // ID unik untuk checkbox
   text, // Teks label checkbox
@@ -17,13 +17,13 @@ const CheckboxButton = ({
   disabled = false, // Status disabled
   ...props // Props tambahan yang akan diteruskan
 }) => {
-  // Ref untuk mengakses DOM element checkbox
+  // Ref untuk mengakses elemen DOM checkbox
   const ref = useRef();
 
-  // Effect untuk mengatur indeterminate state
+  // Effect untuk mengatur state indeterminate
   useEffect(() => {
     if (ref.current) {
-      // Set indeterminate property pada DOM element
+  // Set properti indeterminate pada elemen DOM
       ref.current.indeterminate = !!indeterminate;
     }
   }, [indeterminate]);

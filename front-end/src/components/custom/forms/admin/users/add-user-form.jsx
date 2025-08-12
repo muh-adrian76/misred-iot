@@ -13,38 +13,37 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { User, Mail, Lock, Crown } from "lucide-react";
 import { useState } from "react";
 
-// Komponen AddUserForm untuk menambah user baru dengan role admin/user
+// Komponen AddUserForm untuk menambah pengguna baru dengan peran admin / pengguna biasa
 export default function AddUserForm({
   open, // State untuk kontrol visibility modal
   setOpen, // Setter untuk mengubah state modal
-  handleAddUser, // Handler function untuk menambah user ke sistem
+  handleAddUser, // Fungsi handler untuk menambah pengguna ke sistem
 }) {
-  // State management untuk form fields
-  const [name, setName] = useState(""); // Nama lengkap user
-  const [email, setEmail] = useState(""); // Email user untuk login
-  const [password, setPassword] = useState(""); // Password user
-  const [isAdmin, setIsAdmin] = useState(false); // Flag untuk role admin
-  const [loading, setLoading] = useState(false); // State loading untuk submit
+  // State management untuk field formulir
+  const [name, setName] = useState(""); // Nama lengkap pengguna
+  const [email, setEmail] = useState(""); // Email pengguna untuk login
+  const [password, setPassword] = useState(""); // Password pengguna
+  const [isAdmin, setIsAdmin] = useState(false); // Penanda apakah diberikan peran admin
+  const [loading, setLoading] = useState(false); // Status loading saat submit
 
-  // Handler untuk submit form user baru
+  // Handler untuk submit form pengguna baru
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true); // Set loading state
     
     try {
-      // Prepare data user untuk dikirim ke API
-      // Prepare data user untuk dikirim ke API
+  // Siapkan data pengguna untuk dikirim ke API
       const formData = {
-        name, // Nama lengkap user
-        email, // Email untuk authentication
-        password, // Password yang akan di-hash
-        is_admin: isAdmin // Role admin (true/false)
+  name, // Nama lengkap pengguna
+  email, // Email untuk autentikasi
+  password, // Password (akan di-hash di server)
+  is_admin: isAdmin // Peran admin (true/false)
       };
       
-      // Panggil handler dari parent component
+  // Panggil handler dari komponen induk
       const success = await handleAddUser(formData);
       if (success) {
-        // Reset form setelah berhasil menambah user
+        // Reset form setelah berhasil menambah pengguna
         setName("");
         setEmail("");
         setPassword("");
@@ -52,7 +51,7 @@ export default function AddUserForm({
         setOpen(false); // Tutup modal
       }
     } catch (error) {
-      console.error("Error adding user:", error);
+      console.error("Kesalahan menambah pengguna:", error);
     } finally {
       setLoading(false); // Reset loading state
     }
@@ -148,11 +147,11 @@ export default function AddUserForm({
     <ResponsiveDialog
       open={open} // State visibility modal
       setOpen={setOpen} // Handler untuk close modal
-      title="Tambah User Baru" // Judul modal
-      description="Buat akun user baru dengan peran yang sesuai" // Deskripsi modal
+  title="Tambah Pengguna Baru" // Judul modal
+  description="Buat akun pengguna baru dengan peran yang sesuai" // Deskripsi modal
       form={formContent} // Content form yang akan ditampilkan
       formHandle={handleSubmit} // Handler submit form
-      confirmText="Tambah User" // Text tombol konfirmasi
+  confirmText="Tambah Pengguna" // Teks tombol konfirmasi
       cancelText="Batal" // Text tombol cancel
       loading={loading} // State loading untuk disable tombol saat submit
     />

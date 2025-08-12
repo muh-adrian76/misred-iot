@@ -126,14 +126,14 @@ export default function RegisterForm({
     <div className="flex z-10 w-full max-w-sm flex-col gap-6">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}P
         exit={{ opacity: 0, y: -50 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
         className="flex items-center gap-2 self-center text-xl tracking-wide
         "
       >
         <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-          <img src={brandLogo} alt="Logo" />
+          <img src={brandLogo} alt="Logo Merek" />
         </div>
         <h1 className={`text-3xl tracking-wider ${logoFont}`}>MiSREd-IoT</h1>
       </motion.div>
@@ -236,7 +236,7 @@ export default function RegisterForm({
                     onClick={() => setShowRegister(false)}
                     className="cursor-pointer underline underline-offset-4"
                   >
-                    Log In
+                    Masuk
                   </button>
                 </div>
               </div>

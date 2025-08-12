@@ -44,7 +44,7 @@ const LocationPickerWithCoordinates = dynamic(
     loading: () => (
       <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
         <div className="animate-spin w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
-        <span className="text-sm text-gray-600 dark:text-gray-400">Loading location picker...</span>
+  <span className="text-sm text-gray-600 dark:text-gray-400">Memuat pemilih lokasi...</span>
       </div>
     )
   }
@@ -77,7 +77,7 @@ export function LocationPickerClient(props) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
         <div className="animate-pulse w-4 h-4 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-        <span className="text-sm text-gray-600 dark:text-gray-400">Loading...</span>
+  <span className="text-sm text-gray-600 dark:text-gray-400">Memuat...</span>
       </div>
     );
   }

@@ -88,13 +88,13 @@ export default function AdminOverviewsContent({
               className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
             />
             <span className="hidden sm:inline">
-              {isLoading ? "Loading..." : "Refresh"}
+              {isLoading ? "Memuat..." : "Muat Ulang"}
             </span>
           </button>
         </div>
       </motion.div>
 
-      {/* Stats Cards */}
+      {/* Kartu Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -113,7 +113,7 @@ export default function AdminOverviewsContent({
             <div className="flex items-center justify-between flex-1">
               <div className="flex flex-col justify-between h-full">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Total Users
+                  Total Pengguna
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalUsers.toLocaleString()}
@@ -143,7 +143,7 @@ export default function AdminOverviewsContent({
             <div className="flex items-center justify-between flex-1">
               <div className="flex flex-col justify-between h-full">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Total Devices
+                  Total Perangkat
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalDevices}
@@ -173,7 +173,7 @@ export default function AdminOverviewsContent({
             <div className="flex items-center justify-between flex-1">
               <div className="flex flex-col justify-between h-full">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                  Total Dashboards
+                  Total Dasbor
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.totalDashboards}
@@ -245,7 +245,7 @@ export default function AdminOverviewsContent({
                     Kelola Data Pengguna
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Tambah, edit, atau hapus akun user
+                    Tambah, edit, atau hapus akun pengguna
                   </p>
                 </div>
               </Link>
@@ -256,7 +256,7 @@ export default function AdminOverviewsContent({
                 <MapPin className="w-5 h-5 text-green-600" />
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    Lihat Peta Device
+                    Lihat Peta Perangkat
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Monitor lokasi semua perangkat

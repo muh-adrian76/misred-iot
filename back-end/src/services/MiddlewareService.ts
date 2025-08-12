@@ -269,9 +269,9 @@ export class MQTTService {
     });
 
     this.mqttClient.on("message", async (topic, message) => {
-      const timestamp = Math.floor(Date.now());
+      const timestampReceive = Math.floor(Date.now());
       try {
-        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic} - Timestamp server: ${timestamp}`);
+        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic} - Timestamp server: ${timestampReceive}`);
 
         const messageStr = message.toString().trim();
         let data: any;
@@ -311,11 +311,12 @@ export class MQTTService {
           data: {
             insertId: insertId,
             processedAt: new Date().toISOString(),
-            timestamp: timestamp
+            timestamp: timestampReceive,
           }
         });
 
-        console.log(`🎉 [MQTT] Berhasil memproses payload dari topik ${topic}`);
+        const timestampSave = Math.floor(Date.now());
+        console.log(`🎉 [MQTT] Berhasil menyimpan payload dari topik ${topic} - Timestamp simpan: ${timestampSave}`);
 
       } catch (error) {
         // Kirim respons error balik ke ESP
@@ -323,7 +324,7 @@ export class MQTTService {
           status: "failed",
           message: "Gagal memproses payload",
           error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: timestamp
+          timestamp: timestampReceive
         });
 
         console.error(

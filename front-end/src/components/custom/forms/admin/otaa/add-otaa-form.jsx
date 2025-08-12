@@ -1,6 +1,6 @@
-// Add OTAA Form Component - komponen form untuk upload firmware GLOBAL ke sistem
-// Fitur: input board type, input versi, upload file, validasi, styling modern
-// Admin Mode: Upload firmware global yang akan tersedia untuk semua user dengan board type yang sama
+// Add OTAA Form Component - komponen form untuk unggah firmware GLOBAL ke sistem
+// Fitur: input board type, input versi, unggah file, validasi, styling modern
+// Admin Mode: Unggah firmware global yang akan tersedia untuk semua pengguna dengan tipe board yang sama
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, RefreshCw, FileCode, AlertCircle, CheckCircle, Cpu } from "lucide-react";
 
 export default function AddOTAAForm({
-  // Upload form state - state form upload firmware
-  uploadForm, // Object state form berisi board_type, firmware_version, file, filename
+  // State form unggah firmware global
+  uploadForm, // Objek state form berisi board_type, firmware_version, file, filename, description
   setUploadForm, // Setter untuk mengupdate state form
-  handleFileUpload, // Handler untuk memproses file yang dipilih
-  handleUploadFirmware, // Handler untuk submit upload firmware
-  uploading, // Status uploading untuk disable form saat proses upload
-  boardOptions, // Array board options dari device-logic.js (fallback options)
-  boardTypes, // Array board types yang tersedia dari database (optional)
-  devices, // Array devices untuk menghitung jumlah per board type (opsional)
+  handleFileUpload, // Handler ketika file dipilih
+  handleUploadFirmware, // Handler submit unggah firmware
+  uploading, // Status proses unggah untuk menonaktifkan form sementara
+  boardOptions, // Daftar board default (fallback)
+  boardTypes, // Daftar board dari database (opsional)
+  devices, // Daftar device untuk menghitung jumlah per board type (opsional)
 }) {
   // Gunakan boardTypes dari database jika ada, jika tidak gunakan boardOptions default
   const availableBoardTypes = (boardTypes && boardTypes.length > 0) ? boardTypes : boardOptions;
@@ -94,7 +94,7 @@ export default function AddOTAAForm({
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <AlertCircle className="w-3 h-3" />
-              Versi firmware global yang akan tersedia untuk semua user
+              Versi firmware global yang akan tersedia untuk semua pengguna
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function AddOTAAForm({
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
-            Firmware global yang akan tersedia untuk semua user dengan board ini
+            Firmware global yang akan tersedia untuk semua pengguna dengan board ini
           </p>
         </div>
 
@@ -152,13 +152,13 @@ export default function AddOTAAForm({
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
-                  Firmware global siap diupload
+                  Firmware global siap diunggah
                 </p>
                 <p className="text-sm text-green-700 dark:text-green-300">
                   <strong>Nama file:</strong> {uploadForm.filename}
                 </p>
                 <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                  Akan tersedia untuk semua user dengan board type yang dipilih
+                  Akan tersedia untuk semua pengguna dengan board type yang dipilih
                 </p>
               </div>
             </div>
@@ -174,12 +174,12 @@ export default function AddOTAAForm({
           {uploading ? (
             <>
               <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-              Mengupload firmware global...
+              Mengunggah firmware global...
             </>
           ) : (
             <>
               <Upload className="w-5 h-5 mr-2" />
-              Upload Firmware Global
+              Unggah Firmware Global
             </>
           )}
         </Button>
@@ -190,10 +190,10 @@ export default function AddOTAAForm({
             ℹ️ Firmware Global Repository:
           </h5>
           <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
-            <li>• Firmware yang Anda upload akan tersedia untuk <strong>SEMUA USER</strong> dengan board type yang sama</li>
-            <li>• User akan menerima notifikasi "Firmware Terbaru" saat ada global firmware</li>
-            <li>• Jika user sudah punya firmware sendiri, mereka tetap bisa pilih global firmware</li>
-            <li>• Sistem akan otomatis memilih firmware terbaru (user firmware {'>'}  global firmware)</li>
+            <li>• Firmware yang Anda unggah akan tersedia untuk <strong>SEMUA PENGGUNA</strong> dengan board type yang sama</li>
+            <li>• Pengguna akan menerima notifikasi "Firmware Terbaru" saat ada firmware global</li>
+            <li>• Jika pengguna sudah punya firmware sendiri, mereka tetap bisa memilih firmware global</li>
+            <li>• Sistem akan otomatis memilih firmware terbaru (firmware pengguna {'>'} firmware global)</li>
           </ul>
         </div>
       </form>

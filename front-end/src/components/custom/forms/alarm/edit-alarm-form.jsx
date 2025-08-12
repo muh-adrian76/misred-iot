@@ -160,7 +160,7 @@ export default function EditAlarmForm({
       <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
-            <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Perangkat</Label>
             <DescriptionTooltip side="top" content="Pilih perangkat IoT">
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
             </DescriptionTooltip>
@@ -197,17 +197,17 @@ export default function EditAlarmForm({
               >
                 <span className="truncate">
                   {devices.find((d) => String(d.id) === String(deviceId))
-                    ?.description || "Pilih Device"}
+                    ?.description || "Pilih Perangkat"}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="p-0 w-full" align="start">
               <Command>
-                <CommandInput placeholder="Cari device..." />
+                <CommandInput placeholder="Cari perangkat..." />
                 <CommandList>
                   <CommandEmpty>
-                    <span className="opacity-50">Tidak ada device.</span>
+                    <span className="opacity-50">Tidak ada perangkat.</span>
                   </CommandEmpty>
                   {devices.map((d) => (
                     <CommandItem
@@ -291,7 +291,7 @@ export default function EditAlarmForm({
                   )?.description ||
                     (deviceId
                       ? "Pilih Sensor"
-                      : "Pilih device terlebih dahulu")}
+                      : "Pilih perangkat terlebih dahulu")}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>

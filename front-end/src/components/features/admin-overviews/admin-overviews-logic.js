@@ -53,14 +53,14 @@ export function useAdminOverviewsLogic() {
           systemHealth: healthData.data.status // Status kesehatan sistem
         });
       } else {
-        throw new Error("Failed to fetch admin data");
+        throw new Error("Gagal mengambil data admin");
       }
       
       // Set loading selesai
       setIsLoading(false);
       setRefreshing(false);
     } catch (error) {
-      console.error("Error fetching admin stats:", error);
+      console.error("Gagal mengambil statistik admin:", error);
       errorToast("Gagal memuat statistik admin");
       setIsLoading(false);
       setRefreshing(false);

@@ -19,7 +19,7 @@ const markAsRead = async (id) => {
   await new Promise(resolve => setTimeout(resolve, 300));
 };
 
-// Remove the dummy markAllAsRead - biarkan NotificationCenter handle dengan fungsi built-in
+// Hapus fungsi markAllAsRead dummy - biarkan NotificationCenter menangani dengan fungsi bawaan
 
 // Fungsi untuk menghapus notifikasi
 const deleteNotification = async (id) => {
@@ -41,16 +41,16 @@ function NotificationContent() {
     setRefreshKey(prev => prev + 1);
   }, [alarmNotifications]);
   
-  // Transform notifikasi alarm ke format yang diharapkan oleh NotificationCenter
+  // Transformasi notifikasi alarm ke format yang diharapkan oleh NotificationCenter
   const transformedNotifications = React.useMemo(() => {
     return alarmNotifications.map(alarm => ({
       id: alarm.id || `notification_${Math.random()}`, // ID unik untuk setiap notifikasi
-      title: alarm.title || 'Alarm Triggered', // Judul default jika tidak ada
+      title: alarm.title || 'Alarm terpicu', // Judul default jika tidak ada
       message: alarm.message, // Pesan notifikasi
       createdAt: alarm.createdAt || new Date().toISOString(), // Timestamp
       isRead: false, // Default belum dibaca
       priority: 'high', // Priority tinggi untuk alarm
-      device: alarm.device_name || alarm.device_description || 'Unknown Device' // Nama device
+      device: alarm.device_name || alarm.device_description || 'Perangkat tidak diketahui' // Nama perangkat
     }));
   }, [alarmNotifications]);
 
@@ -67,7 +67,7 @@ function NotificationContent() {
         notifications={transformedNotifications} // Pass sebagai static data
         fetchNotifications={fetchNotifications}
         onMarkAsRead={markAsRead}
-        // Remove onMarkAllAsRead prop - let NotificationCenter use its own defaultMarkAllAsRead
+  // Hapus prop onMarkAllAsRead - biarkan NotificationCenter menggunakan defaultMarkAllAsRead
         onDeleteNotification={deleteNotification}
         enableRealTimeUpdates={false} // Disable polling karena menggunakan WebSocket
         updateInterval={0} // No interval needed

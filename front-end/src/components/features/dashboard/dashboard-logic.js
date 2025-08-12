@@ -5,86 +5,86 @@ import { useDashboard } from "@/providers/dashboard-provider";
 import { fetchFromBackend } from "@/lib/helper";
 import { successToast, errorToast } from "@/components/custom/other/toaster";
 import { markDashboardCreated, markWidgetCreated } from "@/lib/onboarding-utils";
-import { getWidgetConstraints } from "@/lib/dashboard-utils"; // Import dari central location
+import { getWidgetConstraints } from "@/lib/dashboard-utils"; // Import dari lokasi terpusat
 
-// ===== HELPER FUNCTIONS =====
-// Fungsi utility untuk mendapatkan deskripsi dashboard berdasarkan ID
+// ===== FUNGSI BANTUAN =====
+// Fungsi utilitas untuk mendapatkan deskripsi dashboard berdasarkan ID
 const getDashboardDescription = (id, dashboards) => {
   const dashboard = dashboards.find(d => d.id === id);
   return dashboard ? dashboard.description : "";
 };
 
-// ===== MAIN DASHBOARD LOGIC HOOK =====
-// Custom hook utama yang mengelola seluruh logic dashboard
+// ===== HOOK LOGIC DASHBOARD UTAMA =====
+// Hook kustom utama yang mengelola seluruh logika dashboard
 export function useDashboardLogic() {
-  // ===== CORE STATE MANAGEMENT =====
+  // ===== MANAJEMEN STATE INTI =====
   // State utama untuk data dashboard dan widget
   const [dashboards, setDashboards] = useState([]); // Daftar semua dashboard
   const [widgets, setWidgets] = useState({}); // Widget untuk setiap dashboard
-  const [currentBreakpoint, setCurrentBreakpoint] = useState("lg"); // Breakpoint responsive saat ini
+  const [currentBreakpoint, setCurrentBreakpoint] = useState("lg"); // Breakpoint responsif saat ini
   
-  // ===== DIALOG & MODAL STATE =====
+  // ===== STATE DIALOG & MODAL =====
   // State untuk mengelola dialog dan modal
-  const [openChartSheet, setOpenChartSheet] = useState(false); // Sheet untuk memilih chart
+  const [openChartSheet, setOpenChartSheet] = useState(false); // Sheet pemilihan chart
   const [openDashboardDialog, setOpenDashboardDialog] = useState(false); // Dialog tambah dashboard
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false); // Dialog hapus dashboard
   const [showWidgetForm, setShowWidgetForm] = useState(false); // Form tambah widget
   const [showEditWidgetForm, setShowEditWidgetForm] = useState(false); // Form edit widget
   
-  // ===== WIDGET MANAGEMENT STATE =====
+  // ===== STATE MANAJEMEN WIDGET =====
   // State untuk mengelola widget dan loading
   const [widgetCount, setWidgetCount] = useState(0); // Jumlah widget pada dashboard aktif
-  const [isLoadingWidget, setIsLoadingWidget] = useState(false); // Status loading widget
+  const [isLoadingWidget, setIsLoadingWidget] = useState(false); // Status memuat widget
   const [newWidgetData, setNewWidgetData] = useState(null); // Data widget baru yang akan ditambahkan
   const [editWidgetData, setEditWidgetData] = useState(null); // Data widget yang sedang diedit
   
-  // ===== EDITING & DELETE STATE =====
-  // State untuk mode editing dan operasi hapus
-  const [isEditing, setIsEditing] = useState(false); // Status mode editing dashboard
+  // ===== STATE EDIT & HAPUS =====
+  // State untuk mode penyuntingan dan operasi hapus
+  const [isEditing, setIsEditing] = useState(false); // Status mode penyuntingan dashboard
   const [dashboardToDelete, setDashboardToDelete] = useState(null); // Dashboard yang akan dihapus
   const [editDashboardValue, setEditDashboardValue] = useState(""); // Nilai nama dashboard yang diedit
   const [deleteChecked, setDeleteChecked] = useState(false); // Konfirmasi checkbox untuk hapus
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Flag untuk perubahan belum disimpan
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Tanda ada perubahan yang belum disimpan
   
-  // ===== EXTERNAL DATA STATE =====
-  // State untuk data dari API external
-  const [devices, setDevices] = useState([]); // Daftar semua device IoT
+  // ===== STATE DATA EKSTERNAL =====
+  // State untuk data dari API eksternal
+  const [devices, setDevices] = useState([]); // Daftar semua perangkat IoT
   const [datastreams, setDatastreams] = useState([]); // Daftar semua datastream
   
-  // ===== LAYOUT & RENDERING STATE =====
+  // ===== STATE LAYOUT & RENDER =====
   // State untuk layout dan rendering grid
-  const [layoutKey, setLayoutKey] = useState(0); // Key untuk memaksa re-render grid layout
+  const [layoutKey, setLayoutKey] = useState(0); // Key untuk memaksa render ulang grid layout
   
-  // ===== FILTER & TIME RANGE STATE =====
-  // State untuk filtering dan range waktu data
-  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Range waktu default 1 jam
+  // ===== STATE FILTER & RENTANG WAKTU =====
+  // State untuk penyaringan dan rentang waktu data
+  const [currentTimeRange, setCurrentTimeRange] = useState("1h"); // Rentang waktu default 1 jam
   const [currentDataCount, setCurrentDataCount] = useState("10"); // Jumlah data default 10
   const [filterType, setFilterType] = useState("count"); // Tipe filter default berdasarkan jumlah
 
   // ===== DASHBOARD PROVIDER & HOOKS =====
-  // Dashboard provider untuk state management global
+  // Provider dashboard untuk manajemen state global
   const {
-    tabItems, // Items widget untuk setiap tab dashboard
+    tabItems, // Item widget untuk setiap tab dashboard
     tabLayouts, // Layout grid untuk setiap tab dashboard
     activeTab, // ID dashboard yang sedang aktif
-    updateTabItems, // Fungsi update items untuk tab tertentu
+    updateTabItems, // Fungsi update item untuk tab tertentu
     updateTabLayouts, // Fungsi update layout untuk tab tertentu
-    updateActiveTab, // Fungsi update tab aktif
-    setAllTabItems, // Fungsi set semua tab items sekaligus
-    setAllTabLayouts, // Fungsi set semua tab layouts sekaligus
-    clearDashboardData, // Fungsi clear semua data dashboard
+    updateActiveTab, // Fungsi mengubah tab aktif
+    setAllTabItems, // Set semua tab items sekaligus
+    setAllTabLayouts, // Set semua tab layouts sekaligus
+    clearDashboardData, // Bersihkan semua data dashboard
   } = useDashboard();
 
-  // ===== RESPONSIVE & USER HOOKS =====
-  // Custom hooks untuk responsive design dan user management
-  const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint(); // Responsive breakpoints
+  // ===== HOOK RESPONSIF & USER =====
+  // Hook kustom untuk desain responsif dan manajemen user
+  const { isMobile, isMedium, isTablet, isDesktop } = useBreakpoint(); // Breakpoints responsif
   const { user } = useUser(); // Data user yang sedang login
   const isAuthenticated = user && user.id; // Status autentikasi user
 
-  // ===== DEBUG LOGGING (DEVELOPMENT) =====
-  // Debug logging untuk troubleshooting (dinonaktifkan untuk production)
+  // ===== LOGGING DEBUG (PENGEMBANGAN) =====
+  // Logging untuk troubleshooting (dimatikan pada produksi)
   // useEffect(() => {
-  //   console.log('Dashboard Logic State:', {
+  //   console.log('State Logika Dashboard:', {
   //     isAuthenticated,
   //     user: user?.id,
   //     dashboardsCount: dashboards.length,
@@ -96,33 +96,33 @@ export function useDashboardLogic() {
   //   });
   // }, [isAuthenticated, user, dashboards.length, activeTab, widgetCount, isLoadingWidget, tabItems, tabLayouts]);
 
-  // ===== MONITORING EDIT VALUE CHANGES =====
-  // Effect untuk monitor perubahan nilai edit dashboard name
+  // ===== MONITOR PERUBAHAN NILAI EDIT =====
+  // Effect untuk memantau perubahan nilai nama dashboard saat diedit
   useEffect(() => {
     const currentDescription = getDashboardDescription(activeTab, dashboards);
-    // Set flag unsaved changes jika ada perubahan pada nama dashboard
+    // Set flag perubahan belum disimpan jika nama dashboard berubah
     if (isEditing && editDashboardValue.trim() && editDashboardValue !== currentDescription) {
       setHasUnsavedChanges(true);
     }
   }, [editDashboardValue, activeTab, dashboards, isEditing]);
 
-  // ===== FETCH FUNCTIONS - DATA RETRIEVAL =====
+  // ===== FUNGSI FETCH - PENGAMBILAN DATA =====
   
-  // Fungsi untuk mengambil data semua dashboard dari backend
+  // Ambil semua dashboard dari backend
   const fetchDashboards = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/dashboard", { method: "GET" });
-      if (!res.ok) return; // Exit jika response tidak ok
+      if (!res.ok) return; // Keluar jika respons tidak ok
       const data = await res.json();
       setDashboards(data.result || []); // Set data dashboard atau array kosong
     } catch (error) {
-      console.error('Error fetching dashboards:', error);
+      console.error('Kesalahan saat mengambil dashboard:', error);
     }
   }, []);
 
-  // Fungsi untuk mengambil jumlah widget pada dashboard tertentu
+  // Ambil jumlah widget pada dashboard tertentu
   const fetchWidgetCount = useCallback(async (dashboardId) => {
-    setIsLoadingWidget(true); // Set loading state
+    setIsLoadingWidget(true); // Aktifkan status memuat
     try {
       const res = await fetchFromBackend(`/widget/dashboard/${dashboardId}`, { method: "GET" });
       if (!res.ok) return setWidgetCount(0); // Set 0 jika tidak ok
@@ -130,69 +130,69 @@ export function useDashboardLogic() {
       // Set jumlah widget berdasarkan panjang array result
       setWidgetCount(Array.isArray(data.result) ? data.result.length : 0);
     } catch (error) {
-      setWidgetCount(0); // Set 0 jika terjadi error
+      setWidgetCount(0); // Set 0 jika terjadi kesalahan
     } finally {
-      setIsLoadingWidget(false); // Reset loading state
+      setIsLoadingWidget(false); // Matikan status memuat
     }
   }, []);
 
-  // Fungsi untuk mengambil semua widget pada dashboard tertentu
+  // Ambil semua widget pada dashboard tertentu
   const fetchWidgetsByDashboard = useCallback(async (dashboardId) => {
     try {
       const res = await fetchFromBackend(`/widget/dashboard/${dashboardId}`, { method: "GET" });
-      if (!res.ok) return []; // Return array kosong jika tidak ok
+      if (!res.ok) return []; // Kembalikan array kosong jika tidak ok
       const data = await res.json();
-      return data.result || []; // Return array widget atau array kosong
+      return data.result || []; // Kembalikan array widget atau array kosong
     } catch (error) {
-      return []; // Return array kosong jika error
+      return []; // Kembalikan array kosong jika ada kesalahan
     }
   }, []);
 
-  // Fungsi untuk mengambil data semua device IoT
+  // Ambil semua perangkat IoT
   const fetchDevices = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/device", { method: "GET" });
-      if (!res.ok) return; // Exit jika response tidak ok
+      if (!res.ok) return; // Keluar jika respons tidak ok
       const data = await res.json();
-      setDevices(data.result || []); // Set data device atau array kosong
+      setDevices(data.result || []); // Set data perangkat atau array kosong
     } catch (error) {
-      console.error('Error fetching devices:', error);
+      console.error('Kesalahan saat mengambil perangkat:', error);
     }
   }, []);
 
-  // Fungsi untuk mengambil data semua datastream
+  // Ambil semua datastream
   const fetchDatastreams = useCallback(async () => {
     try {
       const res = await fetchFromBackend("/datastream", { method: "GET" });
-      if (!res.ok) return; // Exit jika response tidak ok
+      if (!res.ok) return; // Keluar jika respons tidak ok
       const data = await res.json();
       setDatastreams(data.result || []); // Set data datastream atau array kosong
     } catch (error) {
-      console.error('Error fetching datastreams:', error);
+      console.error('Kesalahan saat mengambil datastream:', error);
     }
   }, []);
 
-  // ===== USEEFFECT HOOKS - LIFECYCLE MANAGEMENT =====
+  // ===== USEEFFECT - MANAJEMEN SIKLUS HIDUP =====
   
-  // Effect untuk clear dashboard data ketika user logout
+  // Bersihkan data dashboard ketika user logout
   useEffect(() => {
     if (!isAuthenticated) {
-      clearDashboardData(); // Clear semua data dashboard dari provider
+      clearDashboardData(); // Bersihkan semua data dashboard dari provider
       setDashboards([]); // Reset state dashboard
       setWidgets({}); // Reset state widgets
     }
   }, [isAuthenticated, clearDashboardData]);
 
-  // Effect untuk fetch data ketika user sudah terauthentikasi
+  // Fetch data saat user sudah terauntentikasi
   useEffect(() => {
     if (isAuthenticated) {
       fetchDashboards(); // Ambil data dashboard
-      fetchDevices(); // Ambil data device
+      fetchDevices(); // Ambil data perangkat
       fetchDatastreams(); // Ambil data datastream
     }
   }, [isAuthenticated, fetchDashboards, fetchDevices, fetchDatastreams]);
 
-  // Load widgets for all dashboards
+  // Memuat widget untuk semua dashboard
   useEffect(() => {
     const loadWidgetsForDashboards = async () => {
       if (dashboards.length > 0) {
@@ -200,24 +200,24 @@ export function useDashboardLogic() {
         for (const dashboard of dashboards) {
           const dashboardWidgets = await fetchWidgetsByDashboard(dashboard.id);
           
-          // Process widgets to ensure inputs field is properly parsed
+          // Proses widget untuk memastikan field inputs terurai dengan benar
           const processedWidgets = dashboardWidgets.map(widget => {
-            // Parse inputs if it's a string (from database JSON column)
+            // Parse inputs jika berupa string (kolom JSON dari database)
             if (widget.inputs && typeof widget.inputs === 'string') {
               try {
                 widget.inputs = JSON.parse(widget.inputs);
               } catch (e) {
-                console.warn('Failed to parse widget inputs:', widget.inputs, e);
+                console.warn('Gagal menguraikan inputs widget:', widget.inputs, e);
                 widget.inputs = [];
               }
             }
             
-            // Backward compatibility: if no inputs but has old format
+            // Kompatibilitas lama: jika tidak ada inputs namun ada format lama
             if (!widget.inputs && widget.device_id && widget.datastream_id) {
               widget.inputs = [{ device_id: widget.device_id, datastream_id: widget.datastream_id }];
             }
             
-            // Ensure inputs is always an array
+            // Pastikan inputs selalu array
             if (!Array.isArray(widget.inputs)) {
               widget.inputs = [];
             }
@@ -234,7 +234,7 @@ export function useDashboardLogic() {
     loadWidgetsForDashboards();
   }, [dashboards, fetchWidgetsByDashboard]);
 
-  // Update widget count when active tab changes
+  // Perbarui jumlah widget ketika tab aktif berubah
   useEffect(() => {
     if (activeTab && dashboards.length > 0) {
       const dashboard = dashboards.find(d => d.id === activeTab);
@@ -244,9 +244,9 @@ export function useDashboardLogic() {
     }
   }, [activeTab, dashboards, fetchWidgetCount]);
 
-  // Sync dashboard data to provider state (this is the key fix for tab switching)
+  // Sinkronkan data dashboard ke state provider (kunci perbaikan untuk perpindahan tab)
   useEffect(() => {
-    // console.log('Dashboard sync effect triggered:', { 
+    // console.log('Efek sinkronisasi dashboard dipicu:', { 
     //   dashboardsLength: dashboards.length, 
     //   widgetsKeys: Object.keys(widgets), 
     //   activeTab 
@@ -254,54 +254,54 @@ export function useDashboardLogic() {
     
     if (dashboards.length > 0) {
       const items = {};
-      let layouts = {}; // Use let instead of const to allow reassignment safety check
+      let layouts = {}; // Gunakan let untuk memungkinkan reassignment setelah validasi
       
       dashboards.forEach((dashboard) => {
         const dashboardWidgets = widgets[dashboard.id] || [];
-        // Use dashboard ID as key for items
+        // Gunakan ID dashboard sebagai key untuk items
         items[dashboard.id] = dashboardWidgets;
         
-        // Generate or parse layouts - PRIORITIZE database layouts
+        // Generate atau parse layouts - UTAMAKAN layout dari database
         let dashboardLayouts = {};
         
         if (dashboard.layout) {
           try {
             
-            // First parse - might still be a string if double-encoded
+            // Parse pertama - mungkin masih string jika double-encoded
             let parsedLayout = typeof dashboard.layout === "string" 
               ? JSON.parse(dashboard.layout) 
               : dashboard.layout;
             
-            // Check if it's still a string after first parse (double-encoded case)
+            // Cek jika masih string setelah parse pertama (kasus double-encoded)
             if (typeof parsedLayout === 'string') {
               parsedLayout = JSON.parse(parsedLayout);
             }
             
-            // Final validation - ensure it's an object
+            // Validasi akhir - pastikan berupa object
             if (typeof parsedLayout === 'object' && parsedLayout !== null) {
               dashboardLayouts = parsedLayout;
             } else {
-              console.warn('Dashboard layout is not a valid object after parsing, will generate new');
+              console.warn('Layout dashboard tidak valid setelah parsing, akan dibuat baru');
               dashboardLayouts = {};
             }
           } catch (e) {
-            console.warn('Failed to parse dashboard layout:', e);
+            console.warn('Gagal menguraikan layout dashboard:', e);
             dashboardLayouts = {};
           }
         }
         
-        // Only generate missing layouts if widgets exist but layout is empty/missing
-        // This prevents overriding database layouts with auto-generated ones
+        // Hanya buat layout jika widget ada namun layout kosong/tidak ada
+        // Ini untuk mencegah override layout dari database dengan yang otomatis
         const hasValidLayouts = Object.keys(dashboardLayouts).length > 0;
         if (dashboardWidgets.length > 0 && !hasValidLayouts) {
-          // Generate layouts for all breakpoints
+          // Buat layout untuk semua breakpoint
           const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
           const defaultWidths = { lg: 4, md: 6, sm: 12, xs: 12, xxs: 12 };
           
           breakpoints.forEach(bp => {
             dashboardLayouts[bp] = [];
             
-            // Create layout items for each widget
+            // Buat item layout untuk setiap widget
             dashboardWidgets.forEach((widget, idx) => {
               const constraints = getWidgetConstraints(widget.type, bp);
               const w = Math.max(constraints.minW, defaultWidths[bp] || constraints.minW);
@@ -331,33 +331,33 @@ export function useDashboardLogic() {
         layouts[dashboard.id] = dashboardLayouts;
       });
 
-      // Set all data to provider - this ensures layouts from database take precedence
+      // Set semua data ke provider - memastikan layout dari database jadi prioritas
       setAllTabItems(items);
       setAllTabLayouts(layouts);
       
-      // Set the active tab if needed
+      // Set tab aktif bila perlu
       if (activeTab) {
         updateActiveTab(activeTab);
       } else if (dashboards.length > 0 && !activeTab) {
         updateActiveTab(dashboards[0].id);
       }
     } else {
-      clearDashboardData(); // Clear semua data dashboard
+      clearDashboardData(); // Bersihkan semua data dashboard
     }
   }, [dashboards, widgets, activeTab, setAllTabItems, setAllTabLayouts, updateActiveTab]);
 
-  // ===== CRUD OPERATIONS - DASHBOARD MANAGEMENT =====
+  // ===== OPERASI CRUD - MANAJEMEN DASHBOARD =====
   
-  // Fungsi untuk menambah dashboard baru
+  // Tambah dashboard baru
   const handleAddDashboard = async (description, widget_count = 0) => {
     // Validasi input - nama dashboard tidak boleh kosong
     if (!description.trim()) {
       errorToast("Nama dashboard tidak boleh kosong");
-      return null; // Return null jika validasi gagal
+      return null; // Kembalikan null jika validasi gagal
     }
     
     try {
-      // Kirim request POST ke backend untuk create dashboard
+      // Kirim permintaan POST ke backend untuk membuat dashboard
       const res = await fetchFromBackend("/dashboard", {
         method: "POST",
         body: JSON.stringify({ 
@@ -370,21 +370,21 @@ export function useDashboardLogic() {
       const { id } = await res.json(); // Ambil ID dashboard yang baru dibuat
       
       successToast("Dashboard berhasil dibuat"); // Notifikasi sukses
-      markDashboardCreated(); // Trigger onboarding task untuk user baru
+      markDashboardCreated(); // Tandai onboarding task untuk user baru
       
       await fetchDashboards(); // Refresh data dashboard
       
-      // Set dashboard baru sebagai active tab setelah dibuat
+      // Set dashboard baru sebagai tab aktif setelah dibuat
       setTimeout(() => {
-        updateActiveTab(id); // Switch ke dashboard baru
-        fetchWidgetCount(id); // Load widget count untuk dashboard baru
-      }, 100); // Delay untuk memastikan data sudah ter-update
+        updateActiveTab(id); // Pindah ke dashboard baru
+        fetchWidgetCount(id); // Muat jumlah widget untuk dashboard baru
+      }, 100); // Delay agar data sudah ter-update
       
-      return id; // Return ID dashboard untuk keperluan lain
+      return id; // Kembalikan ID dashboard untuk keperluan lain
     } catch (error) {
-      console.error('Error adding dashboard:', error);
+      console.error('Kesalahan saat menambah dashboard:', error);
       errorToast("Gagal membuat dashboard"); // Notifikasi error
-      throw error; // Re-throw error untuk handling di level atas
+      throw error; // Teruskan error untuk ditangani di level atas
     }
   };
 
@@ -408,14 +408,14 @@ export function useDashboardLogic() {
       
       if (!res.ok) {
         const errorData = await res.text();
-        console.error('Backend response error:', errorData);
+        console.error('Kesalahan respons backend:', errorData);
         throw new Error("Gagal mengubah nama dashboard");
       }
       
       await fetchDashboards();
       successToast("Dashboard berhasil diubah");
     } catch (error) {
-      console.error('Error editing dashboard:', error);
+      console.error('Kesalahan saat mengubah dashboard:', error);
       errorToast("Gagal mengubah nama dashboard");
     }
   };
@@ -435,7 +435,7 @@ export function useDashboardLogic() {
       
       await fetchDashboards();
       
-      // Switch to another dashboard or clear active tab
+      // Beralih ke dashboard lain atau kosongkan tab aktif
       setTimeout(() => {
         const remainingDashboards = dashboards.filter(d => d.id !== dashboardToDelete.id);
         if (remainingDashboards.length > 0) {
@@ -445,7 +445,7 @@ export function useDashboardLogic() {
         }
       }, 100);
     } catch (error) {
-      console.error('Error deleting dashboard:', error);
+      console.error('Kesalahan saat menghapus dashboard:', error);
       errorToast("Gagal menghapus dashboard", error.message);
     } finally {
       setIsEditing(false);
@@ -469,13 +469,13 @@ export function useDashboardLogic() {
       const dashboardId = activeTab;
       const currentItems = tabItems[dashboardId] || [];
       
-      // Find and save all staged widgets first
+      // Temukan dan simpan widget yang di-staging terlebih dahulu
       const stagedWidgets = currentItems.filter(widget => widget.isStaged);
-      // console.log('Found staged widgets to save:', stagedWidgets);
+      // console.log('Widget yang akan disimpan (staging):', stagedWidgets);
       
-      // Track widget ID mapping for layout updates
+      // Pemetaan ID widget untuk update layout
       const widgetIdMapping = {};
-      let widgetCreatedCount = 0; // Track how many widgets we created
+      let widgetCreatedCount = 0; // Hitung berapa widget dibuat
       
       for (const stagedWidget of stagedWidgets) {
         try {
@@ -493,23 +493,23 @@ export function useDashboardLogic() {
           
           if (!res.ok) {
             const errorText = await res.text();
-            throw new Error(`Failed to add widget: ${res.status} - ${errorText}`);
+            throw new Error(`Gagal menambah widget: ${res.status} - ${errorText}`);
           }
           
           const newWidget = await res.json();
           widgetIdMapping[stagedWidget.id] = newWidget.result.id;
           widgetCreatedCount++;
           
-          // Trigger onboarding task completion for each widget created
+          // Tandai onboarding untuk setiap widget yang dibuat
           markWidgetCreated();
           
         } catch (error) {
-          console.error('Error saving staged widget:', stagedWidget, error);
+          console.error('Kesalahan saat menyimpan widget staging:', stagedWidget, error);
           throw error;
         }
       }
       
-      // Update layout with real widget IDs
+      // Perbarui layout dengan ID widget sebenarnya
       let finalLayoutData = tabLayouts[dashboardId] || {};
       
       if (Object.keys(widgetIdMapping).length > 0) {
@@ -531,11 +531,11 @@ export function useDashboardLogic() {
         updateTabLayouts(dashboardId, updatedLayouts);
       }
       
-      // Calculate final widget count
+      // Hitung jumlah widget akhir
       const existingWidgetCount = currentItems.filter(item => !item.isStaged).length;
       const finalWidgetCount = existingWidgetCount + Object.keys(widgetIdMapping).length;
       
-      // Save dashboard with layout
+      // Simpan dashboard dengan layout
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -547,17 +547,16 @@ export function useDashboardLogic() {
       
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Backend response error:', errorData);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('Kesalahan respons backend:', errorData);
+        throw new Error(`Kesalahan HTTP! status: ${response.status}`);
       }
       
-      // Refresh data to get latest state
+      // Refresh data agar keadaan terbaru termuat
       await fetchDashboards();
       
-      // Console simpan widget
       // successToast(`Dashboard berhasil disimpan${widgetCreatedCount > 0 ? ` dengan ${widgetCreatedCount} widget baru` : ''}`);
     } catch (error) {
-      console.error('Error saving dashboard:', error);
+      console.error('Kesalahan saat menyimpan dashboard:', error);
       errorToast("Gagal menyimpan dashboard");
     } finally {
       setIsEditing(false);
@@ -565,11 +564,11 @@ export function useDashboardLogic() {
     }
   };
 
-  // Simplified layout saving
+  // Penyimpanan layout yang disederhanakan
   const saveLayoutToDB = async () => {
     const dashboard = dashboards.find((d) => d.id === activeTab);
     if (!dashboard) {
-      console.warn('Dashboard not found for activeTab:', activeTab);
+      console.warn('Dashboard tidak ditemukan untuk activeTab:', activeTab);
       return;
     }
 
@@ -579,12 +578,12 @@ export function useDashboardLogic() {
       const allItems = tabItems[dashboardId] || [];
       const realWidgetCount = allItems.filter(item => !item.isStaged).length;
       
-      console.log('=== SAVING LAYOUT TO DB ===');
-      console.log('Dashboard ID:', dashboardId);
-      console.log('Layout data structure:', Object.keys(layoutData));
-      console.log('Layout data details:', layoutData);
-      console.log('Widget count:', realWidgetCount);
-      console.log('========================');
+  // console.log('=== MENYIMPAN LAYOUT KE DB ===');
+  // console.log('ID Dashboard:', dashboardId);
+  // console.log('Struktur data layout:', Object.keys(layoutData));
+  // console.log('Detail data layout:', layoutData);
+  // console.log('Jumlah widget:', realWidgetCount);
+  // console.log('==============================');
       
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
         method: "PUT",
@@ -597,20 +596,20 @@ export function useDashboardLogic() {
       
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('Backend response error:', errorData);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('Kesalahan respons backend:', errorData);
+        throw new Error(`Kesalahan HTTP! status: ${response.status}`);
       }
       
-      console.log('Layout saved successfully to database');
+  // console.log('Layout berhasil disimpan ke database');
       successToast("Layout berhasil disimpan");
     } catch (error) {
-      console.error('Error saving layout:', error);
+      console.error('Kesalahan saat menyimpan layout:', error);
       errorToast("Gagal menyimpan layout");
       throw error;
     }
   };
 
-  // Widget management
+  // Manajemen widget
   const addWidget = async (chartType) => {
     const dashboardId = activeTab;
     
@@ -626,18 +625,18 @@ export function useDashboardLogic() {
       });
       if (!res.ok) throw new Error("Gagal menambahkan widget");
       
-      markWidgetCreated(); // Trigger onboarding task
-      await fetchDashboards(); // Refresh to get updated data
+      markWidgetCreated(); // Tandai onboarding
+      await fetchDashboards(); // Segarkan untuk mendapatkan data terbaru
       
     } catch (error) {
-      console.error('Error adding widget:', error);
+      console.error('Kesalahan saat menambah widget:', error);
       errorToast("Gagal menambahkan widget");
     }
   };
 
-  // Widget form handlers
+  // Handler form widget
   const handleChartDrop = (chartType, layoutItem) => {
-    // When a chart is dropped, show the widget form with the chart type and layout data
+    // Saat chart dijatuhkan, tampilkan form widget dengan tipe chart dan data layout
     setNewWidgetData({
       chartType,
       layoutItem
@@ -646,7 +645,7 @@ export function useDashboardLogic() {
   };
 
   const handleAddChart = (chartType) => {
-    // Add chart without specific layout - will be placed automatically
+    // Tambah chart tanpa posisi spesifik - akan ditempatkan otomatis
     setNewWidgetData({
       chartType,
       layoutItem: null
@@ -655,20 +654,20 @@ export function useDashboardLogic() {
   };
 
   const handleEditWidget = (widget) => {
-    // Open edit form for existing widget
+    // Buka form edit untuk widget yang sudah ada
     setEditWidgetData(widget);
     setShowEditWidgetForm(true);
   };
 
   const stageWidgetRemoval = (widgetId) => {
-    // console.log('=== STAGE WIDGET REMOVAL ===');
-    // console.log('Widget ID to remove:', widgetId);
+    // console.log('=== TANDAI WIDGET UNTUK DIHAPUS (STAGING) ===');
+    // console.log('ID Widget yang dihapus:', widgetId);
     
-    // Mark widget for removal (staging mode)
+    // Tandai widget untuk dihapus (mode staging)
     const dashboardId = activeTab;
     const currentItems = tabItems[dashboardId] || [];
     
-    // console.log('Current items before staging removal:', currentItems.map(item => ({
+    // console.log('Item saat ini sebelum staging hapus:', currentItems.map(item => ({
     //   id: item.id,
     //   description: item.description,
     //   isStaged: item.isStaged,
@@ -677,17 +676,13 @@ export function useDashboardLogic() {
     
     const updatedItems = currentItems.map(item => {
       if (item.id === widgetId) {
-        // console.log(`Marking widget ${widgetId} for removal:`, {
-        //   before: { isStaged: item.isStaged, stagedForRemoval: item.stagedForRemoval },
-        //   after: { isStaged: item.isStaged || false, stagedForRemoval: true } // Don't change isStaged, only set stagedForRemoval
-        // });
-        // Only mark for removal, don't change isStaged status
+        // Jangan ubah isStaged, hanya tandai stagedForRemoval
         return { ...item, stagedForRemoval: true };
       }
       return item;
     });
     
-    // console.log('Updated items after staging removal:', updatedItems.map(item => ({
+    // console.log('Item setelah staging hapus:', updatedItems.map(item => ({
     //   id: item.id,
     //   description: item.description,
     //   isStaged: item.isStaged,
@@ -696,73 +691,73 @@ export function useDashboardLogic() {
     
     updateTabItems(dashboardId, updatedItems);
     setHasUnsavedChanges(true);
-    // console.log('Widget staged for removal successfully');
+    // console.log('Widget berhasil ditandai untuk dihapus');
   };
 
   const removeWidgetFromDatabase = async (widgetId) => {
-    // Remove widget directly from database (non-editing mode)
+    // Hapus widget langsung dari database (mode non-edit)
     try {
       const res = await fetchFromBackend(`/widget/${widgetId}`, {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("Failed to delete widget");
+      if (!res.ok) throw new Error("Gagal menghapus widget");
 
-      // Refresh dashboard data
+      // Segarkan data dashboard
       await fetchDashboards();
       
       successToast("Widget berhasil dihapus");
     } catch (error) {
-      console.error("Error removing widget:", error);
+      console.error("Kesalahan saat menghapus widget:", error);
       errorToast("Gagal menghapus widget");
     }
   };
 
   const handleWidgetFormSubmit = async (formData) => {
-    // Handle new widget form submission
+    // Tangani submit form widget baru
     await stageWidgetAddition(formData);
   };
 
   const handleEditWidgetFormSubmit = async (formData) => {
-    // Handle edit widget form submission - stage changes instead of immediate save
+    // Tangani submit form edit widget - staging perubahan, bukan langsung simpan
     try {
-      // console.log('Staging widget edit with data:', formData);
+      // console.log('Staging edit widget dengan data:', formData);
       
-      // Validate required fields
+      // Validasi field wajib
       if (!formData.id) {
-        throw new Error('Widget ID is required');
+        throw new Error('ID widget wajib diisi');
       }
       
       if (!formData.description?.trim()) {
-        throw new Error('Widget description is required');
+        throw new Error('Deskripsi widget wajib diisi');
       }
       
-      // Support both old single device/datastream and new multi-datastream format
+      // Dukung format lama (single device/datastream) dan format baru (multi-datastream)
       const hasOldFormat = formData.device_id && formData.datastream_id;
       const hasNewFormat = formData.datastream_ids && Array.isArray(formData.datastream_ids) && formData.datastream_ids.length > 0;
       const hasInputsFormat = formData.inputs && Array.isArray(formData.inputs) && formData.inputs.length > 0;
       
       if (!hasOldFormat && !hasNewFormat && !hasInputsFormat) {
-        throw new Error('Device and datastream selection is required');
+        throw new Error('Pilihan device dan datastream wajib diisi');
       }
 
-      // Stage the widget changes in local state
+      // Staging perubahan widget di state lokal
       const dashboardId = activeTab;
       const currentItems = tabItems[dashboardId] || [];
       const currentWidget = currentItems.find(item => item.id === formData.id);
       
       if (!currentWidget) {
-        throw new Error('Widget not found in current dashboard');
+        throw new Error('Widget tidak ditemukan pada dashboard saat ini');
       }
       
-      // Update local state with staged changes
+      // Perbarui state lokal dengan perubahan yang di-staging
       const updatedItems = currentItems.map(item => 
         item.id === formData.id 
           ? { 
               ...item,
               description: formData.description.trim(),
               inputs: formData.inputs || formData.datastream_ids || [{ device_id: parseInt(formData.device_id || item.device_id || 1), datastream_id: parseInt(formData.datastream_id || item.datastream_id || 1) }],
-              // Mark as having staged edits
+              // Tandai bahwa ada perubahan yang di-staging
               hasEditedChanges: true,
               originalData: {
                 description: item.description,
@@ -778,12 +773,10 @@ export function useDashboardLogic() {
       setShowEditWidgetForm(false);
       setEditWidgetData(null);
 
-      // Toast staging widget sebelum simpan
       // successToast("Perubahan widget disimpan. Klik 'Simpan' untuk menyimpan ke database.");
-      
-      // console.log('Widget changes staged successfully');
+      // console.log('Perubahan widget berhasil di-staging');
     } catch (error) {
-      console.error("Error staging widget edit:", error);
+      console.error("Kesalahan saat staging edit widget:", error);
       errorToast(`Gagal menyimpan perubahan widget: ${error.message}`);
     }
   };
@@ -805,15 +798,15 @@ export function useDashboardLogic() {
     const updatedItems = [...currentItems, stagedWidget];
     updateTabItems(dashboardId, updatedItems);
     
-    // Add to layout - either with provided position or auto-positioned
+    // Tambahkan ke layout - gunakan posisi dari form atau posisikan otomatis
     if (newWidgetData?.layoutItem) {
       await stageLayoutUpdate(tempId, newWidgetData.layoutItem, formData.chartType);
     } else {
-      // Auto-position widget with proper constraints for current breakpoint
+      // Posisi otomatis dengan batasan sesuai breakpoint saat ini
       const constraints = getWidgetConstraints(formData.chartType, currentBreakpoint);
       const autoLayoutItem = {
         x: 0,
-        y: Infinity, // Place at bottom
+        y: Infinity, // Tempatkan di bagian bawah
         w: constraints.minW,
         h: constraints.minH
       };
@@ -832,11 +825,11 @@ export function useDashboardLogic() {
     const breakpoints = ['lg', 'md', 'sm', 'xs', 'xxs'];
     const updatedLayouts = { ...currentLayouts };
     
-    // Generate responsive layouts for all breakpoints
+    // Buat layout responsif untuk semua breakpoint
     breakpoints.forEach(breakpoint => {
       const constraints = getWidgetConstraints(widgetType, breakpoint);
       
-      // Ensure dimensions meet minimum requirements for this breakpoint
+      // Pastikan dimensi memenuhi batas minimum untuk breakpoint ini
       const finalWidth = Math.max(constraints.minW, layoutItem.w || constraints.minW);
       const finalHeight = Math.max(constraints.minH, layoutItem.h || constraints.minH);
       
@@ -862,7 +855,7 @@ export function useDashboardLogic() {
     setHasUnsavedChanges(true);
   };
 
-  // Layout and event handlers
+  // Handler layout dan event
   const setItemsForTab = (items) => {
     updateTabItems(activeTab, items);
   };
@@ -878,8 +871,8 @@ export function useDashboardLogic() {
   const handleLayoutChange = useCallback(async (layout, allLayouts) => {
     if (!activeTab) return;
     
-    // Simple validation - trust the grid-layout component's validation
-    // Only ensure the data structure is correct
+    // Validasi sederhana - percayakan validasi detail pada komponen grid-layout
+    // Pastikan hanya struktur datanya yang benar
     const validatedAllLayouts = {};
     Object.keys(allLayouts).forEach(breakpoint => {
       if (Array.isArray(allLayouts[breakpoint])) {
@@ -893,7 +886,7 @@ export function useDashboardLogic() {
     setHasUnsavedChanges(true);
   }, [activeTab, updateTabLayouts]);
 
-  // Edit mode management
+  // Manajemen mode edit
   const startEditMode = useCallback(() => {
     setIsEditing(true);
     setHasUnsavedChanges(false);
@@ -903,33 +896,33 @@ export function useDashboardLogic() {
 
   const cancelEditMode = useCallback(async () => {
     try {
-      // Reset to original state by re-fetching from database
+      // Reset ke keadaan awal dengan memuat ulang dari database
       await fetchDashboards();
       
-      // Reset edit state
+      // Reset state edit
       setIsEditing(false);
       setHasUnsavedChanges(false);
       setEditDashboardValue("");
       
-      // Clear any localStorage dashboard data to force refresh
+      // Bersihkan data dashboard di localStorage agar memaksa refresh
       clearDashboardData();
       
-      // console.log('Edit mode cancelled, data reset to original state');
+      // console.log('Mode edit dibatalkan, data kembali ke keadaan awal');
     } catch (error) {
-      console.error('Error cancelling edit mode:', error);
-      // Fallback: just reset UI state
+      console.error('Kesalahan saat membatalkan mode edit:', error);
+      // Fallback: hanya reset state UI
       setIsEditing(false);
       setHasUnsavedChanges(false);
       setEditDashboardValue("");
     }
   }, [fetchDashboards, clearDashboardData]);
 
-  // Main save function for all changes
+  // Fungsi utama menyimpan semua perubahan
   const saveAllLayoutChanges = useCallback(async () => {
     try {
-      // console.log('=== SAVE ALL LAYOUT CHANGES DEBUG ===');
+      // console.log('=== SIMPAN SEMUA PERUBAHAN LAYOUT (DEBUG) ===');
       
-      // Save the current dashboard with any name changes and layout updates
+      // Simpan dashboard saat ini dengan perubahan nama dan update layout
       const dashboard = dashboards.find((d) => d.id === activeTab);
       if (!dashboard) {
         errorToast("Dashboard tidak ditemukan");
@@ -944,20 +937,20 @@ export function useDashboardLogic() {
       const dashboardId = activeTab;
       const currentItems = tabItems[dashboardId] || [];
       
-      // console.log('Current items before categorization:', currentItems.map(item => ({
+      // console.log('Item saat ini (sebelum kategorisasi):', currentItems.map(item => ({
       //   id: item.id,
       //   description: item.description,
       //   isStaged: item.isStaged,
       //   stagedForRemoval: item.stagedForRemoval
       // })));
       
-      // Separate widgets into different categories
+      // Kategorikan widget
       const widgetsToAdd = currentItems.filter(widget => widget.isStaged && !widget.stagedForRemoval);
       const widgetsToRemove = currentItems.filter(widget => widget.stagedForRemoval);
       const widgetsToEdit = currentItems.filter(widget => widget.hasEditedChanges && !widget.stagedForRemoval);
       const existingWidgets = currentItems.filter(widget => !widget.isStaged && !widget.stagedForRemoval && !widget.hasEditedChanges);
       
-      // console.log('Widget categorization:', {
+      // console.log('Kategori widget:', {
       //   widgetsToAdd: widgetsToAdd.map(w => ({ id: w.id, description: w.description })),
       //   widgetsToRemove: widgetsToRemove.map(w => ({ id: w.id, description: w.description, isStaged: w.isStaged })),
       //   widgetsToEdit: widgetsToEdit.map(w => ({ id: w.id, description: w.description, hasEditedChanges: w.hasEditedChanges })),
@@ -965,10 +958,10 @@ export function useDashboardLogic() {
       //   total: currentItems.length
       // });
       
-      // First: Remove widgets marked for removal
+      // 1) Hapus widget yang ditandai untuk dihapus
       for (const widget of widgetsToRemove) {
         try {
-          // Only delete if it's not a staged widget (has real database ID)
+          // Hanya hapus jika bukan widget staging (punya ID DB nyata)
           if (!widget.isStaged) {
             const res = await fetchFromBackend(`/widget/${widget.id}`, {
               method: "DELETE",
@@ -976,23 +969,23 @@ export function useDashboardLogic() {
             
             if (!res.ok) {
               const errorText = await res.text();
-              throw new Error(`Failed to delete widget ${widget.id}: ${res.status} - ${errorText}`);
+              throw new Error(`Gagal menghapus widget ${widget.id}: ${res.status} - ${errorText}`);
             }
           } else {
-            // console.log(`Widget ${widget.id} is staged, skipping database deletion`);
+            // console.log(`Widget ${widget.id} adalah staging, lewati penghapusan DB`);
           }
         } catch (error) {
-          console.error('Error deleting widget:', widget.id, error);
+          console.error('Kesalahan saat menghapus widget:', widget.id, error);
           throw error;
         }
       }
       
-      // Second: Update edited widgets
+      // 2) Perbarui widget yang diedit
       let widgetEditedCount = 0;
       
       for (const editedWidget of widgetsToEdit) {
         try {
-          // console.log(`Processing widget for update:`, {
+          // console.log(`Memproses pembaruan widget:`, {
           //   id: editedWidget.id,
           //   description: editedWidget.description,
           //   hasEditedChanges: editedWidget.hasEditedChanges
@@ -1005,7 +998,7 @@ export function useDashboardLogic() {
             type: editedWidget.type,
           };
           
-          // console.log(`Updating widget ${editedWidget.id} in database...`, updatePayload);
+          // console.log(`Memperbarui widget ${editedWidget.id} di database...`, updatePayload);
           const res = await fetchFromBackend(`/widget/${editedWidget.id}`, {
             method: "PUT",
             body: JSON.stringify(updatePayload),
@@ -1013,18 +1006,18 @@ export function useDashboardLogic() {
           
           const data = await res.json();
           if (!res.ok) {
-            throw new Error(data.message || `Failed to update widget ${editedWidget.id}: ${res.status}`);
+            throw new Error(data.message || `Gagal memperbarui widget ${editedWidget.id}: ${res.status}`);
           }
           
           widgetEditedCount++;
-          // console.log(`Widget ${editedWidget.id} updated successfully in database`);
+          // console.log(`Widget ${editedWidget.id} berhasil diperbarui di database`);
         } catch (error) {
-          console.error('Error updating widget:', editedWidget.id, error);
+          console.error('Kesalahan saat memperbarui widget:', editedWidget.id, error);
           throw error;
         }
       }
       
-      // Third: Add new staged widgets
+      // 3) Tambah widget staging baru
       const widgetIdMapping = {};
       let widgetCreatedCount = 0;
       
@@ -1044,76 +1037,76 @@ export function useDashboardLogic() {
           
           const newWidget = await res.json();
           if (!res.ok) {
-            throw new Error(newWidget.message || `Failed to create widget: ${res.status}`);
+            throw new Error(newWidget.message || `Gagal membuat widget: ${res.status}`);
           }
           
-          // console.log('Response for widget creation:', newWidget);
+          // console.log('Respon pembuatan widget:', newWidget);
           
-          // Safety check untuk response structure
+          // Pemeriksaan keamanan untuk struktur respons
           const widgetId = newWidget?.result?.id || newWidget?.id || newWidget?.data?.id;
           if (!widgetId) {
-            console.error('Invalid widget response structure:', newWidget);
-            throw new Error('Widget ID not found in response');
+            console.error('Struktur respons widget tidak valid:', newWidget);
+            throw new Error('ID widget tidak ditemukan dalam respons');
           }
           
           widgetIdMapping[stagedWidget.id] = widgetId;
           widgetCreatedCount++;
           
-          // Trigger onboarding task completion for each widget created
+          // Tandai onboarding untuk setiap widget yang dibuat
           markWidgetCreated();
           
         } catch (error) {
-          console.error('Error saving staged widget:', stagedWidget, error);
+          console.error('Kesalahan saat menyimpan widget staging:', stagedWidget, error);
           throw error;
         }
       }
       
-      // Update layout: remove deleted widgets and update IDs for new widgets
+      // Perbarui layout: hapus widget yang dihapus dan ganti ID untuk widget baru
       let finalLayoutData = tabLayouts[dashboardId] || {};
       
-      // Ensure finalLayoutData is an object, not a string
+      // Pastikan finalLayoutData adalah object, bukan string
       if (typeof finalLayoutData === 'string') {
         try {
-          // console.log('Layout data is string, parsing...');
+          // console.log('Data layout berupa string, parsing...');
           finalLayoutData = JSON.parse(finalLayoutData);
           
-          // Check if it's still a string (double-encoded)
+          // Cek jika masih string (double-encoded)
           if (typeof finalLayoutData === 'string') {
-            // console.log('Layout data is double-encoded, parsing again...');
+            // console.log('Data layout double-encoded, parsing lagi...');
             finalLayoutData = JSON.parse(finalLayoutData);
           }
         } catch (e) {
-          console.warn('Failed to parse layout data:', e);
+          console.warn('Gagal menguraikan data layout:', e);
           finalLayoutData = {};
         }
       }
       
-      // Final validation
+      // Validasi akhir
       if (typeof finalLayoutData !== 'object' || finalLayoutData === null) {
-        console.warn('Layout data is not valid object, resetting to empty');
+        console.warn('Data layout tidak valid, di-reset ke kosong');
         finalLayoutData = {};
       }
       
-      // Process layouts for all breakpoints
+      // Proses layout untuk semua breakpoint
       const updatedLayouts = { ...finalLayoutData };
       const removedWidgetIds = widgetsToRemove.map(w => w.id.toString());
       
-      // console.log('Removing widget IDs from layout:', removedWidgetIds);
+      // console.log('Menghapus ID widget dari layout:', removedWidgetIds);
       
       Object.keys(updatedLayouts).forEach(breakpoint => {
         if (updatedLayouts[breakpoint] && Array.isArray(updatedLayouts[breakpoint])) {
           const originalCount = updatedLayouts[breakpoint].length;
           
-          // Remove layouts for deleted widgets
+          // Hapus layout untuk widget yang dihapus
           updatedLayouts[breakpoint] = updatedLayouts[breakpoint].filter(layoutItem => {
             const shouldKeep = !removedWidgetIds.includes(layoutItem.i);
             return shouldKeep;
           });
           
           const afterRemovalCount = updatedLayouts[breakpoint].length;
-          // console.log(`Breakpoint ${breakpoint}: ${originalCount} -> ${afterRemovalCount} items`);
+          // console.log(`Breakpoint ${breakpoint}: ${originalCount} -> ${afterRemovalCount} item`);
           
-          // Update IDs for new widgets
+          // Perbarui ID untuk widget baru
           updatedLayouts[breakpoint] = updatedLayouts[breakpoint].map(layoutItem => {
             const realId = widgetIdMapping[layoutItem.i];
             if (realId) {
@@ -1122,22 +1115,21 @@ export function useDashboardLogic() {
             return layoutItem;
           });
         } else {
-          console.warn(`Invalid layout structure for breakpoint ${breakpoint}:`, updatedLayouts[breakpoint]);
+          console.warn(`Struktur layout tidak valid untuk breakpoint ${breakpoint}:`, updatedLayouts[breakpoint]);
         }
       });
       
       finalLayoutData = updatedLayouts;
       
-      // Calculate final widget count (existing + edited + new - removed)
+      // Hitung jumlah widget akhir (eksisting + diedit + baru - dihapus)
       const finalWidgetCount = existingWidgets.length + widgetEditedCount + widgetCreatedCount;
       
-      // Debug log Simpan layout ke DB
-      // console.log('=== SAVING LAYOUT TO DATABASE ===');
-      // console.log('Dashboard ID:', dashboard.id);
-      // console.log('Final layout data:', finalLayoutData);
-      // console.log('Layout JSON string length:', JSON.stringify(finalLayoutData).length);
+      // console.log('=== MENYIMPAN LAYOUT KE DATABASE ===');
+      // console.log('ID Dashboard:', dashboard.id);
+      // console.log('Data layout final:', finalLayoutData);
+      // console.log('Panjang string JSON layout:', JSON.stringify(finalLayoutData).length);
       
-      // Save dashboard with layout
+      // Simpan dashboard beserta layout
       const response = await fetchFromBackend(`/dashboard/${dashboard.id}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -1148,18 +1140,18 @@ export function useDashboardLogic() {
       });
       const responseData = await response.json();
       if (!response.ok) {
-        console.error('Backend response error:', responseData.message);
-        throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+        console.error('Kesalahan respons backend:', responseData.message);
+        throw new Error(responseData.message || `Kesalahan HTTP! status: ${response.status}`);
       }
       
-      // Clean up local state: remove widgets marked for removal and clean edit flags
+      // Bersihkan state lokal: hapus widget yang ditandai hapus dan bersihkan flag edit
       const cleanedItems = existingWidgets.concat(
-        // Clean edited widgets - remove edit flags
+        // Widget yang diedit - hapus flag edit
         widgetsToEdit.map(editedWidget => {
           const { hasEditedChanges, originalData, ...cleanWidget } = editedWidget;
           return cleanWidget;
         }),
-        // Process new widgets with real IDs
+        // Widget baru dengan ID nyata
         widgetsToAdd.map(stagedWidget => {
           const realId = widgetIdMapping[stagedWidget.id];
           if (realId) {
@@ -1169,58 +1161,44 @@ export function useDashboardLogic() {
         })
       );
       
-      // Update local state with cleaned data
+      // Perbarui state lokal
       updateTabItems(dashboardId, cleanedItems);
       updateTabLayouts(dashboardId, finalLayoutData);
       
-      // Refresh data to get latest state
+      // Refresh data agar keadaan terbaru termuat
       await fetchDashboards();
-      
-      // console.log('=== SAVE COMPLETED SUCCESSFULLY ===');
-      
-      // Toast spesifik
-      // const actions = [];
-      // if (widgetCreatedCount > 0) actions.push(`${widgetCreatedCount} widget baru`);
-      // if (widgetEditedCount > 0) actions.push(`${widgetEditedCount} widget diupdate`);
-      // if (widgetsToRemove.length > 0) actions.push(`${widgetsToRemove.length} widget dihapus`);
-      
-      // const message = actions.length > 0 
-      //   ? `Dashboard berhasil disimpan dengan ${actions.join(', ')}`
-      //   : 'Dashboard berhasil disimpan';
-      
-      // successToast(message);
       
       successToast('Dashboard berhasil disimpan');
       setIsEditing(false);
       setHasUnsavedChanges(false);
     } catch (error) {
-      console.error('=== ERROR IN SAVE OPERATION ===', error);
+      console.error('=== KESALAHAN SAAT OPERASI SIMPAN ===', error);
       errorToast("Gagal menyimpan dashboard", error.message);
     }
   }, [activeTab, dashboards, editDashboardValue, tabItems, tabLayouts, updateTabLayouts, fetchDashboards]);
 
-  // Trigger refresh widgets dengan time range baru
+  // Trigger refresh widgets dengan rentang waktu baru
   const handleTimeRangeChange = useCallback((newTimeRange) => {
     setCurrentTimeRange(newTimeRange);
   }, []);
 
-  // Trigger refresh widgets dengan data count baru
+  // Trigger refresh widgets dengan jumlah data baru
   const handleDataCountChange = useCallback((newDataCount) => {
     setCurrentDataCount(newDataCount);
   }, []);
 
-  // Trigger refresh widgets dengan filter type baru
+  // Trigger refresh widgets dengan tipe filter baru
   const handleFilterTypeChange = useCallback((newFilterType) => {
     setFilterType(newFilterType);
   }, []);
 
-  // Return all the required state and functions
+  // Kembalikan semua state dan fungsi yang dibutuhkan komponen
   return {
     // State
     dashboards,
     activeTab,
     activeDashboardDescription: getDashboardDescription(activeTab, dashboards),
-    setActiveTab: updateActiveTab, // This should trigger tab switching correctly
+    setActiveTab: updateActiveTab, // Memicu perpindahan tab dengan benar
     openChartSheet,
     setOpenChartSheet,
     showWidgetForm,
@@ -1235,7 +1213,7 @@ export function useDashboardLogic() {
     setTabItems: setItemsForTab,
     tabLayouts,
     setTabLayouts: setLayoutsForTab,
-    // Current items and layouts for active dashboard
+    // Item dan layout saat ini untuk dashboard aktif
     currentItems: activeTab ? (tabItems[activeTab] || []).filter(item => !item.stagedForRemoval) : [],
     currentLayouts: activeTab ? (tabLayouts[activeTab] || {}) : {},
     openDashboardDialog,
@@ -1256,7 +1234,7 @@ export function useDashboardLogic() {
     datastreams,
     hasUnsavedChanges,
     setHasUnsavedChanges,
-    isAuthenticated, // Add this missing property!
+    isAuthenticated, // Properti yang sebelumnya kurang
     layoutKey,
     currentTimeRange,
     currentDataCount,
@@ -1264,7 +1242,7 @@ export function useDashboardLogic() {
     deleteChecked,
     setDeleteChecked,
     
-    // Functions
+    // Fungsi
     handleAddDashboard,
     handleEditDashboard,
     handleDeleteDashboard,
@@ -1289,7 +1267,7 @@ export function useDashboardLogic() {
     handleDataCountChange,
     handleFilterTypeChange,
     
-    // Responsive
+    // Responsif
     isMobile,
     isMedium,
     isTablet,

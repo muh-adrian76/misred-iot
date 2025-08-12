@@ -13,48 +13,48 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { User, Mail, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
 
-// Komponen EditUserForm untuk mengedit data user yang sudah ada
+// Komponen EditUserForm untuk mengedit data pengguna yang sudah ada
 export default function EditUserForm({
   open, // State untuk kontrol visibility modal
   setOpen, // Setter untuk mengubah state modal
-  editUser, // Data user yang akan diedit
-  handleEditUser, // Handler function untuk update user
+  editUser, // Data pengguna yang akan diedit
+  handleEditUser, // Fungsi handler untuk memperbarui data pengguna
 }) {
-  // State management untuk form fields
-  const [name, setName] = useState(""); // Nama lengkap user
-  const [email, setEmail] = useState(""); // Email user
-  const [isAdmin, setIsAdmin] = useState(false); // Flag untuk role admin
-  const [loading, setLoading] = useState(false); // State loading untuk submit
+  // State management untuk field formulir
+  const [name, setName] = useState(""); // Nama lengkap pengguna
+  const [email, setEmail] = useState(""); // Email pengguna
+  const [isAdmin, setIsAdmin] = useState(false); // Penanda peran admin
+  const [loading, setLoading] = useState(false); // Status loading saat submit
 
-  // Effect untuk populate form dengan data user yang akan diedit
+  // Effect untuk mengisi form dengan data pengguna yang akan diedit
   useEffect(() => {
     if (editUser) {
-      setName(editUser.name || ""); // Set nama dari data user
-      setEmail(editUser.email || ""); // Set email dari data user
-      setIsAdmin(editUser.is_admin || false); // Set admin status dari data user
+  setName(editUser.name || ""); // Set nama dari data pengguna
+  setEmail(editUser.email || ""); // Set email dari data pengguna
+  setIsAdmin(editUser.is_admin || false); // Set status admin dari data pengguna
     }
   }, [editUser, open]); // Re-run saat editUser atau modal open berubah
 
-  // Handler untuk submit form edit user
+  // Handler untuk submit form edit pengguna
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true); // Set loading state
     
     try {
-      // Prepare data user untuk update (tanpa password)
+  // Siapkan data pengguna untuk update (tanpa password)
       const formData = {
-        name, // Nama yang sudah diupdate
-        email, // Email yang sudah diupdate
-        is_admin: isAdmin // Role admin yang sudah diupdate
+  name, // Nama yang diperbarui
+  email, // Email yang diperbarui
+  is_admin: isAdmin // Peran admin yang diperbarui
       };
       
-      // Panggil handler dari parent component dengan ID user
+  // Panggil handler dari komponen induk dengan ID pengguna
       const success = await handleEditUser(editUser.id, formData);
       if (success) {
-        setOpen(false); // Tutup modal setelah berhasil update
+        setOpen(false); // Tutup modal setelah berhasil memperbarui
       }
     } catch (error) {
-      console.error("Error editing user:", error);
+      console.error("Kesalahan mengedit pengguna:", error);
     } finally {
       setLoading(false); // Reset loading state
     }
@@ -124,11 +124,11 @@ export default function EditUserForm({
     <ResponsiveDialog
       open={open}
       setOpen={setOpen}
-      title="Edit User"
-      description={`Ubah informasi untuk ${editUser?.name || 'user'}`}
+  title="Edit Pengguna"
+  description={`Ubah informasi untuk ${editUser?.name || 'pengguna'}`}
       form={formContent}
       formHandle={handleSubmit}
-      confirmText="Update User"
+  confirmText="Perbarui Pengguna"
       cancelText="Batal"
       loading={loading}
     />

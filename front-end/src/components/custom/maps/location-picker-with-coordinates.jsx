@@ -66,7 +66,7 @@ export function LocationPickerWithCoordinates({
   if (typeof window === 'undefined') {
     return (
       <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-800">
-        <span className="text-sm text-gray-600 dark:text-gray-400">Loading location picker...</span>
+  <span className="text-sm text-gray-600 dark:text-gray-400">Memuat pemilih lokasi...</span>
       </div>
     );
   }
@@ -174,14 +174,14 @@ export function LocationPickerWithCoordinates({
           onChange(locationData);
         }
         } else {
-          console.warn("No coordinates found for location:", selectedLocation);
+          console.warn("Koordinat tidak ditemukan untuk lokasi:", selectedLocation);
           // Fallback untuk lokasi yang tidak ditemukan
           if (onChange) {
             onChange({ address: selectedLocation, lat: null, lng: null });
           }
         }
       } catch (error) {
-        console.error("Error fetching coordinates:", error);
+  console.error("Kesalahan mengambil koordinat:", error);
         // Error handling dengan informasi error
         if (onChange) {
           onChange({ address: selectedLocation, lat: null, lng: null, error: error.message });
@@ -293,7 +293,7 @@ export function LocationPickerWithCoordinates({
             // Panggil callback asli untuk LocationPicker (agar tetap berfungsi normal)
             successCallback(position);
           } catch (error) {
-            console.error("Error reverse geocoding:", error);
+            console.error("Kesalahan reverse geocoding:", error);
             // Fallback dengan koordinat saja jika reverse geocoding gagal
             const locationData = {
               address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
@@ -311,7 +311,7 @@ export function LocationPickerWithCoordinates({
         originalGetCurrentPosition.call(this, wrappedSuccessCallback, errorCallback, options);
       };
     } catch (error) {
-      console.error("Error setting up geolocation override:", error);
+  console.error("Kesalahan menyiapkan override geolocation:", error);
     }
     
     // ===== CLEANUP FUNCTION =====
@@ -324,7 +324,7 @@ export function LocationPickerWithCoordinates({
         try {
           navigator.geolocation.getCurrentPosition = originalGetCurrentPosition;
         } catch (error) {
-          console.error("Error restoring geolocation:", error);
+          console.error("Kesalahan mengembalikan geolocation asli:", error);
         }
       }
     };

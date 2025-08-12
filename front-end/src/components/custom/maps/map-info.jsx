@@ -250,7 +250,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.message || data.error || `HTTP Error ${response.status}: ${response.statusText}`;
+  const errorMessage = data.message || data.error || `HTTP Error ${response.status}: ${response.statusText}`; // Dibiarkan bilingual untuk debugging
         throw new Error(errorMessage);
       }
 
@@ -281,7 +281,7 @@ export function DeviceInfoPanel({ device, onClose, onLocationUpdated }) {
       }, 1500);
 
     } catch (error) {
-      console.error("Error saving location:", error);
+  console.error("Kesalahan menyimpan lokasi:", error);
       
       // ===== ERROR HANDLING YANG COMPREHENSIVE =====
       let errorMessage = "Gagal menyimpan lokasi";

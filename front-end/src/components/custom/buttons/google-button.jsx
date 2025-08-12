@@ -22,25 +22,24 @@ export default function GoogleButton({
   // Hook untuk mendeteksi ukuran layar
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
-  // Handler untuk Google login menggunakan OAuth flow
+  // Handler untuk login Google menggunakan alur OAuth
   const googleLogin = useGoogleLogin({
     // Callback ketika login berhasil
     onSuccess: async ({ code }) => {
       try {
-        // Set loading state
+  // Set status loading
         setIsLoading(true);
-        // Kirim authorization code ke backend untuk exchange dengan access token
-        // Kirim authorization code ke backend untuk exchange dengan access token
+  // Kirim authorization code ke backend untuk ditukar dengan access token
         const res = await fetchFromBackend("/auth/google", {
           method: "POST",
           body: JSON.stringify({ code, mode: "popup" }),
         });
 
-        // Parse response dari backend
+        // Parse respons dari backend
         const data = await res.json();
         // Cek apakah response berhasil atau gagal
         !res.ok
-          ? errorToast("Google login gagal!", `${data.message}`) // Tampilkan error jika gagal
+          ? errorToast("Login Google gagal!", `${data.message}`) // Tampilkan error jika gagal
           : setTimeout(() => {
               // Jika berhasil, set user data dan redirect ke dashboard
               setUser(data.user);
@@ -48,7 +47,7 @@ export default function GoogleButton({
             }, 500); // Delay 500ms untuk UX yang smooth
       } catch {
         // Handle error jika terjadi exception
-        errorToast("Google login gagal!");
+        errorToast("Login Google gagal!");
       } finally {
         // Selalu set loading false di akhir
         setIsLoading(false);
@@ -56,17 +55,17 @@ export default function GoogleButton({
     },
     flow: "auth-code", // Menggunakan authorization code flow untuk keamanan
     // Callback ketika terjadi error
-    onError: () => errorToast("Google login gagal!"),
-    // UX mode: popup untuk desktop, redirect untuk mobile
+  onError: () => errorToast("Login Google gagal!"),
+  // Mode UX: popup untuk desktop, redirect untuk mobile
     ux_mode: isMobile ? "redirect" : "popup",
-    // Redirect URI hanya untuk mobile (redirect mode)
+  // Redirect URI hanya untuk mobile (mode redirect)
     redirect_uri: isMobile
       ? `${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/google-callback`
       : undefined,
   });
 
   return (
-    // Button dengan styling outline dan full width
+  // Tombol dengan styling outline dan lebar penuh
     <Button
       variant="outline"
       type="button"
@@ -79,8 +78,8 @@ export default function GoogleButton({
     >
       {/* Ikon Google */}
       <GoogleIcon className="h-5 w-5 mr-2" />
-      {/* Teks button yang berubah saat loading */}
-      {isLoading ? "Memproses..." : `${action} dengan Gmail`}
+  {/* Teks tombol yang berubah saat loading */}
+  {isLoading ? "Memproses..." : `${action} dengan Google`}
     </Button>
   );
 }

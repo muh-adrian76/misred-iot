@@ -288,7 +288,7 @@ export default function MapView({
                 <div className="text-sm">
                   <strong>{device.description}</strong><br />
                   Status: <span className={device.status === 'online' ? 'text-green-600' : 'text-red-600'}>
-                    {device.status}
+                    {device.status === 'online' ? 'online' : 'offline'}
                   </span><br />
                   {/* Alamat jika tersedia */}
                   {device.address && <span>Alamat: {device.address}<br /></span>}

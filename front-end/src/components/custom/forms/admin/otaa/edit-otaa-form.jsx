@@ -1,5 +1,5 @@
-// Edit OTAA Form Component - form untuk edit firmware yang sudah ada
-// Fitur: edit board type, edit versi, replace file, validasi, modal dialog
+// Edit OTAA Form Component - form untuk mengedit firmware yang sudah ada
+// Fitur: ubah board type, ubah versi, ganti file, validasi, modal dialog
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,18 +10,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload, RefreshCw, FileCode, AlertCircle, CheckCircle, Cpu, Edit } from "lucide-react";
 
 export default function EditOTAAForm({
-  // Dialog state
-  editFormOpen, // State untuk dialog edit firmware
-  setEditFormOpen, // Setter untuk dialog edit firmware
-  firmwareToEdit, // Firmware yang akan diedit
-  setFirmwareToEdit, // Setter untuk firmware yang akan diedit
-  handleEditFirmware, // Handler untuk submit edit firmware
-  boardTypes, // Array board types dari database (optional)
-  boardOptions, // Array board options default dari device-logic
+  // State dialog dan handler
+  editFormOpen, // Apakah dialog edit terbuka
+  setEditFormOpen, // Setter dialog
+  firmwareToEdit, // Data firmware yang akan diedit
+  setFirmwareToEdit, // Setter data firmware
+  handleEditFirmware, // Handler submit perubahan firmware
+  boardTypes, // Daftar board type dari database (opsional)
+  boardOptions, // Daftar board type default (fallback)
 }) {
   // Gunakan boardTypes dari database jika ada, jika tidak gunakan boardOptions default
   const availableBoardTypes = (boardTypes && boardTypes.length > 0) ? boardTypes : boardOptions;
-  // Local state untuk form edit
+  // State lokal form edit
   const [editForm, setEditForm] = useState({
     board_type: "",
     firmware_version: "",
@@ -30,7 +30,7 @@ export default function EditOTAAForm({
   });
   const [updating, setUpdating] = useState(false);
 
-  // Effect untuk mengisi form ketika firmwareToEdit berubah
+  // Isi ulang form saat firmwareToEdit berubah
   useEffect(() => {
     if (firmwareToEdit) {
       setEditForm({
@@ -42,12 +42,12 @@ export default function EditOTAAForm({
     }
   }, [firmwareToEdit]);
 
-  // Handler untuk memilih file firmware dengan validasi
+  // Handler memilih file firmware + validasi
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validasi ekstensi file - hanya .bin dan .hex yang diperbolehkan
+  // Validasi ekstensi file (hanya .bin dan .hex)
     const allowedExt = ['.bin', '.hex'];
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
     
@@ -56,7 +56,7 @@ export default function EditOTAAForm({
       return;
     }
 
-    // Validasi ukuran file maksimal 10MB untuk firmware
+  // Validasi ukuran file maksimal 10MB
     if (file.size > 10 * 1024 * 1024) {
       alert("Ukuran file maksimal 10MB");
       return;
@@ -69,7 +69,7 @@ export default function EditOTAAForm({
     }));
   };
 
-  // Handler untuk submit edit firmware
+  // Submit perubahan firmware
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -120,13 +120,13 @@ export default function EditOTAAForm({
       setEditFormOpen(false);
       setFirmwareToEdit(null);
     } catch (error) {
-      console.error("Error updating firmware:", error);
+  console.error("Kesalahan memperbarui firmware:", error);
     } finally {
       setUpdating(false);
     }
   };
 
-  // Handler untuk cancel edit
+  // Batalkan proses edit
   const handleCancel = () => {
     setEditForm({
       board_type: "",
@@ -147,7 +147,7 @@ export default function EditOTAAForm({
             Edit Firmware
           </DialogTitle>
           <DialogDescription>
-            Edit informasi firmware yang sudah ada. File firmware bersifat opsional - kosongkan jika tidak ingin mengganti file.
+            Ubah informasi firmware yang sudah ada. File firmware opsional - kosongkan jika tidak ingin mengganti.
           </DialogDescription>
         </DialogHeader>
 
@@ -162,7 +162,7 @@ export default function EditOTAAForm({
                 Edit Firmware: {firmwareToEdit?.firmware_url?.split('/').pop()}
               </h4>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Ubah informasi firmware atau ganti dengan file firmware yang baru.
+                Ubah metadata firmware atau ganti dengan file baru jika diperlukan.
               </p>
             </div>
           </div>
@@ -296,12 +296,12 @@ export default function EditOTAAForm({
                 {updating ? (
                   <>
                     <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-                    Mengupdate firmware...
+                    Memperbarui firmware...
                   </>
                 ) : (
                   <>
                     <Edit className="w-5 h-5 mr-2" />
-                    Update Firmware
+                    Perbarui Firmware
                   </>
                 )}
               </Button>

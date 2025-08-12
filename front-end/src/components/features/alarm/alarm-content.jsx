@@ -35,7 +35,7 @@ export default function AlarmContent({
       // Kolom device yang terkait dengan alarm
       key: "device",
       label: "Device",
-      render: (row) => row.device_description || "Unknown", // Tampilkan deskripsi device atau "Unknown"
+  render: (row) => row.device_description || "Tidak diketahui", // Fallback deskripsi device
     },
     {
       // Kolom datastream yang dimonitor
@@ -43,7 +43,7 @@ export default function AlarmContent({
       label: "Datastream",
       render: (row) =>
         // Format: "Deskripsi Datastream (Pin X)"
-        `${row.datastream_description || "Unknown"} (Pin ${row.datastream_pin || "N/A"})`,
+  `${row.datastream_description || "Tidak diketahui"} (Pin ${row.datastream_pin || "Tidak tersedia"})`,
     },
     {
       // Kolom kondisi alarm
@@ -170,7 +170,7 @@ export default function AlarmContent({
           <motion.img
             key="alarm-image"
             src="/alarm.svg"
-            alt="No Alarms"
+            alt="Tidak ada alarm"
             className="w-72 h-auto -mb-5 mt-[-50px]"
             initial={{ opacity: 0, scale: 0 }} // Mulai dengan scale 0
             animate={{ opacity: 1, scale: 1 }} // Animasi ke ukuran normal

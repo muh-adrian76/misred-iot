@@ -25,66 +25,66 @@ export function useAdminMapsLogic() {
   // State autentikasi admin dari hook use-admin-auth
   const { user, isAdmin, isAuthenticated, isLoading: adminLoading } = useAdminAuth();
 
-  // Fungsi untuk mengambil semua device dengan data lokasi
+  // Fungsi untuk mengambil semua perangkat beserta data lokasinya
   const fetchDevices = async () => {
     try {
-      // Set loading state
+      // Set status loading
       setIsLoading(true);
       
-      // Fetch data lokasi device dari backend
+      // Ambil data lokasi perangkat dari backend
       const response = await fetchFromBackend("/admin/devices/locations");
       const data = await response.json();
       
-      // Cek apakah response berhasil
+      // Cek apakah respons berhasil
       if (data.status === "success") {
-        // Transform data dari backend ke format frontend
+        // Transformasi data dari backend ke format frontend
         const transformedDevices = data.data.map(device => ({
-          id: device.id, // ID device
-          name: device.name, // Nama device
+          id: device.id, // ID perangkat
+          name: device.name, // Nama perangkat
           location: { 
             lat: device.latitude, // Latitude lokasi
             lng: device.longitude, // Longitude lokasi
             address: device.address // Alamat lokasi
           },
-          status: device.status, // Status device (online/offline)
-          owner: device.user_name, // Nama pemilik device
+          status: device.status, // Status perangkat (online/offline)
+          owner: device.user_name, // Nama pemilik perangkat
           lastSeen: device.last_seen, // Waktu terakhir terlihat
           type: "sensor" // Default type karena tidak ada data dari backend
         }));
         
-        // Set data devices yang sudah ditransform
+        // Set data perangkat yang sudah ditransformasi
         setDevices(transformedDevices);
       } else {
-        throw new Error(data.message || "Failed to fetch devices");
+        throw new Error(data.message || "Gagal mengambil data perangkat");
       }
 
       // Set loading selesai
       setIsLoading(false);
     } catch (error) {
-      // Handle error fetch
-      console.error("Error fetching devices:", error);
-      errorToast("Gagal memuat data lokasi device");
+      // Tangani error pengambilan data
+      console.error("Gagal mengambil perangkat:", error);
+      errorToast("Gagal memuat data lokasi perangkat");
       setIsLoading(false);
     }
   };
 
-  // Filter devices based on status
+  // Filter perangkat berdasarkan status
   const filteredDevices = devices.filter(device => {
     if (filterStatus === 'all') return true;
     return device.status === filterStatus;
   });
 
-  // Handle device selection
+  // Saat perangkat dipilih
   const selectDevice = (device) => {
     setSelectedDevice(device);
   };
 
-  // Clear selection
+  // Hapus pilihan
   const clearSelection = () => {
     setSelectedDevice(null);
   };
 
-  // Update device location
+  // Perbarui lokasi perangkat
   const updateDeviceLocation = async (deviceId, latitude, longitude, address) => {
     try {
       const response = await fetchFromBackend(`/admin/devices/${deviceId}/location`, {
@@ -95,25 +95,25 @@ export function useAdminMapsLogic() {
       const data = await response.json();
       
       if (response.ok) {
-        fetchDevices(); // Refresh data
+        fetchDevices(); // Segarkan data
         return true;
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
-      console.error("Error updating device location:", error);
-      errorToast("Gagal memperbarui lokasi device");
+      console.error("Gagal memperbarui lokasi perangkat:", error);
+      errorToast("Gagal memperbarui lokasi perangkat");
       return false;
     }
   };
 
-  // Refresh data
+  // Segarkan data
   const handleRefresh = async () => {
     await fetchDevices();
     successToast("Data berhasil diperbarui");
   };
   
-  // Initialize data
+  // Inisialisasi data
   useEffect(() => {
     if (!adminLoading && isAuthenticated && isAdmin) {
       fetchDevices();

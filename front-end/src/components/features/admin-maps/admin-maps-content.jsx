@@ -6,6 +6,7 @@ import {
   RefreshCw,
   ZoomOut,
   Smartphone,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,7 @@ import { GlowingEffect } from "@/components/ui/glowing-effect";
 import { motion } from "framer-motion";
 import { useMobile } from "@/hooks/use-mobile";
 
-// Dynamically import MapView to prevent SSR issues with Leaflet
+// Import MapView secara dinamis untuk mencegah masalah SSR dengan Leaflet
 const MapView = dynamic(() => import("@/components/custom/maps/map-view"), {
   ssr: false,
   loading: () => (
@@ -52,36 +53,36 @@ export default function AdminMapsContent({
   handleRefresh,
   fetchDevices,
 }) {
-  // State for map functionality
+  // State untuk fungsionalitas peta
   const [isChangingMapView, setIsChangingMapView] = useState(false);
   const [shouldFitAllDevices, setShouldFitAllDevices] = useState(false);
   
-  // Use mobile hook for SSR safety
+  // Gunakan hook mobile untuk keamanan SSR
   const isMobile = useMobile();
 
-  // Function to handle map view change with loading
+  // Fungsi untuk menangani perubahan tampilan peta dengan indikator loading
   const handleMapViewChange = (newView) => {
     setIsChangingMapView(true);
     setMapView(newView);
-    // Reset loading after a brief delay to allow tiles to load
+    // Reset loading setelah jeda singkat agar tile sempat dimuat
     setTimeout(() => setIsChangingMapView(false), 1000);
   };
 
-  // Function to zoom to all devices
+  // Fungsi untuk zoom ke semua perangkat
   const handleZoomToAll = () => {
-    clearSelection(); // Clear selected device
+    clearSelection(); // Bersihkan perangkat yang dipilih
     setShouldFitAllDevices(true);
-    // Reset trigger after brief delay
+    // Reset pemicu setelah jeda singkat
     setTimeout(() => setShouldFitAllDevices(false), 100);
   };
 
-  // Function to handle location updated
+  // Fungsi untuk menangani lokasi yang diperbarui
   const handleLocationUpdated = (deviceId, locationData, updatedDevice) => {
-    // Refresh devices to get updated data
+    // Segarkan perangkat untuk mendapatkan data terbaru
     fetchDevices();
-    successToast("Lokasi device berhasil diperbarui");
+    successToast("Lokasi perangkat berhasil diperbarui");
 
-    // Update selected device with new location untuk update map position
+    // Perbarui perangkat yang dipilih dengan lokasi baru untuk memperbarui posisi peta
     if (updatedDevice && selectedDevice?.id === deviceId) {
       selectDevice(updatedDevice);
     }
@@ -108,7 +109,7 @@ export default function AdminMapsContent({
 
   return (
     <div className="space-y-4 lg:space-y-6 admin-maps-content min-h-screen">
-      {/* Header */}
+  {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,7 +118,7 @@ export default function AdminMapsContent({
       >
         <div className="space-y-2">
           <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
-            Peta Lokasi Device
+    Peta Lokasi Perangkat
           </h1>
           {/* <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
             Monitor lokasi dan status semua perangkat IoT secara real-time
@@ -133,13 +134,13 @@ export default function AdminMapsContent({
               className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
             />
             <span className="hidden sm:inline">
-              {isLoading ? "Loading..." : "Refresh"}
+      {isLoading ? "Memuat..." : "Muat Ulang"}
             </span>
           </Button>
         </div>
       </motion.div>
 
-      {/* Enhanced Controls with shadcn Select components */}
+  {/* Kontrol lanjutan dengan komponen Select (shadcn) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,7 +155,7 @@ export default function AdminMapsContent({
           inactiveZone={0.02}
         />
         <div className="lg:flex lg:flex-row grid grid-cols-2 gap-4 lg:gap-6 items-start lg:items-center">
-          {/* Map View Selector */}
+          {/* Pemilih Tampilan Peta */}
           <div className="flex max-md:flex-col justify-between items-center gap-3 w-auto">
             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
               <Layers className="w-5 h-5 text-red-600" />
@@ -193,7 +194,7 @@ export default function AdminMapsContent({
             </Select>
           </div>
 
-          {/* Status Filter */}
+          {/* Filter Status */}
           <div className="flex items-center max-md:flex-col gap-3 w-auto">
             <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
               <Filter className="w-5 h-5 text-pink-600" />
@@ -228,12 +229,11 @@ export default function AdminMapsContent({
             </Select>
           </div>
 
-          {/* Device Count and Actions */}
+      {/* Jumlah Perangkat dan Aksi */}
           <div className="flex items-center justify-center lg:justify-end gap-3 w-full lg:flex-1 lg:ml-auto">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                {devices.length} device{devices.length !== 1 ? "s" : ""}{" "}
-                ditemukan
+        {devices.length} perangkat ditemukan
               </span>
             </div>
             {selectedDevice && (
@@ -251,7 +251,7 @@ export default function AdminMapsContent({
         </div>
       </motion.div>
 
-      {/* Enhanced Map Container */}
+  {/* Kontainer Peta yang ditingkatkan */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -301,7 +301,7 @@ export default function AdminMapsContent({
             mapView={mapView}
             shouldFitAllDevices={shouldFitAllDevices}
           />
-          {/* Device Info Panel */}
+      {/* Panel Info Perangkat */}
           <DeviceInfoPanel
             device={selectedDevice}
             onClose={clearSelection}
@@ -310,7 +310,7 @@ export default function AdminMapsContent({
         </div>
       </motion.div>
 
-      {/* Enhanced Device List */}
+    {/* Daftar Perangkat yang ditingkatkan */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -327,7 +327,7 @@ export default function AdminMapsContent({
         <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-700/50 dark:to-gray-600/50">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-pink-600" />
-            Daftar Device
+            Daftar Perangkat
           </h3>
         </div>
 
@@ -338,12 +338,12 @@ export default function AdminMapsContent({
                 <MapPin className="w-12 h-12 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                Tidak ada device
+                Tidak ada perangkat
               </h3>
               <p className="text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
                 {filterStatus === "all"
-                  ? "Belum ada device yang terdaftar dalam sistem"
-                  : `Tidak ada device dengan status ${filterStatus === "online" ? "online" : "offline"} saat ini`}
+                  ? "Belum ada perangkat yang terdaftar dalam sistem"
+                  : `Tidak ada perangkat dengan status ${filterStatus === "online" ? "online" : "offline"} saat ini`}
               </p>
             </div>
           ) : (

@@ -96,7 +96,7 @@ export default function ForgotPasswordForm({
       >
         {/* Logo container dengan styling konsisten */}
         <div className="flex h-8 w-8 mr-2 items-center justify-center rounded-md text-primary-foreground">
-          <img src={brandLogo} alt="Logo" />
+          <img src={brandLogo} alt="Logo Merek" />
         </div>
         {/* Brand text dengan font khusus */}
         <h1 className={`text-3xl tracking-wider ${logoFont}`}>MiSREd-IoT</h1>
@@ -156,7 +156,7 @@ export default function ForgotPasswordForm({
                   onClick={() => setShowForgotPassword(false)} // Toggle ke login form
                   className="cursor-pointer underline underline-offset-4"
                 >
-                  Log In
+                  Masuk
                 </button>
               </div>
             </div>

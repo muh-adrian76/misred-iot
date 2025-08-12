@@ -17,12 +17,12 @@ export default function ConfirmDialog({
   open, // State apakah dialog terbuka
   setOpen, // Setter untuk mengontrol state dialog
   title, // Judul dialog
-  description, // Deskripsi/pesan konfirmasi
-  checkbox = false, // Komponen checkbox opsional (misalnya untuk konfirmasi tambahan)
-  confirmHandle, // Handler untuk aksi konfirmasi
-  confirmText, // Teks button konfirmasi
-  cancelText, // Teks button batal
-  confirmDisabled = false, // Status disabled untuk button konfirmasi
+  description, // Deskripsi / pesan konfirmasi
+  checkbox = false, // Komponen checkbox opsional (misal: centang "Saya mengerti")
+  confirmHandle, // Fungsi handler ketika user menekan konfirmasi
+  confirmText = "Konfirmasi", // Teks tombol konfirmasi (default)
+  cancelText = "Batal", // Teks tombol batal (default)
+  confirmDisabled = false, // Jika true, tombol konfirmasi dinonaktifkan
 }) {
   return (
     // AlertDialog dengan state controlled
@@ -39,7 +39,9 @@ export default function ConfirmDialog({
         {/* Header dialog dengan judul dan deskripsi */}
         <AlertDialogHeader>
           <AlertDialogTitle className="text-balance">{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogDescription>
+            {description || "Apakah Anda yakin ingin melanjutkan aksi ini?"}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         {/* Render checkbox jika disediakan */}
         {checkbox}

@@ -1,12 +1,12 @@
-// Admin Maps Dialogs - untuk dialog/modal yang diperlukan di halaman maps
+// Dialog Admin Maps - kumpulan dialog/modal yang diperlukan di halaman peta admin
 
 export default function AdminMapsDialogs({ 
-  // Props untuk dialog states akan ditambahkan sesuai kebutuhan
+  // Tambahkan props state dialog sesuai kebutuhan
 }) {
   return (
     <>
-      {/* Dialog components akan ditambahkan di sini sesuai kebutuhan */}
-      {/* Contoh: Device Details Dialog, Location Edit Dialog, dll */}
+      {/* Komponen dialog akan ditambahkan di sini sesuai kebutuhan */}
+      {/* Contoh: Dialog Detail Perangkat, Dialog Edit Lokasi, dll. */}
     </>
   );
 }

@@ -107,7 +107,7 @@ export const createUserColumns = (onEdit, onDelete) => [
         <div className="flex flex-col items-start">
           <div className="font-medium text-sm">
             {/* Nama user atau fallback */}
-            {user.name || 'Unknown User'}
+            {user.name || 'Nama tidak diketahui'}
           </div>
           <div className="text-sm text-muted-foreground">
             {/* Email user */}
@@ -178,7 +178,7 @@ export const createUserColumns = (onEdit, onDelete) => [
     render: (user) => (
       <div className="text-sm">
         {/* Format tanggal pendaftaran dalam bahasa Indonesia */}
-        {user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : 'Unknown'}
+  {user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : 'Tidak diketahui'}
       </div>
     ),
   },
@@ -189,7 +189,7 @@ export const createUserRowActions = (openEditDialog, openDeleteDialog) => [
   {
     // Aksi edit user
     key: "edit",
-    label: "Edit User",
+  label: "Edit User",
     icon: Edit, // Ikon edit dari Lucide
     className: "hover:text-foreground", // Styling hover
     disabled: false, // Tidak di-disable
@@ -201,7 +201,7 @@ export const createUserRowActions = (openEditDialog, openDeleteDialog) => [
   {
     // Aksi hapus user
     key: "delete",
-    label: "Hapus User",
+  label: "Hapus User",
     icon: Trash2, // Ikon trash dari Lucide
     className: "hover:text-primary", // Styling hover
     disabled: false, // Tidak di-disable
@@ -218,7 +218,7 @@ export const userColumns = createUserColumns(() => {}, () => {});
 // Aksi Bulk - untuk operasi pada multiple user sekaligus
 export const userBulkActions = [
   {
-    label: "Delete selected", // Label aksi
+    label: "Hapus yang dipilih", // Label aksi
     action: "delete", // Tipe aksi
     variant: "destructive", // Variant styling (merah untuk delete)
     icon: Trash2, // Ikon untuk aksi bulk delete

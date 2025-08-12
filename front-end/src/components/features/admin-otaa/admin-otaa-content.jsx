@@ -91,10 +91,10 @@ export default function AdminOTAAContent({
       >
         <div className="space-y-2">
           <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
-            Over-The-Air Updates
+            Pembaruan Over-The-Air (OTA)
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm lg:text-base">
-            Kelola firmware untuk update perangkat IoT secara remote
+            Kelola firmware untuk memperbarui perangkat IoT dari jarak jauh
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -107,13 +107,13 @@ export default function AdminOTAAContent({
               className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
             />
             <span className="hidden sm:inline">
-              {loading ? "Loading..." : "Refresh"}
+              {loading ? "Memuat..." : "Muat Ulang"}
             </span>
           </Button>
         </div>
       </motion.div>
 
-      {/* Statistics Cards seperti di halaman users */}
+  {/* Kartu Statistik seperti di halaman pengguna */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -161,7 +161,7 @@ export default function AdminOTAAContent({
           />
           <Card className="relative overflow-hidden border-0 h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Board Types</CardTitle>
+              <CardTitle className="text-sm font-medium">Tipe Board</CardTitle>
               <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
                 <Cpu className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
@@ -192,7 +192,7 @@ export default function AdminOTAAContent({
           />
           <Card className="relative overflow-hidden border-0 h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Update Ready</CardTitle>
+              <CardTitle className="text-sm font-medium">Siap Diperbarui</CardTitle>
               <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
@@ -223,7 +223,7 @@ export default function AdminOTAAContent({
           />
           <Card className="relative overflow-hidden border-0 h-full flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
+              <CardTitle className="text-sm font-medium">Penyimpanan Terpakai</CardTitle>
               <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
                 <MemoryStick className="h-4 w-4 text-orange-600 dark:text-orange-400" />
               </div>
@@ -233,14 +233,14 @@ export default function AdminOTAAContent({
                 {(filteredFirmwares.length * 0.5).toFixed(1)}MB
               </div>
               <p className="text-xs text-muted-foreground leading-tight">
-                Storage terpakai
+                Penyimpanan terpakai
               </p>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Enhanced Tabs dengan glowing effect */}
+  {/* Tab yang ditingkatkan dengan efek glow */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -277,7 +277,7 @@ export default function AdminOTAAContent({
 
           {/* Manage Firmware Tab dengan desain yang diperbaiki */}
           <TabsContent value="manage" className="p-4 lg:p-6 space-y-6 m-0">
-            {/* Enhanced Search and Filter */}
+            {/* Pencarian dan Filter yang ditingkatkan */}
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm p-4 lg:p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50">
               <div className="flex items-center gap-2 mb-4">
                 <Search className="w-5 h-5 text-pink-600" />
@@ -290,7 +290,7 @@ export default function AdminOTAAContent({
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
-                      placeholder="Cari firmware, versi, atau board type..."
+                      placeholder="Cari firmware, versi, atau tipe board..."
                       value={searchTerm}
                       noInfo
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -300,10 +300,10 @@ export default function AdminOTAAContent({
                 </div>
                 <Select value={selectedBoardType} onValueChange={setSelectedBoardType}>
                   <SelectTrigger className="h-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded-xl shadow-sm">
-                    <SelectValue placeholder="Semua Board Type" />
+                    <SelectValue placeholder="Semua Tipe Board" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Board Type</SelectItem>
+                    <SelectItem value="all">Semua Tipe Board</SelectItem>
                     {boardTypes.map(type => (
                       <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
@@ -312,7 +312,7 @@ export default function AdminOTAAContent({
               </div>
             </div>
 
-            {/* Enhanced Firmware List */}
+            {/* Daftar Firmware yang ditingkatkan */}
             <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
               <div className="px-4 lg:px-6 py-4 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-700/50 dark:to-gray-600/50">
                 <div className="flex items-center justify-between">
@@ -389,7 +389,7 @@ export default function AdminOTAAContent({
                                     </Badge>
                                   ) : (
                                     <Badge variant="outline" className="shrink-0 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800">
-                                      👤 User
+                                      👤 Pengguna
                                     </Badge>
                                   )}
                                 </div>
@@ -408,8 +408,8 @@ export default function AdminOTAAContent({
                               <div className="flex items-center gap-1">
                                 <User className="w-3 h-3" />
                                 {firmware.user_id === 0 ? 
-                                  'Global Repository' : 
-                                  (firmware.owner_display || `User ID: ${firmware.user_id}`)
+                                  'Repositori Global' : 
+                                  (firmware.owner_display || `ID Pengguna: ${firmware.user_id}`)
                                 }
                               </div>
                               {firmware.checksum && (
@@ -428,7 +428,7 @@ export default function AdminOTAAContent({
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDownload(firmware.board_type, firmware.firmware_url.split('/').pop())}
-                              title="Download firmware"
+                              title="Unduh firmware"
                               className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-xl"
                             >
                               <Download className="w-4 h-4" />
@@ -506,7 +506,7 @@ export default function AdminOTAAContent({
                     className="flex items-center gap-2"
                   >
                     <RefreshCw className={`w-4 h-4 ${globalLoading ? "animate-spin" : ""}`} />
-                    Refresh
+                    Muat Ulang
                   </Button>
                 </div>
               </div>
@@ -553,7 +553,7 @@ export default function AdminOTAAContent({
                             </div>
                             <Badge variant="secondary" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
                               <Package className="w-3 h-3 mr-1" />
-                              {firmwares.length} versions
+                              {firmwares.length} versi
                             </Badge>
                           </div>
                         </div>
@@ -575,7 +575,7 @@ export default function AdminOTAAContent({
                                       </Badge>
                                       {index === 0 && (
                                         <Badge variant="default" className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs">
-                                          Latest
+                                          Terbaru
                                         </Badge>
                                       )}
                                       {firmware.file_size && (
@@ -610,7 +610,7 @@ export default function AdminOTAAContent({
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleDownload(boardType, firmware.firmware_url.split('/').pop())}
-                                    title="Download firmware"
+                                    title="Unduh firmware"
                                     className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-xl"
                                   >
                                     <Download className="w-4 h-4" />

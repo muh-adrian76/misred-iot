@@ -138,7 +138,7 @@ export default function AddAlarmForm({
         {/* Device Selection dengan searchable dropdown */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
-            <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
+            <Label className="text-left ml-1 font-medium max-sm:text-xs">Perangkat</Label>
             <DescriptionTooltip side="top" content="Pilih perangkat IoT">
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
             </DescriptionTooltip>
@@ -175,7 +175,7 @@ export default function AddAlarmForm({
                   {/* Display selected device atau placeholder */}
                   {devices.find((d) => String(d.id) === String(deviceId))
                     ?.description ||
-                    (loadingDevices ? "Loading..." : "Pilih Device")}
+                    (loadingDevices ? "Memuat..." : "Pilih Perangkat")}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" /> {/* Dropdown icon */}
               </Button>
@@ -184,12 +184,12 @@ export default function AddAlarmForm({
               <Command>
                 {" "}
                 {/* Command component untuk search functionality */}
-                <CommandInput placeholder="Cari device..." />{" "}
-                {/* Search input */}
+                <CommandInput placeholder="Cari perangkat..." />{" "}
+                {/* Input pencarian */}
                 <CommandList>
                   <CommandEmpty>
-                    <span className="opacity-50">Tidak ada device.</span>{" "}
-                    {/* Empty state */}
+                    <span className="opacity-50">Tidak ada perangkat.</span>{" "}
+                    {/* Tampilan kosong */}
                   </CommandEmpty>
                   {/* Render list devices yang tersedia */}
                   {devices.map((d) => (
@@ -276,10 +276,10 @@ export default function AddAlarmForm({
                     (ds) => String(ds.id) === String(datastreamId)
                   )?.description ||
                     (loadingDatastreams
-                      ? "Loading..." // Loading state
+                      ? "Memuat..." // Status memuat
                       : deviceId
                         ? "Pilih Sensor"
-                        : "Pilih device terlebih dahulu")}
+                        : "Pilih perangkat terlebih dahulu")}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>

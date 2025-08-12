@@ -45,7 +45,8 @@ export default function ResponsiveDialog({
   disabled = false, // Status disabled untuk button konfirmasi
 }) {
   // Hook untuk deteksi breakpoint layar
-  const { isMobile, isTablet, isDesktop } = useBreakpoint();
+  // Kita hanya butuh isMobile untuk menentukan penggunaan Drawer vs Dialog
+  const { isMobile } = useBreakpoint();
 
   // Jika mobile, gunakan Drawer
   if (isMobile) {
@@ -70,14 +71,14 @@ export default function ResponsiveDialog({
               {checkbox && <div className="mt-2">{checkbox}</div>}
               <DrawerFooter>
                 <Button type="submit" disabled={loading || disabled}>
-                  {confirmText || "Submit"}
+                  {confirmText || "Kirim"}
                 </Button>
                 <DrawerClose asChild>
                   <Button
                     variant="outline"
                     className={oneButton ? "hidden" : ""}
                   >
-                    {cancelText || "Cancel"}
+                    {cancelText || "Batal"}
                   </Button>
                 </DrawerClose>
               </DrawerFooter>
@@ -88,14 +89,14 @@ export default function ResponsiveDialog({
               {checkbox && <div className="mt-2">{checkbox}</div>}
               <DrawerFooter>
                 <Button onClick={() => setOpen(false)}>
-                  {confirmText || "OK"}
+                  {confirmText || "Oke"}
                 </Button>
                 <DrawerClose asChild>
                   <Button
                     variant="outline"
                     className={oneButton ? "hidden" : ""}
                   >
-                    {cancelText || "Cancel"}
+                    {cancelText || "Batal"}
                   </Button>
                 </DrawerClose>
               </DrawerFooter>
@@ -131,7 +132,7 @@ export default function ResponsiveDialog({
             {checkbox && <div className="mt-2">{checkbox}</div>}
             <DialogFooter>
               <Button type="submit" disabled={loading || disabled}>
-                {confirmText || "Submit"}
+                {confirmText || "Kirim"}
               </Button>
               <Button
                 variant="outline"
@@ -139,7 +140,7 @@ export default function ResponsiveDialog({
                 onClick={() => setOpen(false)}
                 className={oneButton ? "hidden" : ""}
               >
-                {cancelText || "Cancel"}
+                {cancelText || "Batal"}
               </Button>
             </DialogFooter>
           </form>
@@ -154,7 +155,7 @@ export default function ResponsiveDialog({
                 }
                 disabled={loading}
               >
-                {confirmText || "Yes"}
+                {confirmText || "Ya"}
               </Button>
               <Button
                 variant="outline"
@@ -162,7 +163,7 @@ export default function ResponsiveDialog({
                 onClick={() => setOpen(false)}
                 className={oneButton ? "hidden" : ""}
               >
-                {cancelText || "Cancel"}
+                {cancelText || "Batal"}
               </Button>
             </DialogFooter>
           </>

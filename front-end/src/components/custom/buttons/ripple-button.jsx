@@ -3,12 +3,12 @@
 //
 // ===== CONTOH PENGGUNAAN UNTUK DEVELOPER =====
 //
-// 1. Basic Usage - Ripple button sederhana:
+// 1. Penggunaan Dasar - Tombol ripple sederhana:
 //    <RippleButton onClick={() => console.log('clicked')}>
 //      Click Me
 //    </RippleButton>
 //
-// 2. Custom Ripple Color - Ganti warna ripple:
+// 2. Warna Ripple Kustom - Ganti warna ripple:
 //    <RippleButton 
 //      rippleColor="#3b82f6" 
 //      className="bg-blue-500 text-white border-blue-600"
@@ -16,7 +16,7 @@
 //      Blue Ripple
 //    </RippleButton>
 //
-// 3. Custom Duration - Kontrol kecepatan animasi:
+// 3. Durasi Kustom - Kontrol kecepatan animasi:
 //    <RippleButton 
 //      duration="800ms" 
 //      rippleColor="#10b981"
@@ -25,7 +25,7 @@
 //      Slow Ripple
 //    </RippleButton>
 //
-// 4. With Icons - Kombinasi dengan icon:
+// 4. Dengan Ikon - Kombinasikan dengan ikon:
 //    <RippleButton 
 //      rippleColor="#f59e0b"
 //      className="bg-yellow-500 text-white border-yellow-600 flex items-center gap-2"
@@ -34,7 +34,7 @@
 //      Star Button
 //    </RippleButton>
 //
-// 5. Form Integration - Dalam form dengan validation:
+// 5. Integrasi Form - Dalam form dengan validasi:
 //    <RippleButton 
 //      type="submit"
 //      disabled={!isValid}
@@ -44,7 +44,7 @@
 //      Submit Form
 //    </RippleButton>
 //
-// 6. Dark Mode - Responsive color untuk theme:
+// 6. Mode Gelap - Warna responsif untuk tema:
 //    <RippleButton 
 //      rippleColor="rgba(255,255,255,0.3)"
 //      className="bg-gray-800 dark:bg-white text-white dark:text-gray-800 border-gray-700 dark:border-gray-300"
@@ -142,31 +142,31 @@ export const RippleButton = React.forwardRef((
 // Set display name untuk debugging dan dev tools
 RippleButton.displayName = "RippleButton";
 
-// ===== DEMO COMPONENT UNTUK TESTING =====
+// ===== KOMPONEN DEMO UNTUK PENGUJIAN =====
 // Uncomment code dibawah untuk testing dan development
 
 /*
-// Demo component untuk testing RippleButton dengan berbagai konfigurasi
+// Komponen demo untuk menguji RippleButton dengan berbagai konfigurasi
 export const RippleButtonDemo = () => {
   return (
     <div className="p-8 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <h1 className="text-2xl font-bold text-center mb-8">RippleButton Demo</h1>
       
       <div className="max-w-4xl mx-auto space-y-8">
-        // Basic Examples
+  // Contoh dasar
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Basic Examples</h2>
+          <h2 className="text-lg font-semibold">Contoh Dasar</h2>
           <div className="flex flex-wrap gap-4">
-            <RippleButton onClick={() => alert('Basic ripple!')}>
-              Default Ripple
+            <RippleButton onClick={() => alert('Ripple dasar!')}>
+              Ripple Default
             </RippleButton>
             
             <RippleButton 
               rippleColor="#3b82f6"
               className="bg-blue-500 text-white border-blue-600"
-              onClick={() => console.log('Blue ripple clicked')}
+              onClick={() => console.log('Ripple biru diklik')}
             >
-              Blue Ripple
+              Ripple Biru
             </RippleButton>
             
             <RippleButton 
@@ -174,86 +174,86 @@ export const RippleButtonDemo = () => {
               rippleColor="#ef4444"
               className="bg-red-500 text-white border-red-600"
             >
-              Fast Red Ripple
+              Ripple Merah Cepat
             </RippleButton>
           </div>
         </div>
 
-        // Advanced Examples
+  // Contoh lanjutan
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Advanced Examples</h2>
+          <h2 className="text-lg font-semibold">Contoh Lanjutan</h2>
           <div className="flex flex-wrap gap-4">
             <RippleButton 
               duration="1000ms"
               rippleColor="#10b981"
               className="bg-green-500 text-white border-green-600 px-6 py-3"
             >
-              Slow Green Ripple
+              Ripple Hijau Lambat
             </RippleButton>
             
             <RippleButton 
               rippleColor="rgba(255,255,255,0.4)"
               className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 px-6 py-3"
             >
-              Gradient Button
+              Tombol Gradasi
             </RippleButton>
             
             <RippleButton 
               rippleColor="#000000"
               className="bg-white text-black border-black hover:bg-gray-50"
-              onClick={() => alert('Dark ripple on light button')}
+              onClick={() => alert('Ripple gelap pada tombol terang')}
             >
-              Dark Ripple
+              Ripple Gelap
             </RippleButton>
           </div>
         </div>
 
-        // Size Variations
+  // Variasi Ukuran
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Size Variations</h2>
+          <h2 className="text-lg font-semibold">Variasi Ukuran</h2>
           <div className="flex flex-wrap items-center gap-4">
             <RippleButton 
               rippleColor="#f59e0b"
               className="bg-yellow-500 text-white border-yellow-600 px-2 py-1 text-sm"
             >
-              Small
+              Kecil
             </RippleButton>
             
             <RippleButton 
               rippleColor="#8b5cf6"
               className="bg-purple-500 text-white border-purple-600 px-4 py-2"
             >
-              Medium
+              Sedang
             </RippleButton>
             
             <RippleButton 
               rippleColor="#06b6d4"
               className="bg-cyan-500 text-white border-cyan-600 px-6 py-3 text-lg"
             >
-              Large
+              Besar
             </RippleButton>
           </div>
         </div>
 
-        // Usage Instructions
+  // Instruksi Penggunaan
         <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
-          <h3 className="font-semibold mb-2">How to Use:</h3>
+          <h3 className="font-semibold mb-2">Cara Menggunakan:</h3>
           <pre className="text-sm bg-gray-100 dark:bg-gray-700 p-3 rounded overflow-x-auto">
-{`// Import the component
+{// Impor komponen
 import { RippleButton } from "@/components/custom/buttons/ripple-button";
 
-// Basic usage
+// Penggunaan dasar
 <RippleButton onClick={handleClick}>
-  Click Me
+  Klik Saya
 </RippleButton>
 
-// With custom ripple color and duration
+// Dengan warna dan durasi ripple kustom
 <RippleButton 
   rippleColor="#3b82f6"
   duration="800ms"
   className="bg-blue-500 text-white"
 >
-  Custom Ripple
+  Ripple Kustom
 </RippleButton>`}
           </pre>
         </div>

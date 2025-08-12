@@ -61,14 +61,14 @@ export default function ProfileButton() {
   return (
     <>
       <Popover open={openPopoverProfile} onOpenChange={setOpenPopoverProfile}>
-        <DescriptionTooltip content="Profil">
+  <DescriptionTooltip content="Profil">
           <PopoverTrigger asChild>
             <Button
               size="icon"
               className="relative rounded-full hover:scale-105 cursor-pointer bg-primary hover:bg-red-600 transition-all duration-500"
             >
               <User className="w-5 h-5" />
-              <span className="sr-only">Profile</span>
+              <span className="sr-only">Profil</span>
             </Button>
           </PopoverTrigger>
         </DescriptionTooltip>
@@ -81,10 +81,10 @@ export default function ProfileButton() {
             </Avatar>
             <div className="flex flex-col gap-1">
               <div className="font-medium text-sm">
-                {user?.name || "Nama User"}
+                {user?.name || "Nama Pengguna"}
               </div>
               <div className="text-xs text-muted-foreground">
-                {user?.email || "Email User"}
+                {user?.email || "Email Pengguna"}
               </div>
             </div>
             <DescriptionTooltip content="Pengaturan">
@@ -110,7 +110,7 @@ export default function ProfileButton() {
               }, 250);
             }}
           >
-            Log Out
+            Keluar
             <LogOut className="w-5 h-5 hover:text-primary" />
           </Button>
         </PopoverContent>
@@ -125,7 +125,7 @@ export default function ProfileButton() {
         router={router}
       />
 
-      {/* Logout */}
+  {/* Keluar */}
       <ConfirmDialog
         open={openLogoutDialog}
         setOpen={setOpenLogoutDialog}
