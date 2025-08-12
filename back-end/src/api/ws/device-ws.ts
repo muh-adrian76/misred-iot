@@ -61,8 +61,8 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
       // Registrasi device menggunakan secret key
       if (data.type === "register" && data.secret) {
         try {
-          // Cari device berdasarkan secret key menggunakan raw query
-          const [rows] = await db.query(
+          // Query resilient menggunakan safeQuery
+          const [rows] = await (db as any).safeQuery(
             "SELECT id, description FROM devices WHERE new_secret = ? OR old_secret = ?",
             [data.secret, data.secret]
           );
@@ -233,11 +233,11 @@ export function deviceWsRoutes(deviceService: DeviceService, deviceStatusService
 export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, db: Pool) {
   return setInterval(async () => {
     try {
-      // Cek semua device aktif dari database, bukan hanya WebSocket clients
-      const [activeDevices]: any = await db.query(
+      // Cek semua device aktif dari database menggunakan safeQuery
+      const [activeDevices]: any = await (db as any).safeQuery(
         `SELECT id, description, status, last_seen_at, offline_timeout_minutes 
-         FROM devices 
-         WHERE status = 'online'`
+           FROM devices 
+           WHERE status = 'online'`
       );
 
       const now = Date.now();
@@ -280,7 +280,7 @@ export function startHeartbeatChecker(deviceStatusService: DeviceStatusService, 
             await deviceStatusService.updateDeviceStatusOnly(deviceId, "offline");
             
             // BROADCAST STATUS UPDATE ke frontend untuk real-time update
-            await broadcastToDeviceOwner(db, parseInt(deviceId), {
+            await broadcastToDeviceOwner(globalDb, parseInt(deviceId), {
               type: "status_update",
               device_id: parseInt(deviceId),
               status: "offline",

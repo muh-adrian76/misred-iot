@@ -19,6 +19,16 @@ const wsUserMapping = new Map<any, string>(); // WebSocket -> user_id
 const PING_INTERVAL_MS = 30000; // 30 detik, optimal untuk VPS
 
 export function userWsRoutes(db: any) {
+  // Helper agar selalu pakai pool aktif (menghindari pool lama yang sudah ditutup)
+  const runQuery = async (sql: string, params: any[] = []) => {
+    try {
+      return await (db as any).safeQuery(sql, params);
+    } catch (err) {
+      console.error("❌ user-ws runQuery gagal:", err);
+      throw err;
+    }
+  };
+
   return new Elysia({ prefix: "/ws" })
   .ws("/user/:user_id", {
     // Hilangkan validasi ketat pada body - pesan bersifat dinamis
@@ -34,20 +44,17 @@ export function userWsRoutes(db: any) {
         }
         
         // Validasi status online user via refresh_token (opsional - untuk keamanan tambahan)
-        if (db) {
-          try {
-            const [rows]: any = await db.query(
-              'SELECT id FROM users WHERE id = ? AND refresh_token IS NOT NULL',
-              [userId]
-            );
-            if (!rows.length) {
-              ws.close(1008, "Pengguna tidak online");
-              return;
-            }
-          } catch (dbError) {
-            // Lanjut tanpa validasi jika terjadi kesalahan DB
-            console.warn("Validasi DB gagal, koneksi tetap diizinkan:", dbError);
+        try {
+          const [rows]: any = await runQuery(
+            'SELECT id FROM users WHERE id = ? AND refresh_token IS NOT NULL',
+            [userId]
+          );
+          if (!rows.length) {
+            ws.close(1008, "Pengguna tidak online");
+            return;
           }
+        } catch (dbError) {
+          console.warn("⚠️ Validasi DB gagal (melanjutkan tanpa blokir):", dbError);
         }
         
         // Simpan mapping dan koneksi
@@ -163,12 +170,12 @@ export async function broadcastToDeviceOwner(db: any, deviceId: number, data: an
   try {
     console.log(`📡 broadcastToDeviceOwner dipanggil untuk device ${deviceId}, data:`, data);
     
-    // Single query untuk mendapatkan user_id dan cek status online sekaligus
-    const [rows]: any = await db.query(
+    // Gunakan safeQuery agar tahan terhadap pool reconnect
+    const [rows]: any = await (db as any).safeQuery(
       `SELECT u.id as user_id 
-       FROM devices d 
-       JOIN users u ON d.user_id = u.id 
-       WHERE d.id = ? AND u.refresh_token IS NOT NULL`,
+         FROM devices d 
+         JOIN users u ON d.user_id = u.id 
+         WHERE d.id = ? AND u.refresh_token IS NOT NULL`,
       [deviceId]
     );
     
