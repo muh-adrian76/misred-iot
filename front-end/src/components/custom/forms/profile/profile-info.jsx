@@ -200,7 +200,7 @@ export default function ProfileInfoSection({
           className="rounded-lg cursor-pointer transition-all duration-500"
           onClick={isEditing ? handleUpdateAccount : () => setIsEditing(true)} // Toggle antara edit dan save
         >
-          {isEditing ? "Simpan" : "Edit"} {/* Dynamic text berdasarkan mode */}
+          {isEditing ? "Simpan" : "Ubah"} {/* Teks dinamis berdasarkan mode */}
           <UserPen className="h-5 w-5" /> {/* Icon edit */}
         </Button>
 

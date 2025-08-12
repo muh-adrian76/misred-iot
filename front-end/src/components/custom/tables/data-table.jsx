@@ -357,7 +357,7 @@ export default function DataTable({
                   "sticky right-0 z-20 bg-accent border-l min-w-[55px] p-2",
                   glowingHeaders && "glowing-header-effect"
                 )}>
-                  Opsi
+                  Aksi
                 </TableHead>
               </TableRow>
             </TableHeader>

@@ -126,7 +126,7 @@ export default function RegisterForm({
     <div className="flex z-10 w-full max-w-sm flex-col gap-6">
       <motion.div
         initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}P
+        animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
         className="flex items-center gap-2 self-center text-xl tracking-wide

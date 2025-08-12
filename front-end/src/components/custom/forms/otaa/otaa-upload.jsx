@@ -12,7 +12,7 @@ import { successToast, errorToast } from "../../other/toaster";
 // Import helper function untuk API calls
 import { fetchFromBackend } from "@/lib/helper";
 
-// Komponen OtaaUploadSection untuk upload firmware Over The Air ke devices IoT
+// Komponen OtaaUploadSection untuk mengunggah firmware Over The Air ke perangkat IoT
 export default function OtaaUploadSection({ 
   boardOptions, // Array board types yang didukung sistem
   boardTypesInUse, // Array board types yang sedang digunakan devices
@@ -22,7 +22,7 @@ export default function OtaaUploadSection({
 }) {
   // State untuk form fields
   const [selectedBoardType, setSelectedBoardType] = useState(""); // Board type yang dipilih untuk firmware
-  const [firmwareVersion, setFirmwareVersion] = useState(""); // Versi firmware yang akan diupload
+  const [firmwareVersion, setFirmwareVersion] = useState(""); // Versi firmware yang akan diunggah
   const [selectedFile, setSelectedFile] = useState(null); // File firmware yang dipilih
   const [uploading, setUploading] = useState(false); // Loading state saat upload
 
@@ -31,18 +31,18 @@ export default function OtaaUploadSection({
     const file = e.target.files[0]; // Get first selected file
     if (!file) return; // Exit jika tidak ada file yang dipilih
 
-    // Validasi ekstensi file - hanya .bin dan .hex yang diperbolehkan
+  // Validasi ekstensi file - hanya .bin dan .hex diperbolehkan
     const allowedExt = ['.bin', '.hex'];
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase(); // Extract file extension
     
     if (!allowedExt.includes(ext)) {
-      errorToast("Hanya file .bin atau .hex yang diperbolehkan"); // Error untuk ekstensi tidak valid
+  errorToast("Hanya file .bin atau .hex yang diperbolehkan"); // Error ekstensi tidak valid
       return; // Stop execution jika ekstensi tidak valid
     }
 
-    // Validasi ukuran file maksimal 5MB untuk firmware
+  // Validasi ukuran file maksimal 5MB
     if (file.size > 5 * 1024 * 1024) {
-      errorToast("Ukuran file maksimal 5MB"); // Error untuk file terlalu besar
+  errorToast("Ukuran file maksimal 5MB"); // Error file terlalu besar
       return; // Stop execution jika file terlalu besar
     }
 
@@ -54,7 +54,7 @@ export default function OtaaUploadSection({
     setSelectedFile(null); // Clear selected file
   };
 
-  // Helper function untuk menghitung jumlah device berdasarkan board type
+  // Helper untuk menghitung jumlah perangkat berdasarkan board type
   const getDeviceCountByBoard = (boardType) => {
     return devices.filter(device => device.board_type === boardType).length;
   };
@@ -63,24 +63,24 @@ export default function OtaaUploadSection({
     e.preventDefault();
 
     if (!selectedBoardType) {
-      errorToast("Pilih tipe board terlebih dahulu");
+  errorToast("Pilih tipe board terlebih dahulu");
       return;
     }
 
     if (!firmwareVersion.trim()) {
-      errorToast("Versi firmware wajib diisi");
+  errorToast("Versi firmware wajib diisi");
       return;
     }
 
     if (!selectedFile) {
-      errorToast("Pilih file firmware terlebih dahulu");
+  errorToast("Pilih file firmware terlebih dahulu");
       return;
     }
 
     setUploading(true);
 
     try {
-      // Convert file to base64
+  // Konversi file ke base64
       const fileBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -111,7 +111,7 @@ export default function OtaaUploadSection({
       const data = await res.json();
       
       const affectedDevices = getDeviceCountByBoard(selectedBoardType);
-      // successToast(`Firmware berhasil diupload untuk ${affectedDevices} device ${selectedBoardType}!`);
+  // successToast(`Firmware berhasil diunggah untuk ${affectedDevices} perangkat ${selectedBoardType}!`);
       
       // Reset form
       setSelectedBoardType("");
@@ -132,7 +132,7 @@ export default function OtaaUploadSection({
   return (
     <div className="space-y-4 w-full text-sm">
       <form onSubmit={handleUpload} className="space-y-4">
-        {/* Board Type Selection */}
+  {/* Pemilihan Tipe Board */}
         <div className="space-y-2">
           <Label className="text-sm font-medium">
             Pilih Tipe Board
@@ -163,7 +163,7 @@ export default function OtaaUploadSection({
             </SelectContent>
           </Select>
           
-          {/* Info tentang device yang akan terpengaruh */}
+          {/* Info tentang perangkat yang akan terpengaruh */}
           {selectedBoardType && (
             <div className="p-3 border rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 text-xs">
@@ -178,7 +178,7 @@ export default function OtaaUploadSection({
           )}
         </div>
 
-        {/* Firmware Version Input */}
+  {/* Input Versi Firmware */}
         <div className="space-y-2">
           <Label htmlFor="firmwareVersion" className="text-sm font-medium">
             Versi Firmware
@@ -194,7 +194,7 @@ export default function OtaaUploadSection({
           />
         </div>
 
-        {/* File Upload */}
+  {/* Unggah File */}
         <div className="space-y-2">
           <Label htmlFor="firmwareFile" className="text-sm font-medium">
             File Firmware (.bin atau .hex)
@@ -214,7 +214,7 @@ export default function OtaaUploadSection({
                 className="cursor-pointer flex flex-col items-center gap-2"
               >
                 <Upload className="w-8 h-8 text-muted-foreground" />
-                <span className="text-sm font-medium">Klik untuk pilih file</span>
+                <span className="text-sm font-medium">Klik untuk pilih berkas</span>
                 <span className="text-xs text-muted-foreground">
                   Maksimal 5MB, format .bin atau .hex
                 </span>
@@ -244,7 +244,7 @@ export default function OtaaUploadSection({
           )}
         </div>
 
-        {/* Upload Button */}
+  {/* Tombol Unggah */}
         <Button
           type="submit"
           className="w-full"
@@ -253,12 +253,12 @@ export default function OtaaUploadSection({
           {uploading ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              Mengupload...
+              Mengunggah...
             </>
           ) : (
             <>
               <Upload className="w-4 h-4 mr-2" />
-              Upload Firmware
+              Unggah Firmware
             </>
           )}
         </Button>

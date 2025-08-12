@@ -17,10 +17,7 @@ export default function DataTableBulkActions({
     <div className="flex items-center px-2 gap-3 mb-2 rounded-t-md">
       {/* Informasi jumlah data yang dipilih */}
       <span className="font-medium text-sm">
-        <b>
-          {selectedRows.length} {content || "Data"} terpilih
-        </b>{" "}
-        dari {totalRows} data.
+        <b>{selectedRows.length}</b> {content || "data"} dipilih dari total <b>{totalRows}</b> data
       </span>
       
       {/* Container untuk tombol-tombol aksi bulk */}

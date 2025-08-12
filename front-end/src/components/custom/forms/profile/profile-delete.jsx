@@ -7,7 +7,7 @@ import { successToast, errorToast } from "../../other/toaster";
 // Import helper function untuk API calls
 import { fetchFromBackend } from "@/lib/helper";
 
-// Komponen ProfileDeleteDialog untuk menghapus akun user secara permanen
+// Komponen ProfileDeleteDialog untuk menghapus akun pengguna secara permanen
 export default function ProfileDeleteDialog({
   open, // State untuk kontrol visibility dialog
   setOpen, // Setter untuk mengubah state dialog
@@ -15,11 +15,11 @@ export default function ProfileDeleteDialog({
   setDeleteChecked, // Setter untuk checkbox konfirmasi
   router, // Next.js router untuk navigasi setelah delete
 }) {
-  // Handler untuk delete account dengan double confirmation
+  // Handler untuk hapus akun dengan konfirmasi ganda
   const handleDeleteAccount = async (e) => {
     e.preventDefault(); // Prevent default form submission
 
-    // Double check validasi checkbox konfirmasi
+  // Validasi ulang checkbox konfirmasi
     const checkbox = document.getElementById("deleteAccountCheckbox");
     if (!checkbox.checked) {
       errorToast(
@@ -29,7 +29,7 @@ export default function ProfileDeleteDialog({
     }
 
     try {
-      // API call untuk delete user account
+  // API call untuk hapus akun pengguna
       const res = await fetchFromBackend("/user/", {
         method: "DELETE", // HTTP method DELETE untuk hapus account
       });

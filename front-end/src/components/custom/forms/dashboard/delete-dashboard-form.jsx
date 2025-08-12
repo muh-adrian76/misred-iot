@@ -21,13 +21,13 @@ export default function DeleteDashboardDialog({
         // Dynamic title berdasarkan dashboard yang akan dihapus
         dashboardToDelete ? (
           <>
-            Hapus dashboard <i>"{dashboardToDelete.description}"</i> ? {/* Italic styling untuk nama dashboard */}
+            Hapus tab dashboard <i>"{dashboardToDelete.description}"</i> ? {/* Penekanan nama tab */}
           </>
         ) : (
           "" // Empty title jika tidak ada dashboard
         )
       }
-      description="Tindakan ini tidak dapat dibatalkan." // Warning message singkat dan jelas
+  description="Tindakan ini tidak dapat dibatalkan." // Peringatan singkat dan jelas
       checkbox={
         // Checkbox konfirmasi untuk memastikan user memahami konsekuensi
         <CheckboxButton

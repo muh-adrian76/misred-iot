@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 // Import komponen dialog responsif untuk form
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
 // Import toaster untuk notifications
-import { successToast, errorToast } from "@/components/custom/other/toaster";
+import { errorToast } from "@/components/custom/other/toaster"; // successToast tidak digunakan
 // Import UI components untuk form inputs
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +39,7 @@ export default function AddWidgetDialog({
   const [loading, setLoading] = useState(false); // Loading state saat submit
 
   // Hook untuk responsive design detection
-  const { isMobile, isTablet, isDesktop } = useBreakpoint();
+  const { isMobile } = useBreakpoint(); // Hanya isMobile yang diperlukan saat ini
 
   // Reset form saat dialog dibuka dengan data awal
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function AddWidgetDialog({
     try {
       // Validasi minimal satu device-datastream pair harus dipilih
       if (form.selectedPairs.length === 0) {
-        errorToast("Pilih minimal satu device dan datastream!"); // Error notification
+  errorToast("Pilih minimal satu perangkat dan sensor!"); // Notifikasi error konsisten istilah
         return; // Stop execution jika validasi gagal
       }
       
@@ -103,25 +103,25 @@ export default function AddWidgetDialog({
         return {
           maxSelection: 1,
           singleSelection: true,
-          placeholder: "Pilih satu sensor untuk Gauge Chart"
+          placeholder: "Pilih satu sensor untuk Grafik Gauge"
         };
       case 'text':
         return {
           maxSelection: 1,
           singleSelection: true,
-          placeholder: "Pilih satu sensor untuk Text Widget"
+          placeholder: "Pilih satu sensor untuk Widget Teks"
         };
       case 'bar':
         return {
           maxSelection: 6,
           singleSelection: false,
-          placeholder: "Pilih sensor untuk Bar Chart"
+          placeholder: "Pilih sensor untuk Grafik Batang"
         };
       case 'pie':
         return {
           maxSelection: 5,
           singleSelection: false,
-          placeholder: "Pilih sensor untuk Pie Chart"
+          placeholder: "Pilih sensor untuk Grafik Pai"
         };
       case 'line':
       case 'area':
@@ -129,7 +129,7 @@ export default function AddWidgetDialog({
         return {
           maxSelection: 4,
           singleSelection: false,
-          placeholder: "Pilih sensor untuk Chart"
+          placeholder: "Pilih sensor untuk Grafik"
         };
     }
   };

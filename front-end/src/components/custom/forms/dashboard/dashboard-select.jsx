@@ -30,18 +30,18 @@ import { Input } from "../../../ui/input";
 export default function DashboardSelect({
   options = [], // Array pilihan dashboard { value, label }
   value, // Nilai yang dipilih saat ini
-  onChange, // Handler function saat selection berubah
-  placeholder = "Pilih opsi", // Placeholder text default
-  searchPlaceholder = "Cari...", // Placeholder untuk search input
-  className = "", // Additional CSS classes
-  align = "start", // Alignment popover content
-  editState, // State apakah sedang dalam mode editing
-  editValue, // Nilai input saat editing
-  onEditValueChange, // Handler untuk perubahan nilai edit
-  noDataText, // Text yang ditampilkan saat tidak ada data
-  isMobile, // Status mobile view
-  isMedium, // Status medium screen
-  isTablet, // Status tablet view
+  onChange, // Handler ketika pilihan berubah
+  placeholder = "Pilih opsi", // Placeholder default
+  searchPlaceholder = "Cari...", // Placeholder untuk pencarian
+  className = "", // Kelas tambahan
+  align = "start", // Alignment konten popover
+  editState, // Apakah dalam mode edit nama
+  editValue, // Nilai yang sedang diedit
+  onEditValueChange, // Handler perubahan edit value
+  noDataText = "Tidak ada data", // Teks fallback jika tidak ada data
+  isMobile, // Status mobile
+  isMedium, // Status medium
+  isTablet, // Status tablet
 }) {
   // State untuk kontrol open/close popover
   const [open, setOpen] = useState(false);
@@ -69,9 +69,9 @@ export default function DashboardSelect({
           {/* Icon edit di dalam input field */}
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             <SquarePen
-              className="relative h-5 w-5" // Icon size
-              onClick={() => setShowPassword(true)} // Handler onClick (mungkin typo, should be different function)
-            />
+              className="relative h-5 w-5 text-muted-foreground" // Ikon dekoratif
+              aria-hidden="true" // Hanya dekorasi
+            /> {/* Ikon tidak interaktif; onClick salah dihapus */}
           </div>
         </div>
       ) : (
@@ -108,11 +108,11 @@ export default function DashboardSelect({
                   {/* Empty state message */}
                   <CommandGroup>
                     {/* Render semua options sebagai selectable items */}
-                    {options.map((option) => (
+          {options.map((option) => (
                       <CommandItem
                         key={option.value} // Unique key untuk list rendering
                         value={option.value} // Value untuk selection
-                        className="hover:font-semibold w-[200p]" // Hover styling
+            className="hover:font-semibold w-[200px]" // Perbaikan typo width class
                         onSelect={(currentValue) => {
                           // Debug logging (commented out)
                           // console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
@@ -125,9 +125,7 @@ export default function DashboardSelect({
                           setOpen(false); // Close popover setelah selection
                         }}
                       >
-                        <span className="truncate">
-                          {option.label} {/* Display option label */}
-                        </span>
+                        <span className="truncate">{option.label}</span>
                         {/* Check icon untuk menunjukkan selected option */}
                         <Check
                           className={cn(

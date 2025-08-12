@@ -110,9 +110,9 @@ export default function AddDatastreamForm({
         />
       </div>
 
-      {/* Grid Layout: Device, Pin, Type Selection */}
+      {/* Grid Layout: Perangkat, Pin, dan Tipe Data */}
       <div className="grid grid-cols-3 gap-4">
-        {/* Device Selection: Popover untuk memilih device */}
+        {/* Pemilihan Perangkat: Popover untuk memilih perangkat */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
@@ -148,7 +148,7 @@ export default function AddDatastreamForm({
                 <span className="truncate">
                   {devices.find((d) => d.id === deviceId)?.description ||
                     devices.find((d) => d.id === deviceId)?.name ||
-                    "Pilih Device"}
+                    "Pilih Perangkat"}
                 </span>
                 <ChevronDown className="ml-2 h-5 w-5" />
               </Button>
@@ -156,7 +156,7 @@ export default function AddDatastreamForm({
             <PopoverContent className="p-0 w-full" align="start">
               {/* Command component untuk searchable dropdown */}
               <Command>
-                <CommandInput placeholder="Cari device..." />
+                <CommandInput placeholder="Cari perangkat..." />
                 <CommandList>
                   {/* Empty state dengan link untuk create device baru */}
                   <CommandEmpty>
@@ -164,7 +164,7 @@ export default function AddDatastreamForm({
                       href="/devices" // Navigate ke halaman devices
                       className="opacity-50 transition-all hover:opacity-100"
                     >
-                      Buat device baru
+                      Buat perangkat baru
                     </Link>
                   </CommandEmpty>
                   {/* Render semua available devices */}
@@ -250,7 +250,7 @@ export default function AddDatastreamForm({
           </Select>
         </div>
 
-        {/* Data Type Selection: Dropdown untuk tipe data IoT */}
+  {/* Pemilihan Tipe Data: Dropdown untuk tipe data IoT */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -265,10 +265,10 @@ export default function AddDatastreamForm({
               <SelectValue placeholder="Pilih Tipe Data" />
             </SelectTrigger>
             <SelectContent>
-              {/* Data types untuk IoT sensors/actuators */}
+              {/* Tipe data untuk sensor/aktuator IoT */}
               <SelectItem value="integer">Integer</SelectItem>
               {/* <SelectItem value="string">String</SelectItem> */}
-              <SelectItem value="double">Double</SelectItem>
+              <SelectItem value="double">Desimal</SelectItem>
               {/* <SelectItem value="boolean">Boolean</SelectItem> */}
             </SelectContent>
           </Select>
@@ -283,7 +283,7 @@ export default function AddDatastreamForm({
           type === "double" || type === "boolean" ? "grid-cols-2" : ""
         )}
       >
-        {/* Unit Selection: Popover untuk measurement units */}
+  {/* Pemilihan Satuan: Popover untuk satuan pengukuran */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -378,7 +378,7 @@ export default function AddDatastreamForm({
           {/* )} */}
         </div>
 
-        {/* Conditional Field: Boolean Default Value */}
+  {/* Field Kondisional: Nilai Default Boolean */}
         {type === "boolean" && (
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 items-center">
@@ -398,15 +398,15 @@ export default function AddDatastreamForm({
                 <SelectValue placeholder="Pilih Nilai Default" />
               </SelectTrigger>
               <SelectContent>
-                {/* Boolean values dengan labels yang jelas */}
-                <SelectItem value="0">False</SelectItem>
-                <SelectItem value="1">True</SelectItem>
+                {/* Nilai boolean (0 = Salah, 1 = Benar) */}
+                <SelectItem value="0">Salah</SelectItem>
+                <SelectItem value="1">Benar</SelectItem>
               </SelectContent>
             </Select>
           </div>
         )}
 
-        {/* Conditional Field: Decimal Format untuk Double */}
+        {/* Field Kondisional: Format Desimal untuk tipe Double */}
         {type === "double" && (
           <div className="flex flex-col gap-2">
             <div className="flex gap-2 items-center">

@@ -388,7 +388,7 @@ export default function DataTableToolbar({
                 size="sm"
               >
                 <CloudCog className="w-4 h-4" />
-                Over-The-Air
+                OTA Firmware
               </Button>
             )}
           </div>

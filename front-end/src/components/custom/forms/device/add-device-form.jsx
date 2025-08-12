@@ -44,7 +44,7 @@ export default function AddDeviceForm({
   isMobile, // Flag untuk responsive behavior
 }) {
   // State management untuk form fields IoT device
-  const [name, setName] = useState(""); // Nama identifikasi device
+  const [name, setName] = useState(""); // Nama identifikasi perangkat
   const [boardType, setBoardType] = useState(""); // Tipe microcontroller board
   const [protocol, setProtocol] = useState(""); // Protokol komunikasi (MQTT/LoRa)
   const [mqttTopic, setMqttTopic] = useState(""); // MQTT topic untuk messaging
@@ -55,7 +55,7 @@ export default function AddDeviceForm({
   // Layout form content dengan input fields untuk konfigurasi IoT device
   const formContent = (
     <div className="flex flex-col gap-4 py-2">
-      {/* Input Field: Nama Device */}
+  {/* Input Field: Nama Perangkat */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <Label className="text-left ml-1 font-medium max-sm:text-xs">
@@ -68,12 +68,12 @@ export default function AddDeviceForm({
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </DescriptionTooltip>
         </div>
-        {/* Input text untuk nama device dengan placeholder dan validasi */}
+        {/* Input text untuk nama perangkat dengan placeholder dan validasi */}
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)} // Update state nama saat user mengetik
-          placeholder="Contoh: Device 1" // Contoh format nama device
+          placeholder="Contoh: Perangkat 1" // Contoh format nama perangkat
           required // Field wajib diisi
           className="w-full" // Full width responsive
         />
@@ -210,13 +210,13 @@ export default function AddDeviceForm({
     </div>
   );
 
-  // Handler untuk form submission dengan validasi dan data preparation
+  // Handler untuk form submission dengan validasi dan persiapan data
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevent default form submission
 
-    // Prepare data object sesuai dengan struktur yang diharapkan backend
+    // Siapkan objek data sesuai dengan struktur yang diharapkan backend
     handleAddDevice({
-      name, // Nama device
+      name, // Nama perangkat
       board: boardType, // Tipe board yang dipilih
       protocol: protocol, // Protokol komunikasi
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined, // MQTT topic jika protokol MQTT
@@ -225,7 +225,7 @@ export default function AddDeviceForm({
       // lora_profile: protocol === "LoRaWAN" ? loraProfile : undefined, // LoRa profile jika LoRaWAN
     });
 
-    // Reset semua form fields setelah submit berhasil
+  // Reset semua field form setelah submit berhasil
     setName("");
     setBoardType("");
     setProtocol("");
@@ -241,7 +241,7 @@ export default function AddDeviceForm({
     <ResponsiveDialog
       open={open} // State visibility modal
       setOpen={setOpen} // Function untuk kontrol modal
-      title="Tambah Device" // Judul modal
+  title="Tambah Perangkat" // Judul modal
       form={formContent} // Form content yang sudah dibuat
       formHandle={handleSubmit} // Handler untuk form submission
       confirmText="Tambah" // Text untuk tombol submit

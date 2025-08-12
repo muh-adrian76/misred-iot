@@ -132,7 +132,7 @@ export default function EditDatastreamForm({
         />
       </div>
       <div className="grid grid-cols-3 gap-4">
-        {/* DEVICE COMMAND */}
+        {/* PERANGKAT */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left ml-1 font-medium max-sm:text-xs">Device</Label>
@@ -142,7 +142,7 @@ export default function EditDatastreamForm({
           </div>
           {devices.length === 0 ? (
             <span className="text-sm text-muted-foreground px-2 py-2 italic">
-              Tidak ada device
+              Tidak ada perangkat
             </span>
           ) : (
             // : isMobile ? (
@@ -178,17 +178,17 @@ export default function EditDatastreamForm({
                       ?.description ||
                       devices.find((d) => String(d.id) === String(deviceId))
                         ?.name ||
-                      "Pilih Device"}
+                      "Pilih Perangkat"}
                   </span>
                   <ChevronDown className="ml-2 h-5 w-5" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="p-0 w-full" align="start">
                 <Command>
-                  <CommandInput placeholder="Cari device..." />
+                  <CommandInput placeholder="Cari perangkat..." />
                   <CommandList>
                     <CommandEmpty>
-                      <span className="opacity-50">Tidak ada device.</span>
+                      <span className="opacity-50">Tidak ada perangkat.</span>
                     </CommandEmpty>
                     {devices.map((dev) => (
                       <CommandItem
@@ -249,7 +249,7 @@ export default function EditDatastreamForm({
             </SelectContent>
           </Select>
         </div>
-        {/* TIPE DATA */}
+  {/* TIPE DATA */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left font-medium max-sm:text-xs ml-1">
@@ -273,7 +273,7 @@ export default function EditDatastreamForm({
             <SelectContent>
               <SelectItem value="integer">Integer</SelectItem>
               <SelectItem value="string">String</SelectItem>
-              <SelectItem value="double">Double</SelectItem>
+              <SelectItem value="double">Desimal</SelectItem>
               <SelectItem value="boolean">Boolean</SelectItem>
             </SelectContent>
           </Select>
@@ -392,8 +392,8 @@ export default function EditDatastreamForm({
                 <SelectValue placeholder="Pilih Nilai Default" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">False</SelectItem>
-                <SelectItem value="1">True</SelectItem>
+                <SelectItem value="0">Salah</SelectItem>
+                <SelectItem value="1">Benar</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -504,7 +504,7 @@ export default function EditDatastreamForm({
       setOpen={setOpen}
       title={
         <>
-          Edit <i>{editDatastream?.description || ""}</i>
+          Ubah <i>{editDatastream?.description || ""}</i>
         </>
       }
       form={formContent}

@@ -22,16 +22,16 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // Dialog visibility state
   const [firmwareToDelete, setFirmwareToDelete] = useState(null); // Firmware yang akan dihapus
 
-  // Function untuk fetch firmware data berdasarkan board types
+  // Function untuk mengambil data firmware berdasarkan board type
   const fetchFirmwareByBoard = async () => {
     setLoading(true); // Set loading state
     try {
-      // API call untuk get firmware list
+  // Panggil API untuk mendapatkan daftar firmware
       const res = await fetchFromBackend('/otaa');
       if (res.ok) {
         const response = await res.json();
         if (response.success) {
-          // Group firmware by board type untuk organized display
+          // Kelompokkan firmware per board type untuk tampilan terstruktur
           const firmwareData = {};
           boardTypes.forEach(boardType => {
             firmwareData[boardType] = response.data.filter(firmware => 
@@ -40,7 +40,7 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
           });
           setFirmwareList(firmwareData); // Set grouped firmware data
         } else {
-          // Handle case ketika belum ada firmware - tidak error, hanya empty state
+          // Jika belum ada firmware - bukan error, hanya state kosong
           const firmwareData = {};
           boardTypes.forEach(boardType => {
             firmwareData[boardType] = []; // Empty array untuk setiap board type
@@ -48,7 +48,7 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
           setFirmwareList(firmwareData);
         }
       } else {
-        // Handle response tidak ok - silent fail untuk empty state
+  // Jika response tidak ok - fallback ke state kosong tanpa notifikasi
         const firmwareData = {};
         boardTypes.forEach(boardType => {
           firmwareData[boardType] = []; // Empty array untuk setiap board type
@@ -56,7 +56,7 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
         setFirmwareList(firmwareData);
       }
     } catch (error) {
-      // Silent fail untuk kasus belum ada firmware atau network error
+  // Fallback diam untuk kasus belum ada firmware atau network error
       const firmwareData = {};
       boardTypes.forEach(boardType => {
         firmwareData[boardType] = []; // Empty array untuk setiap board type
@@ -97,9 +97,9 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
       window.URL.revokeObjectURL(url); // Revoke object URL
       document.body.removeChild(a); // Remove link element
       
-      successToast("Firmware berhasil didownload!"); // Success notification
+  successToast("Firmware berhasil diunduh!"); // Notifikasi sukses
     } catch (error) {
-      errorToast("Gagal download firmware!"); // Error notification
+  errorToast("Gagal mengunduh firmware!"); // Notifikasi error
     }
   };
 
@@ -146,13 +146,13 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
     return devices.filter(device => device.board_type === boardType).length;
   };
 
-  // Early return jika belum ada device yang terdaftar
+  // Early return jika belum ada perangkat yang terdaftar
   if (boardTypes.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         <div className="text-center">
           <HardDrive className="w-8 h-8 mx-auto mb-2 opacity-50" /> {/* Icon hardware */}
-          <p>Belum ada device yang terdaftar</p> {/* Empty state message */}
+          <p>Belum ada perangkat yang terdaftar</p> {/* Pesan kosong */}
         </div>
       </div>
     );
@@ -165,7 +165,7 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold flex items-center gap-2">
           <FileCode className="w-4 h-4" /> {/* Icon file code */}
-          Firmware yang tersedia {/* Section title */}
+          Firmware Tersedia {/* Judul section */}
         </h3>
         {/* Refresh button untuk reload firmware data */}
         <Button
@@ -201,14 +201,14 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
               // Loading state
               <div className="flex items-center justify-center h-16 text-muted-foreground">
                 <RefreshCw className="w-4 h-4 animate-spin mr-2" /> {/* Spinning loading icon */}
-                Memuat... {/* Loading text */}
+                Memuat... {/* Teks loading */}
               </div>
             ) : firmwareList[boardType]?.length === 0 ? (
               // Empty state ketika belum ada firmware
               <div className="flex items-center justify-center h-16 text-muted-foreground border-2 border-dashed rounded">
                 <div className="text-center">
                   <FileCode className="w-6 h-6 mx-auto mb-1 opacity-50" /> {/* File icon */}
-                  <p className="text-xs">Belum ada firmware</p> {/* Empty message */}
+                  <p className="text-xs">Belum ada firmware</p> {/* Pesan kosong */}
                 </div>
               </div>
             ) : (
@@ -238,7 +238,7 @@ export default function OtaaInfoSection({ boardTypes, devices }) {
                         variant="ghost"
                         onClick={() => handleDownload(boardType, firmware.firmware_url.split('/').pop())} // Trigger download
                         className="h-8 w-8 p-0"
-                        title="Download firmware"
+                        title="Unduh firmware"
                       >
                         <Download className="w-3 h-3" /> {/* Download icon */}
                       </Button>

@@ -62,7 +62,7 @@ export default function ExportDashboardDialog({
   const [selectedDatastreams, setSelectedDatastreams] = useState([]); // Datastream yang dipilih untuk ekspor
   
   // State untuk UI dan pencarian
-  const [searchQuery, setSearchQuery] = useState(""); // Query pencarian device/datastream
+  const [searchQuery, setSearchQuery] = useState(""); // Query pencarian perangkat/datastream
   const [exportFormats, setExportFormats] = useState({
     csv: true,
     pdf: exportMode === "filter", // PDF hanya tersedia untuk mode filter
@@ -100,7 +100,7 @@ export default function ExportDashboardDialog({
     setLoadingError(null);
     
     try {
-      // Ambil semua datastream (sudah termasuk informasi device)
+  // Ambil semua datastream (termasuk informasi perangkat)
       const response = await fetchFromBackend("/datastream");
       if (!response.ok) {
         throw new Error("Failed to fetch datastreams");
@@ -109,13 +109,13 @@ export default function ExportDashboardDialog({
       const data = await response.json();
       const datastreamList = data.result || [];
       
-      // Kelompokkan datastream berdasarkan device untuk UI yang lebih organized
+  // Kelompokkan datastream berdasarkan perangkat untuk UI yang lebih terstruktur
       const deviceMap = {};
       datastreamList.forEach(datastream => {
         if (!deviceMap[datastream.device_id]) {
           deviceMap[datastream.device_id] = {
             id: datastream.device_id,
-            name: datastream.device_description || `Device ${datastream.device_id}`,
+            name: datastream.device_description || `Perangkat ${datastream.device_id}`,
             datastreams: []
           };
         }
@@ -234,10 +234,10 @@ export default function ExportDashboardDialog({
     try {
       const datastream = datastreams.find(ds => ds.id === datastreamId);
       if (!datastream) {
-        throw new Error(`Datastream ${datastreamId} not found`);
+  throw new Error(`Datastream ${datastreamId} tidak ditemukan`);
       }
 
-      // Use the timeseries endpoint for consistent data
+  // Gunakan endpoint timeseries untuk konsistensi data
       const params = new URLSearchParams();
       
       // Only add filter parameters if in filter mode
@@ -257,7 +257,7 @@ export default function ExportDashboardDialog({
       const response = await fetchFromBackend(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch data for datastream ${datastreamId}`);
+  throw new Error(`Gagal mengambil data untuk datastream ${datastreamId}`);
       }
       
       const data = await response.json();
@@ -268,7 +268,7 @@ export default function ExportDashboardDialog({
         data: resultData
       };
     } catch (error) {
-      console.error(`Error fetching data for datastream ${datastreamId}:`, error);
+  console.error(`Gagal mengambil data untuk datastream ${datastreamId}:`, error);
       throw error;
     }
   };
@@ -321,7 +321,7 @@ export default function ExportDashboardDialog({
 
     // Add unique timestamp to prevent filename conflicts
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `device-${deviceName.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
+  const filename = `perangkat-${deviceName.replace(/[^a-zA-Z0-9]/g, '_')}-${timestamp}`;
     
     // Use utility function for CSV export
     exportToCSV(headers, rows, filename);
@@ -342,8 +342,8 @@ export default function ExportDashboardDialog({
 
     // Generate filename with timestamp and first device info
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const firstDevice = validDatastreams[0].datastream;
-    const filename = `laporan-perangkat-${firstDevice.device_description?.replace(/[^a-zA-Z0-9]/g, '_') || `device-${firstDevice.device_id}`}-${timestamp}`;
+  const firstDevice = validDatastreams[0].datastream;
+  const filename = `laporan-perangkat-${firstDevice.device_description?.replace(/[^a-zA-Z0-9]/g, '_') || `perangkat-${firstDevice.device_id}`}-${timestamp}`;
 
     // Create React PDF Document component and generate PDF
     const DocumentComponent = DatastreamPDFDocument({ 
@@ -394,13 +394,13 @@ export default function ExportDashboardDialog({
         }
       }
       
-      // Group datastreams by device for CSV export
+  // Kelompokkan datastream per perangkat untuk ekspor CSV
       if (exportFormats.csv && allDatastreamData.length > 0) {
         const deviceGroups = {};
         
         allDatastreamData.forEach(({ datastream, data }) => {
           const deviceId = datastream.device_id;
-          const deviceName = datastream.device_description || `Device ${deviceId}`;
+          const deviceName = datastream.device_description || `Perangkat ${deviceId}`;
           
           if (!deviceGroups[deviceId]) {
             deviceGroups[deviceId] = {
@@ -413,14 +413,14 @@ export default function ExportDashboardDialog({
           deviceGroups[deviceId].datastreams.push({ datastream, data });
         });
         
-        // Export one CSV per device
+  // Ekspor satu CSV per perangkat
         for (const deviceData of Object.values(deviceGroups)) {
           try {
             await exportDataToCSV(deviceData);
             // Small delay to prevent conflicts
             await new Promise(resolve => setTimeout(resolve, 300));
           } catch (error) {
-            console.error("CSV export failed for device:", deviceData.deviceName, error);
+            console.error("Ekspor CSV gagal untuk perangkat:", deviceData.deviceName, error);
           }
         }
       }

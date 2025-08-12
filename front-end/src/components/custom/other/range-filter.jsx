@@ -216,7 +216,7 @@ export default function DashboardTimeFilter({
         >
           <div className="flex items-center gap-2">
             <CalendarSearch className="w-4 h-4" />
-            <span className="inline">Filter</span>
+            <span className="inline">Filter Data</span>
             <span className="text-xs text-muted-foreground">
               {isMobile || isMedium 
                 // Format tampilan yang berbeda untuk mobile dan desktop

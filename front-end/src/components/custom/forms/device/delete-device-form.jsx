@@ -3,7 +3,7 @@ import ConfirmDialog from "@/components/custom/dialogs/confirm-dialog";
 // Import checkbox button untuk konfirmasi user
 import CheckboxButton from "../../buttons/checkbox-button";
 
-// Komponen DeleteDeviceForm untuk menghapus IoT device dari sistem
+// Komponen DeleteDeviceForm untuk menghapus perangkat IoT dari sistem
 export default function DeleteDeviceForm({
   open, // State untuk kontrol visibility modal
   setOpen, // Setter untuk mengubah state modal
@@ -13,16 +13,16 @@ export default function DeleteDeviceForm({
   setDeleteChecked, // Setter untuk checkbox konfirmasi
   setSelectedRows, // Setter untuk clear selected rows di table
 }) {
-  // Handler untuk proses penghapusan device dengan batch support
+  // Handler untuk proses penghapusan perangkat dengan batch support
   const handleDelete = async () => {
-    // Check apakah multiple devices yang akan dihapus
+    // Check apakah multiple perangkat yang akan dihapus
     if (Array.isArray(deviceToDelete)) {
-      // Loop untuk menghapus semua selected devices
+      // Loop untuk menghapus semua perangkat terpilih
       for (const device of deviceToDelete) {
-        await handleDeleteDevice(device.id); // Delete setiap device by ID
+        await handleDeleteDevice(device.id); // Delete setiap perangkat by ID
       }
     } else if (deviceToDelete) {
-      // Delete single device
+      // Delete single perangkat
       await handleDeleteDevice(deviceToDelete.id);
     }
     
@@ -32,33 +32,33 @@ export default function DeleteDeviceForm({
     setDeleteChecked(false); // Reset checkbox konfirmasi
   };
 
-  // Render ConfirmDialog dengan dynamic content berdasarkan jumlah device
+  // Render ConfirmDialog dengan dynamic content berdasarkan jumlah perangkat
   return (
     <ConfirmDialog
       open={open} // State visibility modal
       setOpen={setOpen} // Function untuk kontrol modal
       title={
-        // Dynamic title berdasarkan jumlah device yang akan dihapus
+        // Dynamic title berdasarkan jumlah perangkat yang akan dihapus
         Array.isArray(deviceToDelete) && deviceToDelete.length === 1 ? (
           <>
-            {/* Single device dari array selection */}
-            Hapus device <i>{deviceToDelete[0].description || ""}</i> ?
+            {/* Single perangkat dari array selection */}
+            Hapus perangkat <i>{deviceToDelete[0].description || ""}</i> ?
           </>
         ) : Array.isArray(deviceToDelete) && deviceToDelete.length > 1 ? (
           <>
-            {/* Multiple devices selection */}
-            Hapus {deviceToDelete.length} device terpilih ?
+            {/* Multiple perangkat selection */}
+            Hapus {deviceToDelete.length} perangkat terpilih ?
           </>
         ) : (
-          // Single device direct selection
+          // Single perangkat direct selection
           deviceToDelete && (
             <>
-              Hapus device <i>{deviceToDelete.description}</i> ?
+              Hapus perangkat <i>{deviceToDelete.description}</i> ?
             </>
           )
         )
       }
-      description="Semua data yang berkaitan dengan device ini juga akan dihapus. Tindakan ini tidak dapat dibatalkan." // Warning message
+      description="Semua data yang berkaitan dengan perangkat ini juga akan dihapus. Tindakan ini tidak dapat dibatalkan." // Warning message
       checkbox={
         // Checkbox konfirmasi untuk memastikan user memahami konsekuensi
         <CheckboxButton

@@ -45,29 +45,29 @@ export default function EditDeviceForm({
   isMobile, // Flag untuk responsive behavior
 }) {
   // State management untuk form fields IoT device dengan data existing
-  const [name, setName] = useState(""); // Nama identifikasi device
+  const [name, setName] = useState(""); // Nama identifikasi perangkat
   const [boardType, setBoardType] = useState(""); // Tipe microcontroller board
   const [protocol, setProtocol] = useState(""); // Protokol komunikasi (MQTT/LoRa)
-  const [mqttTopic, setMqttTopic] = useState(""); // MQTT topic untuk messaging
+  const [mqttTopic, setMqttTopic] = useState(""); // Topik MQTT untuk komunikasi
   const [mqttQos, setMqttQos] = useState("0"); // Quality of Service level untuk MQTT
   const [loraProfile, setLoraProfile] = useState(""); // Profile LoRa untuk konfigurasi radio
   const [offlineTimeoutMinutes, setOfflineTimeoutMinutes] = useState("1"); // Timeout offline dalam menit
 
-  // Effect untuk populate form fields dengan data device yang akan diedit
+  // Effect untuk populate form fields dengan data perangkat yang akan diedit
   useEffect(() => {
     if (editDevice) {
-      // Populate nama device dengan fallback ke description
+  // Populate nama perangkat dengan fallback ke description
       setName(editDevice.name || editDevice.description || "");
       // Populate board type dengan berbagai format field yang mungkin
       setBoardType(editDevice.boardType || editDevice.board_type || "");
-      // Populate protokol komunikasi device
+  // Populate protokol komunikasi perangkat
       setProtocol(editDevice.protocol || "");
-      // Populate MQTT configuration jika tersedia
+  // Populate konfigurasi MQTT jika tersedia
       setMqttTopic(editDevice.mqtt_topic || "");
       setMqttQos(editDevice.mqtt_qos || "0");
-      // Populate LoRa configuration jika tersedia
+  // Populate konfigurasi LoRa jika tersedia
       setLoraProfile(editDevice.lora_profile || "");
-      // Populate offline timeout dengan default 1 menit
+  // Populate timeout offline dengan default 1 menit
       setOfflineTimeoutMinutes(
         editDevice.offline_timeout_minutes?.toString() || "1"
       );
@@ -77,7 +77,7 @@ export default function EditDeviceForm({
   // Layout form content dengan input fields untuk edit IoT device
   const formContent = (
     <div className="grid gap-4 py-2">
-      {/* Input Field: Nama Device untuk editing */}
+  {/* Input Field: Nama Perangkat untuk editing */}
       <div className="flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <Label
@@ -93,7 +93,7 @@ export default function EditDeviceForm({
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </DescriptionTooltip>
         </div>
-        {/* Input field dengan data existing dari device */}
+  {/* Input field dengan data existing dari perangkat */}
         <Input
           id="nameEdit"
           className="w-full"
@@ -130,7 +130,7 @@ export default function EditDeviceForm({
           </Select>
         </div>
 
-        {/* Protocol Selection: Dropdown untuk protokol komunikasi */}
+  {/* Protocol Selection: Dropdown untuk protokol komunikasi perangkat */}
         <div className="flex flex-col gap-2">
           <div className="flex gap-2 items-center">
             <Label className="text-left ml-1 font-medium max-sm:text-xs">
@@ -171,7 +171,7 @@ export default function EditDeviceForm({
             </Label>
             <DescriptionTooltip
               side="right"
-              content="Durasi sebelum device dianggap offline jika tidak mengirim data"
+              content="Durasi sebelum perangkat dianggap offline jika tidak mengirim data"
             >
               <HelpCircle className="h-4 w-4 text-muted-foreground" />
             </DescriptionTooltip>
@@ -247,9 +247,9 @@ export default function EditDeviceForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Panggil handler function dengan device ID dan updated data
+  // Panggil handler function dengan ID perangkat dan data terbaru
     await handleEditDevice(editDevice.id, {
-      name, // Nama device yang sudah diedit
+  name, // Nama perangkat yang sudah diedit
       board: boardType, // Board type yang dipilih/diedit
       protocol, // Protokol komunikasi
       mqtt_topic: protocol === "MQTT" ? mqttTopic : undefined, // MQTT topic jika protokol MQTT
@@ -267,8 +267,8 @@ export default function EditDeviceForm({
       setOpen={setOpen} // Function untuk kontrol modal
       title={
         <>
-          {/* Dynamic title dengan nama device yang diedit */}
-          Edit <i>{editDevice?.description || ""}</i>
+          {/* Dynamic title dengan nama perangkat yang diedit */}
+          Ubah <i>{editDevice?.description || ""}</i>
         </>
       }
       form={formContent} // Form content yang sudah dibuat

@@ -29,7 +29,7 @@ import * as React from "react";
  * 
  * @param {string} type - Jenis email ("reset-password" atau "otp-verification")
  * @param {string} email - Alamat email atau nama pengguna
- * @param {string} password - Password baru untuk reset password
+ * @param {string} password - Kata sandi baru (untuk reset password)
  * @param {string} otp - Kode OTP untuk verifikasi
  */
 const EmailTemplate = ({ 
@@ -42,10 +42,10 @@ const EmailTemplate = ({
   // Setiap tipe memiliki struktur dan pesan yang berbeda
   const emailConfig = {
     "reset-password": {
-      previewText: `Reset Kata Sandi berhasil. ${email}!`,
-      title: "Pemberitahuan Reset Kata Sandi",
+  previewText: `Reset kata sandi berhasil. ${email}!`,
+  title: "Reset Kata Sandi Berhasil",
       greeting: `Halo ${email},`,
-      content: "Terimakasih sudah menggunakan aplikasi MiSREd-IoT. Berikut adalah kata sandi baru Anda. Mohon untuk segera login dan ganti kata sandi Anda pada menu profil.",
+  content: "Terima kasih telah menggunakan aplikasi MiSREd-IoT. Berikut kata sandi baru Anda. Segera masuk dan ganti kata sandi pada menu profil.",
       code: password,
       codeLabel: "Kata Sandi Baru"
     },
@@ -53,7 +53,7 @@ const EmailTemplate = ({
       previewText: `Kode Verifikasi OTP untuk ${email}`,
       title: "Verifikasi Akun MiSREd-IoT",
       greeting: `Halo ${email},`,
-      content: "Terima kasih telah mendaftar di MiSREd-IoT! Untuk mengaktifkan akun Anda, silakan masukkan kode verifikasi berikut:",
+  content: "Terima kasih telah mendaftar di MiSREd-IoT. Untuk mengaktifkan akun Anda, masukkan kode verifikasi berikut:",
       code: otp,
       codeLabel: "Kode Verifikasi",
       footer: "Kode ini berlaku selama 10 menit. Jika Anda tidak merasa mendaftar, abaikan email ini."
@@ -92,7 +92,7 @@ const EmailTemplate = ({
                 src={"https://www.misred-iot.com/misred-text-red.png"}
                 width="80"
                 height="80"
-                alt="Misred-IoT Logo"
+                alt="Logo MiSREd-IoT"
                 className="my-0 mx-auto"
               />
             </Section>

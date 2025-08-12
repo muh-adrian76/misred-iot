@@ -410,7 +410,7 @@ const ToDoList = () => {
           <div className="mb-4 sm:mb-6">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                Progress
+                Progres
               </span>
               <span className="text-xs sm:text-sm font-semibold text-red-600 dark:text-red-400">
                 {completionPercentage.toFixed(0)}%

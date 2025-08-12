@@ -42,12 +42,12 @@ export default function AddDashboardDialog({ open, setOpen, onCreateDashboard })
   // Form content untuk dialog
   const formContent = (
     <div className="flex flex-col gap-2">
-      <Label htmlFor="dashboard-name">Nama Dashboard</Label>
+  <Label htmlFor="dashboard-name">Nama Tab Dashboard</Label>
       <Input
         id="dashboard-name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Contoh: Monitoring Ruangan"
+  placeholder="Contoh: Monitoring Ruangan" // Contoh nama yang deskriptif
         required
         autoFocus
       />

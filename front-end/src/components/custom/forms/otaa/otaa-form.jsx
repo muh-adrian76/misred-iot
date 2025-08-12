@@ -31,7 +31,7 @@ export default function OtaaSheet({
   // Array items untuk TransitionPanel dengan section yang berbeda
   const ITEMS = [
     {
-      title: "Daftar Firmware", // Title section info firmware
+      title: "Daftar Firmware", // Judul section info firmware
       content: (
         // Section untuk menampilkan informasi firmware yang tersedia
         <OtaaInfoSection
@@ -41,7 +41,7 @@ export default function OtaaSheet({
       ),
     },
     {
-      title: "Upload Firmware",
+      title: "Unggah Firmware",
       content: (
         <OtaaUploadSection
           boardOptions={boardOptions}
@@ -60,7 +60,7 @@ export default function OtaaSheet({
         <SheetHeader className="border-b-2">
           <SheetTitle>Over-The-Air (OTAA)</SheetTitle>
           <SheetDescription className="text-left hidden">
-            Upload firmware berdasarkan tipe board untuk semua device
+            Unggah firmware berdasarkan tipe board untuk semua perangkat
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col w-full h-full py-6 px-0 items-center gap-4">

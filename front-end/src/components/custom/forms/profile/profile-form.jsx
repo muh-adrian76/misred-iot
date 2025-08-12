@@ -15,12 +15,12 @@ import ProfileDeleteDialog from "./profile-delete";
 // Import komponen TransitionPanel untuk smooth transitions
 import { TransitionPanel } from "@/components/ui/transition-panel";
 
-// Komponen ProfileForm untuk mengelola profil user dalam sidebar sheet
+// Komponen ProfileForm untuk mengelola profil pengguna dalam sidebar sheet
 export default function ProfileForm({ open, setOpen, user, setUser, router }) {
-  // State untuk form fields dengan data user yang ada
-  const [username, setUsername] = useState(user?.name || ""); // Nama user
-  const [phoneNumber, setPhoneNumber] = useState(user?.phone || ""); // Nomor telepon user
-  const [whatsappNotif, setWhatsappNotif] = useState(user?.whatsapp_notif || false); // Setting notifikasi WhatsApp
+  // State untuk field form dengan data pengguna yang ada
+  const [username, setUsername] = useState(user?.name || ""); // Nama pengguna
+  const [phoneNumber, setPhoneNumber] = useState(user?.phone || ""); // Nomor telepon pengguna
+  const [whatsappNotif, setWhatsappNotif] = useState(user?.whatsapp_notif || false); // Pengaturan notifikasi WhatsApp
   
   // State untuk password management
   const [showPassword, setShowPassword] = useState(false); // Visibility password fields
@@ -35,12 +35,12 @@ export default function ProfileForm({ open, setOpen, user, setUser, router }) {
   const [isEditing, setIsEditing] = useState(false); // Mode editing profile
   const [activeIndex, setActiveIndex] = useState(0); // Index active section dalam TransitionPanel
   
-  // Update state ketika user data berubah dari props
+  // Sinkronisasi ketika data pengguna berubah dari props
   useEffect(() => {
     if (user) {
-      setUsername(user?.name || ""); // Sync nama user
-      setPhoneNumber(user?.phone || ""); // Sync nomor telepon
-      setWhatsappNotif(user?.whatsapp_notif || false); // Sync setting WhatsApp
+      setUsername(user?.name || ""); // Sinkron nama
+      setPhoneNumber(user?.phone || ""); // Sinkron nomor telepon
+      setWhatsappNotif(user?.whatsapp_notif || false); // Sinkron setting WhatsApp
     }
   }, [user]);
   

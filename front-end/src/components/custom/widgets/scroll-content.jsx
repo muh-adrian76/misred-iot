@@ -46,10 +46,10 @@ const widgetList = [
   // },
   {
     key: "line",
-    label: "Diagram Garis",
+  label: "Grafik Garis",
     component: LineChartWidget,
     width: "lg:w-50 w-full", // Responsive width: 50% di layar besar, full di layar kecil
-    tooltip: "Gunakan untuk melihat tren data dari waktu ke waktu",
+  tooltip: "Gunakan untuk memantau tren data dari waktu ke waktu",
   },
   // {
   //   key: "bar",
@@ -59,9 +59,9 @@ const widgetList = [
   // },
   {
     key: "area",
-    label: "Diagram Area",
+  label: "Grafik Area",
     component: AreaChartWidget,
-    tooltip: "Gunakan untuk melihat total kumulatif atau volume dari data",
+  tooltip: "Gunakan untuk menampilkan akumulasi atau volume data",
   },
   // Pie chart sementara dinonaktifkan
   // {
@@ -74,12 +74,12 @@ const widgetList = [
 
 // Komponen ScrollContent untuk menampilkan daftar widget yang dapat ditambahkan
 export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
-  // Handler untuk memulai drag widget ke grid layout
+  // Handler untuk memulai drag widget ke area grid
   const handleDragStart = (e, key) => {
     // Set data yang akan di-transfer saat drag
     e.dataTransfer.setData("type", key);
     e.dataTransfer.effectAllowed = "move"; // Izinkan operasi move
-    // Catatan: Jangan panggil onChartDrag di sini - biarkan drop handler yang menangani
+  // Catatan: Jangan panggil onChartDrag di sini; biarkan handler drop yang menangani
   };
 
   // Handler untuk menambah widget langsung tanpa drag (tombol +)
@@ -88,7 +88,7 @@ export function ScrollContent({ onChartDrag, mobileView, onAddWidget }) {
     e.stopPropagation();
     // console.log("Add widget button clicked:", key);
     
-    // Panggil handler yang sesuai dari parent component
+  // Panggil handler sesuai dari komponen induk
     if (onAddWidget) {
       onAddWidget(key); // Handler khusus untuk menambah widget
     } else if (onChartDrag) {

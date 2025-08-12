@@ -80,7 +80,7 @@ export default function DashboardToolbar({
             onClick={saveEdit} // Handler untuk save changes
             disabled={!hasUnsavedChanges} // Disable jika tidak ada perubahan
           >
-            <span className="sr-only">Save</span> {/* Screen reader text */}
+            <span className="sr-only">Simpan</span> {/* Teks screen reader */}
             <SaveAll className="w-4 h-4 sm:w-5 sm:h-5" /> {/* Save icon dengan responsive size */}
             <span className="ml-1 inline">
               {/* Dynamic text berdasarkan apakah ada unsaved changes */}
@@ -94,7 +94,7 @@ export default function DashboardToolbar({
             variant="outline"
             onClick={cancelEdit} // Handler untuk cancel edit
           >
-            <span className="sr-only">Cancel</span> {/* Screen reader text */}
+            <span className="sr-only">Batalkan</span> {/* Teks screen reader */}
             <Undo2 className="w-4 h-4 sm:w-5 sm:h-5" /> {/* Undo icon dengan responsive size */}
             <span className="ml-1 inline">Batalkan</span>
           </Button>
@@ -109,9 +109,9 @@ export default function DashboardToolbar({
             onClick={() => setEditState()} // Activate edit mode
             disabled={dashboardState} // Disable jika dashboard dalam state loading
           >
-            <span className="sr-only">Edit</span> {/* Screen reader text */}
+            <span className="sr-only">Ubah</span> {/* Teks screen reader */}
             <Move className="w-4 h-4 sm:w-5 sm:h-5" /> {/* Move icon untuk edit */}
-            <span className="ml-1 inline">Edit</span>
+            <span className="ml-1 inline">Ubah</span>
           </Button>
           
           {/* Dashboard Time Filter component untuk filter data */}

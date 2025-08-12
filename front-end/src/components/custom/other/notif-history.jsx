@@ -119,8 +119,8 @@ const NotificationHistoryItem = ({ notification }) => {
   const getNotificationConfig = () => {
     if (isAlarmNotification) {
       return {
-        icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
-        title: notification.title || notification.alarm_description || 'Alarm Triggered',
+  icon: <AlertTriangle className="h-4 w-4 text-orange-500" />,
+  title: notification.title || notification.alarm_description || 'Alarm Terpicu',
         borderColor: 'border-orange-200',
         bgColor: 'hover:bg-orange-50/30 dark:hover:bg-orange-50/10',
         badgeColor: 'bg-orange-100 text-orange-800',
@@ -128,8 +128,8 @@ const NotificationHistoryItem = ({ notification }) => {
       };
     } else if (isDeviceStatusNotification) {
       return {
-        icon: <WifiOff className="h-4 w-4 text-red-500" />,
-        title: notification.title || 'Device Status Change',
+  icon: <WifiOff className="h-4 w-4 text-red-500" />,
+  title: notification.title || 'Perubahan Status Perangkat',
         borderColor: 'border-red-200',
         bgColor: 'hover:bg-red-50/30 dark:hover:bg-red-50/10',
         badgeColor: 'bg-red-100 text-red-800',
@@ -137,8 +137,8 @@ const NotificationHistoryItem = ({ notification }) => {
       };
     } else {
       return {
-        icon: <BellRing className="h-4 w-4 text-blue-500" />,
-        title: notification.title || 'Notification',
+  icon: <BellRing className="h-4 w-4 text-blue-500" />,
+  title: notification.title || 'Notifikasi',
         borderColor: 'border-blue-200',
         bgColor: 'hover:bg-blue-50/30 dark:hover:bg-blue-50/10',
         badgeColor: 'bg-blue-100 text-blue-800',
@@ -212,7 +212,7 @@ const NotificationHistoryItem = ({ notification }) => {
             {/* Device status specific details */}
             {isDeviceStatusNotification && notification.device_name && (
               <div>
-                <span className="font-medium">Device:</span>{" "}
+                <span className="font-medium">Perangkat:</span>{" "}
                 {notification.device_name}
               </div>
             )}
@@ -469,7 +469,7 @@ export default function NotifHistory({ open, setOpen }) {
 
       const rows = sortedNotifications.map((notif) => [
         formatDateTime(notif.triggered_at),
-        notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status Device' : 'Notifikasi',
+  notif.type === 'alarm' ? 'Alarm' : notif.type === 'device_status' ? 'Status Perangkat' : 'Notifikasi',
         notif.title || notif.alarm_description || 'N/A',
         notif.message || 'N/A',
         notif.device_description || 'N/A',

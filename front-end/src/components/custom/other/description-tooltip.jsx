@@ -13,9 +13,9 @@ import {
  * suatu fitur atau kontrol dalam aplikasi IoT.
  * 
  * @param {React.ReactNode} children - Elemen yang akan memiliki tooltip
- * @param {string} content - Teks yang akan ditampilkan dalam tooltip
+ * @param {string} content - Teks yang akan ditampilkan di dalam tooltip
  * @param {string} side - Posisi tooltip relatif terhadap trigger (top, bottom, left, right)
- * @param {string} className - Kelas CSS tambahan untuk styling tooltip
+ * @param {string} className - Kelas CSS tambahan untuk gaya tooltip
  */
 export default function DescriptionTooltip({children, content, side, className}) {
   return (

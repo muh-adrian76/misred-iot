@@ -12,7 +12,7 @@ import { PasswordStrengthMeter } from "@/components/custom/other/strength-meter"
 // Import komponen tooltip untuk deskripsi
 import DescriptionTooltip from "../../other/description-tooltip";
 
-// Komponen ProfilePasswordSection untuk mengubah password user
+// Komponen ProfilePasswordSection untuk mengubah password pengguna
 export default function ProfilePasswordSection({
   user, // Data user yang sedang login
   showPassword, // State visibility untuk password fields
@@ -22,7 +22,7 @@ export default function ProfilePasswordSection({
   newPassword, // State password baru
   setNewPassword, // Setter untuk update password baru
 }) {
-  // Handler untuk save password baru dengan validasi
+  // Handler untuk menyimpan password baru dengan validasi
   const handleSavePassword = async (e) => {
     e.preventDefault(); // Prevent default form submission
 
@@ -39,13 +39,13 @@ export default function ProfilePasswordSection({
     }
 
     try {
-      // Payload data untuk API request
+  // Payload data untuk request API
       const payload = {
         oldPassword: oldPassword, // Password lama untuk verifikasi
         newPassword: newPassword, // Password baru yang akan diset
       };
 
-      // API call untuk reset password
+  // API call untuk reset password
       const res = await fetchFromBackend("/auth/reset-password", {
         method: "PUT", // HTTP method PUT untuk update
         body: JSON.stringify(payload), // Convert payload to JSON string
@@ -56,14 +56,14 @@ export default function ProfilePasswordSection({
         // Handle error dari backend
         throw new Error(data.message || "Gagal mengubah password!"); // Throw error jika response tidak ok
       } else {
-        // Jika berhasil, bersihkan form dan tampilkan success message
+  // Jika berhasil, bersihkan form dan tampilkan notifikasi sukses
         successToast("Berhasil mengubah password!");
         setOldPassword(""); // Clear old password field
         setNewPassword(""); // Clear new password field
       }
     } catch (error) {
       // Handle error jika ada masalah dengan network atau server
-      errorToast("Gagal mengubah password!", data.message || "");
+  errorToast("Gagal mengubah password!", error.message || "");
     }
   };
 

@@ -45,7 +45,7 @@ export default function WidgetBox({ onChartDrag, onAddWidget, breakpoint }) {
           <div className="flex gap-2 justify-between items-center sticky top-0 z-20 border-b border-slate-200 dark:border-slate-700 bg-card">
             <div className="flex gap-3 font-semibold">
               <ChartNoAxesCombined />
-              <span>Kotak Widget</span>
+              <span>Daftar Widget</span>
             </div>
             {/* Tombol untuk maximize jika dalam keadaan minimize */}
             {minimize === true ? (

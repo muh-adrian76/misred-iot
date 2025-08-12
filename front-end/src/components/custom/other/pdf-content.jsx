@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // Device grouping styles
+  // Gaya pengelompokan perangkat
   deviceGroup: {
     marginBottom: 8,
   },
@@ -329,10 +329,10 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
     allData = [{ datastream: datastreams[0], data: [] }];
   }
 
-  // Debug: Log data untuk memeriksa format tanggal
-  console.log('📊 PDF Debug - Sample data items:', allData.slice(0, 2));
+  // Debug: Log data (contoh beberapa item) untuk memeriksa format tanggal
+  console.log('📊 Debug PDF - Contoh data:', allData.slice(0, 2));
 
-  // Kelompokkan data berdasarkan device untuk organisasi yang lebih baik
+  // Kelompokkan data berdasarkan perangkat untuk organisasi yang lebih baik
   const deviceGroups = {};
   allData.forEach(({ datastream, data }) => {
     const deviceId = datastream.device_id;
@@ -352,9 +352,9 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
     // Tambahkan informasi datastream ke setiap data point untuk referensi
     if (data && data.length > 0) {
       data.forEach(item => {
-        // Debug: Log sample date fields
+        // Debug: Log contoh field tanggal
         if (Math.random() < 0.1) { // 10% sampling untuk debugging
-          console.log('📊 PDF Debug - Date fields:', {
+          console.log('📊 Debug PDF - Field tanggal:', {
             device_time: item.device_time,
             created_at: item.created_at,
             triggered_at: item.triggered_at
@@ -492,14 +492,14 @@ export const DatastreamPDFDocument = ({ datastreams = [], allData = [] }) => {
                     </View>
                     <View style={[styles.tableCol, { width: "25%" }]}>
                       <Text style={styles.tableCell}>
-                        {item.datastream_description || 'N/A'}
+                        {item.datastream_description ?? '-'}
                       </Text>
                     </View>
                     <View style={[styles.tableCol, { width: "20%" }]}>
-                      <Text style={styles.tableCell}>{item.datastream_pin || 'N/A'}</Text>
+                      <Text style={styles.tableCell}>{item.datastream_pin ?? '-'}</Text>
                     </View>
                     <View style={[styles.tableCol, { width: "25%" }]}>
-                      <Text style={styles.tableCellValue}>{item.value || 'N/A'}</Text>
+                      <Text style={styles.tableCellValue}>{item.value ?? '-'}</Text>
                     </View>
                   </View>
                 ))}
@@ -531,11 +531,11 @@ export const NotificationHistoryPDFDocument = ({
     return dateB.getTime() - dateA.getTime(); // Terbaru dulu untuk notifikasi
   });
 
-  // Group notifications by device
+  // Kelompokkan notifikasi berdasarkan perangkat
   const deviceGroups = {};
   sortedNotifications.forEach(notification => {
     const deviceId = notification.device_id || 'unknown';
-    const deviceName = notification.device_description || `Device ${deviceId}`;
+  const deviceName = notification.device_description || `Perangkat ${deviceId}`;
     
     if (!deviceGroups[deviceId]) {
       deviceGroups[deviceId] = {
@@ -644,22 +644,22 @@ export const NotificationHistoryPDFDocument = ({
                       </View>
                       <View style={[styles.tableCol, { width: "25%" }]}>
                         <Text style={styles.tableCell}>
-                          {notif.title || notif.alarm_description || 'N/A'}
+                          {notif.title || notif.alarm_description || '-'}
                         </Text>
                       </View>
                       <View style={[styles.tableCol, { width: "15%" }]}>
                         <Text style={styles.tableCell}>
-                          {notif.datastream_description || 'N/A'}
+                          {notif.datastream_description ?? '-'}
                         </Text>
                       </View>
                       <View style={[styles.tableCol, { width: "10%" }]}>
                         <Text style={styles.tableCellValue}>
-                          {notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : 'N/A'}
+                          {notif.sensor_value !== null && notif.sensor_value !== undefined ? notif.sensor_value : '-'}
                         </Text>
                       </View>
                       <View style={[styles.tableCol, { width: "15%" }]}>
                         <Text style={styles.tableCell}>
-                          {notif.conditions_text || 'N/A'}
+                          {notif.conditions_text || '-'}
                         </Text>
                       </View>
                     </View>

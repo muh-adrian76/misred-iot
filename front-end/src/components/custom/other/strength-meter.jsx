@@ -81,7 +81,7 @@ const defaultRequirements = [
     validator: (password) => /\d/.test(password),
   },
   {
-    label: "Setidaknya ada satu huruf alfanumerik",
+  label: "Setidaknya ada satu karakter spesial (@ / . _ -)",
     validator: (password) => /[@/._-]/.test(password),
   },
 ];
@@ -150,7 +150,7 @@ export function PasswordStrengthMeter({
   className,
   meterClassName,
   inputClassName,
-  placeholder = "Enter password",
+  placeholder = "Masukkan kata sandi",
   size,
   animated = true,
   enableAutoGenerate = false,
@@ -333,7 +333,7 @@ export function PasswordStrengthMeter({
               type="button"
               onClick={togglePasswordVisibility}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -455,7 +455,7 @@ export function PasswordInput({
           type="button"
           onClick={togglePasswordVisibility}
           className="absolute right-3 top-1/2 -translate-y-1/2 "
-          aria-label={showPassword ? "Hide password" : "Show password"}
+          aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
         >
           {showPassword ? (
             <EyeOff className="h-4 w-4" />

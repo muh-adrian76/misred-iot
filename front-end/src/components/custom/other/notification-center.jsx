@@ -77,8 +77,8 @@ const isUserLoggedIn = (user) => {
 const defaultFetchNotifications = async () => {
   const response = await fetchFromBackend("/notifications");
   if (!response.ok) {
-    console.error("❌ Failed to fetch notifications:", response.status);
-    throw new Error(`HTTP ${response.status}: Failed to fetch notifications`);
+    console.error("❌ Gagal mengambil notifikasi:", response.status);
+    throw new Error(`HTTP ${response.status}: Gagal mengambil notifikasi`);
   }
   const data = await response.json();
   return data.notifications || [];
@@ -92,8 +92,8 @@ const defaultMarkAllAsRead = async () => {
     method: "PUT"
   });
   if (!response.ok) {
-    console.error("❌ Failed to mark all as read:", response.status);
-    throw new Error(`HTTP ${response.status}: Failed to mark all notifications as read`);
+    console.error("❌ Gagal menandai semua sebagai dibaca:", response.status);
+    throw new Error(`HTTP ${response.status}: Gagal menandai semua notifikasi sebagai dibaca`);
   }
   const result = await response.json();
   return result;
@@ -105,7 +105,7 @@ const defaultMarkAllAsRead = async () => {
 const defaultDeleteAllNotifications = async () => {
   const response = await fetchFromBackend("/notifications", { method: "DELETE" });
   if (!response.ok) {
-    throw new Error("Failed to delete all notifications");
+    throw new Error("Gagal menghapus semua notifikasi");
   }
   return response.json();
 };
@@ -446,7 +446,7 @@ export function NotificationCenter({
           <div className="flex flex-col items-center gap-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <p className="text-sm text-muted-foreground">
-              Loading notifications...
+              Memuat notifikasi...
             </p>
           </div>
         </div>
@@ -649,10 +649,10 @@ export function NotificationCenter({
                 </div>
               )}
             </div>
-            <span className="text-xl font-semibold">Notifications</span>
+            <span className="text-xl font-semibold">Notifikasi</span>
             {unreadCount > 0 && (
               <Badge variant="secondary" className="text-xs px-2 py-1">
-                {unreadCount} new
+                {unreadCount} baru
               </Badge>
             )}
           </CardTitle>

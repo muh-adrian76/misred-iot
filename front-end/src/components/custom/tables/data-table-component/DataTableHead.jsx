@@ -114,7 +114,7 @@ export default function DataTableHead({
                       className="flex-1"
                       onClick={() => setFilterMenuOpen(null)}
                     >
-                      OK
+                      Terapkan
                     </Button>
                   </div>
                 </div>
@@ -191,14 +191,14 @@ export default function DataTableHead({
                     className="flex-1"
                     onClick={() => handleFilterReset(col.key)}
                   >
-                    Reset
+                    Atur Ulang
                   </Button>
                   <Button
                     size="sm"
                     className="flex-1"
                     onClick={() => setFilterMenuOpen(null)}
                   >
-                    OK
+                    Terapkan
                   </Button>
                 </div>
               </div>

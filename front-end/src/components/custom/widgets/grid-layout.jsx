@@ -649,7 +649,7 @@ export default function GridLayoutOptimized({
               Tambah widget baru
             </h2>
             <p className="text-muted-foreground text-balance">
-              <b>Klik tombol +</b> atau <b>tarik</b> kedalam kanvas.
+              <b>Klik tombol +</b> atau <b>tarik</b> ke dalam kanvas.
             </p>
           </div>
         )}
