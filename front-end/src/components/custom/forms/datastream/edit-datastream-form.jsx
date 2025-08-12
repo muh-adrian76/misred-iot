@@ -273,7 +273,7 @@ export default function EditDatastreamForm({
             <SelectContent>
               <SelectItem value="integer">Integer</SelectItem>
               <SelectItem value="string">String</SelectItem>
-              <SelectItem value="double">Desimal</SelectItem>
+              <SelectItem value="double">Double</SelectItem>
               <SelectItem value="boolean">Boolean</SelectItem>
             </SelectContent>
           </Select>

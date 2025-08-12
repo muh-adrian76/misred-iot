@@ -268,7 +268,7 @@ export default function AddDatastreamForm({
               {/* Tipe data untuk sensor/aktuator IoT */}
               <SelectItem value="integer">Integer</SelectItem>
               {/* <SelectItem value="string">String</SelectItem> */}
-              <SelectItem value="double">Desimal</SelectItem>
+              <SelectItem value="double">Double</SelectItem>
               {/* <SelectItem value="boolean">Boolean</SelectItem> */}
             </SelectContent>
           </Select>
