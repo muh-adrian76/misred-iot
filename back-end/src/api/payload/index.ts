@@ -227,6 +227,15 @@ export function payloadRoutes(payloadService: PayloadService) {
             const timeRange = query.range || "1h"; // Default 1 jam
             const count = query.count; // Parameter count untuk filter berdasarkan jumlah data
             
+            // DEBUGGING: Log parameter yang diterima dari frontend
+            console.log(`🔍 [DEBUG TIMESERIES] Device: ${params.device_id}, Datastream: ${params.datastream_id}`);
+            console.log(`📊 [DEBUG TIMESERIES] Query parameters received:`, { 
+              range: query.range, 
+              count: query.count,
+              timeRange: timeRange,
+              fullQuery: query 
+            });
+            
             // Ambil time series data dengan filter range atau count
             const data = await payloadService.getTimeSeriesData(
               params.device_id,

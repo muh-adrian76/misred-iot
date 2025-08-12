@@ -66,15 +66,27 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             endpoint = `/payload/timeseries/${pair.device_id}/${pair.datastream_id}?range=${timeRange}`;
           }
           
+          // DEBUG: Log endpoint dan parameter yang akan dikirim
+          // console.log(`🔍 [DEBUG FRONTEND] Fetching data for device ${pair.device_id}, datastream ${pair.datastream_id}`);
+          // console.log(`📊 [DEBUG FRONTEND] Endpoint:`, endpoint);
+          // console.log(`🎯 [DEBUG FRONTEND] Filter parameters:`, { 
+          //   filterType, 
+          //   timeRange, 
+          //   dataCount,
+          //   finalEndpoint: endpoint 
+          // });
+          
           const response = await fetchFromBackend(endpoint);
           if (!response.ok) return [];
           const data = await response.json();
           
           // Log debug untuk melihat data yang diterima
-          // console.log(`📊 Data diterima untuk Device ${pair.device_id} Datastream ${pair.datastream_id}:`, {
+          // console.log(`📊 [DEBUG FRONTEND] Data diterima untuk Device ${pair.device_id} Datastream ${pair.datastream_id}:`, {
           //   count: data.result?.length || 0,
           //   filterType: data.filterType,
-          //   dataCount: data.dataCount
+          //   dataCount: data.dataCount,
+          //   timeRange: data.timeRange,
+          //   receivedData: data
           // });
           
           return (data.result || []).map((item) => ({

@@ -200,8 +200,16 @@ export class PayloadService {
   // Fungsi untuk mendapatkan time series data untuk chart
   async getTimeSeriesData(device_id: string, datastream_id: string, timeRange: string = '1h', count?: string) {
     try {
+      console.log(`🔍 [DEBUG PAYLOAD SERVICE] Input parameters:`, { 
+        device_id, 
+        datastream_id, 
+        timeRange, 
+        count 
+      });
+
       let query = '';
       let queryParams: any[] = [device_id, datastream_id];
+      let timeCondition = ''; // Deklarasi di scope yang tepat
 
       // Jika filter berdasarkan count (jumlah data terakhir)
       if (count && count !== 'all') {
@@ -229,7 +237,6 @@ export class PayloadService {
 
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
-        let timeCondition = '';
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
           timeCondition = ''; // Tidak ada filter waktu = semua data
@@ -258,6 +265,11 @@ export class PayloadService {
         WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
       }
+
+      // DEBUG: Log query yang akan dijalankan
+      console.log(`📊 [DEBUG PAYLOAD SERVICE] SQL Query:`, query);
+      console.log(`🔍 [DEBUG PAYLOAD SERVICE] Query Parameters:`, queryParams);
+      console.log(`⏰ [DEBUG PAYLOAD SERVICE] Time Condition Applied:`, timeCondition || 'NONE (all data)');
 
       const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
       
