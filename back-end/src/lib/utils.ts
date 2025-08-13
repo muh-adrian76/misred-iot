@@ -564,7 +564,7 @@ async function parseAndNormalizePayload(
             // console.log(`💾 [PARSE] Menyimpan data ke database: Pin "${pin}" → Value: ${validatedValue}`);
             
             // Insert ke tabel payloads dengan metadata lengkap
-            const [result] = await db.safequery(
+            const [result] = await db.safeQuery(
               `INSERT INTO payloads (device_id, datastream_id, value, raw_data, device_time, server_time)
               VALUES (?, ?, ?, ?, ?, NOW())`,
               [
@@ -632,7 +632,7 @@ async function broadcastSensorUpdates(
     }
     
     // Get device info dan datastreams
-    const [deviceRows]: any = await db.safequery(
+    const [deviceRows]: any = await db.safeQuery(
       `SELECT d.id, d.description as device_name, d.user_id 
        FROM devices d WHERE d.id = ?`,
       [deviceId]
@@ -642,7 +642,7 @@ async function broadcastSensorUpdates(
 
     const device = deviceRows[0];
     
-    const [datastreams]: any = await db.safequery(
+    const [datastreams]: any = await db.safeQuery(
       `SELECT id, pin, description, unit FROM datastreams WHERE device_id = ?`,
       [deviceId]
     );

@@ -151,100 +151,98 @@ export class UserService {
   }
 
   async deleteUser(id: string) {
-    const connection = await this.db.getConnection();
-    
     try {
       // Start transaction untuk memastikan atomicity
-      await connection.beginTransaction();
+      await this.db.beginTransaction();
 
       // Delete dalam urutan yang benar untuk menghindari foreign key constraint errors
       // Karena semua tabel menggunakan ON DELETE CASCADE dari users, kita hanya perlu menghapus
       // tabel yang tidak memiliki CASCADE atau memiliki referensi kompleks
       
       // 1. Delete notifications (memiliki FK ke alarms, devices, datastreams, users)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM notifications WHERE user_id = ?",
         [id]
       );
 
       // 2. Delete device_commands (memiliki FK ke devices, datastreams, users)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM device_commands WHERE user_id = ?",
         [id]
       );
 
       // 3. Delete alarm_conditions (terhubung ke alarms yang akan dihapus CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE ac FROM alarm_conditions ac INNER JOIN alarms a ON ac.alarm_id = a.id WHERE a.user_id = ?",
         [id]
       );
 
       // 4. Delete alarms (akan trigger CASCADE untuk alarm_conditions jika ada yang tersisa)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM alarms WHERE user_id = ?",
         [id]
       );
 
       // 5. Delete widgets (terhubung ke dashboards yang akan dihapus CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE w FROM widgets w INNER JOIN dashboards d ON w.dashboard_id = d.id WHERE d.user_id = ?",
         [id]
       );
 
       // 6. Delete payloads (terhubung ke devices dan datastreams yang akan dihapus CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE p FROM payloads p INNER JOIN devices d ON p.device_id = d.id WHERE d.user_id = ?",
         [id]
       );
 
       // 7. Delete raw_payloads (terhubung ke devices yang akan dihapus CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE rp FROM raw_payloads rp INNER JOIN devices d ON rp.device_id = d.id WHERE d.user_id = ?",
         [id]
       );
 
       // 8. Delete datastreams (memiliki FK ke users dan devices - CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM datastreams WHERE user_id = ?",
         [id]
       );
 
       // 9. Delete devices (memiliki FK ke users - CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM devices WHERE user_id = ?",
         [id]
       );
 
       // 10. Delete dashboards (memiliki FK ke users - CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM dashboards WHERE user_id = ?",
         [id]
       );
 
       // 11. Delete otaa_updates (memiliki FK ke users - CASCADE)
-      await connection.query(
+      await (this.db as any).safeQuery(
         "DELETE FROM otaa_updates WHERE user_id = ?",
         [id]
       );
 
       // 12. Terakhir, hapus pengguna
-      const [result] = await connection.query<ResultSetHeader>(
+      const [result] = await (this.db as any).safeQuery(
         "DELETE FROM users WHERE id = ?",
         [id]
       );
 
       // Commit transaction
-      await connection.commit();
-      
+      await (this.db as any).commitTransaction();
+
       return result.affectedRows > 0;
     } catch (error) {
       // Rollback transaction on error
-      await connection.rollback();
+      await (this.db as any).rollbackTransaction();
       console.error("Gagal menghapus pengguna dan data terkait:", error);
       throw new Error("Gagal menghapus pengguna dan data terkait");
     } finally {
       // Release connection
-      connection.release();
+      (this.db as any).release();
     }
   }
 
