@@ -229,6 +229,15 @@ export class PayloadService {
           ORDER BY COALESCE(p.device_time, p.server_time) DESC
           LIMIT ?`;
           queryParams.push(limitCount);
+          
+          // DEBUG: Log query yang akan dijalankan untuk count filtering
+          console.log(`📊 [DEBUG PAYLOAD SERVICE] Count Filter SQL Query:`, query);
+          console.log(`🔍 [DEBUG PAYLOAD SERVICE] Count Filter Query Parameters:`, queryParams);
+          
+          const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+          
+          // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
+          return (rows as any[]).reverse();
         } else {
           // Invalid count, fallback to time-based
           count = undefined;
@@ -237,18 +246,33 @@ export class PayloadService {
 
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
+        // Reset queryParams untuk time-based filtering (hanya device_id dan datastream_id)
+        queryParams = [device_id, datastream_id];
+        
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
           timeCondition = ''; // Tidak ada filter waktu = semua data
         } else {
           // dan pastikan perbandingan timezone yang tepat
           switch (timeRange) {
-            case '1h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; break;
-            case '12h': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; break;
-            case '1d': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; break;
-            case '1w': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; break;
-            case '1m': timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 30 DAY'; break; // Tambahan: Support filter 1 bulan (30 hari)
-            default: timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
+            case '1h': 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR'; 
+              break;
+            case '12h': 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 12 HOUR'; 
+              break;
+            case '1d': 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 DAY'; 
+              break;
+            case '1w': 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 7 DAY'; 
+              break;
+            case '1m': 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 30 DAY'; 
+              break;
+            default: 
+              timeCondition = 'AND COALESCE(p.device_time, p.server_time) >= UTC_TIMESTAMP() - INTERVAL 1 HOUR';
+              break;
           }
         }
 
@@ -264,38 +288,19 @@ export class PayloadService {
         LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
+
+        // DEBUG: Log query yang akan dijalankan untuk time filtering
+        console.log(`📊 [DEBUG PAYLOAD SERVICE] Time Filter SQL Query:`, query);
+        console.log(`🔍 [DEBUG PAYLOAD SERVICE] Time Filter Query Parameters:`, queryParams);
+        console.log(`⏰ [DEBUG PAYLOAD SERVICE] Time Condition Applied:`, timeCondition || 'NONE (all data)');
+
+        const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+        return rows;
       }
 
-      // DEBUG: Log query yang akan dijalankan
-      console.log(`📊 [DEBUG PAYLOAD SERVICE] SQL Query:`, query);
-      console.log(`🔍 [DEBUG PAYLOAD SERVICE] Query Parameters:`, queryParams);
-      console.log(`⏰ [DEBUG PAYLOAD SERVICE] Time Condition Applied:`, timeCondition || 'NONE (all data)');
-
-      const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+      // Fallback return (should not reach here)
+      return [];
       
-      // Debug: Log sample of returned data
-      // if (rows && rows.length > 0) {
-      //   console.log(`📊 [PAYLOAD SERVICE] Time series data sample for device ${device_id}, datastream ${datastream_id}:`, {
-      //     totalRows: rows.length,
-      //     firstRow: rows[0],
-      //     lastRow: rows[rows.length - 1],
-      //     sampleTimestamps: rows.slice(0, 3).map((r: any) => ({
-      //       timestamp: r.timestamp,
-      //       device_time: r.device_time,
-      //       server_time: r.server_time,
-      //       value: r.value
-      //     }))
-      //   });
-      // } else {
-      //   console.log(`⚠️ [PAYLOAD SERVICE] No data found for device ${device_id}, datastream ${datastream_id}`);
-      // }
-      
-      // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
-      if (count && count !== 'all') {
-        return (rows as any[]).reverse();
-      }
-      
-      return rows;
     } catch (error) {
       console.error("❌ [PAYLOAD SERVICE] Gagal mengambil data time series:", error);
       throw new Error("Gagal mengambil data time series");
