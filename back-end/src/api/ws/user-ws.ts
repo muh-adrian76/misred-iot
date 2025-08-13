@@ -168,8 +168,6 @@ export function userWsRoutes(db: any) {
 // Broadcast data sensor ke pemilik device yang online (menggunakan refresh_token)
 export async function broadcastToDeviceOwner(db: any, deviceId: number, data: any) {
   try {
-    console.log(`📡 broadcastToDeviceOwner dipanggil untuk device ${deviceId}, data:`, data);
-    
     // Gunakan safeQuery agar tahan terhadap pool reconnect
     const [rows]: any = await (db as any).safeQuery(
       `SELECT u.id as user_id 
@@ -185,9 +183,7 @@ export async function broadcastToDeviceOwner(db: any, deviceId: number, data: an
     }
     
     const userId = rows[0].user_id.toString();
-    console.log(`📡 Mengirim broadcast ke pengguna ${userId} untuk device ${deviceId}`);
     const result = broadcastToSpecificUser(userId, data);
-    console.log(`${result ? '✅' : '❌'} Hasil broadcast untuk device ${deviceId}: ${result}`);
     return result;
     
   } catch (error) {

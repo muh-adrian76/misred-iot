@@ -223,13 +223,20 @@ export class PayloadService {
         throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be numeric`);
       }
 
+      console.log(`🔍 [DEBUG] Input parameters:`, { 
+        device_id, datastream_id, timeRange, count,
+        deviceIdNum, datastreamIdNum
+      });
+
       let query = '';
-      let queryParams: any[] = [deviceIdNum, datastreamIdNum]; // Gunakan number, bukan string
+      let queryParams: number[] = []; // Eksplisit gunakan number[]
       let timeCondition = ''; // Deklarasi di scope yang tepat
 
       // Jika filter berdasarkan count (jumlah data terakhir)
       if (count && count !== 'all') {
         const limitCount = parseInt(count);
+        console.log(`🔢 [DEBUG] Parsing count: "${count}" -> ${limitCount} (type: ${typeof limitCount})`);
+        
         if (!isNaN(limitCount) && limitCount > 0) {
           query = `SELECT 
             p.value, 
@@ -244,13 +251,33 @@ export class PayloadService {
           WHERE p.device_id = ? AND p.datastream_id = ?
           ORDER BY COALESCE(p.device_time, p.server_time) DESC
           LIMIT ?`;
-          queryParams.push(limitCount);
+          
+          // PENTING: Pastikan semua parameter adalah number dengan eksplisit casting
+          queryParams = [
+            Number(deviceIdNum), 
+            Number(datastreamIdNum), 
+            Number(limitCount)
+          ];
+          
+          console.log(`📊 [DEBUG] Count filter query params:`, queryParams);
+          console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
+          
+          // Test: Validasi final bahwa semua parameter adalah number
+          const allNumbers = queryParams.every(p => typeof p === 'number' && !isNaN(p));
+          console.log(`✅ [DEBUG] All parameters are valid numbers: ${allNumbers}`);
+          
+          if (!allNumbers) {
+            throw new Error(`Invalid parameter types detected: ${JSON.stringify(queryParams.map(p => typeof p))}`);
+          }
           
           const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+          
+          console.log(`✅ [DEBUG] Query executed successfully, rows returned: ${rows.length}`);
           
           // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
           return (rows as any[]).reverse();
         } else {
+          console.log(`⚠️ [DEBUG] Invalid count parameter, falling back to time-based filtering`);
           // Invalid count, fallback to time-based
           count = undefined;
         }
@@ -259,7 +286,9 @@ export class PayloadService {
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
         // Reset queryParams untuk time-based filtering (hanya device_id dan datastream_id)
-        queryParams = [deviceIdNum, datastreamIdNum]; // Gunakan number, bukan string
+        queryParams = [Number(deviceIdNum), Number(datastreamIdNum)];
+        
+        console.log(`⏰ [DEBUG] Using time-based filtering with range: ${timeRange}`);
         
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
@@ -301,7 +330,12 @@ export class PayloadService {
         WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
 
+        console.log(`📊 [DEBUG] Time filter query params:`, queryParams);
+        console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
+
         const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+        
+        console.log(`✅ [DEBUG] Query executed successfully, rows returned: ${rows.length}`);
         return rows;
       }
 
