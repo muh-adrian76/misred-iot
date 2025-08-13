@@ -33,8 +33,6 @@ export class DeviceStatusService {
       }).catch((error) => {
         console.error('❌ Gagal menginisialisasi NotificationService di constructor:', error);
       });
-    } else {
-      console.log('✅ Menggunakan NotificationService yang diinjeksikan di DeviceStatusService');
     }
     
     this.startStatusMonitoring();  // Mulai monitoring otomatis
@@ -370,7 +368,7 @@ export class DeviceStatusService {
       const [cooldownResult] = await (this.db as any).safeQuery(cooldownQuery, [deviceId]);
       const deviceCooldownMinutes = (cooldownResult as any[])[0]?.cooldown_minutes || 1; // Default 1 menit jika tidak ada alarm
 
-      console.log(`⏱️ Menggunakan cooldown ${deviceCooldownMinutes} menit untuk notifikasi offline device ${deviceId}`);
+      // console.log(`⏱️ Menggunakan cooldown ${deviceCooldownMinutes} menit untuk notifikasi offline device ${deviceId}`);
       
       // Check if notification already sent within the cooldown period
       const recentNotificationQuery = `
@@ -551,8 +549,6 @@ export class DeviceStatusService {
         "UPDATE devices SET status = ? WHERE id = ?",
         [status, deviceId]
       );
-
-      console.log(`✅ Device ${deviceId} status updated to ${status} (status-only update). Affected rows: ${(result as any).affectedRows}`);
     } catch (error) {
       console.error(`❌ Error updating device ${deviceId} status only:`, error);
       throw error;

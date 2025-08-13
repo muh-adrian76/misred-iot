@@ -136,11 +136,11 @@ export class PayloadService {
 
     async getByDeviceId(device_id: string) {
     try {
-      // Konversi string ke number untuk parameter database
-      const deviceIdNum = parseInt(device_id);
+      // CRITICAL FIX: Explicit integer casting for MySQL prepared statements
+      const deviceIdNum = parseInt(device_id, 10);
       
-      if (isNaN(deviceIdNum)) {
-        throw new Error(`Invalid device_id (${device_id}) - must be numeric`);
+      if (!Number.isInteger(deviceIdNum) || deviceIdNum <= 0) {
+        throw new Error(`Invalid device_id (${device_id}) - must be positive integer`);
       }
 
       // Query data ternormalisasi dengan informasi sensor dan device
@@ -154,7 +154,7 @@ export class PayloadService {
         LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? 
         ORDER BY p.server_time DESC`,
-        [deviceIdNum] // Gunakan number, bukan string
+        [deviceIdNum] // Gunakan integer hasil parseInt
       );
       return rows;
     } catch (error) {
@@ -165,12 +165,13 @@ export class PayloadService {
 
   async getByDeviceAndDatastream(device_id: string, datastream_id: string) {
     try {
-      // Konversi string ke number untuk parameter database
-      const deviceIdNum = parseInt(device_id);
-      const datastreamIdNum = parseInt(datastream_id);
+      // CRITICAL FIX: Explicit integer casting for MySQL prepared statements
+      const deviceIdNum = parseInt(device_id, 10);
+      const datastreamIdNum = parseInt(datastream_id, 10);
       
-      if (isNaN(deviceIdNum) || isNaN(datastreamIdNum)) {
-        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be numeric`);
+      if (!Number.isInteger(deviceIdNum) || deviceIdNum <= 0 || 
+          !Number.isInteger(datastreamIdNum) || datastreamIdNum <= 0) {
+        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be positive integers`);
       }
 
       // Query untuk widget dashboard - data sensor spesifik
@@ -189,7 +190,7 @@ export class PayloadService {
         WHERE p.device_id = ? AND p.datastream_id = ?
         ORDER BY COALESCE(p.device_time, p.server_time) DESC 
         LIMIT 500`, // Tingkatkan limit untuk memastikan semua data terambil
-        [deviceIdNum, datastreamIdNum] // Gunakan number, bukan string
+        [deviceIdNum, datastreamIdNum] // Gunakan integer hasil parseInt
       );
       return rows;
     } catch (error) {
@@ -215,18 +216,14 @@ export class PayloadService {
   // Fungsi untuk mendapatkan time series data untuk chart
   async getTimeSeriesData(device_id: string, datastream_id: string, timeRange: string = '1h', count?: string) {
     try {
-      // Konversi string ke number untuk parameter database
-      const deviceIdNum = parseInt(device_id);
-      const datastreamIdNum = parseInt(datastream_id);
+      // CRITICAL FIX: Explicit integer casting for MySQL prepared statements
+      const deviceIdNum = parseInt(device_id, 10);
+      const datastreamIdNum = parseInt(datastream_id, 10);
       
-      if (isNaN(deviceIdNum) || isNaN(datastreamIdNum)) {
-        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be numeric`);
+      if (!Number.isInteger(deviceIdNum) || deviceIdNum <= 0 || 
+          !Number.isInteger(datastreamIdNum) || datastreamIdNum <= 0) {
+        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be positive integers`);
       }
-
-      console.log(`🔍 [DEBUG] Input parameters:`, { 
-        device_id, datastream_id, timeRange, count,
-        deviceIdNum, datastreamIdNum
-      });
 
       let query = '';
       let queryParams: number[] = []; // Eksplisit gunakan number[]
@@ -234,10 +231,10 @@ export class PayloadService {
 
       // Jika filter berdasarkan count (jumlah data terakhir)
       if (count && count !== 'all') {
-        const limitCount = parseInt(count);
-        console.log(`🔢 [DEBUG] Parsing count: "${count}" -> ${limitCount} (type: ${typeof limitCount})`);
+        const limitCount = parseInt(count, 10);
+        console.log(`🔢 [DEBUG] Parsing count: "${count}" -> ${limitCount} (type: ${typeof limitCount}) isInteger: ${Number.isInteger(limitCount)}`);
         
-        if (!isNaN(limitCount) && limitCount > 0) {
+        if (Number.isInteger(limitCount) && limitCount > 0) {
           query = `SELECT 
             p.value, 
             COALESCE(p.device_time, p.server_time) as timestamp,
@@ -252,44 +249,38 @@ export class PayloadService {
           ORDER BY COALESCE(p.device_time, p.server_time) DESC
           LIMIT ?`;
           
-          // PENTING: Pastikan semua parameter adalah number dengan eksplisit casting
           queryParams = [
-            Number(deviceIdNum), 
-            Number(datastreamIdNum), 
-            Number(limitCount)
+            parseInt(device_id, 10),      // Force integer
+            parseInt(datastream_id, 10),  // Force integer  
+            parseInt(count, 10)           // Force integer
           ];
           
-          console.log(`📊 [DEBUG] Count filter query params:`, queryParams);
-          console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
-          
-          // Test: Validasi final bahwa semua parameter adalah number
-          const allNumbers = queryParams.every(p => typeof p === 'number' && !isNaN(p));
-          console.log(`✅ [DEBUG] All parameters are valid numbers: ${allNumbers}`);
-          
-          if (!allNumbers) {
-            throw new Error(`Invalid parameter types detected: ${JSON.stringify(queryParams.map(p => typeof p))}`);
-          }
-          
           const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
-          
-          console.log(`✅ [DEBUG] Query executed successfully, rows returned: ${rows.length}`);
           
           // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
           return (rows as any[]).reverse();
         } else {
-          console.log(`⚠️ [DEBUG] Invalid count parameter, falling back to time-based filtering`);
-          // Invalid count, fallback to time-based
           count = undefined;
         }
       }
 
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
-        // Reset queryParams untuk time-based filtering (hanya device_id dan datastream_id)
-        queryParams = [Number(deviceIdNum), Number(datastreamIdNum)];
+        // CRITICAL FIX: Explicit integer casting for MySQL prepared statements  
+        queryParams = [
+          parseInt(device_id, 10),      // Force integer conversion from string
+          parseInt(datastream_id, 10)   // Force integer conversion from string
+        ];
         
         console.log(`⏰ [DEBUG] Using time-based filtering with range: ${timeRange}`);
-        
+        console.log(`📊 [DEBUG] Time filter query params:`, queryParams);
+        console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
+        console.log(`🔢 [DEBUG] Parameter validation:`, {
+          param1_isInteger: Number.isInteger(queryParams[0]),
+          param2_isInteger: Number.isInteger(queryParams[1]),
+          param1_value: queryParams[0],
+          param2_value: queryParams[1]
+        });
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
           timeCondition = ''; // Tidak ada filter waktu = semua data
@@ -330,8 +321,13 @@ export class PayloadService {
         WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
 
-        console.log(`📊 [DEBUG] Time filter query params:`, queryParams);
-        console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
+        // Validasi parameter untuk time-based filtering
+        const allValidIntegers = queryParams.every(p => Number.isInteger(p) && p > 0);
+        console.log(`✅ [DEBUG] All time filter parameters are valid positive integers: ${allValidIntegers}`);
+        
+        if (!allValidIntegers) {
+          throw new Error(`Invalid parameter types for MySQL prepared statement: ${JSON.stringify(queryParams.map(p => `${p} (${typeof p}) isInteger=${Number.isInteger(p)}`))}`);
+        }
 
         const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
         
