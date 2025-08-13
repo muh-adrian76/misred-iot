@@ -136,6 +136,13 @@ export class PayloadService {
 
     async getByDeviceId(device_id: string) {
     try {
+      // Konversi string ke number untuk parameter database
+      const deviceIdNum = parseInt(device_id);
+      
+      if (isNaN(deviceIdNum)) {
+        throw new Error(`Invalid device_id (${device_id}) - must be numeric`);
+      }
+
       // Query data ternormalisasi dengan informasi sensor dan device
       const [rows] = await (this.db as any).safeQuery(
         `SELECT 
@@ -147,7 +154,7 @@ export class PayloadService {
         LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? 
         ORDER BY p.server_time DESC`,
-        [device_id]
+        [deviceIdNum] // Gunakan number, bukan string
       );
       return rows;
     } catch (error) {
@@ -158,6 +165,14 @@ export class PayloadService {
 
   async getByDeviceAndDatastream(device_id: string, datastream_id: string) {
     try {
+      // Konversi string ke number untuk parameter database
+      const deviceIdNum = parseInt(device_id);
+      const datastreamIdNum = parseInt(datastream_id);
+      
+      if (isNaN(deviceIdNum) || isNaN(datastreamIdNum)) {
+        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be numeric`);
+      }
+
       // Query untuk widget dashboard - data sensor spesifik
       const [rows] = await (this.db as any).safeQuery(
         `SELECT 
@@ -174,7 +189,7 @@ export class PayloadService {
         WHERE p.device_id = ? AND p.datastream_id = ?
         ORDER BY COALESCE(p.device_time, p.server_time) DESC 
         LIMIT 500`, // Tingkatkan limit untuk memastikan semua data terambil
-        [device_id, datastream_id]
+        [deviceIdNum, datastreamIdNum] // Gunakan number, bukan string
       );
       return rows;
     } catch (error) {
@@ -200,15 +215,16 @@ export class PayloadService {
   // Fungsi untuk mendapatkan time series data untuk chart
   async getTimeSeriesData(device_id: string, datastream_id: string, timeRange: string = '1h', count?: string) {
     try {
-      console.log(`🔍 [DEBUG PAYLOAD SERVICE] Input parameters:`, { 
-        device_id, 
-        datastream_id, 
-        timeRange, 
-        count 
-      });
+      // Konversi string ke number untuk parameter database
+      const deviceIdNum = parseInt(device_id);
+      const datastreamIdNum = parseInt(datastream_id);
+      
+      if (isNaN(deviceIdNum) || isNaN(datastreamIdNum)) {
+        throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be numeric`);
+      }
 
       let query = '';
-      let queryParams: any[] = [device_id, datastream_id];
+      let queryParams: any[] = [deviceIdNum, datastreamIdNum]; // Gunakan number, bukan string
       let timeCondition = ''; // Deklarasi di scope yang tepat
 
       // Jika filter berdasarkan count (jumlah data terakhir)
@@ -230,10 +246,6 @@ export class PayloadService {
           LIMIT ?`;
           queryParams.push(limitCount);
           
-          // DEBUG: Log query yang akan dijalankan untuk count filtering
-          console.log(`📊 [DEBUG PAYLOAD SERVICE] Count Filter SQL Query:`, query);
-          console.log(`🔍 [DEBUG PAYLOAD SERVICE] Count Filter Query Parameters:`, queryParams);
-          
           const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
           
           // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
@@ -247,7 +259,7 @@ export class PayloadService {
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
         // Reset queryParams untuk time-based filtering (hanya device_id dan datastream_id)
-        queryParams = [device_id, datastream_id];
+        queryParams = [deviceIdNum, datastreamIdNum]; // Gunakan number, bukan string
         
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
@@ -288,11 +300,6 @@ export class PayloadService {
         LEFT JOIN devices d ON p.device_id = d.id
         WHERE p.device_id = ? AND p.datastream_id = ? ${timeCondition}
         ORDER BY COALESCE(p.device_time, p.server_time) ASC`;
-
-        // DEBUG: Log query yang akan dijalankan untuk time filtering
-        console.log(`📊 [DEBUG PAYLOAD SERVICE] Time Filter SQL Query:`, query);
-        console.log(`🔍 [DEBUG PAYLOAD SERVICE] Time Filter Query Parameters:`, queryParams);
-        console.log(`⏰ [DEBUG PAYLOAD SERVICE] Time Condition Applied:`, timeCondition || 'NONE (all data)');
 
         const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
         return rows;
