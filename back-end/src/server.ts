@@ -145,6 +145,49 @@ class Server {
     this.mqttService.listen();
 
     this.app
+      // ===== SECURITY MIDDLEWARE =====
+      // Middleware untuk security headers dan perlindungan keamanan
+      .onRequest(({ set, request }) => {
+        // Sembunyikan informasi server
+        set.headers["server"] = "Misred-IoT";
+        delete set.headers["x-powered-by"];
+        
+        // Header keamanan
+        set.headers["x-content-type-options"] = "nosniff";
+        set.headers["x-frame-options"] = "DENY";
+        set.headers["x-xss-protection"] = "1; mode=block";
+        set.headers["referrer-policy"] = "strict-origin-when-cross-origin";
+        
+        // HSTS untuk production dengan HTTPS
+        if (process.env.NODE_ENV === "production") {
+          set.headers["strict-transport-security"] = "max-age=31536000; includeSubDomains";
+        }
+        
+        // Blokir upaya scanning vulnerability yang umum
+        const url = request.url.toLowerCase();
+        const suspiciousPatterns = [
+          '.env', 'config.', 'wp-', 'admin.php', 'phpmyadmin',
+          'environment.ts', 'package.json', '.git', 'server.ts',
+          'config.js', 'config.json', '.htaccess', 'web.config'
+        ];
+        
+        if (suspiciousPatterns.some(pattern => url.includes(pattern))) {
+          // Ambil informasi client yang lebih lengkap
+          const clientIP = request.headers.get("x-forwarded-for") || 
+                          request.headers.get("x-real-ip") || 
+                          request.headers.get("cf-connecting-ip") || 
+                          request.headers.get("x-client-ip") ||
+                          "tidak diketahui";
+          const userAgent = request.headers.get("user-agent") || "tidak diketahui";
+          
+          console.warn("🚨 Upaya akses mencurigakan diblokir:", request.url);
+          console.warn("   📍 Dari IP:", clientIP);
+          console.warn("   🌐 User Agent:", userAgent.substring(0, 100) + (userAgent.length > 100 ? "..." : ""));
+          
+          throw new Error("BLOCKED_REQUEST");
+        }
+      })
+      
       // ===== HEALTH CHECK ENDPOINT =====
       // Endpoint untuk monitoring kesehatan server dan database
       .get("/health-check", () => ({
@@ -249,17 +292,37 @@ class Server {
       // ===== ERROR HANDLING =====
       // Global error handler untuk menangani semua error yang terjadi
       .onError(({ error, code, request }) => {
-        console.error("❌ Terjadi kesalahan:", error, `Halaman yang dicoba oleh user: ${request.url}`);
+        // ===== PENANGANAN REQUEST YANG DIBLOKIR =====
+        if (error instanceof Error && error.message === "BLOCKED_REQUEST") {
+          return new Response("Akses ditolak", { status: 403 });
+        }
         
         // ===== 404 NOT FOUND HANDLING =====
         // Redirect ke halaman 404 frontend jika endpoint tidak ditemukan
         if (code === "NOT_FOUND") {
+          // Skip logging untuk favicon.ico yang normal dari browser
+          if (!request.url.includes('/favicon.ico')) {
+            // Log dengan informasi client yang lebih lengkap untuk keamanan
+            const clientIP = request.headers.get("x-forwarded-for") || 
+                            request.headers.get("x-real-ip") || 
+                            request.headers.get("cf-connecting-ip") || 
+                            request.headers.get("x-client-ip") ||
+                            "localhost/development";
+            const userAgent = request.headers.get("user-agent") || "tidak diketahui";
+            
+            console.warn("⚠️ Upaya akses 404:", request.url);
+            console.warn("   📍 Dari IP:", clientIP);
+            console.warn("   🌐 User Agent:", userAgent.substring(0, 80) + (userAgent.length > 80 ? "..." : ""));
+          }
+          
           return new Response(null, {
             status: 302, // HTTP 302 redirect
             headers: {
               Location: `${process.env.FRONTEND_URL}/404` // Redirect ke 404 page
             }
           });
+        } else {
+          console.error("❌ Terjadi kesalahan server:", code);
         }
         
         // ===== 401 VALIDATION ERROR HANDLING =====
@@ -273,7 +336,7 @@ class Server {
           });
         }
         
-        // ===== DEFAULT ERROR RESPONSE =====
+        // ===== RESPONSE ERROR DEFAULT =====
         // Response default untuk error yang tidak spesifik
         return new Response("Terjadi kesalahan pada server", { status: 500 });
       })
@@ -288,15 +351,15 @@ class Server {
         () => {
           // Callback ketika server berhasil start
           console.log(
-            `🦊 Backend Server telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
+            `🦊 Server Backend telah berjalan pada ${this.app.server?.hostname}:${this.app.server?.port}`
           );
         }
       );
 
     // ===== BACKGROUND TASKS & INTERVALS =====
     
-    // ===== CLEANUP INTERVALS STORAGE =====
-    const intervals: ReturnType<typeof setInterval>[] = []; // Compatible with both Bun and Node
+    // ===== PENYIMPANAN INTERVALS CLEANUP =====
+    const intervals: ReturnType<typeof setInterval>[] = []; // Kompatibel dengan Bun dan Node
     
     // ===== DEVICE COMMAND CLEANUP TASK =====
     // Cleanup command lama yang pending setiap 30 detik untuk mencegah command menumpuk
@@ -320,7 +383,7 @@ class Server {
       } catch (error: any) {
         console.error("❌ Kesalahan saat membersihkan command device:", error);
         
-        // ===== CONNECTION ERROR HANDLING =====
+        // ===== PENANGANAN ERROR KONEKSI =====
         // Check jika error disebabkan oleh masalah koneksi database
         if (error.code === "PROTOCOL_CONNECTION_LOST" || 
             error.code === "ER_CONNECTION_LOST" || 
@@ -329,7 +392,7 @@ class Server {
             error.code === "ETIMEDOUT" ||
             error.message?.includes('Pool is closed')) {
           console.log("🔄 Kesalahan koneksi database terdeteksi saat pembersihan command");
-          // Let the health check mechanism handle reconnection
+          // Biarkan health check mechanism menangani reconnection
         }
       }
     }, 30000); // Interval 30 detik
@@ -361,7 +424,7 @@ class Server {
       } catch (error: any) {
         console.error("Gagal refresh secret:", error);
         
-        // ===== CONNECTION ERROR HANDLING =====
+        // ===== PENANGANAN ERROR KONEKSI =====
         // Check jika error disebabkan oleh masalah koneksi database
         if (error.code === "PROTOCOL_CONNECTION_LOST" || 
             error.code === "ER_CONNECTION_LOST" || 
@@ -370,39 +433,39 @@ class Server {
             error.code === "ETIMEDOUT" ||
             error.message?.includes('Pool is closed')) {
           console.log("🔄 Kesalahan koneksi database saat refresh secret");
-          // Let the health check mechanism handle reconnection
+          // Biarkan health check mechanism menangani reconnection
         }
-        return; // Exit dari fungsi jika terjadi error
+        return; // Keluar dari fungsi jika terjadi error
       }
     }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000); // Interval dari environment variable
     intervals.push(secretRefreshInterval);
 
     // ===== DATABASE HEALTH MONITOR =====
-    // Monitor database health dan auto-reconnect jika diperlukan
+    // Monitor kesehatan database dan auto-reconnect jika diperlukan
     const healthCheckInterval = setInterval(async () => {
       try {
         const isHealthy = await MySQLDatabase.healthCheck();
         if (!isHealthy) {
-          console.log("🔄 Health check database gagal, mencoba reconnect...");
+          console.log("🔄 Pemeriksaan kesehatan database gagal, mencoba reconnect...");
           this.db = await MySQLDatabase.forceReconnectWithRetry();
           
           // Reinitialize services dengan database connection baru
           await this.reinitializeServices();
         }
       } catch (error) {
-        console.error("❌ Kesalahan health check monitor:", error);
+        console.error("❌ Kesalahan monitor pemeriksaan kesehatan:", error);
       }
     }, 60000); // Check setiap 1 menit
     intervals.push(healthCheckInterval);
 
     // ===== PENANGANAN SHUTDOWN GRACEFUL =====
     const gracefulShutdown = async (signal: string) => {
-      console.log(`\n🛑 Menerima signal ${signal}. Memulai graceful shutdown...`);
+      console.log(`\n🛑 Menerima signal ${signal}. Memulai shutdown graceful...`);
       
-      // Clear all intervals (Bun compatible)
+      // Clear semua intervals (kompatibel dengan Bun)
       intervals.forEach(interval => clearInterval(interval));
       
-      // Close database connections
+      // Tutup koneksi database
       try {
         await MySQLDatabase.shutdown();
         console.log("✅ Koneksi database ditutup");
@@ -410,7 +473,7 @@ class Server {
         console.error("❌ Kesalahan saat menutup database:", error);
       }
       
-      // Close MQTT connection
+      // Tutup koneksi MQTT
       try {
         this.mqttClient.end();
         console.log("✅ Koneksi MQTT ditutup");
@@ -422,22 +485,22 @@ class Server {
       process.exit(0);
     };
 
-    // Register shutdown handlers (Bun runtime compatible)
+    // Daftarkan shutdown handlers (kompatibel dengan Bun runtime)
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-    // Note: SIGUSR2 is primarily for nodemon, but keeping for compatibility
+    // Catatan: SIGUSR2 terutama untuk nodemon, tetapi tetap disimpan untuk kompatibilitas
     if (process.platform !== 'win32') {
       process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2'));
     }
   }
 
   // ===== REINITIALIZE SERVICES =====
-  // Method untuk reinisialisasi services dengan database connection baru
+  // Method untuk reinisialisasi services dengan koneksi database baru
   private async reinitializeServices(): Promise<void> {
     try {
       console.log("🔄 Menginisialisasi ulang service dengan koneksi database baru...");
       
-      // Reinitialize core services
+      // Reinitialize service inti
       this.authService = new AuthService(this.db);
       this.userService = new UserService(this.db);
       this.widgetService = new WidgetService(this.db);

@@ -109,9 +109,9 @@ export default function DashboardToolbar({
             onClick={() => setEditState()} // Activate edit mode
             disabled={dashboardState} // Disable jika dashboard dalam state loading
           >
-            <span className="sr-only">Ubah</span> {/* Teks screen reader */}
+            <span className="sr-only">Edit</span> {/* Teks screen reader */}
             <Move className="w-4 h-4 sm:w-5 sm:h-5" /> {/* Move icon untuk edit */}
-            <span className="ml-1 inline">Ubah</span>
+            <span className="ml-1 inline">Edit</span>
           </Button>
           
           {/* Dashboard Time Filter component untuk filter data */}

@@ -216,12 +216,12 @@ export default function DashboardTimeFilter({
         >
           <div className="flex items-center gap-2">
             <CalendarSearch className="w-4 h-4" />
-            <span className="inline">Filter Data</span>
+            <span className="inline">Filter</span>
             <span className="text-xs text-muted-foreground">
               {isMobile || isMedium 
                 // Format tampilan yang berbeda untuk mobile dan desktop
                 ? `(${filterType === "time" ? currentOption?.value : currentOption?.value + " data"})`
-                : `(${currentOption?.description || "Data dalam 1 menit terakhir"})`
+                : `(${currentOption?.description})`
               }
             </span>
           </div>

@@ -79,16 +79,18 @@ export class MQTTService {
         serverTimestamp: Math.floor(Date.now()),
       });
 
-      console.log(`📤 [MQTT RESPONSE] Mengirim respons ke topik: ${topic}`);
+      // Optimasi: Logging minimal hanya jika diperlukan
+      // console.log(`📤 [MQTT RESPONSE] Mengirim respons ke topik: ${topic}`);
 
       this.mqttClient.publish(topic, responseMessage, { 
         retain: false,
-        qos: 1,
       }, (err) => {
-        if (!err) {
-          console.log(`✅ [MQTT RESPONSE] Respons berhasil dikirim ke ${topic}`);
-        } else {
+        if (err) {
           console.error(`❌ [MQTT RESPONSE] Gagal mengirim respons ke topik ${topic}:`, err);
+        }
+        // Optimasi: Sukses log hanya di development mode
+        else if (process.env.NODE_ENV === "development") {
+          console.log(`✅ [MQTT RESPONSE] Respons berhasil dikirim ke ${topic}`);
         }
       });
 
@@ -153,7 +155,8 @@ export class MQTTService {
 
   async saveMqttPayload(data: any) {
     try {
-      console.log(`📡 [MQTT PAYLOAD] Memulai proses penyimpanan payload MQTT`);
+      // Optimasi: Minimal logging untuk mengurangi delay
+      // console.log(`📡 [MQTT PAYLOAD] Memulai proses penyimpanan payload MQTT`);
       
       const { jwt: token } = data;
       
@@ -162,22 +165,22 @@ export class MQTTService {
         throw new Error("JWT token tidak ada di payload");
       }
 
-      // Ekstrak device_id dari JWT payload
-      console.log(`🔍 [MQTT PAYLOAD] Mengekstrak device_id dari JWT...`);
+      // Optimasi: Ekstrak device_id langsung dari JWT tanpa logging berlebihan
+      // console.log(`🔍 [MQTT PAYLOAD] Mengekstrak device_id dari JWT...`);
       let device_id;
       try {
         device_id = extractDeviceIdFromJWT(token);
         if (!device_id) {
           throw new Error("Device ID tidak ditemukan di JWT token (sub field)");
         }
-        console.log(`✅ [MQTT PAYLOAD] Device ID berhasil diekstrak: ${device_id}`);
+        // console.log(`✅ [MQTT PAYLOAD] Device ID berhasil diekstrak: ${device_id}`);
       } catch (extractError) {
         console.error(`❌ [MQTT PAYLOAD] Gagal mengekstrak device_id dari JWT:`, extractError);
         const errorMessage = extractError instanceof Error ? extractError.message : 'Unknown error';
         throw new Error(`Gagal mengekstrak device_id dari JWT: ${errorMessage}`);
       }
 
-      console.log(`🔐 [MQTT PAYLOAD] Memulai verifikasi JWT dan dekripsi untuk device: ${device_id}`);
+      // console.log(`🔐 [MQTT PAYLOAD] Memulai verifikasi JWT dan dekripsi untuk device: ${device_id}`);
       
       // Verifikasi JWT dan dekripsi AES
       const verificationResult = await this.verifyDeviceJWTAndDecrypt({
@@ -185,10 +188,10 @@ export class MQTTService {
         token,
       });
 
-      console.log(`✅ [MQTT PAYLOAD] JWT berhasil diverifikasi dan data didekripsi`);
+      // console.log(`✅ [MQTT PAYLOAD] JWT berhasil diverifikasi dan data didekripsi`);
 
       // STEP 1: Simpan raw data untuk backup dan debugging
-      console.log(`💾 [MQTT PAYLOAD] Menyimpan raw data ke database...`);
+      // console.log(`💾 [MQTT PAYLOAD] Menyimpan raw data ke database...`);
       const [rawResult] = await (this.db as any).safeQuery(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
         VALUES (?, ?, NOW())`,
@@ -202,10 +205,10 @@ export class MQTTService {
         ]
       ) as [ResultSetHeader, FieldPacket[]];
 
-      console.log(`✅ [MQTT PAYLOAD] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
+      // console.log(`✅ [MQTT PAYLOAD] Raw payload berhasil disimpan dengan ID: ${rawResult.insertId}`);
 
       // STEP 2: Parse dan normalisasi data ke tabel payloads
-      console.log(`🔄 [MQTT PAYLOAD] Memulai parsing dan normalisasi data...`);
+      // console.log(`🔄 [MQTT PAYLOAD] Memulai parsing dan normalisasi data...`);
       const normalizedPayloads = await parseAndNormalizePayload(
         this.db,
         Number(device_id),
@@ -214,45 +217,51 @@ export class MQTTService {
         verificationResult.jwtPayload
       );
 
-      console.log(`✅ [MQTT PAYLOAD] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);
+      // console.log(`✅ [MQTT PAYLOAD] Berhasil memproses ${normalizedPayloads.length} pembacaan sensor ke database`);
 
-      // STEP 3: Broadcast real-time data ke user pemilik device
-      console.log(`📡 [MQTT PAYLOAD] Mengirim data real-time ke WebSocket...`);
-      await broadcastSensorUpdates(
+      // STEP 3: Broadcast real-time data ke user pemilik device (Asinkron untuk performance)
+      // console.log(`📡 [MQTT PAYLOAD] Mengirim data real-time ke WebSocket...`);
+      broadcastSensorUpdates(
         this.db,
         broadcastToDeviceOwner,
         Number(device_id),
         verificationResult.decryptedData,
         "mqtt",
         verificationResult.jwtPayload.type || "none" // Tambahkan variabel type pada saat membuat JWT untuk menentukan sifat data (realtime / pending)
-      );
-      console.log(`✅ [MQTT PAYLOAD] Data real-time berhasil dikirim`);
+      ).catch(error => {
+        console.error(`❌ [MQTT PAYLOAD] Error broadcast WebSocket:`, error);
+      });
+      // console.log(`✅ [MQTT PAYLOAD] Data real-time berhasil dikirim`);
 
-      // STEP 4: Update device status to online dan last_seen_at (real-time)
+      // STEP 4: Update device status asinkron untuk performance (non-blocking)
       if (this.deviceStatusService) {
-        console.log(`⏰ [MQTT PAYLOAD] Memperbarui status device ke online dan timestamp...`);
-        // Update status ke online DAN last_seen_at sekaligus
-        await this.deviceStatusService.updateDeviceStatusOnly(device_id, "online");
-        await this.deviceStatusService.updateDeviceLastSeen(Number(device_id));
-        console.log(`✅ [MQTT PAYLOAD] Device ${device_id} status updated to online`);
-        
-        // Broadcast status online ke user pemilik device untuk real-time update
-        await broadcastToDeviceOwner(this.db, Number(device_id), {
-          type: "status_update",
-          device_id: Number(device_id),
-          status: "online",
-          last_seen: new Date().toISOString(),
+        // console.log(`⏰ [MQTT PAYLOAD] Memperbarui status device ke online dan timestamp...`);
+        // Update status secara asinkron
+        Promise.all([
+          this.deviceStatusService.updateDeviceStatusOnly(device_id, "online"),
+          this.deviceStatusService.updateDeviceLastSeen(Number(device_id)),
+          broadcastToDeviceOwner(this.db, Number(device_id), {
+            type: "status_update",
+            device_id: Number(device_id),
+            status: "online",
+            last_seen: new Date().toISOString(),
+          })
+        ]).catch(error => {
+          console.error(`❌ [MQTT PAYLOAD] Error update status:`, error);
         });
+        // console.log(`✅ [MQTT PAYLOAD] Device ${device_id} status updated to online`);
       }
 
-      // STEP 5: Check alarms setelah payload disimpan
+      // STEP 5: Check alarms asinkron untuk performance (non-critical)
       if (this.notificationService) {
-        console.log(`🚨 [MQTT PAYLOAD] Memeriksa kondisi alarm untuk device ${device_id}...`);
-        await this.notificationService.checkAlarms(
+        // console.log(`🚨 [MQTT PAYLOAD] Memeriksa kondisi alarm untuk device ${device_id}...`);
+        this.notificationService.checkAlarms(
           Number(device_id),
           verificationResult.decryptedData
-        );
-        console.log(`✅ [MQTT PAYLOAD] Pemeriksaan alarm selesai`);
+        ).catch(error => {
+          console.error(`❌ [MQTT PAYLOAD] Error check alarms:`, error);
+        });
+        // console.log(`✅ [MQTT PAYLOAD] Pemeriksaan alarm selesai`);
       }
       
       return rawResult.insertId;
@@ -271,7 +280,8 @@ export class MQTTService {
     this.mqttClient.on("message", async (topic, message) => {
       const timestampReceive = Math.floor(Date.now());
       try {
-        console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic} - Timestamp server: ${timestampReceive}`);
+        // Optimasi: Minimal logging hanya untuk debug penting
+        // console.log(`📥 [MQTT] Menerima pesan dari topik: ${topic} - Timestamp server: ${timestampReceive}`);
 
         const messageStr = message.toString().trim();
         let data: any;
@@ -279,7 +289,6 @@ export class MQTTService {
         // Cek apakah payload adalah JWT token langsung atau JSON object
         if (messageStr.startsWith('eyJ') && messageStr.includes('.')) {
           // Payload adalah JWT token langsung
-          console.log(`🔐 [MQTT] Payload adalah JWT token langsung`);
           data = { jwt: messageStr, topic: topic };
         } else {
           // Payload adalah JSON object
@@ -289,11 +298,11 @@ export class MQTTService {
             
             // FILTER: Abaikan respons server untuk mencegah infinite loop
             if (data.status && (data.status === 'success' || data.status === 'failed') && data.serverTimestamp) {
-              console.log(`🔄 [MQTT] Mengabaikan respons server dari topik ${topic}`);
+              // console.log(`🔄 [MQTT] Mengabaikan respons server dari topik ${topic}`);
               return; // Skip processing respons server
             }
             
-            console.log(`✅ [MQTT] Pesan berhasil diparsing sebagai JSON`);
+            // console.log(`✅ [MQTT] Pesan berhasil diparsing sebagai JSON`);
           } catch (parseError) {
             console.error(`❌ [MQTT] Gagal parsing JSON payload:`, parseError);
             const errorMessage = parseError instanceof Error ? parseError.message : 'Kesalahan parsing yang tidak diketahui';
@@ -302,25 +311,23 @@ export class MQTTService {
         }
 
         // Proses payload MQTT (device_id sekarang selalu dari JWT sub field)
-        const insertId = await this.saveMqttPayload(data);
+        await this.saveMqttPayload(data);
 
-        // Kirim respons balik ke ESP setelah berhasil menyimpan
-        await this.publishResponse(topic, {
+        // Optimasi: Kirim respons secara asinkron tanpa await untuk mengurangi delay
+        this.publishResponse(topic, {
           status: "success",
           message: "Payload berhasil disimpan dan diproses",
-          data: {
-            insertId: insertId,
-            processedAt: new Date().toISOString(),
-            timestamp: timestampReceive,
-          }
         });
 
-        const timestampSave = Math.floor(Date.now());
-        console.log(`🎉 [MQTT] Berhasil menyimpan payload dari topik ${topic} - Timestamp simpan: ${timestampSave}`);
+        // Optimasi: Logging minimal hanya jika diperlukan debugging
+        if (process.env.NODE_ENV === "development") {
+          const timestampSave = Math.floor(Date.now());
+          console.log(`🎉 [MQTT] Payload tersimpan dari topik ${topic} - Delay: ${timestampSave - timestampReceive}ms`);
+        }
 
       } catch (error) {
-        // Kirim respons error balik ke ESP
-        await this.publishResponse(topic, {
+        // Kirim respons error balik ke ESP (asinkron)
+        this.publishResponse(topic, {
           status: "failed",
           message: "Gagal memproses payload",
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -328,8 +335,8 @@ export class MQTTService {
         });
 
         console.error(
-          `❌ [MQTT] Gagal memproses pesan MQTT dari topik ${topic}:`,
-          error
+          `❌ [MQTT] Gagal memproses pesan dari topik ${topic}:`,
+          error instanceof Error ? error.message : error
         );
       }
     });
