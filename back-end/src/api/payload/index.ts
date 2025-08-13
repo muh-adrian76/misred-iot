@@ -225,8 +225,8 @@ export function payloadRoutes(payloadService: PayloadService) {
           try {
             // await authorizeRequest(jwt, cookie);
             const timeRange = query.range || "1h"; // Default 1 jam
-            const count = query.count; // Parameter count untuk filter berdasarkan jumlah data
-            
+            const count = query.count || "10"; // Parameter count untuk filter berdasarkan jumlah data
+
             // Ambil time series data dengan filter range atau count
             const data = await payloadService.getTimeSeriesData(
               params.device_id,

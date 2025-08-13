@@ -196,7 +196,19 @@ export class MySQLDatabase {
           return await pool.query(sql, params);
         } else {
           // Use execute() for regular queries (supports prepared statements)
-          return await pool.execute(sql, params);
+          try {
+            return await pool.execute(sql, params);
+          } catch (executeError: any) {
+            // Fallback: if execute() fails with ER_WRONG_ARGUMENTS, try query()
+            if (executeError.code === 'ER_WRONG_ARGUMENTS') {
+              console.warn(`⚠️ [FALLBACK] execute() failed with ER_WRONG_ARGUMENTS, falling back to query()...`);
+              console.warn(`⚠️ [FALLBACK] SQL:`, sql);
+              console.warn(`⚠️ [FALLBACK] Params:`, params);
+              console.warn(`⚠️ [FALLBACK] Param types:`, params?.map(p => `${p} (${typeof p})`));
+              return await pool.query(sql, params);
+            }
+            throw executeError;
+          }
         }
       } catch (error: any) {
         lastError = error;

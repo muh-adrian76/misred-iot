@@ -225,6 +225,20 @@ export class PayloadService {
         throw new Error(`Invalid device_id (${device_id}) or datastream_id (${datastream_id}) - must be positive integers`);
       }
 
+      console.log(`🔍 [DEBUG] Input parameters:`, { 
+        device_id, datastream_id, timeRange, count,
+        deviceIdNum, datastreamIdNum,
+        deviceIdIsInteger: Number.isInteger(deviceIdNum),
+        datastreamIdIsInteger: Number.isInteger(datastreamIdNum)
+      });
+
+      console.log(`🖥️ [DEBUG] Environment info:`, {
+        nodeVersion: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        env: process.env.NODE_ENV || 'development'
+      });
+
       let query = '';
       let queryParams: number[] = []; // Eksplisit gunakan number[]
       let timeCondition = ''; // Deklarasi di scope yang tepat
@@ -249,13 +263,49 @@ export class PayloadService {
           ORDER BY COALESCE(p.device_time, p.server_time) DESC
           LIMIT ?`;
           
-          queryParams = [
-            parseInt(device_id, 10),      // Force integer
-            parseInt(datastream_id, 10),  // Force integer  
-            parseInt(count, 10)           // Force integer
-          ];
+          // CRITICAL FIX: Ultra-explicit parameter casting for strict MySQL
+          const param1 = parseInt(device_id, 10);
+          const param2 = parseInt(datastream_id, 10);  
+          const param3 = parseInt(count, 10);
+          
+          // Double check parameter validity
+          if (!Number.isInteger(param1) || param1 <= 0) {
+            throw new Error(`device_id parameter invalid: ${param1}`);
+          }
+          if (!Number.isInteger(param2) || param2 <= 0) {
+            throw new Error(`datastream_id parameter invalid: ${param2}`);
+          }
+          if (!Number.isInteger(param3) || param3 <= 0) {
+            throw new Error(`count parameter invalid: ${param3}`);
+          }
+          
+          queryParams = [param1, param2, param3];
+          
+          console.log(`📊 [DEBUG] Count filter query params:`, queryParams);
+          console.log(`🔢 [DEBUG] Parameter types:`, queryParams.map(p => `${p} (${typeof p})`));
+          console.log(`🔢 [DEBUG] Parameter validation:`, {
+            param1_isInteger: Number.isInteger(queryParams[0]),
+            param2_isInteger: Number.isInteger(queryParams[1]), 
+            param3_isInteger: Number.isInteger(queryParams[2]),
+            param1_value: queryParams[0],
+            param2_value: queryParams[1],
+            param3_value: queryParams[2],
+            all_are_primitives: queryParams.every(p => typeof p === 'number' && p === Math.floor(p))
+          });
+          
+          // CRITICAL: Validasi bahwa semua parameter adalah valid integers
+          const allValidIntegers = queryParams.every(p => Number.isInteger(p) && p > 0);
+          console.log(`✅ [DEBUG] All count parameters are valid positive integers: ${allValidIntegers}`);
+          
+          if (!allValidIntegers) {
+            throw new Error(`Invalid parameter types for MySQL count prepared statement: ${JSON.stringify(queryParams.map(p => `${p} (${typeof p}) isInteger=${Number.isInteger(p)}`))}`);
+          }
+          
+          console.log(`🚀 [DEBUG] About to execute COUNT query with params:`, queryParams);
           
           const [rows]: any = await (this.db as any).safeQuery(query, queryParams);
+          
+          console.log(`✅ [DEBUG] COUNT Query executed successfully, rows returned: ${rows.length}`);
           
           // Jika menggunakan count filter, perlu reverse order untuk menampilkan chronological
           return (rows as any[]).reverse();
@@ -266,11 +316,19 @@ export class PayloadService {
 
       // Jika filter berdasarkan time range (atau fallback dari count invalid)
       if (!count || count === 'all') {
-        // CRITICAL FIX: Explicit integer casting for MySQL prepared statements  
-        queryParams = [
-          parseInt(device_id, 10),      // Force integer conversion from string
-          parseInt(datastream_id, 10)   // Force integer conversion from string
-        ];
+        // CRITICAL FIX: Ultra-explicit parameter casting for strict MySQL
+        const param1 = parseInt(device_id, 10);
+        const param2 = parseInt(datastream_id, 10);
+        
+        // Double check parameter validity
+        if (!Number.isInteger(param1) || param1 <= 0) {
+          throw new Error(`device_id parameter invalid: ${param1}`);
+        }
+        if (!Number.isInteger(param2) || param2 <= 0) {
+          throw new Error(`datastream_id parameter invalid: ${param2}`);
+        }
+        
+        queryParams = [param1, param2];
         
         console.log(`⏰ [DEBUG] Using time-based filtering with range: ${timeRange}`);
         console.log(`📊 [DEBUG] Time filter query params:`, queryParams);
@@ -279,7 +337,8 @@ export class PayloadService {
           param1_isInteger: Number.isInteger(queryParams[0]),
           param2_isInteger: Number.isInteger(queryParams[1]),
           param1_value: queryParams[0],
-          param2_value: queryParams[1]
+          param2_value: queryParams[1],
+          all_are_primitives: queryParams.every(p => typeof p === 'number' && p === Math.floor(p))
         });
         // Jika tidak ada parameter range atau range kosong, ambil semua data
         if (!timeRange || timeRange === 'all') {
