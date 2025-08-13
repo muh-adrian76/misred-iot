@@ -48,17 +48,17 @@ export class MySQLDatabase {
         // Test koneksi awal untuk memastikan database dapat diakses
         MySQLDatabase.instance.execute("SELECT 1")
           .then(() => {
-            console.log("✅ Terkoneksi ke Database MySQL.");
+            console.log("✅ Connected to MySQL Database");
             MySQLDatabase.reconnectAttempts = 0;
           })
           .catch((err) => {
-            console.error("❌ Tes koneksi awal MySQL gagal:", err);
+            console.error("❌ MySQL connection test failed:", err?.message || err);
             // Reset instance jika koneksi gagal untuk retry berikutnya
             MySQLDatabase.instance = null;
           });
           
-      } catch (err) {
-        console.error("❌ Gagal konek ke database:", err);
+      } catch (err: any) {
+        console.error("❌ Failed to connect to database:", err?.message || err);
         MySQLDatabase.instance = null; // Reset instance
         throw err; // Re-throw error untuk handling di level atas
       }
@@ -72,7 +72,7 @@ export class MySQLDatabase {
     if (MySQLDatabase.isReconnecting) return;
     
     MySQLDatabase.isReconnecting = true;
-    console.log('🔄 Menangani koneksi MySQL yang terputus...');
+    // Silently handle disconnection and attempt reconnection
     
     try {
       await MySQLDatabase.forceReconnectWithRetry();
@@ -89,7 +89,7 @@ export class MySQLDatabase {
     }
 
     MySQLDatabase.reconnectAttempts++;
-    console.log(`🔄 Memaksa reconnect MySQL... (Percobaan ${MySQLDatabase.reconnectAttempts}/${MySQLDatabase.maxReconnectAttempts})`);
+    // Attempt MySQL reconnection (attempt ${MySQLDatabase.reconnectAttempts}/${MySQLDatabase.maxReconnectAttempts})
     
     if (MySQLDatabase.instance) {
       try {
@@ -115,12 +115,12 @@ export class MySQLDatabase {
   // Method untuk memaksa reconnect database (berguna saat koneksi terputus)
   static forceReconnect(): Pool {
     if (MySQLDatabase.instance) {
-      console.log("🔄 Memaksa reconnect MySQL...");
+      // Force reconnect MySQL connection
       try {
         // Tutup pool connection yang ada
         MySQLDatabase.instance.end();
-      } catch (err) {
-        console.warn("⚠️ Kesalahan saat menutup pool yang ada:", err);
+      } catch (err: any) {
+        console.warn("⚠️ Error closing existing pool:", err?.message || err);
       }
       MySQLDatabase.instance = null; // Reset instance
     }
@@ -146,19 +146,19 @@ export class MySQLDatabase {
       await Promise.race([healthPromise, timeoutPromise]);
       return true; // Koneksi sehat
     } catch (error: any) {
-      console.error("❌ Health check MySQL gagal:", error);
+      console.error("❌ MySQL health check failed:", error?.message || error);
       
       // Auto reconnect on certain errors
       if (error.message?.includes('Pool is closed') || 
           error.code === 'PROTOCOL_CONNECTION_LOST' ||
           error.code === 'ER_CONNECTION_LOST' ||
           error.code === 'ECONNRESET') {
-        console.log('🔄 Mencoba reconnect otomatis karena pemeriksaan kesehatan gagal...');
+        // Auto-reconnect on health check failure
         try {
           await MySQLDatabase.forceReconnectWithRetry();
           return true;
-        } catch (reconnectError) {
-          console.error('❌ Reconnect otomatis gagal:', reconnectError);
+        } catch (reconnectError: any) {
+          console.error('❌ Auto-reconnect failed:', reconnectError?.message || reconnectError);
         }
       }
       return false; // Koneksi bermasalah
@@ -201,10 +201,7 @@ export class MySQLDatabase {
           } catch (executeError: any) {
             // Fallback: if execute() fails with ER_WRONG_ARGUMENTS, try query()
             if (executeError.code === 'ER_WRONG_ARGUMENTS') {
-              console.warn(`⚠️ [FALLBACK] execute() failed with ER_WRONG_ARGUMENTS, falling back to query()...`);
-              console.warn(`⚠️ [FALLBACK] SQL:`, sql);
-              console.warn(`⚠️ [FALLBACK] Params:`, params);
-              console.warn(`⚠️ [FALLBACK] Param types:`, params?.map(p => `${p} (${typeof p})`));
+              // Silent fallback to query() - MySQL execute() is sometimes strict with parameter types
               return await pool.query(sql, params);
             }
             throw executeError;
@@ -212,22 +209,23 @@ export class MySQLDatabase {
         }
       } catch (error: any) {
         lastError = error;
-        console.error(`❌ Percobaan query ke-${attempt} gagal:`, error);
-        
+        // Only log critical database connection errors
         if (error.message?.includes('Pool is closed') || 
             error.code === 'PROTOCOL_CONNECTION_LOST' ||
             error.code === 'ER_CONNECTION_LOST' ||
             error.code === 'ECONNRESET') {
           
+          console.error(`❌ Database connection error (attempt ${attempt}/3):`, error.message);
+          
           if (attempt < 3) {
-            console.log(`🔄 Mencoba reconnect database (percobaan ${attempt}/3)...`);
+            console.log(`🔄 Reconnecting to database...`);
             try {
               await MySQLDatabase.forceReconnectWithRetry();
               // Wait a bit before retry
               await new Promise(resolve => setTimeout(resolve, 1000));
               continue;
-            } catch (reconnectError) {
-              console.error('❌ Reconnect gagal:', reconnectError);
+            } catch (reconnectError: any) {
+              console.error('❌ Database reconnect failed:', reconnectError?.message || reconnectError);
             }
           }
         }

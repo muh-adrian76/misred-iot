@@ -314,10 +314,10 @@ export class MQTTService {
         await this.saveMqttPayload(data);
 
         // Optimasi: Kirim respons secara asinkron tanpa await untuk mengurangi delay
-        this.publishResponse(topic, {
-          status: "success",
-          message: "Payload berhasil disimpan dan diproses",
-        });
+        // this.publishResponse(topic, {
+        //   status: "success",
+        //   message: "Payload berhasil disimpan dan diproses",
+        // });
 
         // Optimasi: Logging minimal hanya jika diperlukan debugging
         if (process.env.NODE_ENV === "development") {
@@ -327,12 +327,12 @@ export class MQTTService {
 
       } catch (error) {
         // Kirim respons error balik ke ESP (asinkron)
-        this.publishResponse(topic, {
-          status: "failed",
-          message: "Gagal memproses payload",
-          error: error instanceof Error ? error.message : 'Unknown error',
-          timestamp: timestampReceive
-        });
+        // this.publishResponse(topic, {
+        //   status: "failed",
+        //   message: "Gagal memproses payload",
+        //   error: error instanceof Error ? error.message : 'Unknown error',
+        //   timestamp: timestampReceive
+        // });
 
         console.error(
           `❌ [MQTT] Gagal memproses pesan dari topik ${topic}:`,
