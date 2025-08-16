@@ -297,8 +297,8 @@ export default function DeviceContent({
               setSelectedRows={setSelectedRows}
               onAdd={() => setAddFormOpen(true)}
               onUploadFirmware={() => setUploadFirmwareSheetOpen(true)}
-              showUploadFirmware={true}
-              showConnectionInfo={true}
+              showUploadFirmware={true} // Ubah ke false untuk menyembunyikan opsi OTAA
+              showConnectionInfo={true} // Ubah ke false untuk menyembunyikan dokumentasi github
               rowActions={rowActions}
               onDelete={(selected) => {
                 if (Array.isArray(selected)) {

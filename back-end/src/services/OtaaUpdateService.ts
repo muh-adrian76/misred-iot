@@ -352,8 +352,6 @@ export class OtaaUpdateService {
   // Menghapus firmware beserta file fisiknya
   async deleteFirmware(id: string, user_id: number) {
     try {
-      console.log(`🗑️ [DELETE FIRMWARE] Memulai penghapusan untuk ID: ${id}, User: ${user_id}`);
-      
       // Get firmware info sebelum menghapus
       const [firmware]: any = await (this.db as any).safeQuery(
         "SELECT firmware_url FROM otaa_updates WHERE id = ? AND user_id = ?",
@@ -364,12 +362,12 @@ export class OtaaUpdateService {
         // Hapus file fisik dari storage
         try {
           const filePath = firmware[0].firmware_url.replace('/public/', `${process.cwd()}/src/assets/`);
-          console.log(`🔍 [DELETE FIRMWARE] Mencoba menghapus file: ${filePath}`);
+          // console.log(`🔍 [DELETE FIRMWARE] Mencoba menghapus file: ${filePath}`);
           
           // Cek apakah file ada sebelum mencoba menghapus
           if (existsSync(filePath)) {
             unlinkSync(filePath); // Hapus file secara sinkron
-            console.log(`✅ [DELETE FIRMWARE] Berhasil menghapus file firmware: ${filePath}`);
+            // console.log(`✅ [DELETE FIRMWARE] Berhasil menghapus file firmware: ${filePath}`);
           } else {
             console.warn(`⚠️ [DELETE FIRMWARE] Berkas tidak ditemukan: ${filePath}`);
           }
@@ -387,7 +385,7 @@ export class OtaaUpdateService {
       ) as [ResultSetHeader, FieldPacket[]];
       
       const success = result.affectedRows > 0;
-      console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Hasil penghapusan di database: ${result.affectedRows} baris terpengaruh`);
+      // console.log(`${success ? '✅' : '❌'} [DELETE FIRMWARE] Hasil penghapusan di database: ${result.affectedRows} baris terpengaruh`);
       
       return success;
     } catch (error) {

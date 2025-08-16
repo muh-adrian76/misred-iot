@@ -209,7 +209,7 @@ export default function AlarmContent({
         setSelectedRows={setSelectedRows} // Setter baris yang dipilih
         onAdd={() => setAddFormOpen(true)} // Handler untuk tombol tambah
         rowActions={rowActions} // Aksi pada setiap baris
-        showNotificationInfo={true} // Tampilkan info notifikasi
+        showNotificationInfo={true} // Ubah ke false untuk menyembunyikan informasi notifikasi
         onDelete={(selected) => {
           // Handler untuk aksi delete (single atau bulk)
           if (Array.isArray(selected)) {

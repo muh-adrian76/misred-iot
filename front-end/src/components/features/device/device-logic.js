@@ -160,7 +160,7 @@ export function useDeviceLogic() {
   // Handler ketika unggah firmware selesai
   const handleFirmwareUploaded = (data) => {
     successToast("Firmware berhasil diunggah!");
-    setUploadFirmwareSheetOpen(false);
+    // setUploadFirmwareSheetOpen(false); // Aktifkan untuk langsung menutup fitur OTA setelah selesai upload
     // Refresh daftar perangkat untuk mengambil info firmware terbaru bila diperlukan
     fetchDevices();
   };

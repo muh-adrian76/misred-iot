@@ -111,7 +111,7 @@ export default function OtaaUploadSection({
       const data = await res.json();
       
       const affectedDevices = getDeviceCountByBoard(selectedBoardType);
-  // successToast(`Firmware berhasil diunggah untuk ${affectedDevices} perangkat ${selectedBoardType}!`);
+      // successToast(`Berhasil mengupload firmware untuk ${affectedDevices} perangkat ${selectedBoardType}!`);
       
       // Reset form
       setSelectedBoardType("");
