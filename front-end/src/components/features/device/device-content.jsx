@@ -297,7 +297,7 @@ export default function DeviceContent({
               setSelectedRows={setSelectedRows}
               onAdd={() => setAddFormOpen(true)}
               onUploadFirmware={() => setUploadFirmwareSheetOpen(true)}
-              showUploadFirmware={false}
+              showUploadFirmware={true}
               showConnectionInfo={true}
               rowActions={rowActions}
               onDelete={(selected) => {
