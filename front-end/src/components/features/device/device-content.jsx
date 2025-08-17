@@ -238,7 +238,7 @@ export default function DeviceContent({
         setDeleteFormOpen(true);
       },
     },
-    // Tambahkan aksi lain di sini, misal:
+    // Tambahkan aksi lain di sini
   ];
 
   if (!loading && devices.length === 0) {
@@ -297,7 +297,7 @@ export default function DeviceContent({
               setSelectedRows={setSelectedRows}
               onAdd={() => setAddFormOpen(true)}
               onUploadFirmware={() => setUploadFirmwareSheetOpen(true)}
-              showUploadFirmware={true} // Ubah ke false untuk menyembunyikan opsi OTAA
+              showUploadFirmware={false} // Ubah ke false untuk menyembunyikan opsi OTAA
               showConnectionInfo={true} // Ubah ke false untuk menyembunyikan dokumentasi github
               rowActions={rowActions}
               onDelete={(selected) => {

@@ -71,7 +71,8 @@ export default function DashboardSelect({
             <SquarePen
               className="relative h-5 w-5 text-muted-foreground" // Ikon dekoratif
               aria-hidden="true" // Hanya dekorasi
-            /> {/* Ikon tidak interaktif; onClick salah dihapus */}
+            />{" "}
+            {/* Ikon tidak interaktif; onClick salah dihapus */}
           </div>
         </div>
       ) : (
@@ -94,7 +95,13 @@ export default function DashboardSelect({
               </PopoverTrigger>
             </DescriptionTooltip>
             {/* Popover content dengan Command component untuk search functionality */}
-            <PopoverContent className={cn("p-0", className)} align={align}>
+            <PopoverContent
+              className={cn(
+                "p-0 w-[300px] max-sm:w-[calc(60vw-16px)]",
+                className
+              )}
+              align={align}
+            >
               <Command>
                 {" "}
                 {/* Command component untuk search dan selection */}
@@ -108,16 +115,16 @@ export default function DashboardSelect({
                   {/* Empty state message */}
                   <CommandGroup>
                     {/* Render semua options sebagai selectable items */}
-          {options.map((option) => (
+                    {options.map((option) => (
                       <CommandItem
                         key={option.value} // Unique key untuk list rendering
                         value={option.value} // Value untuk selection
-            className="hover:font-semibold w-[200px]" // Perbaikan typo width class
+                        className="hover:font-semibold w-full" // Full width untuk mengikuti parent
                         onSelect={(currentValue) => {
                           // Debug logging (commented out)
                           // console.log('DashboardSelect: Tab change requested from', value, 'to', currentValue, 'option:', option);
-
-                          // Only call onChange jika value berbeda untuk prevent unnecessary re-renders
+                          
+                          // Panggil onChange handler dengan value yang dipilih
                           if (currentValue !== value) {
                             // console.log('DashboardSelect: Calling onChange with:', option.value);
                             onChange(option.value); // Use option.value instead of currentValue untuk consistency
