@@ -7,6 +7,7 @@
 #include <WiFiUdp.h>
 
 // ---- SETUP VARIABEL ------
+// Sesuaikan dengan nilai UID dan JWT Secret pada halaman Devices -- PENTING
 #define DEVICE_ID "2"
 #define JWT_SECRET "1e22a7bc8aa0bd2ba64d200fb62c551f"
 
@@ -19,9 +20,10 @@ const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // MQTT configuration
-const char* mqtt_server = "103.82.241.46";
-// const char* mqtt_server = "192.168.18.238";
+const char* mqtt_server = "103.82.241.46"; // VPS
+// const char* mqtt_server = "192.168.18.238"; // Local
 const int mqtt_port = 1883;
+// Sesuaikan dengan nilai Topik MQTT pada halaman Devices -- PENTING
 const char* mqtt_topic = "device/data";
 
 // Device configuration (akan di-update otomatis dari server)
@@ -157,6 +159,7 @@ void sendSensorDataMQTT() {
   float ntuValue = readNTUSensor();
   
   // Create sensor data payload
+  // Sesuaikan dengan Virtual Pin yang ditambahkan pada halaman Datastreams -- PENTING
   StaticJsonDocument<256> sensorDoc;
   sensorDoc["V0"] = phValue;        // pH sensor on pin A0
   sensorDoc["V1"] = flowValue;      // Flow sensor on pin A1  

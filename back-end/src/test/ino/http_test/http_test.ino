@@ -7,6 +7,7 @@
 #include <NTPClient.h>
 
 // ---- SETUP VARIABEL ------
+// Sesuaikan dengan nilai UID dan JWT Secret pada halaman Devices -- PENTING
 #define DEVICE_ID "1"
 #define JWT_SECRET "23050c3dcef3c669690aab113a21c3b2"
 
@@ -19,9 +20,9 @@ const char* ssid = "K.WATT -2.4G";
 const char* password = "KentungMusthofa";
 
 // Server configuration
-const char* server_url = "http://192.168.18.238:7601";
-// const char* server_url = "https://api.misred-iot.com";
-// const char* server_url = "http://103.82.241.46:9800";
+const char* server_url = "http://192.168.18.238:7601"; // Local
+// const char* server_url = "https://api.misred-iot.com"; // VPS
+// const char* server_url = "http://103.82.241.46:9800"; // VPS HTTP
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;
@@ -127,6 +128,7 @@ void sendSensorDataHTTP() {
   float ntuValue = readNTUSensor();
   
   // Create sensor data payload
+  // Sesuaikan dengan Virtual Pin yang ditambahkan pada halaman Datastreams -- PENTING
   StaticJsonDocument<256> sensorDoc;
   sensorDoc["V0"] = phValue;        // pH sensor on pin A0
   sensorDoc["V1"] = flowValue;      // Flow sensor on pin A1  
