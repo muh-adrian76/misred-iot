@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/providers/websocket-provider";
 import { useUser } from "@/providers/user-provider";
+import { useServiceWorker } from "@/hooks/use-service-worker";
 import { fetchFromBackend } from "@/lib/helper";
 import DescriptionTooltip from "./description-tooltip";
 import NotifHistory from "./notif-history";
@@ -266,6 +267,30 @@ export function NotificationCenter({
     removeAlarmNotification,
   } = useWebSocket();
 
+  // Initialize service worker for mobile notification support
+  const { isRegistered: isServiceWorkerRegistered, showNotification: showServiceWorkerNotification, isNotificationSupported } = useServiceWorker(enableBrowserNotifications);
+
+  // Handle service worker notification clicks
+  useEffect(() => {
+    const handleServiceWorkerNotificationClick = (event) => {
+      const { notificationId } = event.detail;
+      console.log("🔔 Service Worker notification clicked:", notificationId);
+      
+      // Find the notification and call the click handler
+      const notification = displayNotifications.find(n => n.id === notificationId);
+      if (notification && onNotificationClick) {
+        onNotificationClick(notification);
+      }
+    };
+
+    // Listen for service worker notification clicks
+    window.addEventListener('sw-notification-click', handleServiceWorkerNotificationClick);
+    
+    return () => {
+      window.removeEventListener('sw-notification-click', handleServiceWorkerNotificationClick);
+    };
+  }, [displayNotifications, onNotificationClick]);
+
   // Always use database functionality - remove static mode logic
 
   // Fetch saved notifications from database using simple fetch
@@ -354,7 +379,7 @@ export function NotificationCenter({
       : "unsupported"
   );
 
-  // Request notification permission when component mounts or enableBrowserNotifications changes
+  // Request notification permission when component mounts or enableBrowserNotifications changes - Mobile safe with Service Worker
   useEffect(() => {
     const requestNotificationPermission = async () => {
       if (
@@ -362,30 +387,69 @@ export function NotificationCenter({
         typeof window !== "undefined" &&
         "Notification" in window
       ) {
-        // console.log("🔔 Current notification permission:", Notification.permission);
-        
-        if (Notification.permission === "default") {
-          try {
-            const permission = await Notification.requestPermission();
-            setBrowserNotificationPermission(permission);
-            // console.log("🔔 Permission result:", permission);
-            
-            if (permission === "granted") {
-              console.log("✅ Notification permission granted!");
-              // Show a test notification
-              new Notification("MiSREd IoT", {
-                body: "Notifikasi browser telah diaktifkan!",
-                icon: "/web-logo.svg",
-                tag: "permission-granted"
-              });
-            } else if (permission === "denied") {
-              console.warn("❌ Notification permission denied");
+        try {
+          // console.log("🔔 Current notification permission:", Notification.permission);
+          
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
+          if (Notification.permission === "default") {
+            try {
+              const permission = await Notification.requestPermission();
+              setBrowserNotificationPermission(permission);
+              // console.log("🔔 Permission result:", permission);
+              
+              if (permission === "granted") {
+                console.log("✅ Notification permission granted!");
+                
+                // Show test notification with Service Worker approach
+                try {
+                  let testNotificationShown = false;
+                  
+                  // Try service worker first
+                  if (isServiceWorkerRegistered && isNotificationSupported()) {
+                    try {
+                      await showServiceWorkerNotification("MiSREd IoT", {
+                        body: "Notifikasi browser telah diaktifkan!",
+                        icon: "/web-logo.svg",
+                        tag: "permission-granted"
+                      });
+                      testNotificationShown = true;
+                      console.log("✅ Service Worker permission test notification shown");
+                    } catch (swError) {
+                      console.warn("❌ Service worker permission test notification failed:", swError);
+                    }
+                  }
+                  
+                  // Fallback to regular notification
+                  if (!testNotificationShown && typeof Notification === 'function') {
+                    try {
+                      new Notification("MiSREd IoT", {
+                        body: "Notifikasi browser telah diaktifkan!",
+                        icon: "/web-logo.svg",
+                        tag: "permission-granted"
+                      });
+                      console.log("✅ Regular permission test notification shown");
+                    } catch (regularError) {
+                      console.warn("❌ Regular permission test notification failed:", regularError);
+                    }
+                  }
+                } catch (testNotifError) {
+                  console.warn("❌ Test notification failed:", testNotifError);
+                  // Don't break the app if test notification fails
+                }
+              } else if (permission === "denied") {
+                console.warn("❌ Notification permission denied");
+              }
+            } catch (error) {
+              console.error("❌ Error requesting notification permission:", error);
+              setBrowserNotificationPermission("denied");
             }
-          } catch (error) {
-            console.error("❌ Error requesting notification permission:", error);
+          } else {
+            setBrowserNotificationPermission(Notification.permission);
           }
-        } else {
-          setBrowserNotificationPermission(Notification.permission);
+        } catch (error) {
+          console.error("❌ Notification setup error:", error);
+          setBrowserNotificationPermission("unsupported");
         }
       }
     };
@@ -393,9 +457,9 @@ export function NotificationCenter({
     if (enableBrowserNotifications) {
       requestNotificationPermission();
     }
-  }, [enableBrowserNotifications]);
+  }, [enableBrowserNotifications, isServiceWorkerRegistered, isNotificationSupported, showServiceWorkerNotification]);
 
-  // Show browser notifications for new notifications
+  // Show browser notifications for new notifications - Mobile safe with Service Worker
   useEffect(() => {
     if (
       enableBrowserNotifications &&
@@ -410,34 +474,87 @@ export function NotificationCenter({
           )
       );
 
-      newNotifications.forEach((notification) => {
-        // console.log("🔔 Showing browser notification:", notification.title);
-        const notif = new window.Notification(notification.title, {
-          body: notification.message,
-          icon: "/web-logo.svg",
-          badge: "/web-logo.svg",
-          tag: notification.id,
-          requireInteraction: true,
-          silent: false,
-        });
-
-        // Handle notification click
-        notif.onclick = () => {
-          window.focus(); // Bring app to front
-          if (onNotificationClick) {
-            onNotificationClick(notification);
+      newNotifications.forEach(async (notification) => {
+        try {
+          // console.log("🔔 Showing browser notification:", notification.title);
+          
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
+          let notificationShown = false;
+          
+          // Try service worker first (recommended for mobile)
+          if (isServiceWorkerRegistered && isNotificationSupported()) {
+            try {
+              await showServiceWorkerNotification(notification.title, {
+                body: notification.message,
+                icon: "/web-logo.svg",
+                badge: "/web-logo.svg",
+                tag: notification.id,
+                requireInteraction: !isMobile,
+                silent: false,
+                data: { notificationId: notification.id }
+              });
+              
+              notificationShown = true;
+              console.log("✅ Service Worker notification shown");
+              
+            } catch (swError) {
+              console.warn("❌ Service worker notification failed:", swError);
+            }
           }
-          notif.close();
-        };
+          
+          // Fallback to regular notification constructor if service worker failed
+          if (!notificationShown) {
+            try {
+              // Double check that Notification constructor is available and not restricted
+              if (typeof Notification === 'function' && Notification.permission === 'granted') {
+                const notif = new Notification(notification.title, {
+                  body: notification.message,
+                  icon: "/web-logo.svg",
+                  badge: "/web-logo.svg",
+                  tag: notification.id,
+                  requireInteraction: !isMobile, // Don't require interaction on mobile
+                  silent: false,
+                });
 
-        // Auto close after 10 seconds
-        setTimeout(() => {
-          notif.close();
-        }, 10000);
+                // Handle notification click
+                notif.onclick = () => {
+                  try {
+                    window.focus(); // Bring app to front
+                    if (onNotificationClick) {
+                      onNotificationClick(notification);
+                    }
+                    notif.close();
+                  } catch (clickError) {
+                    console.warn("❌ Notification click handler error:", clickError);
+                  }
+                };
+
+                // Auto close after shorter time on mobile
+                const autoCloseTime = isMobile ? 5000 : 10000;
+                setTimeout(() => {
+                  try {
+                    notif.close();
+                  } catch (closeError) {
+                    console.warn("❌ Notification close error:", closeError);
+                  }
+                }, autoCloseTime);
+                
+                console.log("✅ Regular notification shown");
+              }
+            } catch (constructorError) {
+              console.warn("❌ Notification constructor failed:", constructorError);
+            }
+          }
+          
+        } catch (error) {
+          console.warn("❌ Browser notification error:", error);
+          // Silently fail - don't break the app
+        }
       });
     }
     prevDisplayNotificationsRef.current = displayNotifications;
-  }, [displayNotifications, enableBrowserNotifications, onNotificationClick]);
+  }, [displayNotifications, enableBrowserNotifications, onNotificationClick, isServiceWorkerRegistered, isNotificationSupported, showServiceWorkerNotification]);
 
   // Custom popover control function 
   const handlePopoverOpenChange = (open) => {
@@ -724,32 +841,65 @@ export function NotificationCenter({
           </CardTitle>
 
           <div className="flex items-center gap-2">
-            {/* Development only: Test notification button */}
+            {/* Development only: Test notification button - Mobile safe with Service Worker */}
             {process.env.NODE_ENV === "development" && enableBrowserNotifications && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 text-xs"
                 onClick={async () => {
-                  if ("Notification" in window) {
-                    if (Notification.permission === "default") {
-                      const permission = await Notification.requestPermission();
-                      if (permission === "granted") {
-                        new Notification("MiSREd IoT - Test", {
-                          body: "Test notifikasi browser berhasil!",
-                          icon: "/web-logo.svg",
-                        });
+                  try {
+                    if ("Notification" in window) {
+                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                      
+                      if (Notification.permission === "default") {
+                        const permission = await Notification.requestPermission();
+                        if (permission !== "granted") {
+                          alert("Permission denied for notifications");
+                          return;
+                        }
+                      } else if (Notification.permission !== "granted") {
+                        alert("Notifikasi browser diblokir. Aktifkan di pengaturan browser.");
+                        return;
                       }
-                    } else if (Notification.permission === "granted") {
-                      new Notification("MiSREd IoT - Test", {
-                        body: "Test notifikasi browser berhasil!",
-                        icon: "/web-logo.svg",
-                      });
+
+                      // Try service worker first
+                      let notificationShown = false;
+                      
+                      if (isServiceWorkerRegistered && isNotificationSupported()) {
+                        try {
+                          await showServiceWorkerNotification("MiSREd IoT - Test", {
+                            body: "Test notifikasi Service Worker berhasil!",
+                            icon: "/web-logo.svg",
+                            tag: "test-notification"
+                          });
+                          notificationShown = true;
+                          console.log("✅ Service Worker test notification shown");
+                        } catch (swError) {
+                          console.warn("❌ Service Worker test notification failed:", swError);
+                        }
+                      }
+                      
+                      // Fallback to regular notification
+                      if (!notificationShown) {
+                        try {
+                          new Notification("MiSREd IoT - Test", {
+                            body: "Test notifikasi regular berhasil!",
+                            icon: "/web-logo.svg",
+                          });
+                          console.log("✅ Regular test notification shown");
+                        } catch (notifError) {
+                          console.warn("❌ Regular test notification failed:", notifError);
+                          alert("Test notifikasi gagal: " + notifError.message);
+                        }
+                      }
+                      
                     } else {
-                      alert("Notifikasi browser diblokir. Aktifkan di pengaturan browser.");
+                      alert("Browser tidak mendukung notifikasi.");
                     }
-                  } else {
-                    alert("Browser tidak mendukung notifikasi.");
+                  } catch (error) {
+                    console.error("❌ Test notification error:", error);
+                    alert("Error testing notification: " + error.message);
                   }
                 }}
               >
