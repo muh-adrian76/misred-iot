@@ -165,18 +165,6 @@ export function NotificationPermissionDialog() {
                 <span>Tetap mendapat notifikasi meski aplikasi tertutup</span>
               </div>
             </div>
-            
-            {/* Info debug untuk development */}
-            {process.env.NODE_ENV === "development" && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs space-y-1">
-                <div><strong>Info Debug:</strong></div>
-                <div>Permission: {permission}</div>
-                <div>Didukung: {isSupported.toString()}</div>
-                <div>Sedang Meminta: {isRequesting.toString()}</div>
-                <div>Tipe API: {typeof window !== "undefined" && "Notification" in window ? typeof Notification.requestPermission().then : "N/A"}</div>
-              </div>
-            )}
-            
             <div className="bg-muted/50 p-3 rounded-lg text-xs text-muted-foreground">
               Jika popup tidak muncul, Anda dapat mengaktifkan manual di pengaturan browser
             </div>
@@ -184,39 +172,6 @@ export function NotificationPermissionDialog() {
         </DialogHeader>
 
         <DialogFooter className="gap-2 flex-col sm:flex-row">
-          {/* Tombol instruksi manual */}
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                alert("Cara mengaktifkan notifikasi manual:\n\n1. Klik ikon gembok/info di sebelah kiri address bar\n2. Cari 'Notifications' atau 'Pemberitahuan'\n3. Pilih 'Allow' atau 'Izinkan'\n4. Refresh halaman ini\n\nAtau buka Settings browser → Site Settings → Notifications");
-              }}
-              className="text-xs flex-1 sm:flex-none"
-            >
-              📖 Cara Manual
-            </Button>
-            
-            {/* Tombol close manual untuk development */}
-            {process.env.NODE_ENV === "development" && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  console.log("🔧 Tutup manual (debug)");
-                  setShowDialog(false);
-                  setHasAsked(true);
-                  localStorage.setItem("notification_permission_asked", "true");
-                }}
-                className="text-xs"
-              >
-                🔧 Tutup
-              </Button>
-            )}
-          </div>
-          
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
               type="button"
