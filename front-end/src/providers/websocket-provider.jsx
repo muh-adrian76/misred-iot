@@ -4,7 +4,6 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useUser } from "./user-provider";
 import { fetchFromBackend } from "@/lib/helper";
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
-import { NotificationPermissionDialog } from "@/components/custom/dialogs/notification-permission-dialog";
 import { RefreshCw, WifiOff } from "lucide-react";
 
 // Context untuk WebSocket connection dan real-time data
@@ -638,10 +637,6 @@ export function WebSocketProvider({ children }) {
   return (
     <WebSocketContext.Provider value={contextValue}>
       {children}
-
-      {/* Dialog untuk meminta permission notifikasi */}
-      <NotificationPermissionDialog />
-
       {/* Modal error koneksi - mirip dengan celebration modal di to-do-list */}
       <ResponsiveDialog
         open={showConnectionError}
