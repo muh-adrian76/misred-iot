@@ -348,7 +348,54 @@ export function NotificationCenter({
   }, [alarmNotifications, savedNotifications, filter]);
 
   const prevDisplayNotificationsRef = React.useRef(null);
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState(
+    typeof window !== "undefined" && "Notification" in window 
+      ? Notification.permission 
+      : "unsupported"
+  );
 
+  // Request notification permission when component mounts or enableBrowserNotifications changes
+  useEffect(() => {
+    const requestNotificationPermission = async () => {
+      if (
+        enableBrowserNotifications &&
+        typeof window !== "undefined" &&
+        "Notification" in window
+      ) {
+        // console.log("🔔 Current notification permission:", Notification.permission);
+        
+        if (Notification.permission === "default") {
+          try {
+            const permission = await Notification.requestPermission();
+            setBrowserNotificationPermission(permission);
+            // console.log("🔔 Permission result:", permission);
+            
+            if (permission === "granted") {
+              console.log("✅ Notification permission granted!");
+              // Show a test notification
+              new Notification("MiSREd IoT", {
+                body: "Notifikasi browser telah diaktifkan!",
+                icon: "/web-logo.svg",
+                tag: "permission-granted"
+              });
+            } else if (permission === "denied") {
+              console.warn("❌ Notification permission denied");
+            }
+          } catch (error) {
+            console.error("❌ Error requesting notification permission:", error);
+          }
+        } else {
+          setBrowserNotificationPermission(Notification.permission);
+        }
+      }
+    };
+
+    if (enableBrowserNotifications) {
+      requestNotificationPermission();
+    }
+  }, [enableBrowserNotifications]);
+
+  // Show browser notifications for new notifications
   useEffect(() => {
     if (
       enableBrowserNotifications &&
@@ -364,14 +411,33 @@ export function NotificationCenter({
       );
 
       newNotifications.forEach((notification) => {
-        new window.Notification(notification.title, {
+        // console.log("🔔 Showing browser notification:", notification.title);
+        const notif = new window.Notification(notification.title, {
           body: notification.message,
           icon: "/web-logo.svg",
+          badge: "/web-logo.svg",
+          tag: notification.id,
+          requireInteraction: true,
+          silent: false,
         });
+
+        // Handle notification click
+        notif.onclick = () => {
+          window.focus(); // Bring app to front
+          if (onNotificationClick) {
+            onNotificationClick(notification);
+          }
+          notif.close();
+        };
+
+        // Auto close after 10 seconds
+        setTimeout(() => {
+          notif.close();
+        }, 10000);
       });
     }
     prevDisplayNotificationsRef.current = displayNotifications;
-  }, [displayNotifications, enableBrowserNotifications]);
+  }, [displayNotifications, enableBrowserNotifications, onNotificationClick]);
 
   // Custom popover control function 
   const handlePopoverOpenChange = (open) => {
@@ -658,6 +724,39 @@ export function NotificationCenter({
           </CardTitle>
 
           <div className="flex items-center gap-2">
+            {/* Development only: Test notification button */}
+            {process.env.NODE_ENV === "development" && enableBrowserNotifications && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={async () => {
+                  if ("Notification" in window) {
+                    if (Notification.permission === "default") {
+                      const permission = await Notification.requestPermission();
+                      if (permission === "granted") {
+                        new Notification("MiSREd IoT - Test", {
+                          body: "Test notifikasi browser berhasil!",
+                          icon: "/web-logo.svg",
+                        });
+                      }
+                    } else if (Notification.permission === "granted") {
+                      new Notification("MiSREd IoT - Test", {
+                        body: "Test notifikasi browser berhasil!",
+                        icon: "/web-logo.svg",
+                      });
+                    } else {
+                      alert("Notifikasi browser diblokir. Aktifkan di pengaturan browser.");
+                    }
+                  } else {
+                    alert("Browser tidak mendukung notifikasi.");
+                  }
+                }}
+              >
+                🔔 Test
+              </Button>
+            )}
+            
             {showMarkAllRead && unreadCount > 0 && (
               <Button
                 variant="outline"

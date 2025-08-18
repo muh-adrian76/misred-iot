@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useUser } from "./user-provider";
 import { fetchFromBackend } from "@/lib/helper";
 import ResponsiveDialog from "@/components/custom/dialogs/responsive-dialog";
+import { NotificationPermissionDialog } from "@/components/custom/dialogs/notification-permission-dialog";
 import { RefreshCw, WifiOff } from "lucide-react";
 
 // Context untuk WebSocket connection dan real-time data
@@ -249,15 +250,52 @@ export function WebSocketProvider({ children }) {
             }
 
             // Tambahkan notifikasi baru dan limit ke 100 item
-            return [data.data, ...prev].slice(0, 100);
-          });
+            const updatedNotifications = [data.data, ...prev].slice(0, 100);
+            
+            // Show browser notification immediately for new alarms
+            if (typeof window !== "undefined" && "Notification" in window) {
+              if (Notification.permission === "granted") {
+                try {
+                  console.log("🔔 Showing browser notification for alarm:", data.data.title);
+                  const browserNotification = new Notification(data.data.title, {
+                    body: data.data.message,
+                    icon: "/web-logo.svg",
+                    badge: "/web-logo.svg",
+                    tag: data.data.id,
+                    requireInteraction: true,
+                    silent: false,
+                  });
 
-          if (Notification.permission === "granted") {
-            new Notification(data.data.title, {
-              body: data.data.message,
-              icon: "/web-logo.svg",
-            });
-          }
+                  browserNotification.onclick = () => {
+                    window.focus();
+                    browserNotification.close();
+                  };
+
+                  setTimeout(() => {
+                    browserNotification.close();
+                  }, 15000);
+                } catch (error) {
+                  console.error("❌ Error showing browser notification:", error);
+                }
+              } else if (Notification.permission === "default") {
+                console.log("🔔 Requesting notification permission for new alarm...");
+                Notification.requestPermission().then(permission => {
+                  if (permission === "granted") {
+                    const browserNotification = new Notification(data.data.title, {
+                      body: data.data.message,
+                      icon: "/web-logo.svg",
+                    });
+                    
+                    setTimeout(() => {
+                      browserNotification.close();
+                    }, 10000);
+                  }
+                });
+              }
+            }
+            
+            return updatedNotifications;
+          });
         }
 
         // Handle real-time device offline notifications
@@ -600,6 +638,9 @@ export function WebSocketProvider({ children }) {
   return (
     <WebSocketContext.Provider value={contextValue}>
       {children}
+
+      {/* Dialog untuk meminta permission notifikasi */}
+      <NotificationPermissionDialog />
 
       {/* Modal error koneksi - mirip dengan celebration modal di to-do-list */}
       <ResponsiveDialog
