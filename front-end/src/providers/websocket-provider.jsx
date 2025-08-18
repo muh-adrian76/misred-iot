@@ -58,6 +58,13 @@ export function WebSocketProvider({ children }) {
   // Mengikuti pattern yang sama dengan dashboard-provider untuk konsistensi
   useEffect(() => {
     try {
+      // Check browser compatibility
+      if (typeof window === "undefined" || !window.localStorage) {
+        console.warn("localStorage tidak tersedia di browser ini");
+        setIsInitialized(true);
+        return;
+      }
+
       const storedNotifications = localStorage.getItem("notifications");
       if (storedNotifications) {
         const parsed = JSON.parse(storedNotifications);
@@ -73,7 +80,13 @@ export function WebSocketProvider({ children }) {
       }
     } catch (error) {
       console.warn("Gagal memuat notifikasi dari localStorage:", error);
-      localStorage.removeItem("notifications");
+      try {
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.removeItem("notifications");
+        }
+      } catch (cleanupError) {
+        console.warn("Gagal membersihkan localStorage:", cleanupError);
+      }
     } finally {
       setIsInitialized(true);
     }
@@ -84,6 +97,12 @@ export function WebSocketProvider({ children }) {
   useEffect(() => {
     if (isInitialized && isUserLoggedIn(user)) {
       try {
+        // Check browser compatibility
+        if (typeof window === "undefined" || !window.localStorage) {
+          console.warn("localStorage tidak tersedia untuk menyimpan notifikasi");
+          return;
+        }
+
         if (alarmNotifications.length > 0) {
           localStorage.setItem(
             "notifications",
@@ -111,7 +130,9 @@ export function WebSocketProvider({ children }) {
         reconnectTimeoutRef.current = null;
       }
       try {
-        localStorage.removeItem("notifications");
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.removeItem("notifications");
+        }
       } catch (error) {
         console.warn("Gagal menghapus notifikasi dari localStorage:", error);
       }
@@ -143,6 +164,15 @@ export function WebSocketProvider({ children }) {
 
     // Create WebSocket connection dengan user_id parameter
     const wsUrl = `${process.env.NEXT_PUBLIC_BACKEND_WS}/ws/user/${user.id}`;
+    
+    // Validate WebSocket URL
+    if (!wsUrl || wsUrl.includes('undefined')) {
+      console.error("❌ URL WebSocket tidak valid:", wsUrl);
+      connectionAttemptRef.current = false;
+      return;
+    }
+    
+    console.log("🔌 Mencoba koneksi ke:", wsUrl);
     const socket = new WebSocket(wsUrl);
     wsRef.current = socket;
     setWs(socket);
@@ -157,12 +187,26 @@ export function WebSocketProvider({ children }) {
 
     socket.onmessage = (event) => {
       try {
+        // Validate event data
+        if (!event || !event.data) {
+          console.warn("⚠️ Data WebSocket kosong atau tidak valid");
+          return;
+        }
+
         const data = JSON.parse(event.data);
+
+        // Validate parsed data
+        if (!data || typeof data !== 'object') {
+          console.warn("⚠️ Data yang diparsing tidak valid:", data);
+          return;
+        }
 
         // Handle ping from server
         if (data.type === "ping") {
           // Respond with pong
-          socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+          }
           return;
         }
 
@@ -255,7 +299,7 @@ export function WebSocketProvider({ children }) {
             if (typeof window !== "undefined" && "Notification" in window) {
               if (Notification.permission === "granted") {
                 try {
-                  console.log("🔔 Showing browser notification for alarm:", data.data.title);
+                  console.log("🔔 Menampilkan notifikasi browser untuk alarm:", data.data.title);
                   const browserNotification = new Notification(data.data.title, {
                     body: data.data.message,
                     icon: "/web-logo.svg",
@@ -265,31 +309,47 @@ export function WebSocketProvider({ children }) {
                     silent: false,
                   });
 
-                  browserNotification.onclick = () => {
-                    window.focus();
-                    browserNotification.close();
-                  };
+                  // Add click handler with safety check
+                  if (browserNotification) {
+                    browserNotification.onclick = () => {
+                      if (typeof window !== "undefined") {
+                        window.focus();
+                      }
+                      browserNotification.close();
+                    };
 
-                  setTimeout(() => {
-                    browserNotification.close();
-                  }, 15000);
+                    // Auto close after 15 seconds
+                    setTimeout(() => {
+                      if (browserNotification) {
+                        browserNotification.close();
+                      }
+                    }, 15000);
+                  }
                 } catch (error) {
-                  console.error("❌ Error showing browser notification:", error);
+                  console.error("❌ Error menampilkan notifikasi browser:", error);
                 }
               } else if (Notification.permission === "default") {
-                console.log("🔔 Requesting notification permission for new alarm...");
-                Notification.requestPermission().then(permission => {
-                  if (permission === "granted") {
-                    const browserNotification = new Notification(data.data.title, {
-                      body: data.data.message,
-                      icon: "/web-logo.svg",
-                    });
-                    
-                    setTimeout(() => {
-                      browserNotification.close();
-                    }, 10000);
-                  }
-                });
+                console.log("🔔 Meminta izin notifikasi untuk alarm baru...");
+                try {
+                  Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                      const browserNotification = new Notification(data.data.title, {
+                        body: data.data.message,
+                        icon: "/web-logo.svg",
+                      });
+                      
+                      setTimeout(() => {
+                        if (browserNotification) {
+                          browserNotification.close();
+                        }
+                      }, 10000);
+                    }
+                  }).catch(error => {
+                    console.error("❌ Error meminta izin notifikasi:", error);
+                  });
+                } catch (error) {
+                  console.error("❌ Error meminta izin notifikasi:", error);
+                }
               }
             }
             
@@ -322,15 +382,26 @@ export function WebSocketProvider({ children }) {
           });
 
           // Show browser notification jika permission granted
-          if (Notification.permission === "granted") {
-            new Notification(data.data.title, {
-              body: data.data.message,
-              icon: "/web-logo.svg",
-            });
+          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+            try {
+              new Notification(data.data.title, {
+                body: data.data.message,
+                icon: "/web-logo.svg",
+              });
+            } catch (error) {
+              console.error("❌ Error menampilkan notifikasi perangkat:", error);
+            }
           }
         }
       } catch (error) {
-        console.error("Gagal memproses pesan:", error);
+        console.error("❌ Gagal memproses pesan WebSocket:", error);
+        // Log additional debug info untuk mobile debugging
+        console.error("Event data:", event?.data);
+        console.error("Error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
       }
     };
 
@@ -422,7 +493,9 @@ export function WebSocketProvider({ children }) {
 
               // Clear localStorage untuk menghindari data stale/duplikat
               try {
-                localStorage.removeItem("notifications");
+                if (typeof window !== "undefined" && window.localStorage) {
+                  localStorage.removeItem("notifications");
+                }
               } catch (error) {
                 console.warn(
                   "Gagal menghapus notifikasi dari localStorage:",
@@ -560,7 +633,9 @@ export function WebSocketProvider({ children }) {
 
       // Update localStorage
       try {
-        localStorage.setItem("notifications", JSON.stringify(updated));
+        if (typeof window !== "undefined" && window.localStorage) {
+          localStorage.setItem("notifications", JSON.stringify(updated));
+        }
       } catch (error) {
         console.warn("Kesalahan saat memperbarui notifikasi di localStorage:", error);
       }
@@ -574,7 +649,9 @@ export function WebSocketProvider({ children }) {
     setAlarmNotifications([]);
     // Also clear from localStorage
     try {
-      localStorage.removeItem("notifications");
+      if (typeof window !== "undefined" && window.localStorage) {
+        localStorage.removeItem("notifications");
+      }
     } catch (error) {
       console.warn("Gagal menghapus notifikasi dari localStorage:", error);
     }

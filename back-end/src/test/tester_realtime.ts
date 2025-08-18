@@ -83,7 +83,8 @@ function generateRealtimeSensorData(): any {
 
   // Generate gradual variations (±5% change from current value)
   Object.entries(SENSOR_RANGES).forEach(([pin, range]) => {
-    const variation = (Math.random() - 5) * 0.1; // ±5% variation
+    // ✅ PERBAIKAN: Math.random() - 0.5 untuk mendapat range -0.5 hingga +0.5
+    const variation = (Math.random() - 0.5) * 0.1; // ±5% variation (-0.05 hingga +0.05)
     let newValue = range.current * (1 + variation);
 
     // Keep within realistic bounds
@@ -95,6 +96,9 @@ function generateRealtimeSensorData(): any {
     // ✅ SAMA SEPERTI ESP32: Round to 2 decimal places seperti ESP32
     data[pin] = Math.round(newValue * 100) / 100;
   });
+
+  // Debug log untuk monitoring nilai sensor (uncomment jika perlu debug)
+  // console.log(`🔍 Generated sensor data:`, JSON.stringify(data));
 
   return data;
 }
