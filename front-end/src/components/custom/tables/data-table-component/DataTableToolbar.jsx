@@ -362,7 +362,7 @@ export default function DataTableToolbar({
             {showConnectionInfo && (
               <Link
                 target="_blank"
-                href="https://github.com/ArthZ01/misred-iot-arduino-examples"
+                href="https://github.com/muh-adrian76/misred-iot/tree/main/back-end/src/test/ino"
                 className="flex sm:border-r sm:pr-4"
               >
                 <DescriptionTooltip

@@ -71,7 +71,7 @@ function NotificationContent() {
         onDeleteNotification={deleteNotification}
         enableRealTimeUpdates={false} // Disable polling karena menggunakan WebSocket
         updateInterval={0} // No interval needed
-        enableBrowserNotifications={false} // Sudah handle di WebSocket provider
+        enableBrowserNotifications={true} // Sudah handle di WebSocket provider
         className="rounded-full"
         align={isMobile ? "center" : "end"}
       />
