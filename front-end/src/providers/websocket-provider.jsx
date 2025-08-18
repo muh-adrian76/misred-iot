@@ -103,14 +103,34 @@ export function WebSocketProvider({ children }) {
           return;
         }
 
-        if (alarmNotifications.length > 0) {
-          localStorage.setItem(
-            "notifications",
-            JSON.stringify(alarmNotifications)
-          );
-        } else {
-          localStorage.removeItem("notifications");
-        }
+        // PERBAIKAN MOBILE: Throttle localStorage operations untuk mobile performance
+        const throttledSave = setTimeout(() => {
+          try {
+            if (alarmNotifications.length > 0) {
+              // PERBAIKAN MOBILE: Limit data size untuk localStorage
+              const limitedNotifications = alarmNotifications.slice(0, 30); // Max 30 untuk mobile
+              localStorage.setItem(
+                "notifications",
+                JSON.stringify(limitedNotifications)
+              );
+            } else {
+              localStorage.removeItem("notifications");
+            }
+          } catch (storageError) {
+            console.warn("Gagal menyimpan notifikasi ke localStorage:", storageError);
+            // PERBAIKAN MOBILE: Clear localStorage jika quota exceeded
+            if (storageError.name === 'QuotaExceededError') {
+              try {
+                localStorage.removeItem("notifications");
+                console.warn("localStorage quota exceeded, data cleared");
+              } catch (clearError) {
+                console.error("Failed to clear localStorage:", clearError);
+              }
+            }
+          }
+        }, 1000); // PERBAIKAN MOBILE: Throttle 1 detik
+
+        return () => clearTimeout(throttledSave);
       } catch (error) {
         console.warn("Gagal menyimpan notifikasi ke localStorage:", error);
       }
@@ -187,15 +207,28 @@ export function WebSocketProvider({ children }) {
 
     socket.onmessage = (event) => {
       try {
-        // Validate event data
+        // PERBAIKAN MOBILE: Enhanced validation untuk mobile browser
         if (!event || !event.data) {
           console.warn("⚠️ Data WebSocket kosong atau tidak valid");
           return;
         }
 
-        const data = JSON.parse(event.data);
+        // PERBAIKAN MOBILE: Cek ukuran data untuk prevent memory issues
+        if (typeof event.data === 'string' && event.data.length > 50000) {
+          console.warn("⚠️ Data WebSocket terlalu besar, dilewati untuk keamanan mobile:", event.data.length);
+          return;
+        }
 
-        // Validate parsed data
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (parseError) {
+          console.error("❌ Error parsing JSON WebSocket:", parseError);
+          console.error("Raw data:", event.data?.substring(0, 100) + "...");
+          return;
+        }
+
+        // PERBAIKAN MOBILE: Enhanced data validation
         if (!data || typeof data !== 'object') {
           console.warn("⚠️ Data yang diparsing tidak valid:", data);
           return;
@@ -205,203 +238,306 @@ export function WebSocketProvider({ children }) {
         if (data.type === "ping") {
           // Respond with pong
           if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+            try {
+              socket.send(JSON.stringify({ type: "pong", timestamp: Date.now() }));
+            } catch (sendError) {
+              console.error("❌ Error sending pong:", sendError);
+            }
           }
           return;
         }
 
-        // Debug websocket
-        console.log("📥 Pesan diterima:", data);
+        // PERBAIKAN MOBILE: Throttle logging untuk reduce mobile console overhead
+        const shouldLog = Math.random() < 0.1; // Log hanya 10% pesan untuk mobile
+        if (shouldLog) {
+          console.log("📥 Pesan diterima:", data);
+        }
 
-        // Handle sensor data updates
+        // Handle sensor data updates dengan mobile optimization
         if (data.type === "sensor_update") {
-          // Update device controls dengan data sensor terbaru
-          setDeviceControls((prev) => {
-            const newMap = new Map(prev);
-            const deviceId = data.device_id;
-            const existing = newMap.get(deviceId) || {
-              controls: {},
-              timestamp: data.timestamp,
-            };
+          // PERBAIKAN MOBILE: Validate required fields untuk prevent crash
+          if (!data.device_id || !data.datastream_id || data.value === undefined) {
+            console.warn("⚠️ Data sensor tidak lengkap, dilewati:", data);
+            return;
+          }
 
-            // Update specific datastream value
-            existing.controls[data.datastream_id] = {
-              value: data.value,
-              timestamp: data.timestamp,
-            };
-            existing.timestamp = data.timestamp;
+          // PERBAIKAN MOBILE: Use requestAnimationFrame untuk smooth updates
+          requestAnimationFrame(() => {
+            try {
+              // Update device controls dengan data sensor terbaru
+              setDeviceControls((prev) => {
+                const newMap = new Map(prev);
+                const deviceId = data.device_id;
+                const existing = newMap.get(deviceId) || {
+                  controls: {},
+                  timestamp: data.timestamp,
+                };
 
-            newMap.set(deviceId, existing);
-            return newMap;
+                // Update specific datastream value
+                existing.controls[data.datastream_id] = {
+                  value: data.value,
+                  timestamp: data.timestamp,
+                };
+                existing.timestamp = data.timestamp;
+
+                newMap.set(deviceId, existing);
+                return newMap;
+              });
+            } catch (updateError) {
+              console.error("❌ Error updating device controls:", updateError);
+            }
           });
         }
 
         if (data.type === "status_update") {
-          console.log(`📡 Pembaruan status perangkat diterima:`, data);
-          setDeviceStatuses((prev) => {
-            const newMap = new Map(prev);
-            newMap.set(data.device_id, {
-              status: data.status,
-              timestamp: data.timestamp || data.last_seen || new Date().toISOString(),
-            });
-            return newMap;
+          // PERBAIKAN MOBILE: Validate data dan throttle updates
+          if (!data.device_id) {
+            console.warn("⚠️ status_update tanpa device_id, dilewati");
+            return;
+          }
+
+          if (shouldLog) {
+            console.log(`📡 Pembaruan status perangkat diterima:`, data);
+          }
+
+          // PERBAIKAN MOBILE: Use requestAnimationFrame untuk smooth updates
+          requestAnimationFrame(() => {
+            try {
+              setDeviceStatuses((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(data.device_id, {
+                  status: data.status,
+                  timestamp: data.timestamp || data.last_seen || new Date().toISOString(),
+                });
+                return newMap;
+              });
+            } catch (updateError) {
+              console.error("❌ Error updating device status:", updateError);
+            }
           });
         }
 
         if (data.type === "control_status_update") {
-          setDeviceControls((prev) => {
-            const newMap = new Map(prev);
-            newMap.set(data.device_id, {
-              controls: data.controls,
-              timestamp: data.timestamp,
-            });
-            return newMap;
+          // PERBAIKAN MOBILE: Validate dan throttle
+          if (!data.device_id || !data.controls) {
+            console.warn("⚠️ control_status_update tidak lengkap, dilewati");
+            return;
+          }
+
+          requestAnimationFrame(() => {
+            try {
+              setDeviceControls((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(data.device_id, {
+                  controls: data.controls,
+                  timestamp: data.timestamp,
+                });
+                return newMap;
+              });
+            } catch (updateError) {
+              console.error("❌ Error updating control status:", updateError);
+            }
           });
         }
 
         if (data.type === "command_executed") {
-          console.log(`Perintah dieksekusi:`, data.success ? "BERHASIL" : "GAGAL");
+          if (shouldLog) {
+            console.log(`Perintah dieksekusi:`, data.success ? "BERHASIL" : "GAGAL");
+          }
           // Update UI atau state jika diperlukan berdasarkan response command
         }
 
         if (data.type === "command_sent") {
-          console.log(
-            `✅ Perintah dikirim ke perangkat ${data.device_id}:`,
-            data.message
-          );
+          if (shouldLog) {
+            console.log(
+              `✅ Perintah dikirim ke perangkat ${data.device_id}:`,
+              data.message
+            );
+          }
         }
 
         if (data.type === "command_status") {
-          console.log(`📋 Pembaruan status perintah:`, data);
+          if (shouldLog) {
+            console.log(`📋 Pembaruan status perintah:`, data);
+          }
         }
 
         if (data.type === "echo") {
-          console.log(`🔊 Respons echo:`, data.message);
+          if (shouldLog) {
+            console.log(`🔊 Respons echo:`, data.message);
+          }
         }
 
         if (data.type === "alarm_notification") {
-          // Tambahkan notifikasi real-time dengan check duplikasi
-          setAlarmNotifications((prev) => {
-            // Check apakah notifikasi dengan ID yang sama sudah ada
-            const existingIds = prev.map((n) => n.id);
-            if (existingIds.includes(data.data.id)) {
-              console.log(
-                "⚠️ Notifikasi duplikat terdeteksi, dilewati:",
-                data.data.id
-              );
-              return prev; // Skip jika sudah ada
-            }
+          // PERBAIKAN MOBILE: Validate notification data
+          if (!data.data || !data.data.id) {
+            console.warn("⚠️ alarm_notification tidak lengkap, dilewati");
+            return;
+          }
 
-            // Tambahkan notifikasi baru dan limit ke 100 item
-            const updatedNotifications = [data.data, ...prev].slice(0, 100);
-            
-            // Show browser notification immediately for new alarms
-            if (typeof window !== "undefined" && "Notification" in window) {
-              if (Notification.permission === "granted") {
-                try {
-                  console.log("🔔 Menampilkan notifikasi browser untuk alarm:", data.data.title);
-                  const browserNotification = new Notification(data.data.title, {
-                    body: data.data.message,
-                    icon: "/web-logo.svg",
-                    badge: "/web-logo.svg",
-                    tag: data.data.id,
-                    requireInteraction: true,
-                    silent: false,
-                  });
-
-                  // Add click handler with safety check
-                  if (browserNotification) {
-                    browserNotification.onclick = () => {
-                      if (typeof window !== "undefined") {
-                        window.focus();
-                      }
-                      browserNotification.close();
-                    };
-
-                    // Auto close after 15 seconds
-                    setTimeout(() => {
-                      if (browserNotification) {
-                        browserNotification.close();
-                      }
-                    }, 15000);
-                  }
-                } catch (error) {
-                  console.error("❌ Error menampilkan notifikasi browser:", error);
+          // PERBAIKAN MOBILE: Use requestAnimationFrame untuk smooth state updates
+          requestAnimationFrame(() => {
+            try {
+              // Tambahkan notifikasi real-time dengan check duplikasi
+              setAlarmNotifications((prev) => {
+                // PERBAIKAN MOBILE: Limit array size untuk prevent memory issues
+                if (prev.length > 50) {
+                  console.warn("⚠️ Terlalu banyak notifikasi, membersihkan yang lama");
+                  prev = prev.slice(0, 30); // Keep hanya 30 notifikasi terbaru
                 }
-              } else if (Notification.permission === "default") {
-                console.log("🔔 Meminta izin notifikasi untuk alarm baru...");
-                try {
-                  Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
+
+                // Check apakah notifikasi dengan ID yang sama sudah ada
+                const existingIds = prev.map((n) => n.id);
+                if (existingIds.includes(data.data.id)) {
+                  console.log("⚠️ Notifikasi duplikat terdeteksi, dilewati:", data.data.id);
+                  return prev; // Skip jika sudah ada
+                }
+
+                // Tambahkan notifikasi baru dan limit ke 50 item untuk mobile
+                const updatedNotifications = [data.data, ...prev].slice(0, 50);
+                
+                // PERBAIKAN MOBILE: Show browser notification dengan error handling
+                if (typeof window !== "undefined" && "Notification" in window) {
+                  if (Notification.permission === "granted") {
+                    try {
+                      console.log("🔔 Menampilkan notifikasi browser untuk alarm:", data.data.title);
                       const browserNotification = new Notification(data.data.title, {
                         body: data.data.message,
                         icon: "/web-logo.svg",
+                        badge: "/web-logo.svg",
+                        tag: data.data.id,
+                        requireInteraction: false, // PERBAIKAN MOBILE: Set false untuk mobile
+                        silent: false,
                       });
-                      
-                      setTimeout(() => {
-                        if (browserNotification) {
+
+                      // Add click handler dengan mobile-safe timeout
+                      if (browserNotification) {
+                        browserNotification.onclick = () => {
+                          if (typeof window !== "undefined") {
+                            window.focus();
+                          }
                           browserNotification.close();
-                        }
-                      }, 10000);
+                        };
+
+                        // PERBAIKAN MOBILE: Shorter auto close untuk mobile (10s instead of 15s)
+                        setTimeout(() => {
+                          if (browserNotification) {
+                            browserNotification.close();
+                          }
+                        }, 10000);
+                      }
+                    } catch (error) {
+                      console.error("❌ Error menampilkan notifikasi browser:", error);
                     }
-                  }).catch(error => {
-                    console.error("❌ Error meminta izin notifikasi:", error);
-                  });
-                } catch (error) {
-                  console.error("❌ Error meminta izin notifikasi:", error);
+                  } else if (Notification.permission === "default") {
+                    // PERBAIKAN MOBILE: Safe permission request
+                    try {
+                      Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                          const browserNotification = new Notification(data.data.title, {
+                            body: data.data.message,
+                            icon: "/web-logo.svg",
+                          });
+                          
+                          setTimeout(() => {
+                            if (browserNotification) {
+                              browserNotification.close();
+                            }
+                          }, 8000); // PERBAIKAN MOBILE: Shorter timeout
+                        }
+                      }).catch(error => {
+                        console.error("❌ Error meminta izin notifikasi:", error);
+                      });
+                    } catch (error) {
+                      console.error("❌ Error meminta izin notifikasi:", error);
+                    }
+                  }
                 }
-              }
+                
+                return updatedNotifications;
+              });
+            } catch (notifError) {
+              console.error("❌ Error processing alarm notification:", notifError);
             }
-            
-            return updatedNotifications;
           });
         }
 
         // Handle real-time device offline notifications
         if (data.type === "notification") {
-          console.log("📢 Notifikasi real-time diterima:", data.data);
-          
-          // Tambahkan notifikasi real-time ke state dengan check duplikasi
-          setAlarmNotifications((prev) => {
-            // Check apakah notifikasi dengan ID yang sama atau device_id + timestamp yang sama sudah ada
-            const isDuplicate = prev.some((n) => 
-              n.id === data.data.id || 
-              (n.device_id === data.data.device_id && 
-               n.type === data.data.type && 
-               Math.abs(new Date(n.triggered_at).getTime() - new Date(data.data.triggered_at).getTime()) < 5000) // 5 second tolerance
-            );
-            
-            if (isDuplicate) {
-              console.log("⚠️ Notifikasi perangkat duplikat terdeteksi, dilewati:", data.data);
-              return prev;
-            }
-
-            // Tambahkan notifikasi baru dan limit ke 100 item
-            console.log("✅ Menambahkan notifikasi real-time baru ke state");
-            return [data.data, ...prev].slice(0, 100);
-          });
-
-          // Show browser notification jika permission granted
-          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
-            try {
-              new Notification(data.data.title, {
-                body: data.data.message,
-                icon: "/web-logo.svg",
-              });
-            } catch (error) {
-              console.error("❌ Error menampilkan notifikasi perangkat:", error);
-            }
+          // PERBAIKAN MOBILE: Validate notification data
+          if (!data.data) {
+            console.warn("⚠️ notification kosong, dilewati");
+            return;
           }
+
+          if (shouldLog) {
+            console.log("📢 Notifikasi real-time diterima:", data.data);
+          }
+          
+          // PERBAIKAN MOBILE: Use requestAnimationFrame untuk smooth updates
+          requestAnimationFrame(() => {
+            try {
+              // Tambahkan notifikasi real-time ke state dengan check duplikasi
+              setAlarmNotifications((prev) => {
+                // PERBAIKAN MOBILE: Limit array size
+                if (prev.length > 50) {
+                  prev = prev.slice(0, 30);
+                }
+
+                // Check apakah notifikasi dengan ID yang sama atau device_id + timestamp yang sama sudah ada
+                const isDuplicate = prev.some((n) => 
+                  n.id === data.data.id || 
+                  (n.device_id === data.data.device_id && 
+                   n.type === data.data.type && 
+                   Math.abs(new Date(n.triggered_at).getTime() - new Date(data.data.triggered_at).getTime()) < 5000) // 5 second tolerance
+                );
+                
+                if (isDuplicate) {
+                  console.log("⚠️ Notifikasi perangkat duplikat terdeteksi, dilewati:", data.data);
+                  return prev;
+                }
+
+                // Tambahkan notifikasi baru dan limit ke 50 item untuk mobile
+                console.log("✅ Menambahkan notifikasi real-time baru ke state");
+                return [data.data, ...prev].slice(0, 50);
+              });
+
+              // PERBAIKAN MOBILE: Show browser notification dengan error handling
+              if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+                try {
+                  new Notification(data.data.title, {
+                    body: data.data.message,
+                    icon: "/web-logo.svg",
+                    requireInteraction: false, // PERBAIKAN MOBILE: Set false untuk mobile
+                  });
+                } catch (error) {
+                  console.error("❌ Error menampilkan notifikasi perangkat:", error);
+                }
+              }
+            } catch (notifError) {
+              console.error("❌ Error processing notification:", notifError);
+            }
+          });
         }
       } catch (error) {
         console.error("❌ Gagal memproses pesan WebSocket:", error);
-        // Log additional debug info untuk mobile debugging
-        console.error("Event data:", event?.data);
+        // PERBAIKAN MOBILE: Enhanced error logging untuk mobile debugging
+        console.error("Event data length:", event?.data?.length || 0);
+        console.error("Event data preview:", event?.data?.substring(0, 200) + "...");
         console.error("Error details:", {
           name: error.name,
           message: error.message,
-          stack: error.stack
+          stack: error.stack?.substring(0, 500) // Limit stack trace untuk mobile
         });
+        
+        // PERBAIKAN MOBILE: Force garbage collection jika tersedia
+        if (typeof window !== "undefined" && window.gc) {
+          try {
+            window.gc();
+          } catch (gcError) {
+            // Ignore gc errors
+          }
+        }
       }
     };
 
