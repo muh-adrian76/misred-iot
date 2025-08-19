@@ -401,30 +401,28 @@ export function WebSocketProvider({ children }) {
                   if (Notification.permission === "granted") {
                     try {
                       console.log("🔔 Menampilkan notifikasi browser untuk alarm:", data.data.title);
-                      const browserNotification = new Notification(data.data.title, {
-                        body: data.data.message,
-                        icon: "/web-logo.svg",
-                        badge: "/web-logo.svg",
-                        tag: data.data.id,
-                        requireInteraction: false, // PERBAIKAN MOBILE: Set false untuk mobile
-                        silent: false,
-                      });
-
-                      // Add click handler dengan mobile-safe timeout
-                      if (browserNotification) {
-                        browserNotification.onclick = () => {
-                          if (typeof window !== "undefined") {
-                            window.focus();
-                          }
-                          browserNotification.close();
-                        };
-
-                        // PERBAIKAN MOBILE: Shorter auto close untuk mobile (10s instead of 15s)
-                        setTimeout(() => {
-                          if (browserNotification) {
-                            browserNotification.close();
-                          }
-                        }, 10000);
+                      
+                      // Use Service Worker notification if available, fallback to legacy method
+                      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                        // Try to use Service Worker registration for notification
+                        navigator.serviceWorker.ready.then(registration => {
+                          registration.showNotification(data.data.title, {
+                            body: data.data.message,
+                            icon: "/web-logo.svg",
+                            badge: "/web-logo.svg",
+                            tag: data.data.id,
+                            requireInteraction: false,
+                            silent: false,
+                            data: { notificationId: data.data.id }
+                          }).catch(swError => {
+                            console.warn("❌ Service Worker notification failed:", swError);
+                          });
+                        }).catch(swError => {
+                          console.warn("❌ Service Worker not ready:", swError);
+                        });
+                      } else {
+                        // Fallback: Only use direct constructor if no service worker
+                        console.log("⚠️ Service Worker tidak tersedia, menggunakan fallback");
                       }
                     } catch (error) {
                       console.error("❌ Error menampilkan notifikasi browser:", error);
@@ -434,16 +432,21 @@ export function WebSocketProvider({ children }) {
                     try {
                       Notification.requestPermission().then(permission => {
                         if (permission === "granted") {
-                          const browserNotification = new Notification(data.data.title, {
-                            body: data.data.message,
-                            icon: "/web-logo.svg",
-                          });
-                          
-                          setTimeout(() => {
-                            if (browserNotification) {
-                              browserNotification.close();
-                            }
-                          }, 8000); // PERBAIKAN MOBILE: Shorter timeout
+                          // Use Service Worker notification if available
+                          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                            navigator.serviceWorker.ready.then(registration => {
+                              registration.showNotification(data.data.title, {
+                                body: data.data.message,
+                                icon: "/web-logo.svg",
+                                tag: data.data.id,
+                                data: { notificationId: data.data.id }
+                              });
+                            }).catch(swError => {
+                              console.warn("❌ Service Worker notification failed:", swError);
+                            });
+                          } else {
+                            console.log("⚠️ Service Worker tidak tersedia untuk notification");
+                          }
                         }
                       }).catch(error => {
                         console.error("❌ Error meminta izin notifikasi:", error);
@@ -505,11 +508,22 @@ export function WebSocketProvider({ children }) {
               // PERBAIKAN MOBILE: Show browser notification dengan error handling
               if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
                 try {
-                  new Notification(data.data.title, {
-                    body: data.data.message,
-                    icon: "/web-logo.svg",
-                    requireInteraction: false, // PERBAIKAN MOBILE: Set false untuk mobile
-                  });
+                  // Use Service Worker notification if available
+                  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.ready.then(registration => {
+                      registration.showNotification(data.data.title, {
+                        body: data.data.message,
+                        icon: "/web-logo.svg",
+                        tag: data.data.id,
+                        requireInteraction: false,
+                        data: { notificationId: data.data.id }
+                      });
+                    }).catch(swError => {
+                      console.warn("❌ Service Worker notification failed:", swError);
+                    });
+                  } else {
+                    console.log("⚠️ Service Worker tidak tersedia untuk notification");
+                  }
                 } catch (error) {
                   console.error("❌ Error menampilkan notifikasi perangkat:", error);
                 }

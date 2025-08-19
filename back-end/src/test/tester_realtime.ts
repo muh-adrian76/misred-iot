@@ -41,14 +41,14 @@ const DB_CONFIG = {
 let HTTP_DEVICE = {
   device_id: "1",
   // device_secret: "23050c3dcef3c669690aab113a21c3b2",
-  device_secret: "18c7997e677dce1c2ca9b27dded3dddd",
+  device_secret: "8ea3bc192c664fb75ca734cd531d3f79",
   name: "ESP32 SPARING",
 };
 
 let MQTT_DEVICE = {
   device_id: "2",
   // device_secret: "45139dc186dd3fa9eb8e22f628968e75",
-  device_secret: "c69ecb7b59499a51b07d15b0ae638dec",
+  device_secret: "5f15620358aca027a3cffdd30c16939b",
   name: "ESP32 SPARING 2",
   topic: "device/data",
 };

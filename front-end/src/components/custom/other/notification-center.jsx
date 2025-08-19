@@ -443,7 +443,8 @@ export function NotificationCenter({
                   // Fallback to regular notification
                   if (
                     !testNotificationShown &&
-                    typeof Notification === "function"
+                    typeof Notification === "function" &&
+                    (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
                   ) {
                     try {
                       new Notification("MiSREd IoT", {
@@ -460,6 +461,8 @@ export function NotificationCenter({
                         regularError
                       );
                     }
+                  } else if (!testNotificationShown) {
+                    console.log("⚠️ Skipping fallback permission test - Service Worker is controlling");
                   }
                 } catch (testNotifError) {
                   console.warn("❌ Test notification failed:", testNotifError);
@@ -544,10 +547,11 @@ export function NotificationCenter({
           // Fallback to regular notification constructor if service worker failed
           if (!notificationShown) {
             try {
-              // Double check that Notification constructor is available and not restricted
+              // Only use direct constructor if no service worker is controlling the page
               if (
                 typeof Notification === "function" &&
-                Notification.permission === "granted"
+                Notification.permission === "granted" &&
+                (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
               ) {
                 const notif = new Notification(notification.title, {
                   body: notification.message,
@@ -585,6 +589,8 @@ export function NotificationCenter({
                 }, autoCloseTime);
 
                 console.log("✅ Regular notification shown");
+              } else {
+                console.log("⚠️ Skipping fallback notification - Service Worker is controlling the page");
               }
             } catch (constructorError) {
               console.warn(
@@ -954,11 +960,17 @@ export function NotificationCenter({
                         // Fallback to regular notification
                         if (!notificationShown) {
                           try {
-                            new Notification("MiSREd IoT - Test", {
-                              body: "Test notifikasi regular berhasil!",
-                              icon: "/web-logo.svg",
-                            });
-                            console.log("✅ Regular test notification shown");
+                            // Only use direct constructor if no service worker is controlling
+                            if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller) {
+                              new Notification("MiSREd IoT - Test", {
+                                body: "Test notifikasi regular berhasil!",
+                                icon: "/web-logo.svg",
+                              });
+                              console.log("✅ Regular test notification shown");
+                            } else {
+                              console.log("⚠️ Skipping fallback test notification - Service Worker is controlling");
+                              alert("Service Worker notification telah dicoba (cek console untuk detail)");
+                            }
                           } catch (notifError) {
                             console.warn(
                               "❌ Regular test notification failed:",
