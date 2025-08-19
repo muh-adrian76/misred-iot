@@ -1,6 +1,6 @@
 "use client";
 
-// Import dependencies untuk notification center IoT  
+// Import dependencies untuk notification center IoT
 import * as React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Bell,
-  BellRing,
-  CheckCircle,
-  X,
-  Filter,
-  History,
-} from "lucide-react";
+import { Bell, BellRing, CheckCircle, X, Filter, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWebSocket } from "@/providers/websocket-provider";
 import { useUser } from "@/providers/user-provider";
@@ -59,15 +52,16 @@ const isUserLoggedIn = (user) => {
   if (!user || user.id === "") {
     return false;
   }
-  
+
   // Validasi lengkap untuk memastikan user benar-benar login
-  const isLoggedIn = user.id && 
-         user.email && 
-         user.id !== "" && 
-         user.email !== "" &&
-         user.id !== undefined &&
-         user.email !== undefined;
-  
+  const isLoggedIn =
+    user.id &&
+    user.email &&
+    user.id !== "" &&
+    user.email !== "" &&
+    user.id !== undefined &&
+    user.email !== undefined;
+
   return isLoggedIn;
 };
 
@@ -90,11 +84,13 @@ const defaultFetchNotifications = async () => {
  */
 const defaultMarkAllAsRead = async () => {
   const response = await fetchFromBackend("/notifications/read", {
-    method: "PUT"
+    method: "PUT",
   });
   if (!response.ok) {
     console.error("❌ Gagal menandai semua sebagai dibaca:", response.status);
-    throw new Error(`HTTP ${response.status}: Gagal menandai semua notifikasi sebagai dibaca`);
+    throw new Error(
+      `HTTP ${response.status}: Gagal menandai semua notifikasi sebagai dibaca`
+    );
   }
   const result = await response.json();
   return result;
@@ -104,7 +100,9 @@ const defaultMarkAllAsRead = async () => {
  * Fungsi API default untuk menghapus semua notifikasi
  */
 const defaultDeleteAllNotifications = async () => {
-  const response = await fetchFromBackend("/notifications", { method: "DELETE" });
+  const response = await fetchFromBackend("/notifications", {
+    method: "DELETE",
+  });
   if (!response.ok) {
     throw new Error("Gagal menghapus semua notifikasi");
   }
@@ -113,17 +111,17 @@ const defaultDeleteAllNotifications = async () => {
 
 /**
  * KOMPONEN NOTIFICATION ITEM
- * 
+ *
  * NotificationItem adalah sub-komponen untuk menampilkan setiap notifikasi individual
  * dalam daftar notification center. Komponen ini menghandle:
- * 
+ *
  * Fitur per item:
  * - Visual indicator untuk notifikasi yang belum dibaca (unread state)
  * - Click handler untuk membuka detail atau menandai sebagai dibaca
  * - Responsive styling dengan hover effects
  * - Timestamp formatting untuk menampilkan waktu yang user-friendly
  * - Badge status untuk membedakan notifikasi read/unread
- * 
+ *
  * Props:
  * @param {Object} notification - Data notifikasi yang akan ditampilkan
  * @param {Function} onMarkAsRead - Handler untuk menandai notifikasi sebagai dibaca
@@ -138,8 +136,8 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
       className={cn(
         "group relative p-3 border border-border/40 rounded-lg transition-all duration-200",
         isUnread
-          // Styling conditional berdasarkan status read/unread
-          ? "bg-muted/30 hover:bg-primary/5 border-primary/20 dark:bg-primary/20 dark:hover:bg-primary/50 shadow-sm"
+          ? // Styling conditional berdasarkan status read/unread
+            "bg-muted/30 hover:bg-primary/5 border-primary/20 dark:bg-primary/20 dark:hover:bg-primary/50 shadow-sm"
           : "bg-card/50 hover:bg-muted/20 dark:bg-card/50 dark:hover:bg-accent"
       )}
       onClick={() => onClick?.(notification)}
@@ -161,9 +159,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
             <p
               className={cn(
                 "text-sm font-medium leading-none truncate",
-                isUnread
-                  ? "text-foreground"
-                  : "text-muted-foreground"
+                isUnread ? "text-foreground" : "text-muted-foreground"
               )}
             >
               {notification.title}
@@ -173,9 +169,7 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
           <p
             className={cn(
               "text-xs mt-2 leading-relaxed whitespace-pre-line",
-              isUnread
-                ? "text-foreground/80"
-                : "text-muted-foreground"
+              isUnread ? "text-foreground/80" : "text-muted-foreground"
             )}
           >
             {notification.message}
@@ -185,7 +179,9 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
           <div className="flex items-center justify-between pt-2 border-t border-border/40">
             {/* Timestamp dengan format yang user-friendly */}
             <span className="text-xs text-muted-foreground font-medium">
-              {formatTimeAgo(notification.createdAt || notification.triggered_at)}
+              {formatTimeAgo(
+                notification.createdAt || notification.triggered_at
+              )}
             </span>
           </div>
         </div>
@@ -196,10 +192,10 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
 
 /**
  * KOMPONEN UTAMA NOTIFICATION CENTER
- * 
+ *
  * NotificationCenter adalah komponen utama yang mengelola sistem notifikasi real-time
  * untuk IoT dashboard. Komponen ini menyediakan interface lengkap untuk:
- * 
+ *
  * Fitur-fitur utama:
  * - Real-time notification management dengan WebSocket
  * - Persistent storage menggunakan localStorage
@@ -208,11 +204,11 @@ const NotificationItem = ({ notification, onMarkAsRead, onClick }) => {
  * - Auto-refresh dan caching mechanism
  * - Responsive popover interface
  * - Integration dengan authentication system
- * 
+ *
  * Varian tampilan:
  * - "full": Tampilan lengkap dengan semua fitur dan controls
  * - "compact": Tampilan minimal untuk space-constrained areas
- * 
+ *
  * Props yang diterima:
  * @param {string} className - Additional CSS classes
  * @param {string} variant - Varian tampilan ("full" | "compact")
@@ -246,13 +242,13 @@ export function NotificationCenter({
   // State untuk mengontrol visibility popover dan history dialog
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  
+
   // State untuk filter tampilan notifikasi (all/unread)
   const [filter, setFilter] = useState("unread");
-  
+
   // State untuk operasi mark all as read (mencegah multiple calls)
   const [isProcessingMarkAll, setIsProcessingMarkAll] = useState(false);
-  
+
   // State untuk notifikasi yang tersimpan di database
   const [savedNotifications, setSavedNotifications] = useState([]);
   const [isLoadingSaved, setIsLoadingSaved] = useState(false);
@@ -268,28 +264,11 @@ export function NotificationCenter({
   } = useWebSocket();
 
   // Initialize service worker for mobile notification support
-  const { isRegistered: isServiceWorkerRegistered, showNotification: showServiceWorkerNotification, isNotificationSupported } = useServiceWorker(enableBrowserNotifications);
-
-  // Handle service worker notification clicks
-  useEffect(() => {
-    const handleServiceWorkerNotificationClick = (event) => {
-      const { notificationId } = event.detail;
-      console.log("🔔 Service Worker notification clicked:", notificationId);
-      
-      // Find the notification and call the click handler
-      const notification = displayNotifications.find(n => n.id === notificationId);
-      if (notification && onNotificationClick) {
-        onNotificationClick(notification);
-      }
-    };
-
-    // Listen for service worker notification clicks
-    window.addEventListener('sw-notification-click', handleServiceWorkerNotificationClick);
-    
-    return () => {
-      window.removeEventListener('sw-notification-click', handleServiceWorkerNotificationClick);
-    };
-  }, [displayNotifications, onNotificationClick]);
+  const {
+    isRegistered: isServiceWorkerRegistered,
+    showNotification: showServiceWorkerNotification,
+    isNotificationSupported,
+  } = useServiceWorker(enableBrowserNotifications);
 
   // Always use database functionality - remove static mode logic
 
@@ -299,10 +278,10 @@ export function NotificationCenter({
       setSavedNotifications([]);
       return;
     }
-    
+
     setIsLoadingSaved(true);
     setSavedNotificationsError(null);
-    
+
     try {
       const notifications = await fetchNotifications();
       setSavedNotifications(notifications || []);
@@ -327,9 +306,9 @@ export function NotificationCenter({
   // Display notifications based on filter
   const displayNotifications = useMemo(() => {
     let notifications = [];
-    
+
     if (filter === "unread") {
-      // For unread filter: 
+      // For unread filter:
       // 1. WebSocket notifications (always unread, real-time)
       // 2. Database unread notifications (persisted unread)
       notifications = [...alarmNotifications, ...savedNotifications];
@@ -337,10 +316,10 @@ export function NotificationCenter({
       // For all filter: Use database history (all notifications regardless of read status)
       notifications = savedNotifications;
     }
-    
+
     // Remove duplicates by ID (prefer WebSocket version if exists)
     const uniqueNotifications = notifications.reduce((acc, notification) => {
-      const existingIndex = acc.findIndex(n => n.id === notification.id);
+      const existingIndex = acc.findIndex((n) => n.id === notification.id);
       if (existingIndex === -1) {
         // Normalize isRead field (support both isRead and is_read)
         const normalizedNotification = {
@@ -349,35 +328,68 @@ export function NotificationCenter({
           // Ensure we have all required fields for display
           title: notification.title,
           message: notification.message,
-          createdAt: notification.createdAt || notification.triggered_at || new Date().toISOString()
+          createdAt:
+            notification.createdAt ||
+            notification.triggered_at ||
+            new Date().toISOString(),
         };
         acc.push(normalizedNotification);
       }
       return acc;
     }, []);
-    
+
     // Apply additional filter if needed (for "unread" mode, ensure we only show unread)
     let filteredNotifications = uniqueNotifications;
     if (filter === "unread") {
-      filteredNotifications = uniqueNotifications.filter(n => !n.isRead);
+      filteredNotifications = uniqueNotifications.filter((n) => !n.isRead);
     }
-    
+
     // Sort by createdAt/triggered_at
     const sortedNotifications = filteredNotifications.sort((a, b) => {
       const dateA = new Date(a.createdAt || a.triggered_at);
       const dateB = new Date(b.createdAt || b.triggered_at);
       return dateB.getTime() - dateA.getTime();
     });
-    
+
     return sortedNotifications;
   }, [alarmNotifications, savedNotifications, filter]);
 
   const prevDisplayNotificationsRef = React.useRef(null);
-  const [browserNotificationPermission, setBrowserNotificationPermission] = useState(
-    typeof window !== "undefined" && "Notification" in window 
-      ? Notification.permission 
-      : "unsupported"
-  );
+  const [browserNotificationPermission, setBrowserNotificationPermission] =
+    useState(
+      typeof window !== "undefined" && "Notification" in window
+        ? Notification.permission
+        : "unsupported"
+    );
+
+  // Handle service worker notification clicks
+  useEffect(() => {
+    const handleServiceWorkerNotificationClick = (event) => {
+      const { notificationId } = event.detail;
+      console.log("🔔 Service Worker notification clicked:", notificationId);
+
+      // Find the notification and call the click handler
+      const notification = displayNotifications.find(
+        (n) => n.id === notificationId
+      );
+      if (notification && onNotificationClick) {
+        onNotificationClick(notification);
+      }
+    };
+
+    // Listen for service worker notification clicks
+    window.addEventListener(
+      "sw-notification-click",
+      handleServiceWorkerNotificationClick
+    );
+
+    return () => {
+      window.removeEventListener(
+        "sw-notification-click",
+        handleServiceWorkerNotificationClick
+      );
+    };
+  }, [displayNotifications, onNotificationClick]);
 
   // Request notification permission when component mounts or enableBrowserNotifications changes - Mobile safe with Service Worker
   useEffect(() => {
@@ -389,48 +401,64 @@ export function NotificationCenter({
       ) {
         try {
           // console.log("🔔 Current notification permission:", Notification.permission);
-          
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          
+
+          const isMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent
+            );
+
           if (Notification.permission === "default") {
             try {
               const permission = await Notification.requestPermission();
               setBrowserNotificationPermission(permission);
               // console.log("🔔 Permission result:", permission);
-              
+
               if (permission === "granted") {
                 console.log("✅ Notification permission granted!");
-                
+
                 // Show test notification with Service Worker approach
                 try {
                   let testNotificationShown = false;
-                  
+
                   // Try service worker first
                   if (isServiceWorkerRegistered && isNotificationSupported()) {
                     try {
                       await showServiceWorkerNotification("MiSREd IoT", {
                         body: "Notifikasi browser telah diaktifkan!",
                         icon: "/web-logo.svg",
-                        tag: "permission-granted"
+                        tag: "permission-granted",
                       });
                       testNotificationShown = true;
-                      console.log("✅ Service Worker permission test notification shown");
+                      console.log(
+                        "✅ Service Worker permission test notification shown"
+                      );
                     } catch (swError) {
-                      console.warn("❌ Service worker permission test notification failed:", swError);
+                      console.warn(
+                        "❌ Service worker permission test notification failed:",
+                        swError
+                      );
                     }
                   }
-                  
+
                   // Fallback to regular notification
-                  if (!testNotificationShown && typeof Notification === 'function') {
+                  if (
+                    !testNotificationShown &&
+                    typeof Notification === "function"
+                  ) {
                     try {
                       new Notification("MiSREd IoT", {
                         body: "Notifikasi browser telah diaktifkan!",
                         icon: "/web-logo.svg",
-                        tag: "permission-granted"
+                        tag: "permission-granted",
                       });
-                      console.log("✅ Regular permission test notification shown");
+                      console.log(
+                        "✅ Regular permission test notification shown"
+                      );
                     } catch (regularError) {
-                      console.warn("❌ Regular permission test notification failed:", regularError);
+                      console.warn(
+                        "❌ Regular permission test notification failed:",
+                        regularError
+                      );
                     }
                   }
                 } catch (testNotifError) {
@@ -441,7 +469,10 @@ export function NotificationCenter({
                 console.warn("❌ Notification permission denied");
               }
             } catch (error) {
-              console.error("❌ Error requesting notification permission:", error);
+              console.error(
+                "❌ Error requesting notification permission:",
+                error
+              );
               setBrowserNotificationPermission("denied");
             }
           } else {
@@ -457,7 +488,12 @@ export function NotificationCenter({
     if (enableBrowserNotifications) {
       requestNotificationPermission();
     }
-  }, [enableBrowserNotifications, isServiceWorkerRegistered, isNotificationSupported, showServiceWorkerNotification]);
+  }, [
+    enableBrowserNotifications,
+    isServiceWorkerRegistered,
+    isNotificationSupported,
+    showServiceWorkerNotification,
+  ]);
 
   // Show browser notifications for new notifications - Mobile safe with Service Worker
   useEffect(() => {
@@ -477,11 +513,14 @@ export function NotificationCenter({
       newNotifications.forEach(async (notification) => {
         try {
           // console.log("🔔 Showing browser notification:", notification.title);
-          
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          
+
+          const isMobile =
+            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+              navigator.userAgent
+            );
+
           let notificationShown = false;
-          
+
           // Try service worker first (recommended for mobile)
           if (isServiceWorkerRegistered && isNotificationSupported()) {
             try {
@@ -492,22 +531,24 @@ export function NotificationCenter({
                 tag: notification.id,
                 requireInteraction: !isMobile,
                 silent: false,
-                data: { notificationId: notification.id }
+                data: { notificationId: notification.id },
               });
-              
+
               notificationShown = true;
               console.log("✅ Service Worker notification shown");
-              
             } catch (swError) {
               console.warn("❌ Service worker notification failed:", swError);
             }
           }
-          
+
           // Fallback to regular notification constructor if service worker failed
           if (!notificationShown) {
             try {
               // Double check that Notification constructor is available and not restricted
-              if (typeof Notification === 'function' && Notification.permission === 'granted') {
+              if (
+                typeof Notification === "function" &&
+                Notification.permission === "granted"
+              ) {
                 const notif = new Notification(notification.title, {
                   body: notification.message,
                   icon: "/web-logo.svg",
@@ -526,7 +567,10 @@ export function NotificationCenter({
                     }
                     notif.close();
                   } catch (clickError) {
-                    console.warn("❌ Notification click handler error:", clickError);
+                    console.warn(
+                      "❌ Notification click handler error:",
+                      clickError
+                    );
                   }
                 };
 
@@ -539,14 +583,16 @@ export function NotificationCenter({
                     console.warn("❌ Notification close error:", closeError);
                   }
                 }, autoCloseTime);
-                
+
                 console.log("✅ Regular notification shown");
               }
             } catch (constructorError) {
-              console.warn("❌ Notification constructor failed:", constructorError);
+              console.warn(
+                "❌ Notification constructor failed:",
+                constructorError
+              );
             }
           }
-          
         } catch (error) {
           console.warn("❌ Browser notification error:", error);
           // Silently fail - don't break the app
@@ -554,9 +600,16 @@ export function NotificationCenter({
       });
     }
     prevDisplayNotificationsRef.current = displayNotifications;
-  }, [displayNotifications, enableBrowserNotifications, onNotificationClick, isServiceWorkerRegistered, isNotificationSupported, showServiceWorkerNotification]);
+  }, [
+    displayNotifications,
+    enableBrowserNotifications,
+    onNotificationClick,
+    isServiceWorkerRegistered,
+    isNotificationSupported,
+    showServiceWorkerNotification,
+  ]);
 
-  // Custom popover control function 
+  // Custom popover control function
   const handlePopoverOpenChange = (open) => {
     setIsPopoverOpen(open);
     popoverOpenRef.current = open;
@@ -569,7 +622,7 @@ export function NotificationCenter({
     }
     setIsProcessingMarkAll(true);
     markAllMutexRef.current = true;
-    
+
     try {
       // Clear WebSocket notifications first
       if (alarmNotifications.length > 0) {
@@ -579,43 +632,47 @@ export function NotificationCenter({
       const response = await fetchFromBackend("/notifications/read", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ API Error response:", errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to mark all notifications as read'}`);
+        throw new Error(
+          `HTTP ${response.status}: ${errorText || "Failed to mark all notifications as read"}`
+        );
       }
-      
+
       await fetchSavedNotifications();
-      successToast("Semua notifikasi telah dibaca.", "Anda dapat membacanya kembali pada riwayat notifikasi.");
+      successToast(
+        "Semua notifikasi telah dibaca.",
+        "Anda dapat membacanya kembali pada riwayat notifikasi."
+      );
       setIsHistoryOpen(true);
     } catch (error) {
       console.error("❌ Error marking all notifications as read:", error);
-      alert(`❌ Gagal menandai notifikasi dibaca: ${error.message || "Unknown error"}`);
+      alert(
+        `❌ Gagal menandai notifikasi dibaca: ${error.message || "Unknown error"}`
+      );
     } finally {
       setIsProcessingMarkAll(false);
       markAllMutexRef.current = false;
     }
   };
 
-  const unreadCount = useMemo(
-    () => {
-      // Always calculate unread count from all available notifications, not just filtered
-      const allNotifications = [...alarmNotifications, ...savedNotifications];
-      const uniqueNotifications = allNotifications.reduce((acc, notification) => {
-        const existingIndex = acc.findIndex(n => n.id === notification.id);
-        if (existingIndex === -1) {
-          acc.push(notification);
-        }
-        return acc;
-      }, []);
-      return uniqueNotifications.filter(n => !n.isRead && !n.is_read).length;
-    },
-    [alarmNotifications, savedNotifications]
-  );
+  const unreadCount = useMemo(() => {
+    // Always calculate unread count from all available notifications, not just filtered
+    const allNotifications = [...alarmNotifications, ...savedNotifications];
+    const uniqueNotifications = allNotifications.reduce((acc, notification) => {
+      const existingIndex = acc.findIndex((n) => n.id === notification.id);
+      if (existingIndex === -1) {
+        acc.push(notification);
+      }
+      return acc;
+    }, []);
+    return uniqueNotifications.filter((n) => !n.isRead && !n.is_read).length;
+  }, [alarmNotifications, savedNotifications]);
 
   const totalCount = useMemo(
     () => displayNotifications.length,
@@ -640,11 +697,12 @@ export function NotificationCenter({
             Gagal memuat notifikasi
           </h3>
           <p className="text-sm text-muted-foreground max-w-sm mb-4">
-            {savedNotificationsError.message || "Terjadi kesalahan saat mengambil data notifikasi."}
+            {savedNotificationsError.message ||
+              "Terjadi kesalahan saat mengambil data notifikasi."}
           </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => fetchSavedNotifications()}
             className="text-sm"
           >
@@ -669,7 +727,7 @@ export function NotificationCenter({
               notification={notification}
               onMarkAsRead={(id) => {
                 // Only handle WebSocket notifications - database notifications will be handled by "Mark All Read" button
-                if (alarmNotifications.some(n => n.id === id)) {
+                if (alarmNotifications.some((n) => n.id === id)) {
                   removeAlarmNotification(id);
                 }
               }}
@@ -684,10 +742,7 @@ export function NotificationCenter({
   if (variant === "popover") {
     return (
       <>
-        <Popover 
-          open={isPopoverOpen} 
-          onOpenChange={handlePopoverOpenChange}
-        >
+        <Popover open={isPopoverOpen} onOpenChange={handlePopoverOpenChange}>
           <DescriptionTooltip content={"Notifikasi Terbaru"}>
             <PopoverTrigger asChild>
               <Button
@@ -759,33 +814,34 @@ export function NotificationCenter({
                 </Button> */}
 
                 {/* Mark All Read Button */}
-                {showMarkAllRead && (unreadCount > 0 || isProcessingMarkAll) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "h-8 text-xs w-full transition-all duration-200",
-                      isProcessingMarkAll && "opacity-75 cursor-not-allowed"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleMarkAllAsRead();
-                    }}
-                    disabled={isProcessingMarkAll}
-                  >
-                    {isProcessingMarkAll ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
-                        Memproses...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="mr-1.5 h-3 w-3" />
-                        Tandai telah dibaca
-                      </>
-                    )}
-                  </Button>
-                )}
+                {showMarkAllRead &&
+                  (unreadCount > 0 || isProcessingMarkAll) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "h-8 text-xs w-full transition-all duration-200",
+                        isProcessingMarkAll && "opacity-75 cursor-not-allowed"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAllAsRead();
+                      }}
+                      disabled={isProcessingMarkAll}
+                    >
+                      {isProcessingMarkAll ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-current mr-1.5" />
+                          Memproses...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-1.5 h-3 w-3" />
+                          Tandai telah dibaca
+                        </>
+                      )}
+                    </Button>
+                  )}
               </div>
 
               <div className="max-h-96">
@@ -809,10 +865,7 @@ export function NotificationCenter({
           </PopoverContent>
         </Popover>
 
-        <NotifHistory 
-          open={isHistoryOpen} 
-          setOpen={setIsHistoryOpen} 
-        />
+        <NotifHistory open={isHistoryOpen} setOpen={setIsHistoryOpen} />
       </>
     );
   }
@@ -842,71 +895,93 @@ export function NotificationCenter({
 
           <div className="flex items-center gap-2">
             {/* Development only: Test notification button - Mobile safe with Service Worker */}
-            {process.env.NODE_ENV === "development" && enableBrowserNotifications && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={async () => {
-                  try {
-                    if ("Notification" in window) {
-                      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                      
-                      if (Notification.permission === "default") {
-                        const permission = await Notification.requestPermission();
-                        if (permission !== "granted") {
-                          alert("Permission denied for notifications");
+            {process.env.NODE_ENV === "development" &&
+              enableBrowserNotifications && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={async () => {
+                    try {
+                      if ("Notification" in window) {
+                        const isMobile =
+                          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+                            navigator.userAgent
+                          );
+
+                        if (Notification.permission === "default") {
+                          const permission =
+                            await Notification.requestPermission();
+                          if (permission !== "granted") {
+                            alert("Permission denied for notifications");
+                            return;
+                          }
+                        } else if (Notification.permission !== "granted") {
+                          alert(
+                            "Notifikasi browser diblokir. Aktifkan di pengaturan browser."
+                          );
                           return;
                         }
-                      } else if (Notification.permission !== "granted") {
-                        alert("Notifikasi browser diblokir. Aktifkan di pengaturan browser.");
-                        return;
-                      }
 
-                      // Try service worker first
-                      let notificationShown = false;
-                      
-                      if (isServiceWorkerRegistered && isNotificationSupported()) {
-                        try {
-                          await showServiceWorkerNotification("MiSREd IoT - Test", {
-                            body: "Test notifikasi Service Worker berhasil!",
-                            icon: "/web-logo.svg",
-                            tag: "test-notification"
-                          });
-                          notificationShown = true;
-                          console.log("✅ Service Worker test notification shown");
-                        } catch (swError) {
-                          console.warn("❌ Service Worker test notification failed:", swError);
+                        // Try service worker first
+                        let notificationShown = false;
+
+                        if (
+                          isServiceWorkerRegistered &&
+                          isNotificationSupported()
+                        ) {
+                          try {
+                            await showServiceWorkerNotification(
+                              "MiSREd IoT - Test",
+                              {
+                                body: "Test notifikasi Service Worker berhasil!",
+                                icon: "/web-logo.svg",
+                                tag: "test-notification",
+                              }
+                            );
+                            notificationShown = true;
+                            console.log(
+                              "✅ Service Worker test notification shown"
+                            );
+                          } catch (swError) {
+                            console.warn(
+                              "❌ Service Worker test notification failed:",
+                              swError
+                            );
+                          }
                         }
-                      }
-                      
-                      // Fallback to regular notification
-                      if (!notificationShown) {
-                        try {
-                          new Notification("MiSREd IoT - Test", {
-                            body: "Test notifikasi regular berhasil!",
-                            icon: "/web-logo.svg",
-                          });
-                          console.log("✅ Regular test notification shown");
-                        } catch (notifError) {
-                          console.warn("❌ Regular test notification failed:", notifError);
-                          alert("Test notifikasi gagal: " + notifError.message);
+
+                        // Fallback to regular notification
+                        if (!notificationShown) {
+                          try {
+                            new Notification("MiSREd IoT - Test", {
+                              body: "Test notifikasi regular berhasil!",
+                              icon: "/web-logo.svg",
+                            });
+                            console.log("✅ Regular test notification shown");
+                          } catch (notifError) {
+                            console.warn(
+                              "❌ Regular test notification failed:",
+                              notifError
+                            );
+                            alert(
+                              "Test notifikasi gagal: " + notifError.message
+                            );
+                          }
                         }
+                      } else {
+                        alert("Browser tidak mendukung notifikasi.");
                       }
-                      
-                    } else {
-                      alert("Browser tidak mendukung notifikasi.");
+                    } catch (error) {
+                      console.error("❌ Test notification error:", error);
+                      alert("Error testing notification: " + error.message);
                     }
-                  } catch (error) {
-                    console.error("❌ Test notification error:", error);
-                    alert("Error testing notification: " + error.message);
-                  }
-                }}
-              >
-                🔔 Test
-              </Button>
-            )}
-            
+                  }}
+                >
+                  🔔 Test
+                </Button>
+              )}
+
             {showMarkAllRead && unreadCount > 0 && (
               <Button
                 variant="outline"
