@@ -400,45 +400,45 @@ class Server {
 
     // ===== DEVICE SECRET REFRESH TASK =====
     // Refresh variable secret semua device secara berkala untuk keamanan
-    const secretRefreshInterval = setInterval(async () => {
-      try {
-        // ===== DATABASE HEALTH CHECK =====
-        // Test koneksi database sebelum refresh secret
-        const isHealthy = await MySQLDatabase.healthCheck();
-        if (!isHealthy) {
-          console.log("⚠️ Database tidak sehat selama refresh secret, dilewati...");
-          return;
-        }
+    // const secretRefreshInterval = setInterval(async () => {
+    //   try {
+    //     // ===== DATABASE HEALTH CHECK =====
+    //     // Test koneksi database sebelum refresh secret
+    //     const isHealthy = await MySQLDatabase.healthCheck();
+    //     if (!isHealthy) {
+    //       console.log("⚠️ Database tidak sehat selama refresh secret, dilewati...");
+    //       return;
+    //     }
         
-        // ===== SECRET REFRESH EXECUTION =====
-        // Refresh secret semua device untuk keamanan
-        await this.deviceService.refreshAllDeviceSecrets();
-        console.log("🔄 Berhasil me-refresh secret dari semua device ");
+    //     // ===== SECRET REFRESH EXECUTION =====
+    //     // Refresh secret semua device untuk keamanan
+    //     await this.deviceService.refreshAllDeviceSecrets();
+    //     console.log("🔄 Berhasil me-refresh secret dari semua device ");
         
-        // ===== BROADCAST UPDATE TO USERS =====
-        // Broadcast notifikasi ke semua user melalui WebSocket
-        broadcastToAllUsers({
-          type: "device_secret_refreshed", // Tipe event
-          message: "Secret perangkat telah diperbarui", // Pesan notifikasi
-        });
-      } catch (error: any) {
-        console.error("Gagal refresh secret:", error);
+    //     // ===== BROADCAST UPDATE TO USERS =====
+    //     // Broadcast notifikasi ke semua user melalui WebSocket
+    //     broadcastToAllUsers({
+    //       type: "device_secret_refreshed", // Tipe event
+    //       message: "Secret perangkat telah diperbarui", // Pesan notifikasi
+    //     });
+    //   } catch (error: any) {
+    //     console.error("Gagal refresh secret:", error);
         
-        // ===== PENANGANAN ERROR KONEKSI =====
-        // Check jika error disebabkan oleh masalah koneksi database
-        if (error.code === "PROTOCOL_CONNECTION_LOST" || 
-            error.code === "ER_CONNECTION_LOST" || 
-            error.code === "ECONNRESET" ||
-            error.code === "ENOTFOUND" ||
-            error.code === "ETIMEDOUT" ||
-            error.message?.includes('Pool is closed')) {
-          console.log("🔄 Kesalahan koneksi database saat refresh secret");
-          // Biarkan health check mechanism menangani reconnection
-        }
-        return; // Keluar dari fungsi jika terjadi error
-      }
-    }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000); // Interval dari environment variable
-    intervals.push(secretRefreshInterval);
+    //     // ===== PENANGANAN ERROR KONEKSI =====
+    //     // Check jika error disebabkan oleh masalah koneksi database
+    //     if (error.code === "PROTOCOL_CONNECTION_LOST" || 
+    //         error.code === "ER_CONNECTION_LOST" || 
+    //         error.code === "ECONNRESET" ||
+    //         error.code === "ENOTFOUND" ||
+    //         error.code === "ETIMEDOUT" ||
+    //         error.message?.includes('Pool is closed')) {
+    //       console.log("🔄 Kesalahan koneksi database saat refresh secret");
+    //       // Biarkan health check mechanism menangani reconnection
+    //     }
+    //     return; // Keluar dari fungsi jika terjadi error
+    //   }
+    // }, ageConverter(process.env.DEVICE_SECRET_REFRESH_AGE!) * 1000); // Interval dari environment variable
+    // intervals.push(secretRefreshInterval);
 
     // ===== DATABASE HEALTH MONITOR =====
     // Monitor kesehatan database dan auto-reconnect jika diperlukan

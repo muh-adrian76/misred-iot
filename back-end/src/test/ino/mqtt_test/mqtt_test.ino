@@ -8,16 +8,18 @@
 
 // ---- SETUP VARIABEL ------
 // Sesuaikan dengan nilai UID dan JWT Secret pada halaman Devices -- PENTING
-#define DEVICE_ID "2"
-#define JWT_SECRET "1e22a7bc8aa0bd2ba64d200fb62c551f"
+#define DEVICE_ID "27"
+#define JWT_SECRET "266750b1e2c90b9c42ad59828335d68b"
 
 // Waktu UTC
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "pool.ntp.org");
 
 // WiFi configuration
-const char* ssid = "K.WATT -2.4G";
-const char* password = "KentungMusthofa";
+const char* ssid = "yoo";
+const char* password = "yooooooo";
+// const char* ssid = "K.WATT -2.4G";
+// const char* password = "KentungMusthofa";
 
 // MQTT configuration
 const char* mqtt_server = "103.82.241.46"; // VPS

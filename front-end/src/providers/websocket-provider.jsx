@@ -14,29 +14,29 @@ const WebSocketContext = createContext(null);
 export function WebSocketProvider({ children }) {
   const { user } = useUser();
 
-  // Refs untuk menyimpan state yang persisten across re-renders
-  const wsRef = useRef(null); // WebSocket instance
-  const reconnectTimeoutRef = useRef(null); // Timeout untuk auto-reconnect
-  const reconnectAttemptsRef = useRef(0); // Counter percobaan reconnect
-  const connectionAttemptRef = useRef(false); // Flag untuk prevent multiple connections
+  // Refs untuk menyimpan state yang persisten antar re-render
+  const wsRef = useRef(null); // Instance WebSocket
+  const reconnectTimeoutRef = useRef(null); // Timeout untuk koneksi ulang otomatis
+  const reconnectAttemptsRef = useRef(0); // Penghitung percobaan koneksi ulang
+  const connectionAttemptRef = useRef(false); // Flag untuk mencegah koneksi ganda
 
   // Konfigurasi koneksi
   const maxReconnectAttempts = 10;
   const reconnectDelay = 2000; // 2 seconds
   const connectionTimeout = 10000; // 10 seconds
 
-  // States untuk WebSocket dan real-time data
+  // States untuk WebSocket dan data real-time
   const [ws, setWs] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [deviceStatuses, setDeviceStatuses] = useState(new Map()); // Status device real-time
-  const [deviceControls, setDeviceControls] = useState(new Map()); // Control states
+  const [deviceStatuses, setDeviceStatuses] = useState(new Map()); // Status perangkat real-time
+  const [deviceControls, setDeviceControls] = useState(new Map()); // Status kontrol
   const [alarmNotifications, setAlarmNotifications] = useState([]); // Notifikasi alarm
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasAuthChecked, setHasAuthChecked] = useState(false);
   const [showConnectionError, setShowConnectionError] = useState(false); // Modal error koneksi
 
-  // Helper function untuk validasi user login
-  // Memastikan user memiliki credentials yang lengkap sebelum koneksi WebSocket
+  // Fungsi bantuan untuk validasi login pengguna
+  // Memastikan pengguna memiliki kredensial yang lengkap sebelum koneksi WebSocket
   const isUserLoggedIn = (user) => {
     // First check if user exists and is not null
     if (!user || user.id === "") {
@@ -122,9 +122,9 @@ export function WebSocketProvider({ children }) {
             if (storageError.name === 'QuotaExceededError') {
               try {
                 localStorage.removeItem("notifications");
-                console.warn("localStorage quota exceeded, data cleared");
+                console.warn("Kuota localStorage terlampaui, data dibersihkan");
               } catch (clearError) {
-                console.error("Failed to clear localStorage:", clearError);
+                console.error("Gagal membersihkan localStorage:", clearError);
               }
             }
           }
@@ -171,7 +171,7 @@ export function WebSocketProvider({ children }) {
 
     // Clean up existing connection jika ada
     if (wsRef.current) {
-      wsRef.current.close(1000, "Reconnecting");
+      wsRef.current.close(1000, "Menghubungkan ulang");
     }
 
     // Setup connection timeout untuk avoid hanging connections
@@ -224,7 +224,7 @@ export function WebSocketProvider({ children }) {
           data = JSON.parse(event.data);
         } catch (parseError) {
           console.error("❌ Error parsing JSON WebSocket:", parseError);
-          console.error("Raw data:", event.data?.substring(0, 100) + "...");
+          console.error("Data mentah:", event.data?.substring(0, 100) + "...");
           return;
         }
 
@@ -536,9 +536,9 @@ export function WebSocketProvider({ children }) {
       } catch (error) {
         console.error("❌ Gagal memproses pesan WebSocket:", error);
         // PERBAIKAN MOBILE: Enhanced error logging untuk mobile debugging
-        console.error("Event data length:", event?.data?.length || 0);
-        console.error("Event data preview:", event?.data?.substring(0, 200) + "...");
-        console.error("Error details:", {
+        console.error("Panjang data event:", event?.data?.length || 0);
+        console.error("Pratinjau data event:", event?.data?.substring(0, 200) + "...");
+        console.error("Detail error:", {
           name: error.name,
           message: error.message,
           stack: error.stack?.substring(0, 500) // Limit stack trace untuk mobile
@@ -734,7 +734,7 @@ export function WebSocketProvider({ children }) {
 
       // Clean up any pending connections or operations
       if (wsRef.current) {
-        wsRef.current.close(1000, "User logged out");
+        wsRef.current.close(1000, "Pengguna logout");
         wsRef.current = null;
         setWs(null);
         setIsConnected(false);
@@ -749,7 +749,7 @@ export function WebSocketProvider({ children }) {
       }
       connectionAttemptRef.current = false;
       if (wsRef.current) {
-        wsRef.current.close(1000, "Component unmounting");
+        wsRef.current.close(1000, "Membersihkan cache...");
         wsRef.current = null;
         setWs(null);
         setIsConnected(false);

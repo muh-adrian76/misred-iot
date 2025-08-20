@@ -1,6 +1,6 @@
 {
-  "name": "Misred IoT",
-  "short_name": "MisredIoT",
+  "name": "MiSREd IoT",
+  "short_name": "MiSREd-IoT",
   "description": "IoT Monitoring App",
   "start_url": "/auth",
   "display": "standalone",
