@@ -37,7 +37,7 @@ import localFont from "next/font/local"; // Font loader untuk custom fonts
 
 // Konfigurasi font lokal untuk logo dan branding
 const logoFont = localFont({
-  src: "./logo-font.ttf", // Path ke file font TTF dari public folder
+  src: "../../public/logo-font.ttf", // Path ke file font TTF logo
 });
 
 /**
