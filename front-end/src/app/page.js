@@ -33,12 +33,12 @@ import {
 // Import Next.js components
 import { Link } from "next-view-transitions"; // Link dengan view transitions
 import ThemeButton from "@/components/custom/buttons/theme-button"; // Custom theme toggle button
-// import localFont from "next/font/local"; // Font loader untuk custom fonts
+import localFont from "next/font/local"; // Font loader untuk custom fonts
 
 // Konfigurasi font lokal untuk logo dan branding
-// const logoFont = localFont({
-//   src: "../../public/logo-font.ttf", // Path ke file font TTF logo
-// });
+const logoFont = localFont({
+  src: "../../public/logo-font.ttf", // Path ke file font TTF logo
+});
 
 /**
  * Komponen utama Landing Page untuk aplikasi MiSREd-IoT
@@ -152,8 +152,7 @@ const LandingPage = () => {
                   <img src="/web-logo.svg" alt="Logo" />
                 </div>
                 {/* Brand Text dengan custom font */}
-                {/* <span className={`text-xl font-bold ${logoFont.className}`}> */}
-                <span className={`text-xl font-bold`}>
+                <span className={`text-xl font-bold ${logoFont.className}`}>
                   MiSREd IoT
                 </span>
               </div>
