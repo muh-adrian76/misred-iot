@@ -60,8 +60,8 @@ export default function RegisterForm({
     }
     
     // Validasi panjang password minimum untuk keamanan
-    if (password.length < 6) {
-      errorToast("Peringatan", "Password harus lebih dari 6 karakter!");
+    if (password.length < 8) {
+      errorToast("Peringatan", "Password harus lebih dari 8 karakter!");
       setIsLoading(false);
       return;
     }

@@ -33,13 +33,13 @@ export default function DatastreamContent({
       // Kolom device yang terkait
       key: "device_id",
       label: "Device",
-      sortable: true,
+      filterable: true,
       render: (row) => {
         // Cari device berdasarkan device_id
         const dev = devices?.find((d) => d.id === row.device_id);
         return (
-          // Tooltip menampilkan UID device
-          <DescriptionTooltip content={"UID: " + dev?.id || ""}>
+          // Tooltip menampilkan informasi device lengkap
+          <DescriptionTooltip content={`UID: ${dev?.id || ""} - ${dev?.description || ""}`}>
             <span className="underline underline-offset-2 cursor-help">
               {/* Tampilkan deskripsi device */}
               {dev?.description}
@@ -180,6 +180,7 @@ export default function DatastreamContent({
             setSelectedRows={setSelectedRows}
             onAdd={() => setAddFormOpen(true)}
             rowActions={rowActions}
+            devices={devices}
             onDelete={(selected) => {
               if (Array.isArray(selected)) {
                 setDatastreamToDelete(

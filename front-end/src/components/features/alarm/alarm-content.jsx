@@ -33,13 +33,15 @@ export default function AlarmContent({
     { key: "description", label: "Nama", sortable: true },
     {
       // Kolom device yang terkait dengan alarm
-      key: "device",
+      key: "device_description",
+      filterable: true,
       label: "Device",
-  render: (row) => row.device_description || "Tidak diketahui", // Fallback deskripsi device
+      render: (row) => row.device_description || "Tidak diketahui", // Fallback deskripsi device
     },
     {
       // Kolom datastream yang dimonitor
       key: "datastream",
+      sortable: true,
       label: "Datastream",
       render: (row) =>
         // Format: "Deskripsi Datastream (Pin X)"
@@ -48,6 +50,7 @@ export default function AlarmContent({
     {
       // Kolom kondisi alarm
       key: "condition",
+      sortable: true,
       label: "Kondisi",
       render: (row) => {
         // Cari opsi unit berdasarkan datastream unit
@@ -86,7 +89,8 @@ export default function AlarmContent({
     },
     {
       // Kolom status alarm (aktif/non-aktif)
-      key: "status",
+      key: "is_active",
+      filterable: true,
       label: "Status",
       render: (row) => (
         <span
@@ -112,6 +116,7 @@ export default function AlarmContent({
     {
       // Kolom kapan alarm terakhir dipicu
       key: "last_triggered",
+      sortable: true,
       label: "Terakhir Dipicu",
       render: (row) =>
         // Konversi tanggal atau tampilkan "-" jika belum pernah dipicu

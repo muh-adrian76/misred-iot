@@ -10,6 +10,7 @@
 // Sesuaikan dengan nilai UID dan JWT Secret pada halaman Devices -- PENTING
 #define DEVICE_ID "27"
 #define JWT_SECRET "266750b1e2c90b9c42ad59828335d68b"
+#define MQTT_TOPIC "device/data"
 
 // Waktu UTC
 WiFiUDP ntpUDP;
@@ -26,7 +27,7 @@ const char* mqtt_server = "103.82.241.46"; // VPS
 // const char* mqtt_server = "192.168.18.238"; // Local
 const int mqtt_port = 1883;
 // Sesuaikan dengan nilai Topik MQTT pada halaman Devices -- PENTING
-const char* mqtt_topic = "device/data";
+char* mqtt_topic = MQTT_TOPIC;
 
 // Device configuration (akan di-update otomatis dari server)
 char device_secret[] = JWT_SECRET;
@@ -84,16 +85,11 @@ void setup() {
   // Initialize random seed
   randomSeed(analogRead(0));
   
-  Serial.println("📡 SIMPLE MQTT Sensor Data Test with CustomJWT");
-  Serial.println("Target: Publish sensor data via MQTT for database storage");
-  Serial.println("Expected: Server processes MQTT data and stores in database");
-  
   // Inisialisasi NTP
   timeClient.begin();
 
   // Initialize JWT memory
   jwt.allocateJWTMemory();
-  Serial.println("✅ JWT memory allocated");
   
   convertHexToBytes(JWT_SECRET, aesKey);
   lastSensorSend = millis() - SENSOR_INTERVAL; // Send immediately
@@ -108,28 +104,29 @@ void loop() {
 
   unsigned long now = millis();
   timeClient.update();
+  sendSensorDataMQTT();
   
   // Send sensor data every 5 seconds (limit to 10 messages for testing)
-  if (now - lastSensorSend >= SENSOR_INTERVAL && messageCount < 10) {
-    lastSensorSend = now;
-    messageCount++;
-    sendSensorDataMQTT();
-  }
+  // if (now - lastSensorSend >= SENSOR_INTERVAL && messageCount < 10) {
+  //   lastSensorSend = now;
+  //   messageCount++;
+  //   sendSensorDataMQTT();
+  // }
   
   // Stop after 10 messages
-  if (messageCount >= 2) {
-    Serial.println("🏁 MQTT Testing completed");
-    Serial.println("✅ ESP32 MQTT test finished. Check server logs for database storage.");
-    while (true) {
-      delay(1000);
-      // Optional: Print periodic status
-      Serial.println("💤 Reset to restart");
-      delay(590000); // Print every 10 seconds total
-      messageCount = 0; // Reset for continuous testing
-    }
-  }
+  // if (messageCount >= 10) {
+  //   Serial.println("🏁 MQTT Testing completed");
+  //   Serial.println("✅ ESP32 MQTT test finished. Check server logs for database storage.");
+  //   while (true) {
+  //     delay(1000);
+  //     // Optional: Print periodic status
+  //     Serial.println("💤 Tekan tombol EN untuk mengirim ulang.");
+  //     delay(590000); // Print every 10 seconds total
+  //     messageCount = 0; // Reset for continuous testing
+  //   }
+  // }
   
-  delay(100);
+  delay(10000);
 }
 
 void reconnectMQTT() {
@@ -150,7 +147,7 @@ void reconnectMQTT() {
 }
 
 void sendSensorDataMQTT() {
-  Serial.println("\n📊 Reading sensors for MQTT (" + String(messageCount) + "/10)...");
+  // Serial.println("\n📊 Reading sensors for MQTT (" + String(messageCount) + "/10)...");
   
   // Read sensor values (realistic simulation)
   float phValue = readPHSensor();
@@ -213,8 +210,8 @@ float readPHSensor() {
 }
 
 float readFlowSensor() {
-  // Flow sensor: 10 - 50 L/min
-  return 10.0 + (random(0, 4000) / 100.0);
+  // Flow sensor: 1 - 5 L/min
+  return 1.0 + (random(0, 400) / 100.0);
 }
 
 float readCODSensor() {

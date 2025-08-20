@@ -800,11 +800,11 @@ export class NotificationService {
               continue;
           }
 
-          console.log(
-            `🎯 [ALARM CHECK] Hasil evaluasi kondisi: ${
-              conditionMet ? "TERPENUHI ✅" : "TIDAK TERPENUHI ❌"
-            }`
-          );
+          // console.log(
+          //   `🎯 [ALARM CHECK] Hasil evaluasi kondisi: ${
+          //     conditionMet ? "TERPENUHI ✅" : "TIDAK TERPENUHI ❌"
+          //   }`
+          // );
 
           if (conditionMet) {
             console.log(

@@ -83,7 +83,7 @@ export default function DataTableHead({
                   </Button>
                 </DropdownMenuTrigger>
               </DescriptionTooltip>
-              <DropdownMenuContent align="center" className="w-48">
+              <DropdownMenuContent align="center" className="w-64">
                 <div className="px-2 py-2">
                   {(filterOptions[col.key] || []).map((option) => (
                     <Label
@@ -167,7 +167,7 @@ export default function DataTableHead({
                 </Button>
               </DropdownMenuTrigger>
             </DescriptionTooltip>
-            <DropdownMenuContent align="center" className="w-48">
+            <DropdownMenuContent align="center" className="w-64">
               <div className="px-2 py-2">
                 {(filterOptions[col.key] || []).map((option) => (
                   <Label

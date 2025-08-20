@@ -15,6 +15,7 @@ import LineForm from "./widget/line-form";
 import BarForm from "./widget/bar-form";
 import PieForm from "./widget/pie-form";
 import GaugeForm from "./widget/gauge-form";
+import TextForm from "./widget/text-form";
 import SliderForm from "./widget/slider-form";
 import SwitchForm from "./widget/switch-form";
 
@@ -117,6 +118,12 @@ export default function EditWidgetDialog({
           singleSelection: true,
           placeholder: "Pilih satu sensor untuk Grafik Gauge"
         };
+      case 'text':
+        return {
+          maxSelection: 1,
+          singleSelection: true,
+          placeholder: "Pilih satu sensor untuk Widget Teks"
+        };
       case 'bar':
         return {
           maxSelection: 6,
@@ -197,6 +204,16 @@ export default function EditWidgetDialog({
             datastreams={datastreams}
             selectedPairs={form.selectedPairs}
             onChange={handleWidgetFormChange}
+          />
+        );
+      case 'text':
+        return (
+          <TextForm
+            devices={devices}
+            datastreams={datastreams}
+            selectedPairs={form.selectedPairs}
+            onChange={handleWidgetFormChange}
+            formData={widgetData?.config || {}}
           />
         );
       case 'slider':

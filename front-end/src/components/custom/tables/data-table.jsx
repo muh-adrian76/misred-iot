@@ -56,7 +56,8 @@ export default function DataTable({
     disabled: false // Status aktif/nonaktif efek
   },
   glowingCells = false,    // Efek glowing pada cell individual
-  glowingHeaders = false   // Efek glowing pada header
+  glowingHeaders = false,   // Efek glowing pada header
+  devices = [] // Data devices untuk referensi (untuk filter device_id)
 }) {
   // State management untuk fitur-fitur table
   const [search, setSearch] = useState(""); // State untuk search/filter teks
@@ -169,14 +170,33 @@ export default function DataTable({
     const opts = {};
     columns.forEach((col) => {
       if (col.filterable) {
-        // Ambil nilai unik dari setiap kolom yang bisa difilter
-        opts[col.key] = Array.from(
-          new Set(data.map((row) => row[col.key]))
-        ).filter(Boolean); // Hapus nilai kosong/null
+        if (col.key === 'device_id' && devices && devices.length > 0) {
+          // Untuk kolom device_id, gunakan deskripsi device sebagai filter options
+          const deviceIds = Array.from(
+            new Set(data.map((row) => row[col.key]))
+          ).filter(Boolean);
+          
+          opts[col.key] = deviceIds.map(deviceId => {
+            const device = devices.find(d => d.id === deviceId);
+            return device ? device.description : deviceId;
+          }).filter(Boolean);
+        } else if (col.key === 'is_active') {
+          // Untuk kolom boolean is_active, konversi ke teks yang user-friendly
+          const uniqueValues = Array.from(
+            new Set(data.map((row) => row[col.key]))
+          ).filter(val => val !== null && val !== undefined);
+          
+          opts[col.key] = uniqueValues.map(val => val ? "Aktif" : "Non-aktif");
+        } else {
+          // Untuk kolom lainnya, ambil nilai unik dari setiap kolom yang bisa difilter
+          opts[col.key] = Array.from(
+            new Set(data.map((row) => row[col.key]))
+          ).filter(Boolean); // Hapus nilai kosong/null
+        }
       }
     });
     return opts;
-  }, [columns, data]);
+  }, [columns, data, devices]);
   
   // Handler untuk mengubah filter pada kolom tertentu
   const handleFilterChange = (key, value, checked) => {
@@ -228,13 +248,26 @@ export default function DataTable({
     // Apply filters per kolom
     Object.entries(filters).forEach(([key, values]) => {
       if (values && values.length > 0) {
-        // Filter hanya baris yang memiliki nilai yang dipilih di filter
-        filtered = filtered.filter((row) => values.includes(row[key]));
+        if (key === 'device_id' && devices && devices.length > 0) {
+          // Untuk filter device_id, konversi deskripsi device kembali ke device_id
+          const deviceIds = values.map(description => {
+            const device = devices.find(d => d.description === description);
+            return device ? device.id : description;
+          });
+          filtered = filtered.filter((row) => deviceIds.includes(row[key]));
+        } else if (key === 'is_active') {
+          // Untuk filter is_active, konversi teks kembali ke boolean
+          const booleanValues = values.map(text => text === "Aktif");
+          filtered = filtered.filter((row) => booleanValues.includes(row[key]));
+        } else {
+          // Filter hanya baris yang memiliki nilai yang dipilih di filter
+          filtered = filtered.filter((row) => values.includes(row[key]));
+        }
       }
     });
     
     return filtered;
-  }, [data, search, columns, sortBy, sortDir, filters]);
+  }, [data, search, columns, sortBy, sortDir, filters, devices]);
 
   // Logic pagination untuk membagi data menjadi halaman-halaman
   const totalRows = filteredData.length; // Total baris setelah filter

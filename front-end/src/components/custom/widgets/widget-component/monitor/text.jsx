@@ -88,41 +88,34 @@ const TextWidget = ({
   const colors = colorClasses[accentColor] || colorClasses.blue;
 
   return (
-    <div className="p-6 h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${colors.icon}`}>
-            <CustomIcon className="w-5 h-5" />
-          </div>
-          <span className="text-gray-700 font-medium text-base">{title}</span>
+    <div className="h-full w-full min-h-[150px] space-y-2 flex flex-col">
+      {/* Header - sama seperti line dan area chart */}
+      <div className="px-4 pt-2 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <p className="text-sm font-bold sm:text-lg">
+            {title}
+          </p>
         </div>
-        {trend && (
-          <div className="flex items-center">
-            {getTrendIcon()}
-          </div>
-        )}
       </div>
 
-      {/* Main Value */}
-      <div className="flex-1 flex flex-col justify-center items-center mb-6">
-        <div className="text-center mb-4">
-          <div className="text-gray-500 text-xs mb-2 uppercase tracking-wider font-medium">
-            Current Reading
-          </div>
-          <div className="text-gray-900 font-bold text-5xl">
-            {formatValue(displayValue)}
-          </div>
-          {unit && (
-            <div className="text-gray-600 text-lg font-medium mt-1">
-              {unit}
+      {/* Main Value - tanpa current reading dan ikon */}
+      <div className="flex-1 flex flex-col justify-center items-center">
+        <div className="text-center">
+          <div className="flex items-baseline justify-center gap-2">
+            <div className="text-gray-900 font-bold text-5xl">
+              {formatValue(displayValue)}
             </div>
-          )}
+            {unit && (
+              <div className="text-gray-600 text-lg font-medium">
+                {unit}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Threshold Indicators */}
-      <div className="space-y-2">
+      {/* Threshold Indicators - disembunyikan */}
+      {/* <div className="space-y-2">
         <div className="flex justify-between text-gray-500 text-xs font-medium">
           {thresholds.map((threshold, index) => (
             <span key={index}>{threshold}</span>
@@ -139,7 +132,7 @@ const TextWidget = ({
             />
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
@@ -161,13 +154,8 @@ export const TextWidgetWrapper = ({
       <div className="flex flex-col items-center justify-center h-full w-full p-4">
         <div className="text-center">
           <div className="text-3xl font-bold text-gray-900 mb-1">
-            25.6
-          </div>
-          <div className="text-sm text-gray-600 mb-2">
-            °C
-          </div>
-          <div className="text-xs text-gray-500">
-            Temperature
+            25.6 
+            <span className="text-muted-foreground text-sm"> mg/L</span>
           </div>
         </div>
       </div>
@@ -185,19 +173,45 @@ export const TextWidgetWrapper = ({
       </div>
     );
   }
-  // Get pairs dari widget inputs
-  const pairs = widget?.inputs?.map(input => ({
-    device_id: input.device_id,
-    datastream_id: input.datastream_id
-  })) || [];
+
+  // Ambil inputs dari widget (prioritas: inputs -> datastream_ids -> fallback)
+  const pairs =
+    Array.isArray(widget?.inputs) && widget.inputs.length > 0
+      ? widget.inputs
+      : Array.isArray(widget?.datastream_ids) &&
+          widget.datastream_ids.length > 0
+        ? widget.datastream_ids
+        : widget?.datastream_id && widget?.device_id
+          ? [
+              {
+                device_id: widget.device_id,
+                datastream_id: widget.datastream_id,
+              },
+            ]
+          : [];
 
   // Hook untuk mengambil data widget dari server
   const { 
-    data, 
+    timeSeriesData,
+    latestValue,
     isLoading, 
     error, 
-    isConnected 
+    isValidWidget,
+    isRealTimeConnected,
+    datastreamInfo
   } = useWidgetData(widget, timeRange, dataCount, filterType, pairs);
+
+  // Validasi widget
+  if (!isValidWidget) {
+    return (
+      <div className="h-full w-full min-h-[120px] flex items-center justify-center bg-muted/30 rounded-lg">
+        <div className="text-center space-y-2">
+          <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">Konfigurasi widget tidak valid</p>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state
   if (isLoading) {
@@ -226,49 +240,87 @@ export const TextWidgetWrapper = ({
   }
 
   // No connection state
-  if (!isConnected) {
+  if (!isRealTimeConnected) {
     return (
       <div className="flex items-center justify-center h-full min-h-[120px]">
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <WifiOff className="h-5 w-5" />
-          <span className="text-xs">No connection</span>
+          <span className="text-xs">Tidak ada koneksi</span>
         </div>
       </div>
     );
   }
 
   // No data state
-  if (!data || data.length === 0) {
+  if (!timeSeriesData || timeSeriesData.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[120px]">
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-xs">No data</span>
+          <span className="text-xs">Belum ada data</span>
         </div>
       </div>
     );
   }
 
   // Get the latest value from the data
-  const latestData = data[data.length - 1];
-  const value = latestData ? parseFloat(latestData.value) || 0 : 0;
+  const latestData = timeSeriesData[timeSeriesData.length - 1];
+  const value = latestData ? parseFloat(latestData[`value_${pairs[0].device_id}_${pairs[0].datastream_id}`]) || 0 : 0;
 
   // Get widget configuration
   const config = widget.config || {};
 
-  // Get sensor information for title
-  const sensorInfo = pairs[0];
+  // Get sensor information for title and unit
   const title = widget.description || "Sensor Value";
+  
+  // Get unit from the first selected datastream (since text widget only uses one)
+  const selectedPair = pairs[0];
+  let datastreamUnit = "";
+  let datastreamPrecision = 0;
+  
+  if (selectedPair) {
+    // Primary method: try from the latest data point (this is most reliable)
+    if (timeSeriesData && timeSeriesData.length > 0) {
+      const latestPoint = timeSeriesData[timeSeriesData.length - 1];
+      const unitKey = `unit_${selectedPair.device_id}_${selectedPair.datastream_id}`;
+      datastreamUnit = latestPoint[unitKey] || "";
+    }
+    
+    // Get precision from datastreamInfo
+    if (datastreamInfo && Array.isArray(datastreamInfo)) {
+      const datastream = datastreamInfo.find(
+        ds => ds.device_id === selectedPair.device_id && ds.datastream_id === selectedPair.datastream_id
+      );
+      if (datastream && datastream.decimal_value) {
+        // Parse decimal format like "0.00" to get precision count
+        const decimalMatch = datastream.decimal_value.match(/\.(\d+)/);
+        datastreamPrecision = decimalMatch ? decimalMatch[1].length : 0;
+      }
+    }
+    
+    // Fallback 1: try from widget.datastreams if available
+    if (!datastreamUnit && widget.datastreams && Array.isArray(widget.datastreams)) {
+      const datastream = widget.datastreams.find(
+        ds => ds.device_id === selectedPair.device_id && ds.id === selectedPair.datastream_id
+      );
+      datastreamUnit = datastream?.unit || "";
+    }
+    
+    // Fallback 2: try from widget config
+    if (!datastreamUnit && widget.config?.unit) {
+      datastreamUnit = widget.config.unit;
+    }
+  }
 
   return (
     <TextWidget
       value={value}
       title={title}
-      unit={config.unit || ""}
-      threshold={config.threshold}
-      accentColor={config.accentColor || "#3b82f6"}
-      size={config.size || "medium"}
-      animated={config.animated !== undefined ? config.animated : true}
+      unit={datastreamUnit || config.unit || ""}
+      maxValue={config.maxValue || 100}
+      thresholds={config.thresholds || [25, 50, 75, 100]}
+      precision={datastreamPrecision || config.precision || 0}
+      accentColor={config.accentColor || "blue"}
       className={className}
       {...props}
     />

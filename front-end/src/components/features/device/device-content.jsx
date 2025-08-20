@@ -64,9 +64,13 @@ export default function DeviceContent({
   // Fungsi untuk copy teks ke clipboard
   const handleCopy = (text, type = "secret") => {
     navigator.clipboard.writeText(text);
-    type === "secret"
-      ? successToast("Secret berhasil disalin ke clipboard.")
-      : successToast("UID berhasil disalin ke clipboard.");
+    if (type === "secret") {
+      successToast("Secret berhasil disalin ke clipboard.");
+    } else if (type === "topic") {
+      successToast("Topik MQTT berhasil disalin ke clipboard.");
+    } else {
+      successToast("UID berhasil disalin ke clipboard.");
+    }
   };
 
   // Komponen badge status
@@ -162,7 +166,31 @@ export default function DeviceContent({
       label: "Protokol",
       filterable: true,
     },
-    { key: "mqtt_topic", label: "Topik MQTT", sortable: true },
+    {
+      key: "mqtt_topic",
+      label: "Topik MQTT",
+      sortable: true,
+      render: (row) => (
+        <span className="flex items-center justify-center gap-2">
+          <span className="truncate max-w-[150px] inline-block">
+            {row.mqtt_topic || "-"}
+          </span>
+          {row.mqtt_topic && (
+            <DescriptionTooltip content="Salin" side="right">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() => handleCopy(row.mqtt_topic, "topic")}
+                className="p-1 opacity-50 hover:opacity-100"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+            </DescriptionTooltip>
+          )}
+        </span>
+      ),
+    },
     // { key: "mqtt_qos", label: "QoS MQTT", filterable: true },
     // { key: "dev_eui", label: "LoRa UID", filterable: true },
     {

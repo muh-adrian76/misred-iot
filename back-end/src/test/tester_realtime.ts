@@ -11,44 +11,44 @@ import crypto from "crypto";
 import mqtt, { MqttClient } from "mqtt";
 import mysql from "mysql2/promise";
 
-// const SERVER_URL = "http://localhost:7601";
-const SERVER_URL = "https://api.misred-iot.com";
+const SERVER_URL = "http://localhost:7601";
+// const SERVER_URL = "https://api.misred-iot.com";
 
 const MQTT_CONFIG = {
-  // host: "localhost",
-  host: "103.82.241.46",
+  host: "localhost",
+  // host: "103.82.241.46",
   port: 1883,
   clientId: "Realtime_Test_Client",
 };
 
 // Database configuration
-// const DB_CONFIG = {
-//   host: "localhost",
-//   user: "root",
-//   password: "",
-//   database: "misred_iot",
-//   port: 3306,
-// };
 const DB_CONFIG = {
-  host: "103.229.73.15",
-  user: "misredio_web",
-  password: "misred-iot.com",
-  database: "misredio_web",
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "misred_iot",
   port: 3306,
 };
+// const DB_CONFIG = {
+//   host: "103.229.73.15",
+//   user: "misredio_web",
+//   password: "misred-iot.com",
+//   database: "misredio_web",
+//   port: 3306,
+// };
 
 // Device configurations (will be loaded from database)
 let HTTP_DEVICE = {
   device_id: "1",
-  // device_secret: "23050c3dcef3c669690aab113a21c3b2",
-  device_secret: "8ea3bc192c664fb75ca734cd531d3f79",
+  device_secret: "23050c3dcef3c669690aab113a21c3b2",
+  // device_secret: "8ea3bc192c664fb75ca734cd531d3f79",
   name: "ESP32 SPARING",
 };
 
 let MQTT_DEVICE = {
   device_id: "2",
-  // device_secret: "45139dc186dd3fa9eb8e22f628968e75",
-  device_secret: "5f15620358aca027a3cffdd30c16939b",
+  device_secret: "45139dc186dd3fa9eb8e22f628968e75",
+  // device_secret: "5f15620358aca027a3cffdd30c16939b",
   name: "ESP32 SPARING 2",
   topic: "device/data",
 };

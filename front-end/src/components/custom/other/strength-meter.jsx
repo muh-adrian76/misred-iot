@@ -305,6 +305,7 @@ export function PasswordStrengthMeter({
           value={password}
           onChange={handleChange}
           autoComplete={autoComplete}
+          minLength={8}
           className={cn(
             showPasswordToggle && enableAutoGenerate
               ? "pr-20"
@@ -447,6 +448,7 @@ export function PasswordInput({
         type={showPassword ? "text" : "password"}
         className={cn("pr-10", className)}
         value={value}
+        minLength={8}
         onChange={onChange}
         {...props}
       />

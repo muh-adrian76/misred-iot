@@ -377,6 +377,9 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         // Initialize semua datastream keys dengan null
         deviceDatastreamKeys.forEach(dsKey => {
           dataPoint[dsKey] = null;
+          // Also initialize unit keys
+          const unitKey = dsKey.replace('value_', 'unit_');
+          dataPoint[unitKey] = null;
         });
         
         // Set nilai untuk setiap datastream jika ada data pada timestamp ini
@@ -384,6 +387,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           .filter(point => point.timeKey === timeKey)
           .forEach(point => {
             dataPoint[`value_${point.device_id}_${point.datastream_id}`] = point.value;
+            dataPoint[`unit_${point.device_id}_${point.datastream_id}`] = point.unit;
           });
         
         chartData.push(dataPoint);
@@ -451,11 +455,16 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         // Initialize semua datastream keys dengan null
         deviceDatastreamKeys.forEach(dsKey => {
           timeMap[key][dsKey] = null;
+          // Also initialize unit keys
+          const unitKey = dsKey.replace('value_', 'unit_');
+          timeMap[key][unitKey] = null;
         });
       }
       
       // Set nilai untuk datastream ini
       timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
+      // Set unit untuk datastream ini
+      timeMap[key][`unit_${item.device_id}_${item.datastream_id}`] = item.unit;
     });
 
     // Convert ke array dan urutkan
@@ -534,6 +543,9 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           // Initialize semua datastream keys dengan null
           deviceDatastreamKeys.forEach(dsKey => {
             dataPoint[dsKey] = null;
+            // Also initialize unit keys
+            const unitKey = dsKey.replace('value_', 'unit_');
+            dataPoint[unitKey] = null;
           });
           
           // Set nilai untuk setiap datastream jika ada data pada timestamp ini
@@ -541,6 +553,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             .filter(point => point.timeKey === timeKey)
             .forEach(point => {
               dataPoint[`value_${point.device_id}_${point.datastream_id}`] = point.value;
+              dataPoint[`unit_${point.device_id}_${point.datastream_id}`] = point.unit;
             });
           
           chartData.push(dataPoint);

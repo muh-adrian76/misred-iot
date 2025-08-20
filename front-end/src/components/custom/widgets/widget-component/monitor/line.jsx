@@ -42,6 +42,10 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
           // Ambil label dari chartConfig berdasarkan dataKey
           const displayLabel =
             chartConfig?.[entry.dataKey]?.label || entry.name;
+          
+          // Ambil unit dari data point
+          const unitKey = entry.dataKey.replace('value_', 'unit_');
+          const unit = entry.payload?.[unitKey] || "";
 
           return (
             <div
@@ -62,7 +66,7 @@ const CustomTooltipContent = ({ active, payload, label, chartConfig }) => {
                   ? entry.value.toLocaleString("id-ID", {
                       minimumFractionDigits: 1,
                       maximumFractionDigits: 2,
-                    })
+                    }) + (unit ? ` ${unit}` : "")
                   : "-"}
               </span>
             </div>

@@ -30,13 +30,13 @@ const widgetList = [
   //   width: "w-50",
   //   tooltip: "Gunakan untuk mengatur nilai dalam rentang tertentu",
   // },
-  // {
-  //   key: "text",
-  //   label: "Teks",
-  //   component: TextWidgetWrapper,
-  //   width: "w-50",
-  //   tooltip: "Gunakan untuk menampilkan nilai sensor dalam format teks",
-  // },
+  {
+    key: "text",
+    label: "Teks",
+    component: TextWidgetWrapper,
+    width: "w-50",
+    tooltip: "Gunakan untuk menampilkan nilai sensor dalam format teks",
+  },
   // {
   //   key: "gauge",
   //   label: "Gauge",
@@ -46,10 +46,10 @@ const widgetList = [
   // },
   {
     key: "line",
-  label: "Grafik Garis",
+    label: "Grafik Garis",
     component: LineChartWidget,
     width: "lg:w-50 w-full", // Responsive width: 50% di layar besar, full di layar kecil
-  tooltip: "Gunakan untuk memantau tren data dari waktu ke waktu",
+    tooltip: "Gunakan untuk memantau tren data dari waktu ke waktu",
   },
   // {
   //   key: "bar",
@@ -59,9 +59,9 @@ const widgetList = [
   // },
   {
     key: "area",
-  label: "Grafik Area",
+    label: "Grafik Area",
     component: AreaChartWidget,
-  tooltip: "Gunakan untuk menampilkan akumulasi atau volume data",
+    tooltip: "Gunakan untuk menampilkan akumulasi atau volume data",
   },
   // Pie chart sementara dinonaktifkan
   // {
