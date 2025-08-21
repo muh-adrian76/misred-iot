@@ -606,15 +606,41 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         });
       });
 
-      // PERBAIKAN: Untuk time filtering, jangan filter lagi di frontend karena:
-      // 1. Backend sudah melakukan filtering berdasarkan time range
-      // 2. Real-time data adalah update incremental, bukan replacement lengkap
-      // 3. Double filtering bisa menyebabkan data hilang
-      // Jadi kita akan langsung buat chart data dari semua data yang sudah ada
-      // Langsung buat chart data tanpa filtering tambahan
+      // PERBAIKAN: Untuk time filtering, HARUS filter berdasarkan time range yang dipilih
+      // Karena real-time data mengakumulasi semua data, kita perlu filter sesuai time range
+      // Hitung cutoff time berdasarkan time range yang dipilih
+      const now = new Date();
+      let cutoffTime = null;
+      
+      switch (timeRange) {
+        case "1h":
+          cutoffTime = new Date(now.getTime() - (1 * 60 * 60 * 1000)); // 1 jam yang lalu
+          break;
+        case "12h":
+          cutoffTime = new Date(now.getTime() - (12 * 60 * 60 * 1000)); // 12 jam yang lalu
+          break;
+        case "1d":
+          cutoffTime = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 1 hari yang lalu
+          break;
+        case "1w":
+          cutoffTime = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // 1 minggu yang lalu
+          break;
+        case "1m":
+          cutoffTime = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)); // 1 bulan yang lalu
+          break;
+        default:
+          cutoffTime = new Date(now.getTime() - (1 * 60 * 60 * 1000)); // Default 1 jam
+      }
+      
+      // Filter data berdasarkan cutoff time
+      const filteredDataPoints = allDataPoints.filter(item => {
+        return item.timestamp >= cutoffTime;
+      });
+      
+      // Buat chart data dari data yang sudah difilter
       const timeMap = {};
       
-      allDataPoints.forEach((item) => {
+      filteredDataPoints.forEach((item) => {
         const key = item.timeKey;
         
         if (!timeMap[key]) {
@@ -630,11 +656,16 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           // Initialize semua datastream keys dengan null
           deviceDatastreamKeys.forEach(dsKey => {
             timeMap[key][dsKey] = null;
+            // Juga initialize unit keys
+            const unitKey = dsKey.replace('value_', 'unit_');
+            timeMap[key][unitKey] = null;
           });
         }
         
         // Set nilai untuk datastream ini
         timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
+        // Set unit untuk datastream ini
+        timeMap[key][`unit_${item.device_id}_${item.datastream_id}`] = item.unit;
       });
 
       // Convert ke array dan urutkan
