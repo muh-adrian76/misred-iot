@@ -3,9 +3,19 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useWebSocket } from "@/providers/websocket-provider";
 import { useUser } from "@/providers/user-provider";
-import { fetchFromBackend, timezoneConfig, convertUTCToLocalTime } from "@/lib/helper";
+import {
+  fetchFromBackend,
+  timezoneConfig,
+  convertUTCToLocalTime,
+} from "@/lib/helper";
 
-export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filterType = "time", pairsInput) {
+export function useWidgetData(
+  widget,
+  timeRange = "1h",
+  dataCount = "100",
+  filterType = "time",
+  pairsInput
+) {
   const { user } = useUser();
   const { ws } = useWebSocket();
   const [realTimeData, setRealTimeData] = useState(null);
@@ -39,7 +49,13 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     error: timeSeriesError,
     refetch: refetchTimeSeries,
   } = useQuery({
-    queryKey: ["widget-timeseries-multi", pairs, timeRange, dataCount, filterType],
+    queryKey: [
+      "widget-timeseries-multi",
+      pairs,
+      timeRange,
+      dataCount,
+      filterType,
+    ],
     queryFn: async () => {
       if (!isValidWidget) return [];
       // PENTING: Untuk multi-datastream, setiap datastream harus mendapat request terpisah
@@ -56,18 +72,18 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           } else {
             endpoint = `/payload/timeseries/${pair.device_id}/${pair.datastream_id}?range=${timeRange}`;
           }
-          
+
           const response = await fetchFromBackend(endpoint);
           if (!response.ok) return [];
           const data = await response.json();
-          
+
           // Debug log untuk melihat data yang diterima
           // console.log(`📊 Data received for Device ${pair.device_id} Datastream ${pair.datastream_id}:`, {
           //   count: data.result?.length || 0,
           //   filterType: data.filterType,
           //   dataCount: data.dataCount
           // });
-          
+
           return (data.result || []).map((item) => ({
             ...item,
             device_id: pair.device_id,
@@ -84,10 +100,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
   });
 
   // Query untuk mendapatkan datastream info (type, min_value, max_value)
-  const {
-    data: datastreamInfo,
-    isLoading: isLoadingDatastream
-  } = useQuery({
+  const { data: datastreamInfo, isLoading: isLoadingDatastream } = useQuery({
     queryKey: ["widget-datastream-info", pairs],
     queryFn: async () => {
       if (!isValidWidget) return [];
@@ -152,13 +165,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       // Ambil data terbaru berdasarkan device_time
       const all = latestDataRaw.filter(Boolean);
       if (all.length === 0) return;
-      const sorted = [...all].sort(
-        (a, b) => {
-          const timeA = new Date(a.timestamp || a.device_time);
-          const timeB = new Date(b.timestamp || b.device_time);
-          return timeB - timeA;
-        }
-      );
+      const sorted = [...all].sort((a, b) => {
+        const timeA = new Date(a.timestamp || a.device_time);
+        const timeB = new Date(b.timestamp || b.device_time);
+        return timeB - timeA;
+      });
       setLatestValue(sorted[0]);
     }
   }, [latestDataRaw]);
@@ -167,15 +178,15 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
   useEffect(() => {
     if (timeSeriesDataRaw) {
       const initialData = {};
-      timeSeriesDataRaw.forEach(pairData => {
-        pairData.forEach(item => {
+      timeSeriesDataRaw.forEach((pairData) => {
+        pairData.forEach((item) => {
           if (!initialData[item.datastream_id]) {
             initialData[item.datastream_id] = [];
           }
           // PERBAIKAN: Konversi timezone untuk initial data juga
           const rawTimestamp = item.timestamp || item.device_time;
           const convertedTime = convertUTCToLocalTime(rawTimestamp);
-          
+
           const normalizedItem = {
             ...item,
             timestamp: convertedTime || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
@@ -189,15 +200,21 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 
   // Effect untuk re-apply sliding window ketika filter berubah
   useEffect(() => {
-    if (filterType === "count" && Object.keys(realtimeTimeSeriesData).length > 0) {
+    if (
+      filterType === "count" &&
+      Object.keys(realtimeTimeSeriesData).length > 0
+    ) {
       const countNum = parseInt(dataCount);
       if (!isNaN(countNum) && dataCount !== "all") {
-        setRealtimeTimeSeriesData(prevData => {
+        setRealtimeTimeSeriesData((prevData) => {
           const updated = { ...prevData };
-          
+
           // Re-apply sliding window untuk semua datastream
-          Object.keys(updated).forEach(datastreamId => {
-            if (updated[datastreamId] && updated[datastreamId].length > countNum) {
+          Object.keys(updated).forEach((datastreamId) => {
+            if (
+              updated[datastreamId] &&
+              updated[datastreamId].length > countNum
+            ) {
               updated[datastreamId] = updated[datastreamId]
                 .sort((a, b) => {
                   const timeA = new Date(a.timestamp || a.device_time);
@@ -207,7 +224,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
                 .slice(0, countNum); // Ambil N data terakhir
             }
           });
-          
+
           return updated;
         });
       }
@@ -231,11 +248,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           )
         ) {
           setRealTimeData(data);
-          
+
           // PERBAIKAN: Deklarasikan variabel timezone conversion dulu
           const rawTimestamp = data.device_time || data.timestamp;
           const convertedTimestamp = convertUTCToLocalTime(rawTimestamp);
-          
+
           // Update latest value langsung
           setLatestValue({
             value: data.value,
@@ -262,17 +279,17 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           };
 
           // Update real-time chart data dengan sliding window management
-          setRealtimeTimeSeriesData(prevData => {
+          setRealtimeTimeSeriesData((prevData) => {
             const updated = { ...prevData };
             const datastreamId = newDataPoint.datastream_id;
-            
+
             if (!updated[datastreamId]) {
               updated[datastreamId] = [];
             }
-            
+
             // Tambah data point baru
             updated[datastreamId] = [...updated[datastreamId], newDataPoint];
-            
+
             // SLIDING WINDOW MANAGEMENT berdasarkan filter type
             if (filterType === "count") {
               const countNum = parseInt(dataCount);
@@ -295,10 +312,10 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
                     const timeB = new Date(b.timestamp || b.device_time);
                     return timeB - timeA; // Descending (terbaru dulu)
                   })
-                  .slice(0, 1000); // Keep latest 1000                
+                  .slice(0, 1000); // Keep latest 1000
               }
             }
-            
+
             return updated;
           });
           lastUpdateTime.current = Date.now();
@@ -322,26 +339,31 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     if (filterType === "count") {
       // Untuk count filter, proses setiap datastream terpisah untuk mempertahankan balance
       const allDataPoints = [];
-      const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
-      
+      const deviceDatastreamKeys = pairs.map(
+        (pair) => `value_${pair.device_id}_${pair.datastream_id}`
+      );
+
       // Kumpulkan semua timestamp unik dari semua datastream
       const timestampSet = new Set();
-      
+
       timeSeriesDataRaw.forEach((pairData, pairIndex) => {
         const pair = pairs[pairIndex];
-        
+
         pairData.forEach((item) => {
           const timestamp = item.timestamp || item.device_time;
           const utcTime = convertUTCToLocalTime(timestamp);
-          
+
           if (!utcTime) {
-            console.warn('Invalid timestamp in formattedTimeSeriesData:', timestamp);
+            console.warn(
+              "Invalid timestamp in formattedTimeSeriesData:",
+              timestamp
+            );
             return;
           }
-          
+
           const timeKey = utcTime.toISOString();
           timestampSet.add(timeKey);
-          
+
           allDataPoints.push({
             timeKey,
             timestamp: utcTime,
@@ -352,73 +374,80 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             device_name: item.device_name,
             sensor_name: item.sensor_name,
             unit: item.unit,
-            pair_index: pairIndex
+            pair_index: pairIndex,
           });
         });
       });
-      
+
       // Sort timestamp dan ambil hanya data yang dibutuhkan untuk menjaga balance
       const sortedTimestamps = Array.from(timestampSet).sort();
-      
+
       // Buat chart data dengan mempertahankan balance per datastream
       const chartData = [];
-      
-      sortedTimestamps.forEach(timeKey => {
+
+      sortedTimestamps.forEach((timeKey) => {
         const dataPoint = {
           timestamp: timeKey,
           originalTimestamp: timeKey,
           time: new Date(timeKey).toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
-            timeZone: timezoneConfig.timezone
+            timeZone: timezoneConfig.timezone,
           }),
         };
-        
+
         // Initialize semua datastream keys dengan null
-        deviceDatastreamKeys.forEach(dsKey => {
+        deviceDatastreamKeys.forEach((dsKey) => {
           dataPoint[dsKey] = null;
           // Also initialize unit keys
-          const unitKey = dsKey.replace('value_', 'unit_');
+          const unitKey = dsKey.replace("value_", "unit_");
           dataPoint[unitKey] = null;
         });
-        
+
         // Set nilai untuk setiap datastream jika ada data pada timestamp ini
         allDataPoints
-          .filter(point => point.timeKey === timeKey)
-          .forEach(point => {
-            dataPoint[`value_${point.device_id}_${point.datastream_id}`] = point.value;
-            dataPoint[`unit_${point.device_id}_${point.datastream_id}`] = point.unit;
+          .filter((point) => point.timeKey === timeKey)
+          .forEach((point) => {
+            dataPoint[`value_${point.device_id}_${point.datastream_id}`] =
+              point.value;
+            dataPoint[`unit_${point.device_id}_${point.datastream_id}`] =
+              point.unit;
           });
-        
+
         chartData.push(dataPoint);
       });
-      
+
       // Sort berdasarkan timestamp
       const sortedData = chartData.sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-      );      
+      );
       return sortedData;
     }
-    
+
     // LOGIKA LAMA UNTUK TIME FILTERING:
     // Untuk time filter, gabungkan data berdasarkan timestamp seperti sebelumnya
     const allData = [];
-    const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
-    
+    const deviceDatastreamKeys = pairs.map(
+      (pair) => `value_${pair.device_id}_${pair.datastream_id}`
+    );
+
     // Proses setiap pair (datastream) secara terpisah
     timeSeriesDataRaw.forEach((pairData, pairIndex) => {
       const pair = pairs[pairIndex];
-      
+
       pairData.forEach((item) => {
         // Gunakan utility function untuk konversi timestamp
         const timestamp = item.timestamp || item.device_time;
         const utcTime = convertUTCToLocalTime(timestamp);
-        
+
         if (!utcTime) {
-          console.warn('Invalid timestamp in formattedTimeSeriesData:', timestamp);
+          console.warn(
+            "Invalid timestamp in formattedTimeSeriesData:",
+            timestamp
+          );
           return;
         }
-        
+
         allData.push({
           timestamp: utcTime,
           originalTimestamp: utcTime.toISOString(), // Gunakan waktu yang sudah dikonversi
@@ -437,11 +466,11 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 
     // Buat map waktu yang presisi (tanpa pembulatan)
     const timeMap = {};
-    
+
     allData.forEach((item) => {
       // Gunakan timestamp presisi tanpa pembulatan
       const key = item.timestamp.toISOString();
-      
+
       if (!timeMap[key]) {
         timeMap[key] = {
           timestamp: key,
@@ -449,20 +478,21 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
           time: item.timestamp.toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
-            timeZone: timezoneConfig.timezone
+            timeZone: timezoneConfig.timezone,
           }),
         };
         // Initialize semua datastream keys dengan null
-        deviceDatastreamKeys.forEach(dsKey => {
+        deviceDatastreamKeys.forEach((dsKey) => {
           timeMap[key][dsKey] = null;
           // Also initialize unit keys
-          const unitKey = dsKey.replace('value_', 'unit_');
+          const unitKey = dsKey.replace("value_", "unit_");
           timeMap[key][unitKey] = null;
         });
       }
-      
+
       // Set nilai untuk datastream ini
-      timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
+      timeMap[key][`value_${item.device_id}_${item.datastream_id}`] =
+        item.value;
       // Set unit untuk datastream ini
       timeMap[key][`unit_${item.device_id}_${item.datastream_id}`] = item.unit;
     });
@@ -484,16 +514,18 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
         if (isNaN(countNum) || dataCount === "all") {
           return formattedTimeSeriesData;
         }
-        
-        const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
+
+        const deviceDatastreamKeys = pairs.map(
+          (pair) => `value_${pair.device_id}_${pair.datastream_id}`
+        );
         const allDataPoints = [];
         const timestampSet = new Set();
-        
+
         // Proses setiap datastream untuk mendapat count data terakhir per datastream
-        pairs.forEach(pair => {
+        pairs.forEach((pair) => {
           const datastreamId = pair.datastream_id;
           const datastreamData = realtimeTimeSeriesData[datastreamId] || [];
-          
+
           // Sort berdasarkan timestamp dan ambil N data terakhir per datastream
           const sortedData = [...datastreamData]
             .sort((a, b) => {
@@ -503,17 +535,21 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             })
             .slice(0, countNum) // Ambil N data terakhir
             .reverse(); // Kembali ke chronological order
-          
+
           // Convert ke format yang dibutuhkan chart
-          sortedData.forEach(item => {
+          sortedData.forEach((item) => {
             const timestamp = item.timestamp || item.device_time;
             // PERBAIKAN: Timestamp sudah dikonversi saat disimpan, jadi langsung gunakan
-            const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
+            const timeKey =
+              timestamp instanceof Date
+                ? timestamp.toISOString()
+                : new Date(timestamp).toISOString();
             timestampSet.add(timeKey);
-            
+
             allDataPoints.push({
               timeKey,
-              timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
+              timestamp:
+                timestamp instanceof Date ? timestamp : new Date(timestamp),
               originalTimestamp: timeKey, // Gunakan timestamp yang sudah dikonversi
               device_id: item.device_id,
               datastream_id: item.datastream_id,
@@ -524,77 +560,85 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             });
           });
         });
-        
+
         // Buat chart data yang balanced
         const sortedTimestamps = Array.from(timestampSet).sort();
         const chartData = [];
-        
-        sortedTimestamps.forEach(timeKey => {
+
+        sortedTimestamps.forEach((timeKey) => {
           const dataPoint = {
             timestamp: timeKey,
             originalTimestamp: timeKey,
             time: new Date(timeKey).toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
-              timeZone: timezoneConfig.timezone
+              timeZone: timezoneConfig.timezone,
             }),
           };
-          
+
           // Initialize semua datastream keys dengan null
-          deviceDatastreamKeys.forEach(dsKey => {
+          deviceDatastreamKeys.forEach((dsKey) => {
             dataPoint[dsKey] = null;
             // Also initialize unit keys
-            const unitKey = dsKey.replace('value_', 'unit_');
+            const unitKey = dsKey.replace("value_", "unit_");
             dataPoint[unitKey] = null;
           });
-          
+
           // Set nilai untuk setiap datastream jika ada data pada timestamp ini
           allDataPoints
-            .filter(point => point.timeKey === timeKey)
-            .forEach(point => {
-              dataPoint[`value_${point.device_id}_${point.datastream_id}`] = point.value;
-              dataPoint[`unit_${point.device_id}_${point.datastream_id}`] = point.unit;
+            .filter((point) => point.timeKey === timeKey)
+            .forEach((point) => {
+              dataPoint[`value_${point.device_id}_${point.datastream_id}`] =
+                point.value;
+              dataPoint[`unit_${point.device_id}_${point.datastream_id}`] =
+                point.unit;
             });
-          
+
           chartData.push(dataPoint);
         });
-        
+
         // Sort berdasarkan timestamp
         const sortedData = chartData.sort(
           (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
         );
-        
+
         // Debug log untuk hasil filter count
         // console.log('Real-time count filter result:', {
         //   totalDataPoints: allDataPoints.length,
         //   chartDataLength: sortedData.length,
         //   countPerDatastream: countNum
         // });
-        
+
         return sortedData;
       }
-      
+
       // Fallback ke database data jika belum ada real-time data
       return formattedTimeSeriesData;
     }
-    
+
     // Untuk time filtering, bisa gunakan real-time data jika tersedia
     if (Object.keys(realtimeTimeSeriesData).length > 0) {
-      const deviceDatastreamKeys = pairs.map(pair => `value_${pair.device_id}_${pair.datastream_id}`);
+      const deviceDatastreamKeys = pairs.map(
+        (pair) => `value_${pair.device_id}_${pair.datastream_id}`
+      );
       const allDataPoints = [];
       const timestampSet = new Set();
-      
+
       // Kumpulkan semua data dari real-time data
-      Object.values(realtimeTimeSeriesData).forEach(datastreamData => {
-        datastreamData.forEach(item => {
+      Object.values(realtimeTimeSeriesData).forEach((datastreamData) => {
+        datastreamData.forEach((item) => {
           const timestamp = item.timestamp || item.device_time;
           // PERBAIKAN: Timestamp sudah dikonversi saat disimpan, jadi langsung gunakan
-          const timeKey = timestamp instanceof Date ? timestamp.toISOString() : new Date(timestamp).toISOString();
+          const timeKey =
+            timestamp instanceof Date
+              ? timestamp.toISOString()
+              : new Date(timestamp).toISOString();
           timestampSet.add(timeKey);
-          
+
           allDataPoints.push({
             timeKey,
-            timestamp: timestamp instanceof Date ? timestamp : new Date(timestamp),
+            timestamp:
+              timestamp instanceof Date ? timestamp : new Date(timestamp),
             originalTimestamp: timeKey, // Gunakan timestamp yang sudah dikonversi untuk tooltip
             device_id: item.device_id,
             datastream_id: item.datastream_id,
@@ -611,38 +655,38 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
       // Hitung cutoff time berdasarkan time range yang dipilih
       const now = new Date();
       let cutoffTime = null;
-      
+
       switch (timeRange) {
         case "1h":
-          cutoffTime = new Date(now.getTime() - (1 * 60 * 60 * 1000)); // 1 jam yang lalu
+          cutoffTime = new Date(now.getTime() - 1 * 60 * 60 * 1000); // 1 jam yang lalu
           break;
         case "12h":
-          cutoffTime = new Date(now.getTime() - (12 * 60 * 60 * 1000)); // 12 jam yang lalu
+          cutoffTime = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 12 jam yang lalu
           break;
         case "1d":
-          cutoffTime = new Date(now.getTime() - (24 * 60 * 60 * 1000)); // 1 hari yang lalu
+          cutoffTime = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 1 hari yang lalu
           break;
         case "1w":
-          cutoffTime = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // 1 minggu yang lalu
+          cutoffTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 1 minggu yang lalu
           break;
         case "1m":
-          cutoffTime = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)); // 1 bulan yang lalu
+          cutoffTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 1 bulan yang lalu
           break;
         default:
-          cutoffTime = new Date(now.getTime() - (1 * 60 * 60 * 1000)); // Default 1 jam
+          cutoffTime = new Date(now.getTime() - 1 * 60 * 60 * 1000); // Default 1 jam
       }
-      
+
       // Filter data berdasarkan cutoff time
-      const filteredDataPoints = allDataPoints.filter(item => {
+      const filteredDataPoints = allDataPoints.filter((item) => {
         return item.timestamp >= cutoffTime;
       });
-      
+
       // Buat chart data dari data yang sudah difilter
       const timeMap = {};
-      
+
       filteredDataPoints.forEach((item) => {
         const key = item.timeKey;
-        
+
         if (!timeMap[key]) {
           timeMap[key] = {
             timestamp: key,
@@ -650,35 +694,44 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
             time: item.timestamp.toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
-              timeZone: timezoneConfig.timezone
+              timeZone: timezoneConfig.timezone,
             }),
           };
           // Initialize semua datastream keys dengan null
-          deviceDatastreamKeys.forEach(dsKey => {
+          deviceDatastreamKeys.forEach((dsKey) => {
             timeMap[key][dsKey] = null;
             // Juga initialize unit keys
-            const unitKey = dsKey.replace('value_', 'unit_');
+            const unitKey = dsKey.replace("value_", "unit_");
             timeMap[key][unitKey] = null;
           });
         }
-        
+
         // Set nilai untuk datastream ini
-        timeMap[key][`value_${item.device_id}_${item.datastream_id}`] = item.value;
+        timeMap[key][`value_${item.device_id}_${item.datastream_id}`] =
+          item.value;
         // Set unit untuk datastream ini
-        timeMap[key][`unit_${item.device_id}_${item.datastream_id}`] = item.unit;
+        timeMap[key][`unit_${item.device_id}_${item.datastream_id}`] =
+          item.unit;
       });
 
       // Convert ke array dan urutkan
       const chartData = Object.values(timeMap).sort(
         (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
       );
-      
+
       return chartData;
     }
-    
+
     // Fallback ke initial data
     return formattedTimeSeriesData;
-  }, [realtimeTimeSeriesData, formattedTimeSeriesData, timeRange, dataCount, filterType, pairs]);
+  }, [
+    realtimeTimeSeriesData,
+    formattedTimeSeriesData,
+    timeRange,
+    dataCount,
+    filterType,
+    pairs,
+  ]);
 
   // Legend data untuk chart
   const legendData = pairs.map((pair, idx) => {
@@ -705,9 +758,13 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
     ? {
         value: parseFloat(latestValue.value),
         timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
-        timeAgo: latestValue.timestamp || latestValue.device_time
-          ? getTimeAgo(latestValue.timestamp || latestValue.device_time)
-          : "Unknown",
+        timeAgo:
+          latestValue.timestamp || latestValue.device_time
+            ? getTimeAgo(
+                latestValue.timestamp || latestValue.device_time,
+                latestValue.data_type
+              )
+            : "Unknown",
         unit: latestValue.unit || "",
         sensor_name: latestValue.sensor_name || "Unknown Sensor",
         device_name: latestValue.device_name || "Unknown Device",
@@ -720,7 +777,7 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
   const getTimeRangeLabel = (range) => {
     const labels = {
       "1h": "1 jam terakhir",
-      "12h": "12 jam terakhir", 
+      "12h": "12 jam terakhir",
       "1d": "1 hari terakhir",
       "1w": "1 minggu terakhir",
     };
@@ -755,23 +812,25 @@ export function useWidgetData(widget, timeRange = "1h", dataCount = "100", filte
 }
 
 // Helper function untuk menghitung waktu relatif dengan konversi UTC ke local
-function getTimeAgo(timestamp) {
+function getTimeAgo(timestamp, dataType) {
   if (!timestamp) return "Unknown";
+
+  if (dataType === "offline") return "Baru saja";
 
   try {
     // Gunakan utility function dari helper.js
     const localTime = convertUTCToLocalTime(timestamp);
-    
+
     if (!localTime) {
-      console.warn('Failed to convert timestamp for getTimeAgo:', timestamp);
+      console.warn("Failed to convert timestamp for getTimeAgo:", timestamp);
       return "Unknown";
     }
-    
+
     const now = new Date(); // Waktu lokal user
-    
+
     // Hitung selisih waktu
     const diffInSeconds = Math.floor((now - localTime) / 1000);
-    
+
     // Debug log untuk melihat perhitungan waktu
     // console.log('getTimeAgo calculation:', {
     //   originalTimestamp: timestamp,
@@ -780,11 +839,11 @@ function getTimeAgo(timestamp) {
     //   diffInSeconds,
     //   timezone: timezoneConfig.display
     // });
-    
+
     if (diffInSeconds < 0) {
       return "Baru saja"; // Jika timestamp di masa depan
     } else if (diffInSeconds < 60) {
-      return 'Baru saja';
+      return "Baru saja";
     } else if (diffInSeconds < 3600) {
       const minutes = Math.floor(diffInSeconds / 60);
       return `${minutes} menit yang lalu`;
@@ -796,7 +855,7 @@ function getTimeAgo(timestamp) {
       return `${days} hari yang lalu`;
     }
   } catch (error) {
-    console.error('Error in getTimeAgo:', error, 'timestamp:', timestamp);
+    console.error("Error in getTimeAgo:", error, "timestamp:", timestamp);
     return "Unknown";
   }
 }
