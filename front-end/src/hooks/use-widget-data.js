@@ -756,22 +756,25 @@ export function useWidgetData(
 
   // Format latest value untuk display
   const formattedLatestValue = latestValue
-    ? {
-        value: parseFloat(latestValue.value),
-        timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
-        timeAgo:
-          latestValue.timestamp || latestValue.device_time
-            ? getTimeAgo(
-                latestValue.timestamp || latestValue.device_time,
-                latestValue.data_type
-              )
+    ? (() => {
+        // Pastikan timestamp bertipe Date
+        let ts = latestValue.timestamp || latestValue.device_time;
+        if (typeof ts === "string") {
+          ts = new Date(ts);
+        }
+        return {
+          value: parseFloat(latestValue.value),
+          timestamp: ts,
+          timeAgo: ts && ts instanceof Date && !isNaN(ts)
+            ? getTimeAgo(ts, latestValue.data_type)
             : "Unknown",
-        unit: latestValue.unit || "",
-        sensor_name: latestValue.sensor_name || "Unknown Sensor",
-        device_name: latestValue.device_name || "Unknown Device",
-        device_id: latestValue.device_id,
-        datastream_id: latestValue.datastream_id,
-      }
+          unit: latestValue.unit || "",
+          sensor_name: latestValue.sensor_name || "Unknown Sensor",
+          device_name: latestValue.device_name || "Unknown Device",
+          device_id: latestValue.device_id,
+          datastream_id: latestValue.datastream_id,
+        };
+      })()
     : null;
 
   // Helper function untuk menerjemahkan time range ke bahasa Indonesia
