@@ -819,17 +819,10 @@ function getTimeAgo(timestamp, dataType) {
 
   try {
     // Gunakan utility function dari helper.js
-    const localTime = convertUTCToLocalTime(timestamp);
-
-    if (!localTime) {
-      console.warn("Failed to convert timestamp for getTimeAgo:", timestamp);
-      return "Unknown";
-    }
-
     const now = new Date(); // Waktu lokal user
 
     // Hitung selisih waktu
-    const diffInSeconds = Math.floor((now - localTime) / 1000);
+    const diffInSeconds = Math.floor((now - timestamp) / 1000);
 
     // Debug log untuk melihat perhitungan waktu
     // console.log('getTimeAgo calculation:', {
