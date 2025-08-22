@@ -77,6 +77,7 @@ export class PayloadService {
       // console.log(`📊 [HTTP PAYLOAD] Data yang sudah didekripsi:`, decrypted);
       
       // STEP 1: Simpan raw data untuk backup dan debugging
+      console.log("Data yang diterima:", decrypted);
       const [rawResult] = await (this.db as any).safeQuery(
         `INSERT INTO raw_payloads (device_id, raw_data, parsed_at)
         VALUES (?, ?, NOW())`,
