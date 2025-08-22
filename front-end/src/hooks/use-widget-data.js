@@ -248,7 +248,7 @@ export function useWidgetData(
           )
         ) {
           setRealTimeData(data);
-
+          console.log("Timestamp 1:",data.timestamp, data.device_time);
           // PERBAIKAN: Deklarasikan variabel timezone conversion dulu
           const rawTimestamp = data.device_time || data.timestamp;
           const convertedTimestamp = convertUTCToLocalTime(rawTimestamp);
@@ -264,7 +264,8 @@ export function useWidgetData(
             device_id: data.device_id,
             datastream_id: data.datastream_id,
           });
-
+          
+          console.log("Timestamp 2:",data.timestamp, data.device_time);
           // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
           const newDataPoint = {
             id: data.id,
