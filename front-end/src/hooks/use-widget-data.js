@@ -248,16 +248,15 @@ export function useWidgetData(
           )
         ) {
           setRealTimeData(data);
-          console.log("Timestamp 1:",data.timestamp, data.device_time);
-          // PERBAIKAN: Deklarasikan variabel timezone conversion dulu
+          // PERBAIKAN: Pastikan timestamp dari WebSocket dikonversi dengan benar
           const rawTimestamp = data.device_time || data.timestamp;
           const convertedTimestamp = convertUTCToLocalTime(rawTimestamp);
 
-          // Update latest value langsung
+          // Update latest value langsung dengan timestamp yang sudah dikonversi
           setLatestValue({
             value: data.value,
-            timestamp: convertedTimestamp || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
-            device_time: data.device_time || data.timestamp, // Raw timestamp untuk referensi
+            timestamp: convertedTimestamp || new Date(rawTimestamp), // Fallback ke Date object
+            device_time: rawTimestamp, // Raw timestamp untuk referensi
             sensor_name: data.sensor_name,
             unit: data.unit,
             device_name: data.device_name,
@@ -265,15 +264,14 @@ export function useWidgetData(
             datastream_id: data.datastream_id,
           });
           
-          console.log("Timestamp 2:",data.timestamp, data.device_time);
           // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
           const newDataPoint = {
             id: data.id,
             device_id: data.device_id,
             datastream_id: data.datastream_id,
             value: parseFloat(data.value),
-            timestamp: convertedTimestamp || rawTimestamp, // Gunakan timestamp yang sudah dikonversi
-            device_time: data.device_time || data.timestamp, // Simpan raw timestamp untuk referensi
+            timestamp: convertedTimestamp || new Date(rawTimestamp), // Gunakan timestamp yang sudah dikonversi
+            device_time: rawTimestamp, // Simpan raw timestamp untuk referensi
             device_name: data.device_name,
             sensor_name: data.sensor_name,
             unit: data.unit,
@@ -758,7 +756,7 @@ export function useWidgetData(
   const formattedLatestValue = latestValue
     ? (() => {
         // Pastikan timestamp bertipe Date
-        let ts = latestValue.timestamp || latestValue.device_time;
+        let ts = latestValue.timestamp;
         if (typeof ts === "string") {
           ts = new Date(ts);
         }
@@ -822,20 +820,38 @@ function getTimeAgo(timestamp, dataType) {
   if (dataType === "offline") return "Baru saja";
 
   try {
-    // Gunakan utility function dari helper.js
+    // PERBAIKAN: Pastikan timestamp dalam bentuk Date object
+    let localTime;
+    
+    if (timestamp instanceof Date) {
+      localTime = timestamp; // Sudah dalam bentuk Date
+    } else {
+      // Jika string, konversi ke UTC kemudian ke local time
+      localTime = convertUTCToLocalTime(timestamp);
+      if (!localTime) {
+        // Fallback: coba langsung convert ke Date
+        localTime = new Date(timestamp);
+      }
+    }
+    
+    if (!localTime || isNaN(localTime.getTime())) {
+      console.warn('Invalid timestamp in getTimeAgo:', timestamp);
+      return "Unknown";
+    }
+    
     const now = new Date(); // Waktu lokal user
 
     // Hitung selisih waktu
-    const diffInSeconds = Math.floor((now - timestamp) / 1000);
+    const diffInSeconds = Math.floor((now - localTime) / 1000);
 
     // Debug log untuk melihat perhitungan waktu
-    // console.log('getTimeAgo calculation:', {
-    //   originalTimestamp: timestamp,
-    //   localTime: localTime.toISOString(),
-    //   now: now.toISOString(),
-    //   diffInSeconds,
-    //   timezone: timezoneConfig.display
-    // });
+    console.log('getTimeAgo calculation:', {
+      originalTimestamp: timestamp,
+      localTime: localTime.toISOString(),
+      now: now.toISOString(),
+      diffInSeconds,
+      timezone: timezoneConfig?.display || 'Local'
+    });
 
     if (diffInSeconds < 0) {
       return "Baru saja"; // Jika timestamp di masa depan
