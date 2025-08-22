@@ -759,9 +759,9 @@ export function useWidgetData(
         value: parseFloat(latestValue.value),
         timestamp: latestValue.timestamp || latestValue.device_time, // Gunakan device_time
         timeAgo:
-          latestValue.timestamp || latestValue.device_time
+          latestValue.device_time
             ? getTimeAgo(
-                latestValue.timestamp || latestValue.device_time,
+                latestValue.device_time,
                 latestValue.data_type
               )
             : "Unknown",
