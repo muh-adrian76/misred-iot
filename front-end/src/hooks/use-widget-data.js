@@ -852,13 +852,13 @@ function getTimeAgo(timestamp, dataType) {
     const diffInSeconds = Math.floor((now - localTime) / 1000);
 
     // Debug log untuk melihat perhitungan waktu
-    console.log('getTimeAgo calculation:', {
-      originalTimestamp: timestamp,
-      localTime: localTime.toISOString(),
-      now: now.toISOString(),
-      diffInSeconds,
-      timezone: timezoneConfig?.display || 'Local'
-    });
+    // console.log('getTimeAgo calculation:', {
+    //   originalTimestamp: timestamp,
+    //   localTime: localTime.toISOString(),
+    //   now: now.toISOString(),
+    //   diffInSeconds,
+    //   timezone: timezoneConfig?.display || 'Local'
+    // });
 
     if (diffInSeconds < 0) {
       return "Baru saja"; // Jika timestamp di masa depan

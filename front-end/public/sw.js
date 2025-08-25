@@ -11,15 +11,12 @@ const STATIC_CACHE_URLS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('🔧 Service Worker installing...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('📦 Caching static assets');
         return cache.addAll(STATIC_CACHE_URLS);
       })
       .then(() => {
-        console.log('✅ Service Worker installed successfully');
         self.skipWaiting(); // Force activation
       })
       .catch((error) => {
@@ -30,7 +27,6 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('🚀 Service Worker activating...');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -123,7 +119,7 @@ self.addEventListener('sync', (event) => {
 
 // Push notification handler (for future PWA features)
 self.addEventListener('push', (event) => {
-  console.log('📨 Push notification received:', event);
+  // console.log('📨 Push notification received:', event);
   
   if (event.data) {
     const data = event.data.json();

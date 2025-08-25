@@ -25,8 +25,7 @@ export function useDatastreamLogic() {
   const [deleteChecked, setDeleteChecked] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
 
-  // const { isAuthenticated } = useAuth();
-  const { isAuthenticated } = true;
+  const { isAuthenticated } = useAuth();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
   // Ambil daftar datastream

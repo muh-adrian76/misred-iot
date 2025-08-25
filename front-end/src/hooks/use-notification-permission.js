@@ -49,7 +49,6 @@ export function useNotificationPermission() {
       
       // Periksa apakah mengembalikan Promise
       if (permissionResult && typeof permissionResult.then === 'function') {
-        console.log("🔔 API berbasis Promise terdeteksi");
         // API Promise-based modern
         result = await Promise.race([
           permissionResult,

@@ -33,8 +33,7 @@ export function useAlarmLogic() {
   const [selectedRows, setSelectedRows] = useState([]); // Baris yang dipilih di tabel
 
   // Hook untuk autentikasi dan deteksi mobile
-  // const { isAuthenticated } = useAuth();
-  const { isAuthenticated } = true;
+  const { isAuthenticated } = useAuth();
   const { isMobile } = useBreakpoint();
 
   // Fungsi untuk mengambil semua alarm milik user yang sedang login

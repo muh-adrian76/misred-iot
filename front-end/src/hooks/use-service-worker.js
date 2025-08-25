@@ -31,17 +31,9 @@ export function useServiceWorker(enabled = true) {
         isRegisteredRef.current = true;
 
         console.log('✅ Service Worker terdaftar dengan scope:', registration.scope);
-        
-        // Debug: Log notification support
-        if (registration.showNotification) {
-          console.log('✅ Service Worker mendukung showNotification');
-        } else {
-          console.warn('❌ Service Worker tidak mendukung showNotification');
-        }
 
         // Handle service worker updates
         registration.addEventListener('updatefound', () => {
-          console.log('🔄 Service Worker update ditemukan');
           const newWorker = registration.installing;
           
           if (newWorker) {
@@ -55,7 +47,7 @@ export function useServiceWorker(enabled = true) {
 
         // Listen for messages from service worker
         navigator.serviceWorker.addEventListener('message', (event) => {
-          console.log('📨 Pesan dari Service Worker:', event.data);
+          // console.log('📨 Pesan dari Service Worker:', event.data);
           
           // Handle notification click messages
           if (event.data && event.data.type === 'notification-click') {
@@ -79,7 +71,6 @@ export function useServiceWorker(enabled = true) {
     navigator.serviceWorker.getRegistration('/sw.js')
       .then((existingRegistration) => {
         if (existingRegistration) {
-          console.log('♻️ Service Worker sudah terdaftar');
           registrationRef.current = existingRegistration;
           isRegisteredRef.current = true;
         } else {
