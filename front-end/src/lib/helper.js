@@ -159,9 +159,10 @@ export function convertUTCToLocalTime(utcTimestamp) {
     return null;
   }
   
-  // Tambahkan offset timezone sesuai konfigurasi (mis. GMT+7)
-  const localDate = new Date(utcTime.getTime() + (timezoneConfig.offset * 60 * 60 * 1000));
-  return localDate;
+  // PERBAIKAN: Tambahkan offset timezone untuk konversi UTC ke local time
+  // Ini diperlukan karena database menyimpan waktu dalam UTC
+  const localTime = new Date(utcTime.getTime() + (timezoneConfig.offset * 60 * 60 * 1000));
+  return localTime;
 }
 
 // Fungsi untuk konversi tanggal ke zona waktu terkonfigurasi

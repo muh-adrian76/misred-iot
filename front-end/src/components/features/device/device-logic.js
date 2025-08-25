@@ -28,7 +28,8 @@ export function useDeviceLogic() {
   const [search, setSearch] = useState("");
   const [selectedRows, setSelectedRows] = useState([]);
 
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = true;
   const ws = useWebSocket();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 

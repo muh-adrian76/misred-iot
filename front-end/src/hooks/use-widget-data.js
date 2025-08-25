@@ -248,14 +248,15 @@ export function useWidgetData(
           )
         ) {
           setRealTimeData(data);
-          // PERBAIKAN: Pastikan timestamp dari WebSocket dikonversi dengan benar
+          // PERBAIKAN: Untuk data real-time, gunakan timestamp langsung tanpa konversi
+          // karena WebSocket sudah mengirim dalam format yang tepat
           const rawTimestamp = data.device_time || data.timestamp;
-          const convertedTimestamp = convertUTCToLocalTime(rawTimestamp);
+          const timestamp = new Date(rawTimestamp); // Langsung convert ke Date tanpa timezone conversion
 
-          // Update latest value langsung dengan timestamp yang sudah dikonversi
+          // Update latest value langsung dengan timestamp yang tidak dikonversi
           setLatestValue({
             value: data.value,
-            timestamp: convertedTimestamp || new Date(rawTimestamp), // Fallback ke Date object
+            timestamp: timestamp, // Gunakan timestamp langsung
             device_time: rawTimestamp, // Raw timestamp untuk referensi
             sensor_name: data.sensor_name,
             unit: data.unit,
@@ -270,7 +271,7 @@ export function useWidgetData(
             device_id: data.device_id,
             datastream_id: data.datastream_id,
             value: parseFloat(data.value),
-            timestamp: convertedTimestamp || new Date(rawTimestamp), // Gunakan timestamp yang sudah dikonversi
+            timestamp: timestamp, // Gunakan timestamp langsung tanpa konversi
             device_time: rawTimestamp, // Simpan raw timestamp untuk referensi
             device_name: data.device_name,
             sensor_name: data.sensor_name,
@@ -366,7 +367,7 @@ export function useWidgetData(
           allDataPoints.push({
             timeKey,
             timestamp: utcTime,
-            originalTimestamp: timestamp,
+            originalTimestamp: utcTime.toISOString(), // Gunakan waktu yang sudah dikonversi, bukan raw
             device_id: item.device_id,
             datastream_id: item.datastream_id,
             value: parseFloat(item.value),
@@ -387,11 +388,10 @@ export function useWidgetData(
       sortedTimestamps.forEach((timeKey) => {
         const dataPoint = {
           timestamp: timeKey,
-          originalTimestamp: timeKey,
+          originalTimestamp: timeKey, // Gunakan timeKey yang sudah dalam local time
           time: new Date(timeKey).toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
-            timeZone: timezoneConfig.timezone,
           }),
         };
 
@@ -449,7 +449,7 @@ export function useWidgetData(
 
         allData.push({
           timestamp: utcTime,
-          originalTimestamp: utcTime.toISOString(), // Gunakan waktu yang sudah dikonversi
+          originalTimestamp: utcTime.toISOString(), // Gunakan waktu yang sudah dikonversi, bukan raw timestamp
           device_id: item.device_id,
           datastream_id: item.datastream_id,
           value: parseFloat(item.value),
@@ -477,7 +477,6 @@ export function useWidgetData(
           time: item.timestamp.toLocaleTimeString("id-ID", {
             hour: "2-digit",
             minute: "2-digit",
-            timeZone: timezoneConfig.timezone,
           }),
         };
         // Initialize semua datastream keys dengan null
@@ -571,7 +570,6 @@ export function useWidgetData(
             time: new Date(timeKey).toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
-              timeZone: timezoneConfig.timezone,
             }),
           };
 
@@ -638,7 +636,7 @@ export function useWidgetData(
             timeKey,
             timestamp:
               timestamp instanceof Date ? timestamp : new Date(timestamp),
-            originalTimestamp: timeKey, // Gunakan timestamp yang sudah dikonversi untuk tooltip
+            originalTimestamp: timeKey, // Gunakan timeKey yang sudah dalam local time
             device_id: item.device_id,
             datastream_id: item.datastream_id,
             value: parseFloat(item.value),
@@ -689,11 +687,10 @@ export function useWidgetData(
         if (!timeMap[key]) {
           timeMap[key] = {
             timestamp: key,
-            originalTimestamp: item.originalTimestamp, // Ini sekarang sudah timestamp yang dikonversi
+            originalTimestamp: key, // Gunakan key yang sudah dalam local time
             time: item.timestamp.toLocaleTimeString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
-              timeZone: timezoneConfig.timezone,
             }),
           };
           // Initialize semua datastream keys dengan null
@@ -755,11 +752,23 @@ export function useWidgetData(
   // Format latest value untuk display
   const formattedLatestValue = latestValue
     ? (() => {
-        // Pastikan timestamp bertipe Date
-        let ts = latestValue.timestamp;
-        if (typeof ts === "string") {
-          ts = new Date(ts);
+        // PERBAIKAN: Konversi timestamp dengan benar berdasarkan sumber data
+        let ts;
+        
+        // Jika timestamp sudah berupa Date object (dari WebSocket real-time), gunakan langsung
+        if (latestValue.timestamp instanceof Date) {
+          ts = latestValue.timestamp;
+        } else {
+          // Jika dari initial load (database), perlu konversi UTC ke local
+          const rawTimestamp = latestValue.timestamp || latestValue.device_time;
+          ts = convertUTCToLocalTime(rawTimestamp);
+          
+          // Fallback jika konversi gagal
+          if (!ts) {
+            ts = new Date(rawTimestamp);
+          }
         }
+        
         return {
           value: parseFloat(latestValue.value),
           timestamp: ts,
@@ -820,18 +829,16 @@ function getTimeAgo(timestamp, dataType) {
   if (dataType === "offline") return "Baru saja";
 
   try {
-    // PERBAIKAN: Pastikan timestamp dalam bentuk Date object
+    // PERBAIKAN: Timestamp yang masuk ke sini seharusnya sudah dalam local time
     let localTime;
     
     if (timestamp instanceof Date) {
-      localTime = timestamp; // Sudah dalam bentuk Date
+      // Timestamp sudah berupa Date object local time, gunakan langsung
+      localTime = timestamp;
     } else {
-      // Jika string, konversi ke UTC kemudian ke local time
-      localTime = convertUTCToLocalTime(timestamp);
-      if (!localTime) {
-        // Fallback: coba langsung convert ke Date
-        localTime = new Date(timestamp);
-      }
+      // Jika masih string, coba konversi ke Date langsung
+      // (tidak perlu convertUTCToLocalTime lagi karena seharusnya sudah dikonversi sebelumnya)
+      localTime = new Date(timestamp);
     }
     
     if (!localTime || isNaN(localTime.getTime())) {

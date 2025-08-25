@@ -172,8 +172,6 @@ export function useDashboardLogic() {
     }
   }, []);
 
-  // ===== USEEFFECT - MANAJEMEN SIKLUS HIDUP =====
-  
   // Bersihkan data dashboard ketika user logout
   useEffect(() => {
     if (!isAuthenticated) {
