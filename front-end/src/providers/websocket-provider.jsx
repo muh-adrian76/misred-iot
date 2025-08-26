@@ -501,7 +501,6 @@ export function WebSocketProvider({ children }) {
                 }
 
                 // Tambahkan notifikasi baru dan limit ke 50 item untuk mobile
-                console.log("✅ Menambahkan notifikasi real-time baru ke state");
                 return [data.data, ...prev].slice(0, 50);
               });
 

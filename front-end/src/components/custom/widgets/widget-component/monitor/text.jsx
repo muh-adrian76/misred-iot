@@ -176,11 +176,11 @@ const TextWidget = ({
       <div className="flex-1 flex flex-col justify-center items-center">
         <div className="text-center">
           <div className="flex items-baseline justify-center gap-2">
-            <div className="text-gray-900 font-bold text-5xl">
+            <div className="font-bold text-5xl">
               {formatValue(displayValue)}
             </div>
             {unit && (
-              <div className="text-gray-600 text-lg font-medium">{unit}</div>
+              <div className="text-muted-foreground text-lg font-medium">{unit}</div>
             )}
           </div>
         </div>
@@ -315,7 +315,7 @@ export const TextWidgetWrapper = ({
       <div className="flex items-center justify-center h-full min-h-[120px]">
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-xs">Loading...</span>
+          <span className="text-xs text-foreground">Loading...</span>
         </div>
       </div>
     );
@@ -327,7 +327,7 @@ export const TextWidgetWrapper = ({
       <div className="flex items-center justify-center h-full min-h-[120px]">
         <div className="flex flex-col items-center gap-2 text-red-500">
           <AlertCircle className="h-5 w-5" />
-          <span className="text-xs text-center">Error: {error.message}</span>
+          <span className="text-xs text-center text-foreground">Error: {error.message}</span>
         </div>
       </div>
     );
