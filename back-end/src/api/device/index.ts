@@ -3,8 +3,6 @@
  * File ini mengatur semua operasi CRUD untuk device IoT termasuk firmware management
  * Meliputi: registrasi device, update config, delete, firmware upload/download, ping connectivity
  */
-
-import { randomBytes } from "crypto";
 import {
   mkdirSync,
   writeFileSync,
@@ -18,6 +16,7 @@ import { authorizeRequest } from "../../lib/utils";
 import { DeviceService } from "../../services/DeviceService";
 import { DeviceStatusService } from "../../services/DeviceStatusService";
 // import { chirpstackService } from "../../lib/middleware";
+import { generateSecretWithAllHexChars } from "../../lib/utils";
 import {
   deleteDeviceSchema,
   getAllDevicesSchema,
@@ -95,7 +94,7 @@ export function deviceRoutes(
             } = body;
 
             // Generate secret key untuk autentikasi device
-            const new_secret = randomBytes(16).toString("hex");
+            const new_secret = generateSecretWithAllHexChars();
             const user_id = decoded.sub;
 
             // Buat device baru di database
@@ -209,7 +208,10 @@ export function deviceRoutes(
               status: 200,
             });
           } catch (error: any) {
-            console.error("Kesalahan saat mengambil perangkat berdasarkan ID:", error);
+            console.error(
+              "Kesalahan saat mengambil perangkat berdasarkan ID:",
+              error
+            );
 
             // Periksa jika ini kesalahan autentikasi dari authorizeRequest
             if (error.message && error.message.includes("Unauthorized")) {
@@ -411,7 +413,10 @@ export function deviceRoutes(
               new_version: firmware_version,
             };
           } catch (error) {
-            console.error("Kesalahan saat memperbarui versi firmware perangkat:", error);
+            console.error(
+              "Kesalahan saat memperbarui versi firmware perangkat:",
+              error
+            );
             set.status = 500;
             return {
               success: false,
@@ -504,7 +509,10 @@ export function deviceRoutes(
                 oldSecret
               );
 
-              console.log(`🔄 Secret perangkat ${deviceID} diperbarui:`, newSecret);
+              console.log(
+                `🔄 Secret perangkat ${deviceID} diperbarui:`,
+                newSecret
+              );
               // Kirim secret baru
               return new Response(
                 JSON.stringify({
@@ -697,7 +705,10 @@ export function deviceRoutes(
               status: status,
             };
           } catch (error: any) {
-            console.error("Kesalahan saat memperbarui status perangkat:", error);
+            console.error(
+              "Kesalahan saat memperbarui status perangkat:",
+              error
+            );
 
             if (error.message && error.message.includes("Unauthorized")) {
               set.status = 401;

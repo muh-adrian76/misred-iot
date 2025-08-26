@@ -4,6 +4,40 @@
  * Meliputi: CORS handling, JWT authentication, enkripsi, validasi data sensor
  */
 
+import { randomBytes } from "crypto";
+
+// ===== GENERATE SECRET =====
+// Fungsi untuk menambah secret dengan nilai entropi 128 bit
+function generateSecretWithAllHexChars() {
+  const hexChars = '0123456789abcdef';
+  const missingChars = [];
+  
+  // Generate initial random secret
+  let secret = randomBytes(16).toString('hex');
+  
+  // Check which characters are missing
+  for (const char of hexChars) {
+    if (!secret.includes(char)) {
+      missingChars.push(char);
+    }
+  }
+  
+  // If any characters are missing, replace random positions with missing chars
+  if (missingChars.length > 0) {
+    const secretArray = secret.split('');
+    
+    missingChars.forEach(char => {
+      const randomIndex = Math.floor(Math.random() * secretArray.length);
+      secretArray[randomIndex] = char;
+    });
+    
+    secret = secretArray.join('');
+  }
+  
+  return secret;
+}
+
+// ===== CORS SUBDOMAIN =====
 // Fungsi untuk memperbaiki masalah CORS dengan menambahkan www subdomain
 function subDomain(url: string) {
   if (!url) return url; // Return langsung jika URL kosong
@@ -682,6 +716,7 @@ async function broadcastSensorUpdates(
 // ===== EXPORTS =====
 // Export semua fungsi utilitas untuk digunakan di bagian lain aplikasi
 export {
+  generateSecretWithAllHexChars, // Generate secret dengan nilai entropi 128 bit
   subDomain, // CORS subdomain fixing
   apiTags, // API documentation tags
   authorizeRequest, // JWT authorization middleware

@@ -255,6 +255,8 @@ async function sendHTTPPayload(): Promise<boolean> {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${jwtToken}`,
+        "x-data-type": "offline",
+
       },
       body: JSON.stringify({}), // ✅ SAMA SEPERTI ESP32: Empty body, data di JWT
     });

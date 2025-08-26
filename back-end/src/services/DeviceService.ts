@@ -12,7 +12,7 @@
  * - Cascade delete untuk menghapus data terkait
  */
 import { Pool, ResultSetHeader } from "mysql2/promise";
-import { randomBytes } from "crypto";
+import { generateSecretWithAllHexChars } from "../lib/utils";
 import { OtaaUpdateService } from "./OtaaUpdateService";
 import { MQTTTopicManager } from "./MQTTTopicManager";
 
@@ -318,7 +318,7 @@ export class DeviceService {
         "SELECT id, new_secret FROM devices"
       );
       for (const device of devices) {
-        const newSecret = randomBytes(16).toString("hex");
+            const newSecret = generateSecretWithAllHexChars();
         // 2. Simpan secret lama ke old_secret, update new_secret
         await (this.db as any).safeQuery(
           "UPDATE devices SET old_secret = ?, new_secret = ? WHERE id = ?",

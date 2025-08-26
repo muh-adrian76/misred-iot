@@ -263,6 +263,7 @@ export function useWidgetData(
             device_name: data.device_name,
             device_id: data.device_id,
             datastream_id: data.datastream_id,
+            data_type: data.data_type
           });
           
           // TAMBAH DATA BARU KE CHART SECARA REAL-TIME
@@ -825,8 +826,11 @@ export function useWidgetData(
 // Helper function untuk menghitung waktu relatif dengan konversi UTC ke local
 function getTimeAgo(timestamp, dataType) {
   if (!timestamp) return "Unknown";
+  
+  // Debug tipe data payload
+  // console.log('getTimeAgo called with:', { timestamp, dataType });
 
-  if (dataType === "offline") return "Baru saja";
+  if (dataType == "offline") return "Baru saja";
 
   try {
     // PERBAIKAN: Timestamp yang masuk ke sini seharusnya sudah dalam local time
