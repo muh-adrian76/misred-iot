@@ -1,6 +1,6 @@
-# MiSREd IoT - Sistem Monitoring dan Kontrol IoT
+# MiSREd IoT - Sistem Monitoring IoT
 
-MiSREd IoT adalah aplikasi web full-stack untuk monitoring dan kontrol perangkat Internet of Things (IoT) yang dibangun dengan teknologi modern. Sistem ini menyediakan dashboard real-time, manajemen data sensor, sistem alarm, dan kontrol perangkat jarak jauh.
+MiSREd IoT adalah aplikasi web full-stack untuk monitoring dan kontrol perangkat Internet of Things (IoT) yang dibangun dengan teknologi modern. Sistem ini menyediakan dashboard real-time, manajemen data sensor, dan sistem alarm.
 
 ## 🚀 Fitur Utama
 

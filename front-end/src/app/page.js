@@ -35,7 +35,6 @@ import { Link } from "next-view-transitions"; // Link dengan view transitions
 import ThemeButton from "@/components/custom/buttons/theme-button"; // Custom theme toggle button
 import localFont from "next/font/local"; // Font loader untuk custom fonts
 import Image from "next/image";
-import Head from "next/head";
 
 // Konfigurasi font lokal untuk logo dan branding
 const logoFont = localFont({
@@ -139,16 +138,6 @@ const LandingPage = () => {
 
   return (
     <>
-      <Head>
-        {/* Preload font lokal untuk logo */}
-        <link
-          rel="preload"
-          href="/logo-font.ttf"
-          as="font"
-          type="font/ttf"
-          crossOrigin="anonymous"
-        />
-      </Head>
       {/* Container utama dengan full screen height dan theme transitions */}
       <div className="min-h-screen bg-white dark:bg-gray-900 dark:text-white text-gray-900 transition-colors duration-300">
         
