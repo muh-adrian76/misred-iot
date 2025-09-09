@@ -31,10 +31,9 @@ import {
 } from "lucide-react";
 
 // Import Next.js components
-import { Link } from "next-view-transitions"; // Link dengan view transitions
+import { Link } from "next-view-transitions"; // Standard Next.js Link
 import ThemeButton from "@/components/custom/buttons/theme-button"; // Custom theme toggle button
 import localFont from "next/font/local"; // Font loader untuk custom fonts
-import Image from "next/image";
 
 // Konfigurasi font lokal untuk logo dan branding
 const logoFont = localFont({
@@ -44,14 +43,19 @@ const logoFont = localFont({
 /**
  * Komponen utama Landing Page untuk aplikasi MiSREd-IoT
  * Menampilkan hero section, features, contact, dan informasi produk
- * @returns {JSX.Element} Landing page dengan responsive design
+ * @returns {JSX.Element}
  */
-const LandingPage = () => {
+export default function LandingPage() {
   // State untuk hydration check (mencegah hydration mismatch)
   const [mounted, setMounted] = useState(false);
   
   // State untuk kontrol mobile menu
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Ensure proper hydration in Chrome
+  useEffect(() => {
+    document.documentElement.style.visibility = 'visible';
+  }, []);
   
   // State untuk tracking section yang aktif saat scroll
   const [activeSection, setActiveSection] = useState("beranda");
@@ -136,6 +140,10 @@ const LandingPage = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
+  if (!mounted) {
+    return <div style={{ visibility: 'hidden' }} />;
+  }
+
   return (
     <>
       {/* Container utama dengan full screen height dan theme transitions */}
@@ -151,7 +159,7 @@ const LandingPage = () => {
                 <div className="flex-shrink-0 flex items-center">
                   {/* Logo Icon */}
                   <div className="w-8 h-8 rounded-md flex items-center justify-center mr-3">
-                    <Image src="/web-logo.svg" alt="Logo" width={32} height={32} priority />
+                    <img src="/web-logo.svg" alt="Logo" />
                   </div>
                   {/* Brand Text dengan custom font */}
                   <span className={`text-xl font-bold ${logoFont.className}`}>
@@ -260,13 +268,10 @@ const LandingPage = () => {
                   
                   {/* Animated Logo dengan pulse effect */}
                   <div className="inline-flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-full mb-8 bg-white/5 backdrop-blur-sm shadow-2xl animate-pulse">
-                    <Image
+                    <img
                       src="/misred-red.png"
                       alt="Logo"
-                      width={96}
-                      height={96}
                       className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
-                      priority
                     />
                   </div>
 
@@ -652,11 +657,9 @@ const LandingPage = () => {
                   <div className="flex flex-col lg:flex-row items-center gap-8 relative z-10">
                     {/* Partner Logo */}
                     <div className="w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-6">
-                      <Image
+                      <img
                         src="/logo-polines.webp"
                         alt="Logo Polines"
-                        width={120}
-                        height={120}
                         className="max-w-full max-h-full"
                       />
                     </div>
@@ -718,7 +721,7 @@ const LandingPage = () => {
               <div className="flex items-center justify-center mb-4">
                 {/* Footer Logo */}
                 <div className="w-8 h-8 rounded-md flex items-center justify-center mr-3">
-                  <Image src="/web-logo.svg" alt="Logo" width={32} height={32} />
+                  <img src="/web-logo.svg" alt="Logo" />
                 </div>
                 {/* Footer Brand Name */}
                 <span className="text-xl font-bold">MiSREd IoT</span>
@@ -741,6 +744,3 @@ const LandingPage = () => {
     </>
   );
 };
-
-// Export komponen sebagai default
-export default LandingPage;
